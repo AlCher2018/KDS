@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="KDS_06_10Model.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="LanguageType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Order">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderStatusId" Type="int" />
+          <Property Name="DepartmentId" Type="int" />
+          <Property Name="UID" Type="nvarchar" MaxLength="50" />
+          <Property Name="Number" Type="int" Nullable="false" />
+          <Property Name="TableNumber" Type="nvarchar" MaxLength="10" />
+          <Property Name="CreateDate" Type="datetime" Nullable="false" />
+          <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="SpentTime" Type="int" />
+          <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
+          <Property Name="QueueStatusId" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="QueueStatu">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" />
+        </EntityType>
+        <Association Name="FK_Order_LanguageType">
+          <End Role="LanguageType" Type="Self.LanguageType" Multiplicity="1" />
+          <End Role="Order" Type="Self.Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="LanguageType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="LanguageTypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Order_QStatus">
+          <End Role="QueueStatu" Type="Self.QueueStatu" Multiplicity="1" />
+          <End Role="Order" Type="Self.Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="QueueStatu">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="QueueStatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="KDS_06_10ModelStoreContainer">
+          <EntitySet Name="LanguageType" EntityType="Self.LanguageType" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="QueueStatu" EntityType="Self.QueueStatu" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_Order_LanguageType" Association="Self.FK_Order_LanguageType">
+            <End Role="LanguageType" EntitySet="LanguageType" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Order_QStatus" Association="Self.FK_Order_QStatus">
+            <End Role="QueueStatu" EntitySet="QueueStatu" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="KDS_06_10Model" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="KDSContext" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="LanguageType" EntityType="KDS_06_10Model.LanguageType" />
+          <EntitySet Name="Order" EntityType="KDS_06_10Model.Order" />
+          <EntitySet Name="QueueStatu" EntityType="KDS_06_10Model.QueueStatu" />
+          <AssociationSet Name="FK_Order_LanguageType1" Association="KDS_06_10Model.FK_Order_LanguageType1">
+            <End Role="LanguageType" EntitySet="LanguageType" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Order_QStatus1" Association="KDS_06_10Model.FK_Order_QStatus1">
+            <End Role="QueueStatu" EntitySet="QueueStatu" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="LanguageType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Order" Relationship="KDS_06_10Model.FK_Order_LanguageType1" FromRole="LanguageType" ToRole="Order" />
+        </EntityType>
+        <EntityType Name="Order">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderStatusId" Type="Int32" />
+          <Property Name="DepartmentId" Type="Int32" />
+          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Number" Type="Int32" Nullable="false" />
+          <Property Name="TableNumber" Type="String" MaxLength="10" FixedLength="false" Unicode="true" />
+          <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="RoomNumber" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="StartDate" Type="DateTime" Precision="3" />
+          <Property Name="SpentTime" Type="Int32" />
+          <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="LanguageType" Relationship="KDS_06_10Model.FK_Order_LanguageType1" FromRole="Order" ToRole="LanguageType" />
+          <NavigationProperty Name="QueueStatu" Relationship="KDS_06_10Model.FK_Order_QStatus1" FromRole="Order" ToRole="QueueStatu" />
+        </EntityType>
+        <EntityType Name="QueueStatu">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LanguageTypeId" Type="Int32" />
+          <NavigationProperty Name="Order" Relationship="KDS_06_10Model.FK_Order_QStatus1" FromRole="QueueStatu" ToRole="Order" />
+        </EntityType>
+        <Association Name="FK_Order_LanguageType1">
+          <End Type="KDS_06_10Model.LanguageType" Role="LanguageType" Multiplicity="1" />
+          <End Type="KDS_06_10Model.Order" Role="Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="LanguageType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="LanguageTypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Order_QStatus1">
+          <End Type="KDS_06_10Model.QueueStatu" Role="QueueStatu" Multiplicity="1" />
+          <End Type="KDS_06_10Model.Order" Role="Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="QueueStatu">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="QueueStatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="KDS_06_10ModelStoreContainer" CdmEntityContainer="KDSContext">
+          <EntitySetMapping Name="LanguageType">
+            <EntityTypeMapping TypeName="KDS_06_10Model.LanguageType">
+              <MappingFragment StoreEntitySet="LanguageType">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Order">
+            <EntityTypeMapping TypeName="KDS_06_10Model.Order">
+              <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
+                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
+                <ScalarProperty Name="Waiter" ColumnName="Waiter" />
+                <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="RoomNumber" ColumnName="RoomNumber" />
+                <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
+                <ScalarProperty Name="TableNumber" ColumnName="TableNumber" />
+                <ScalarProperty Name="Number" ColumnName="Number" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
+                <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="QueueStatu">
+            <EntityTypeMapping TypeName="KDS_06_10Model.QueueStatu">
+              <MappingFragment StoreEntitySet="QueueStatu">
+                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>
