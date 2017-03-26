@@ -12,5 +12,6 @@ namespace WPFEmulator
         public DateTime Date { get; set; }
         public int StatusId { get; set; }
         public string StatusName { get; set; }
+        public string SpanString { get; set; }
     }
 }

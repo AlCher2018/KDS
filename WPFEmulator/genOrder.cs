@@ -16,6 +16,8 @@ namespace WPFEmulator
 
         public int Number { get; set; }
         public DateTime Date { get; set; }
+        public DateTime Date1 { get; set; }
+        public DateTime Date2 { get; set; }
 
         public event EventHandler<genOrderStatusChangedArgs> OrderStatusChanged;
 
@@ -31,10 +33,11 @@ namespace WPFEmulator
             _timer.Elapsed += _timer_Elapsed;
 
             _statusId = 0;
+            this.Date = DateTime.Now;
 
             if (isAutoChangeStatus)
             {
-                _timer.Interval = _rnd.Next(3, 7) * 1000d;
+                _timer.Interval = _rnd.Next(10, 30) * 1000d;
                 _timer.Start();
             }
         }
@@ -47,11 +50,13 @@ namespace WPFEmulator
 
             if (_statusId == 2)
             {
+                this.Date2 = DateTime.Now;
                 _timer.Stop(); _timer.Close(); _timer = null;
             }
             else
             {
-                _timer.Interval = _rnd.Next(3, 7) * 1000d;
+                this.Date1 = DateTime.Now;
+                _timer.Interval = _rnd.Next(4, 10) * 1000d;
                 _timer.Start();
             }
         }

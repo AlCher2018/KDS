@@ -64,15 +64,21 @@ namespace WPFEmulator
         {
             this.Dispatcher.Invoke((Action)delegate
             {
-                genOrder order = new genOrder(rbAuto.IsChecked ?? false) { Number = _currNumber++, Date = DateTime.Now };
+                genOrder order = new genOrder(rbAuto.IsChecked ?? false) { Number = _currNumber++ };
                 order.OrderStatusChanged += NewOrder_StatusEventHandler;
                 lock (_threadLockObj)
                 {
-                    _db.Order.Add(new Order() { CreateDate = order.Date, LanguageTypeId = 2, Number = order.Number, QueueStatusId = order.StatusId });
+                    _db.Order.Add(new Order()
+                    {
+                        CreateDate = order.Date, LanguageTypeId = 2, Number = order.Number, QueueStatusId = order.StatusId,
+                        OrderStatusId =0, DepartmentId=0,
+                        UID = Guid.NewGuid().ToString(), TableNumber = "tableName", RoomNumber="roomName", StartDate=order.Date,
+                        SpentTime =0, Waiter = "waiterName"
+                    });
                     _db.SaveChanges();
 
                     _orders.Add(order);
-                    addListStatusItem(order, true);
+                    addListStatusItem(order);
                 }
 
                 createAutoOrder();
@@ -89,16 +95,16 @@ namespace WPFEmulator
                 {
                     lock (_threadLockObj)
                     {
-                        addListStatusItem(order, false);
-                        setDBOrderStatus(order.Number, order.StatusId);
+                        genOrderStatus os = addListStatusItem(order);
+                        setDBOrderStatus(os);
                     }
                 }
                 else if (e.StatusId == 2)
                 {
                     lock (_threadLockObj)
                     {
-                        addListStatusItem(order, false);
-                        setDBOrderStatus(order.Number, order.StatusId);
+                        genOrderStatus os = addListStatusItem(order);
+                        setDBOrderStatus(os);
 
                         order.OrderStatusChanged -= NewOrder_StatusEventHandler;
                         _orders.Remove(order);
@@ -108,19 +114,38 @@ namespace WPFEmulator
             });
         }
 
-        private void addListStatusItem(genOrder order, bool isNew)
+        private genOrderStatus addListStatusItem(genOrder order)
         {
-            genOrderStatus os = new genOrderStatus() { Number = order.Number, Date = isNew ? order.Date : DateTime.Now, StatusName = order.StatusName };
+            genOrderStatus os = new genOrderStatus()
+            {
+                Number = order.Number,
+                StatusId = order.StatusId,
+                StatusName = order.StatusName,
+                Date = order.Date
+            };
+            if (os.StatusId == 1)
+            {
+                os.Date = order.Date1;
+                os.SpanString = order.Date1.Subtract(order.Date).Seconds.ToString();
+            }
+            else if (os.StatusId == 2)
+            {
+                os.Date = order.Date2;
+                os.SpanString = order.Date2.Subtract(order.Date1).Seconds.ToString();
+            }
+
             _ordersStatus.Add(os);
             lbOrders.ScrollIntoView(os);
+
+            return os;
         }
 
-        private void setDBOrderStatus(int number, int status)
+        private void setDBOrderStatus(genOrderStatus gOrder)
         {
-            Order dbOrder = _db.Order.FirstOrDefault(o => o.Number == number);
+            Order dbOrder = _db.Order.FirstOrDefault(o => o.Number == gOrder.Number);
             if (dbOrder != null)
             {
-                dbOrder.QueueStatusId = status;
+                dbOrder.QueueStatusId = gOrder.StatusId;
                 _db.SaveChanges();
             }
         }
@@ -152,16 +177,30 @@ namespace WPFEmulator
             return null;
         }
 
-        private void createOtrder_Click(object sender, RoutedEventArgs e)
+        private void createOrder_Click(object sender, RoutedEventArgs e)
         {
-            genOrder newOrder = new genOrder(false) { Number = _currNumber++, Date = DateTime.Now };
+            genOrder order = new genOrder(false) { Number = _currNumber++};
             lock (_threadLockObj)
             {
-                _db.Order.Add(new Order() { CreateDate = newOrder.Date, LanguageTypeId = 2, Number = newOrder.Number, QueueStatusId = 0 });
+                _db.Order.Add(new Order()
+                {
+                    CreateDate = order.Date,
+                    LanguageTypeId = 2,
+                    Number = order.Number,
+                    QueueStatusId = order.StatusId,
+                    OrderStatusId = 0,
+                    DepartmentId = 0,
+                    UID = Guid.NewGuid().ToString(),
+                    TableNumber = "tableName",
+                    RoomNumber = "roomName",
+                    StartDate = order.Date,
+                    SpentTime = 0,
+                    Waiter = "waiterName"
+                });
                 _db.SaveChanges();
 
-                _orders.Add(newOrder);
-                addListStatusItem(newOrder, true);
+                _orders.Add(order);
+                addListStatusItem(order);
             }
         }
 
@@ -182,7 +221,8 @@ namespace WPFEmulator
             genOrderStatus os = (genOrderStatus)lbOrders.SelectedItem;
             if (os.StatusName == _statusNames[2]) return;
 
-            os.StatusName = _statusNames[1];
+            os.StatusId = 1;
+            os.StatusName = _statusNames[os.StatusId];
             updateBindStatus(os);
         }
 
@@ -193,7 +233,8 @@ namespace WPFEmulator
             genOrderStatus os = (genOrderStatus)lbOrders.SelectedItem;
             if (os.StatusName == _statusNames[2]) return;
 
-            os.StatusName = _statusNames[0];
+            os.StatusId = 0;
+            os.StatusName = _statusNames[os.StatusId];
             updateBindStatus(os);
         }
 
@@ -203,7 +244,8 @@ namespace WPFEmulator
 
             genOrderStatus os = (genOrderStatus)lbOrders.SelectedItem;
 
-            os.StatusName = _statusNames[2];
+            os.StatusId = 2;
+            os.StatusName = _statusNames[os.StatusId];
             updateBindStatus(os);
         }
 
@@ -213,12 +255,15 @@ namespace WPFEmulator
 
             genOrderStatus os = (genOrderStatus)lbOrders.SelectedItem;
 
-            os.StatusName = _statusNames[1];
+            os.StatusId = 1;
+            os.StatusName = _statusNames[os.StatusId];
             updateBindStatus(os);
         }
 
         private void updateBindStatus(genOrderStatus os)
         {
+            setDBOrderStatus(os);
+
             DependencyObject obj = lbOrders.ItemContainerGenerator.ContainerFromItem(os);
             FrameworkElement tbStatus = FindVisualChildrenByName((FrameworkElement)obj, "tbStatus");
             if (tbStatus != null)

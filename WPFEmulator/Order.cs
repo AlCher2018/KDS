@@ -15,15 +15,15 @@ namespace WPFEmulator
     public partial class Order
     {
         public int Id { get; set; }
-        public Nullable<int> OrderStatusId { get; set; }
-        public Nullable<int> DepartmentId { get; set; }
+        public int OrderStatusId { get; set; }
+        public int DepartmentId { get; set; }
         public string UID { get; set; }
         public int Number { get; set; }
         public string TableNumber { get; set; }
         public System.DateTime CreateDate { get; set; }
         public string RoomNumber { get; set; }
-        public Nullable<System.DateTime> StartDate { get; set; }
-        public Nullable<int> SpentTime { get; set; }
+        public System.DateTime StartDate { get; set; }
+        public int SpentTime { get; set; }
         public string Waiter { get; set; }
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }

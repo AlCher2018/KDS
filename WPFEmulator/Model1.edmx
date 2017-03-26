@@ -17,16 +17,16 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="OrderStatusId" Type="int" />
-          <Property Name="DepartmentId" Type="int" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" />
+          <Property Name="OrderStatusId" Type="int" Nullable="false" />
+          <Property Name="DepartmentId" Type="int" Nullable="false" />
+          <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="Number" Type="int" Nullable="false" />
-          <Property Name="TableNumber" Type="nvarchar" MaxLength="10" />
+          <Property Name="TableNumber" Type="nvarchar" MaxLength="10" Nullable="false" />
           <Property Name="CreateDate" Type="datetime" Nullable="false" />
-          <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" />
-          <Property Name="StartDate" Type="datetime" />
-          <Property Name="SpentTime" Type="int" />
-          <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
+          <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" Nullable="false" />
+          <Property Name="SpentTime" Type="int" Nullable="false" />
+          <Property Name="Waiter" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
         </EntityType>
@@ -105,16 +105,16 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="OrderStatusId" Type="Int32" />
-          <Property Name="DepartmentId" Type="Int32" />
-          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="OrderStatusId" Type="Int32" Nullable="false" />
+          <Property Name="DepartmentId" Type="Int32" Nullable="false" />
+          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Number" Type="Int32" Nullable="false" />
-          <Property Name="TableNumber" Type="String" MaxLength="10" FixedLength="false" Unicode="true" />
+          <Property Name="TableNumber" Type="String" MaxLength="10" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
-          <Property Name="RoomNumber" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="StartDate" Type="DateTime" Precision="3" />
-          <Property Name="SpentTime" Type="Int32" />
-          <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="RoomNumber" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="StartDate" Type="DateTime" Precision="3" Nullable="false" />
+          <Property Name="SpentTime" Type="Int32" Nullable="false" />
+          <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <NavigationProperty Name="LanguageType" Relationship="KDS_06_10Model.FK_Order_LanguageType1" FromRole="Order" ToRole="LanguageType" />

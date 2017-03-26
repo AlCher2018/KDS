@@ -17,7 +17,7 @@
                 <RadioButton x:Name="rbAuto" Content="автоматичиски" Checked="rbAuto_Checked" GroupName="genMode"/>
                 <StackPanel Grid.Column="1">
                     <RadioButton x:Name="rbManual" Content="вручную" Grid.Column="1" Checked="rbManual_Checked" GroupName="genMode"/>
-                    <Button x:Name="createOtrder" Grid.Column="1" Content="создать заказ" Padding="7,3" HorizontalAlignment="Left" Margin="20,10,0,0" Click="createOtrder_Click"/>
+                    <Button x:Name="createOrder" Grid.Column="1" Content="создать заказ" Padding="7,3" HorizontalAlignment="Left" Margin="20,10,0,0" Click="createOrder_Click"/>
                     <GroupBox Padding="5">
                         <GroupBox.Header>
                             <StackPanel Orientation="Horizontal">
@@ -42,15 +42,19 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
+                        
                         <TextBlock Grid.Column="0" VerticalAlignment="Center">
                             <Run Text="{Binding Date, Mode=OneWay, StringFormat={}{0:HH:mm:ss}}"/>
                             <Run Text="{Binding Date, Mode=OneWay, StringFormat={}{0:.fff}}" FontSize="10"/>
                         </TextBlock>
+                        
                         <TextBlock Grid.Column="1" Margin="20,0" VerticalAlignment="Center">
                             <Run Text="Заказ №"/>
                             <Run Text="{Binding Number, Mode=OneWay}"  FontFamily="Impact"/>
                         </TextBlock>
+                        
                         <TextBlock x:Name="tbStatus" Grid.Column="2" Text="{Binding StatusName}" VerticalAlignment="Center">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -67,6 +71,9 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
+
+                        <TextBlock Grid.Column="3" Text="{Binding SpanString, TargetNullValue=''}" Margin="20,0,0,0" FontSize="14" Foreground="Red"/>
+
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
