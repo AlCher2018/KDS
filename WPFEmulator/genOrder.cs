@@ -46,8 +46,6 @@ namespace WPFEmulator
         {
             _statusId++;
 
-            if (OrderStatusChanged != null) OrderStatusChanged(this, new genOrderStatusChangedArgs() { StatusId = _statusId, StatusName = this.StatusName });
-
             if (_statusId == 2)
             {
                 this.Date2 = DateTime.Now;
@@ -59,6 +57,9 @@ namespace WPFEmulator
                 _timer.Interval = _rnd.Next(4, 10) * 1000d;
                 _timer.Start();
             }
+
+            if (OrderStatusChanged != null) OrderStatusChanged(this, new genOrderStatusChangedArgs() { StatusId = _statusId, StatusName = this.StatusName });
+
         }
     }  // class genOrder
 
