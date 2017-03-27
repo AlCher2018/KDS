@@ -54,7 +54,7 @@ namespace WPFEmulator
             else
             {
                 this.Date1 = DateTime.Now;
-                _timer.Interval = _rnd.Next(4, 10) * 1000d;
+                _timer.Interval = _rnd.Next(2, 6) * 1000d;
                 _timer.Start();
             }
 

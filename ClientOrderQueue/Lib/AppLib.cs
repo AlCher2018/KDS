@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Configuration;
 using System.Collections;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ClientOrderQueue.Lib
 {
@@ -84,23 +85,23 @@ namespace ClientOrderQueue.Lib
             return AppDomain.CurrentDomain.BaseDirectory;
         }
 
-        public static string GetFullFileName(string fileName)
+        public static string GetFullFileName(string relPath, string fileName)
         {
-            return getImagePath() + fileName;
+            return getFullPath(relPath) + fileName;
         }
-        private static string getImagePath()
+        private static string getFullPath(string relPath)
         {
-            string imgPath = AppLib.GetAppSetting("ImagesPath");
-            if (string.IsNullOrEmpty(imgPath))  // путь не указан в конфиге - берем путь приложения
-                imgPath = AppLib.GetAppDirectory();
-            else if (imgPath.Contains(@"\:"))   // абсолютный путь
-            { }
-            else  // относительный путь
+            string retVal = relPath;
+
+            if (string.IsNullOrEmpty(relPath))  // путь не указан в конфиге - берем путь приложения
+                retVal = AppLib.GetAppDirectory();
+            else if (retVal.Contains(@"\:") == false)  // относительный путь
             {
-                imgPath = AppLib.GetAppDirectory() + imgPath;
+                retVal = AppLib.GetAppDirectory() + retVal;
             }
-            if (imgPath.EndsWith(@"\") == false) imgPath += @"\";
-            return imgPath;
+            if (retVal.EndsWith(@"\") == false) retVal += @"\";
+
+            return retVal;
         }
         #endregion
 
@@ -139,6 +140,13 @@ namespace ClientOrderQueue.Lib
         #endregion
 
         #region WPF UI interface
+
+        public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight)
+        {
+            double cntStars = grid.RowDefinitions.Sum(r => r.Height.Value);
+            return grid.RowDefinitions[iRow].Height.Value / cntStars * totalHeight;
+        }
+
         public static bool IsAppVerticalLayout
         {
             get

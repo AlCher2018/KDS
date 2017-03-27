@@ -5,10 +5,59 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ClientOrderQueue"
         mc:Ignorable="d"
-        Title="ClientOrderQueue" Height="350" Width="525" Icon="ClientOrderQueue.ico">
+        Title="ClientOrderQueue" Width="1280" Height="720" Icon="ClientOrderQueue.ico">
     
-    <Grid>
-        <Image x:Name="backgroundImage" Stretch="Fill"/>
+    <Grid x:Name="mainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="8*"/>
+        </Grid.RowDefinitions>
+
+        <Image Grid.RowSpan="2" x:Name="backgroundImage" Stretch="Fill"/>
+
+        <Border x:Name="brdTitle" Grid.Row="0" Background="{StaticResource appBackgroundBrush}">
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="Статус заказов" DockPanel.Dock="Left" Foreground="{StaticResource appTitleForegroundBrush}" VerticalAlignment="Center" Margin="20,0,0,2" FontFamily="Arial Narrow" FontWeight="Bold" FontSize="{Binding ElementName=brdTitle, Path=ActualHeight, Converter={StaticResource multParamConv}, ConverterParameter=0.7}"/>
+                <Image x:Name="imgLogo" DockPanel.Dock="Right" Stretch="Uniform"/>
+            </DockPanel>
+        </Border>
+
+        <!-- grid 5x3 -->
+        <Grid x:Name="G15" Grid.Row="1" Visibility="Visible" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition/> <RowDefinition/> <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Path x:Name="ppp" Stroke="Magenta" Grid.Row="1" Grid.Column="1" StrokeThickness="10">
+                <Path.Data>
+                    <LineGeometry StartPoint="0,50" EndPoint="100,50"/>
+                </Path.Data>
+            </Path>
+            
+        </Grid>
+        <!-- grid 6x4 -->
+        <Grid x:Name="G24" Grid.Row="1" Visibility="Collapsed" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+        </Grid>
 
     </Grid>
 </Window>

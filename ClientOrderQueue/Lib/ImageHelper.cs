@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ClientOrderQueue.Lib
@@ -13,25 +15,33 @@ namespace ClientOrderQueue.Lib
         private static Dictionary<string, BitmapImage> _images = new Dictionary<string, BitmapImage>();
 
 
-        internal static System.Windows.Media.ImageSource GetBitmapImage(string imagePath)
+        internal static ImageSource GetBitmapImage(string imagePath)
         {
             if (imagePath == null) return null;
 
+            ImageSource retVal = null;
             if (_images.Any(i => i.Key == imagePath))
             {
-                return _images[imagePath];
+                retVal = _images[imagePath];
             }
             else
             {
                 if (!File.Exists(imagePath)) return null;
 
-                BitmapImage bi = new BitmapImage(new Uri(imagePath, UriKind.RelativeOrAbsolute));
-                _images.Add(imagePath, bi);
+                try
+                {
+                    BitmapImage bi = new BitmapImage(new Uri(imagePath, UriKind.RelativeOrAbsolute));
+                    _images.Add(imagePath, bi);
 
-                return _images[imagePath];
+                    retVal = _images[imagePath];
+                }
+                catch (Exception)
+                {
+                }
             }
 
-        }
+            return retVal;
+        }  // method
 
-    }
+    }  // class
 }

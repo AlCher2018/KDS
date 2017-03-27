@@ -76,6 +76,9 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="CellContainer.cs" />
+    <Compile Include="Converters.cs" />
     <Compile Include="QueueStatus.cs">
       <DependentUpon>DataModel.tt</DependentUpon>
     </Compile>
@@ -161,8 +164,21 @@
     <Content Include="Audio\1.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Resource Include="Images\bg 3hor 1920x1080 background.png" />
-    <Resource Include="Images\bg 3ver 1080x1920 background.png" />
+    <Content Include="Images\bg 3hor 1920x1080 background.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\bg 3ver 1080x1920 background.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\noodle.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Лого.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Resource Include="Images\bg 3hor 1920x1080 splash.png" />
     <Resource Include="Images\bg 3ver 1080x1920 splash.png" />
     <Resource Include="ClientOrderQueue.ico" />

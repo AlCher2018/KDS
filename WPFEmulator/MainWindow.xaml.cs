@@ -56,7 +56,7 @@ namespace WPFEmulator
         #region auto create order
         private void createAutoOrder()
         {
-            _orderTimer.Interval = rnd.Next(3, 5) * 1000d;
+            _orderTimer.Interval = 1000; // rnd.Next(2, 5) * 1000d;
             _orderTimer.Start();
         }
 
@@ -70,7 +70,7 @@ namespace WPFEmulator
                 {
                     _db.Order.Add(new Order()
                     {
-                        CreateDate = order.Date, LanguageTypeId = 2, Number = order.Number, QueueStatusId = order.StatusId,
+                        CreateDate = order.Date, LanguageTypeId = rnd.Next(1,3), Number = order.Number, QueueStatusId = order.StatusId,
                         OrderStatusId =0, DepartmentId=0,
                         UID = Guid.NewGuid().ToString(), TableNumber = "tableName", RoomNumber="roomName", StartDate=order.Date,
                         SpentTime =0, Waiter = "waiterName"
