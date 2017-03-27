@@ -76,9 +76,10 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppSettings.cs" />
-    <Compile Include="CellContainer.cs" />
-    <Compile Include="Converters.cs" />
+    <Compile Include="Model\AppSettings.cs" />
+    <Compile Include="Model\CellContainer.cs" />
+    <Compile Include="Lib\Converters.cs" />
+    <Compile Include="Model\CellBrushes.cs" />
     <Compile Include="QueueStatus.cs">
       <DependentUpon>DataModel.tt</DependentUpon>
     </Compile>
@@ -174,6 +175,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\noodle.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\statusReadyImage.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Лого.png">

@@ -1,4 +1,5 @@
 ﻿using ClientOrderQueue.Lib;
+using ClientOrderQueue.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +45,7 @@ namespace ClientOrderQueue
         {
             Size mainGridSize = getMainGridSize();
             int rowsCount = grid.RowDefinitions.Count, colsCount = grid.ColumnDefinitions.Count;
+            App app = (Application.Current as App);
 
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
@@ -51,7 +53,7 @@ namespace ClientOrderQueue
             for (int i = 0; i < rowsCount; i++)
                 for (int j = 0; j < colsCount; j++)
                 {
-                    CellContainer cc = new CellContainer(cellWidth, cellHeight);
+                    CellContainer cc = new CellContainer(cellWidth, cellHeight, app.cellBrushes, app.statusTitleLang, app.statusLang);
                     Grid.SetRow(cc, i); Grid.SetColumn(cc, j);
                     grid.Children.Add(cc);
                 }

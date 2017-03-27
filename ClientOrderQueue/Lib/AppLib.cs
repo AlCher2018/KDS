@@ -118,7 +118,7 @@ namespace ClientOrderQueue.Lib
         // получить глобальное значение приложения из его свойств
         public static object GetAppGlobalValue(string key, object defaultValue = null)
         {
-            IDictionary dict = App.Current.Properties;
+            IDictionary dict = Application.Current.Properties;
             if (dict.Contains(key) == false) return defaultValue;
             else return dict[key];
         }
@@ -126,7 +126,7 @@ namespace ClientOrderQueue.Lib
         // установить глобальное значение приложения (в свойствах приложения)
         public static void SetAppGlobalValue(string key, object value)
         {
-            IDictionary dict = App.Current.Properties;
+            IDictionary dict = Application.Current.Properties;
             if (dict.Contains(key) == false)  // если еще нет значения в словаре
             {
                 dict.Add(key, value);   // то добавить

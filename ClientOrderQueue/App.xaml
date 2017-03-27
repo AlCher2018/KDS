@@ -1,36 +1,26 @@
 ﻿<Application x:Class="ClientOrderQueue.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ClientOrderQueue">
+             xmlns:local="clr-namespace:ClientOrderQueue"
+             xmlns:locLib="clr-namespace:ClientOrderQueue.Lib"
+             >
     <Application.Resources>
+        <Color x:Key="appTitleBackgroundColor" R="122" G="34" B="104" A="255"/>
+        <Color x:Key="appTitleForegroundColor" R="255" G="200" B="62" A="255"/>
+        <Color x:Key="statusCookingColor" R="254" G="198" B="63" A="255"/>
+        <Color x:Key="statusCookedColor" R="101" G="224" B="67" A="255"/>
+        
         <!-- Кисть фона заголовка окна (dark pink) -->
-        <SolidColorBrush x:Key="appBackgroundBrush">
-            <SolidColorBrush.Color>
-                <Color R="122" G="34" B="104" A="255"/>
-            </SolidColorBrush.Color>
-        </SolidColorBrush>
+        <SolidColorBrush x:Key="appTitleBackgroundBrush" Color="{StaticResource appTitleBackgroundColor}"/>
         <!-- Кисть шрифта в заголовке окна (dark yellow)-->
-        <SolidColorBrush x:Key="appTitleForegroundBrush">
-            <SolidColorBrush.Color>
-                <Color R="255" G="200" B="62" A="255"/>
-            </SolidColorBrush.Color>
-        </SolidColorBrush>
+        <SolidColorBrush x:Key="appTitleForegroundBrush" Color="{StaticResource appTitleForegroundColor}"/>
         <!-- Кисть фона состояния Готовится (yellow) -->
-        <SolidColorBrush x:Key="appCookingBrush">
-            <SolidColorBrush.Color>
-                <Color R="254" G="198" B="63" A="255"/>
-            </SolidColorBrush.Color>
-        </SolidColorBrush>
+        <SolidColorBrush x:Key="statusCookingBrush" Color="{StaticResource statusCookingColor}"/>
         <!-- Кисть фона состояния Готов (green) -->
-        <SolidColorBrush x:Key="appCookedBrush">
-            <SolidColorBrush.Color>
-                <Color R="101" G="224" B="67" A="255"/>
-            </SolidColorBrush.Color>
-        </SolidColorBrush>
+        <SolidColorBrush x:Key="statusCookedBrush" Color="{StaticResource statusCookedColor}"/>
 
-
-        <local:MultiplyParamValueConverter x:Key="multParamConv"/>
-        <local:GetMargin x:Key="getMargin"/>
+        <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
+        <locLib:GetMargin x:Key="getMargin"/>
 
     </Application.Resources>
 </Application>

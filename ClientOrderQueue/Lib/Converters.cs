@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ClientOrderQueue
+namespace ClientOrderQueue.Lib
 {
     [ValueConversion(typeof(double), typeof(double))]
     public class MultiplyParamValueConverter : IValueConverter

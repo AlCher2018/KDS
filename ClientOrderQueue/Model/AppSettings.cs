@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
-namespace ClientOrderQueue
+namespace ClientOrderQueue.Model
 {
     public static class AppSettings
     {
