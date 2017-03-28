@@ -32,7 +32,7 @@ namespace ClientOrderQueue
             //    Environment.Exit(3);
             //}
 
-            AppLib.WriteLogInfoMessage("************  Start application  **************");
+            AppLib.WriteLogInfoMessage("************  Start application  *************");
             App app = new App();
             app.cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes()};
 
@@ -43,13 +43,16 @@ namespace ClientOrderQueue
             splashScreen.Show(true);
 
             app.InitializeComponent();          // определенные в app.xaml
+
+            AppLib.WriteLogTraceMessage("-- создание сетки для меток...");
             setCellBrushes(app);
             setCellLangTexts(app);
+            AppLib.WriteLogTraceMessage("-- создание сетки для меток - READY");
 
             MainWindow mWindow = new MainWindow();
             app.Run(mWindow);
 
-            AppLib.WriteLogInfoMessage("************  End application  ************");
+            AppLib.WriteLogInfoMessage("************  End application    *************");
         }
 
         private static void setCellBrushes(App app)

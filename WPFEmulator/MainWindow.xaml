@@ -14,10 +14,31 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="1.5*"/>
                 </Grid.ColumnDefinitions>
-                <RadioButton x:Name="rbAuto" Content="автоматичиски" Checked="rbAuto_Checked" GroupName="genMode"/>
+
+                <StackPanel Grid.Column="0">
+                    <RadioButton x:Name="rbAuto" Content="автоматически" Checked="rbAuto_Checked" GroupName="genMode"/>
+                    <ToggleButton x:Name="btnPause" IsThreeState="False" Checked="btnPause_Checked" Unchecked="btnPause_Unchecked" Content="Пауза" HorizontalAlignment="Left" Margin="10" Padding="10,3">
+                        <ToggleButton.Effect>
+                            <DropShadowEffect BlurRadius="10" ShadowDepth="3"/>
+                        </ToggleButton.Effect>
+                    </ToggleButton>
+                    <ToggleButton x:Name="btnPauseOnlyOrders" IsThreeState="False" Checked="btnPauseOnlyOrders_Checked" Unchecked="btnPauseOnlyOrders_Unchecked" Content="Пауза только заказов" HorizontalAlignment="Left" Margin="10,0" Padding="10,3">
+                        <ToggleButton.Effect>
+                            <DropShadowEffect BlurRadius="10" ShadowDepth="3"/>
+                        </ToggleButton.Effect>
+                    </ToggleButton>
+                </StackPanel>
+                
                 <StackPanel Grid.Column="1">
                     <RadioButton x:Name="rbManual" Content="вручную" Grid.Column="1" Checked="rbManual_Checked" GroupName="genMode"/>
-                    <Button x:Name="createOrder" Grid.Column="1" Content="создать заказ" Padding="7,3" HorizontalAlignment="Left" Margin="20,10,0,0" Click="createOrder_Click"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="20,10,0,0">
+                        <Button x:Name="createOrder" Grid.Column="1" Content="создать заказ" Padding="7,3" HorizontalAlignment="Left" Click="createOrder_Click"/>
+                        <RadioButton x:Name="rbUa" Content="ua" VerticalAlignment="Center" Margin="10,0,0,0" GroupName="orderLang" Click="rbLang_Click" IsThreeState="False"/>
+                        <RadioButton x:Name="rbRu" Content="ru" VerticalAlignment="Center" Margin="10,0,0,0" GroupName="orderLang" Click="rbLang_Click" IsThreeState="False"/>
+                        <RadioButton x:Name="rbEn" Content="en" VerticalAlignment="Center" Margin="10,0,0,0" GroupName="orderLang" Click="rbLang_Click" IsThreeState="False"/>
+                    </StackPanel>
+                    
                     <GroupBox Padding="5">
                         <GroupBox.Header>
                             <StackPanel Orientation="Horizontal">
@@ -42,7 +63,8 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="0.5*"/>
+                            <ColumnDefinition Width="0.5*"/>
                         </Grid.ColumnDefinitions>
                         
                         <TextBlock Grid.Column="0" VerticalAlignment="Center">
@@ -50,12 +72,12 @@
                             <Run Text="{Binding Date, Mode=OneWay, StringFormat={}{0:.fff}}" FontSize="10"/>
                         </TextBlock>
                         
-                        <TextBlock Grid.Column="1" Margin="20,0" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
                             <Run Text="Заказ №"/>
                             <Run Text="{Binding Number, Mode=OneWay}"  FontFamily="Impact"/>
                         </TextBlock>
-                        
-                        <TextBlock x:Name="tbStatus" Grid.Column="2" Text="{Binding StatusName}" VerticalAlignment="Center">
+
+                        <TextBlock x:Name="tbStatus" Grid.Column="2" Text="{Binding StatusName}" VerticalAlignment="Center" Margin="20,0,0,0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -72,7 +94,9 @@
                             </TextBlock.Style>
                         </TextBlock>
 
-                        <TextBlock Grid.Column="3" Text="{Binding SpanString, TargetNullValue=''}" Margin="20,0,0,0" FontSize="14" Foreground="Red" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="{Binding SpanString, TargetNullValue=''}" FontSize="14" Foreground="Red" VerticalAlignment="Center" Margin="20,0,0,0"/>
+
+                        <TextBlock Grid.Column="4" Text="{Binding LanguageName}" FontSize="14" Foreground="Blue" VerticalAlignment="Center" Margin="20,0,0,0"/>
 
                     </Grid>
                 </DataTemplate>

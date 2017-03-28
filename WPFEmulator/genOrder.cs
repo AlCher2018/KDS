@@ -9,6 +9,7 @@ namespace WPFEmulator
 {
     public class genOrder
     {
+        private string[] _langNames = { "укр","рус","анг"};
         private string[] _statusNames = { "Готовится", "ГОТОВ", "ВЫДАН" };
 
         private Timer _timer;
@@ -25,8 +26,13 @@ namespace WPFEmulator
         public int StatusId { get { return _statusId; } }
         public string StatusName { get { return _statusNames[StatusId]; } }
 
+        public int LanguageTypeId { get; set; }
+
+        // ctor
         public genOrder(bool isAutoChangeStatus)
         {
+            LanguageTypeId = 2;
+
             _rnd = new Random();
             _timer = new Timer();
             _timer.AutoReset = false;
@@ -37,7 +43,7 @@ namespace WPFEmulator
 
             if (isAutoChangeStatus)
             {
-                _timer.Interval = _rnd.Next(10, 30) * 1000d;
+                _timer.Interval = _rnd.Next(8, 20) * 1000d;
                 _timer.Start();
             }
         }
@@ -54,13 +60,24 @@ namespace WPFEmulator
             else
             {
                 this.Date1 = DateTime.Now;
-                _timer.Interval = _rnd.Next(2, 6) * 1000d;
+                _timer.Interval = _rnd.Next(2, 5) * 1000d;
                 _timer.Start();
             }
 
             if (OrderStatusChanged != null) OrderStatusChanged(this, new genOrderStatusChangedArgs() { StatusId = _statusId, StatusName = this.StatusName });
 
         }
+
+        public void StartTimer()
+        {
+            _timer.Start();
+        }
+        public void StopTimer()
+        {
+            _timer.Stop();
+        }
+
+
     }  // class genOrder
 
     public class genOrderStatusChangedArgs: EventArgs

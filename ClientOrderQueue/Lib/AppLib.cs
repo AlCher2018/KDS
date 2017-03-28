@@ -18,35 +18,23 @@ namespace ClientOrderQueue.Lib
         static AppLib()
         {
             // логгер приложения
-            AppLogger = NLog.LogManager.GetCurrentClassLogger();
+            AppLogger = NLog.LogManager.GetLogger("appLogger");
         }
 
         #region app logger
         public static void WriteLogTraceMessage(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages")) AppLogger.Trace(string.Format("{0}: {1}", DateTime.Now.ToString(), msg));
-        }
-        public static void WriteLogTraceMessage(string format, params string[] values)
-        {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages")) AppLogger.Trace(format, values);
+            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool()) AppLogger.Trace(string.Format("{0}", msg));
         }
 
         public static void WriteLogInfoMessage(string msg)
         {
             AppLogger.Info(msg);
         }
-        public static void WriteLogInfoMessage(string format, params string[] values)
-        {
-            AppLogger.Info(format, values);
-        }
 
         public static void WriteLogErrorMessage(string msg)
         {
             AppLogger.Error(msg);
-        }
-        public static void WriteLogErrorMessage(string format, params string[] values)
-        {
-            AppLogger.Error(format, values);
         }
         #endregion
 

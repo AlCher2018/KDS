@@ -4,9 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ClientOrderQueue"
-        mc:Ignorable="d"
-        Title="ClientOrderQueue" Width="1280" Height="720" Icon="ClientOrderQueue.ico">
-    
+        mc:Ignorable="d" WindowState="Maximized"  WindowStyle="None" 
+        Title="ClientOrderQueue" Width="1920" Height="1080" Icon="ClientOrderQueue.ico">
+
     <Grid x:Name="mainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -16,16 +16,24 @@
         <Image Grid.RowSpan="2" x:Name="backgroundImage" Stretch="Fill"/>
 
         <Border x:Name="brdTitle" Grid.Row="0" Background="{StaticResource appTitleBackgroundBrush}">
-            <DockPanel LastChildFill="False">
-                <TextBlock Text="Статус заказов" DockPanel.Dock="Left" Foreground="{StaticResource appTitleForegroundBrush}" VerticalAlignment="Center" Margin="20,0,0,2" FontFamily="Arial Narrow" FontWeight="Bold" FontSize="{Binding ElementName=brdTitle, Path=ActualHeight, Converter={StaticResource multParamConv}, ConverterParameter=0.7}"/>
-                <Image x:Name="imgLogo" DockPanel.Dock="Right" Stretch="Uniform"/>
-            </DockPanel>
+            <Grid Margin="20,0,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.5*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов"  Foreground="{StaticResource appTitleForegroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial Narrow" FontWeight="Bold"/>
+
+                <Image x:Name="imgLogo" Grid.Column="1" HorizontalAlignment="Right" Stretch="Uniform"/>
+            </Grid>
         </Border>
 
         <!-- grid 5x3 -->
         <Grid x:Name="G15" Grid.Row="1" Visibility="Visible" Margin="10">
             <Grid.RowDefinitions>
-                <RowDefinition/> <RowDefinition/> <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>

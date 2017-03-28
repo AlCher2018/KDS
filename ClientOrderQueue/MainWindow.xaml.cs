@@ -36,9 +36,14 @@ namespace ClientOrderQueue
             createGridContainers(G15);
             createGridContainers(G24);
 
-            updateTimer.Tick += new EventHandler(updateTimerTimer_Tick);
+            updateTimer.Tick += new EventHandler(updateTimer_Tick);
             updateTimer.Interval = new TimeSpan(0, 0, 0, 1, 0);
             updateTimer.Start();
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            setLayoutAfterLoaded(); // Logo image
         }
 
         private void createGridContainers(Grid grid)
@@ -62,26 +67,75 @@ namespace ClientOrderQueue
 
         #region update timer
 
-        private void updateTimerTimer_Tick(object sender, EventArgs e)
+        private void updateTimer_Tick(object sender, EventArgs e)
         {
+            AppLib.WriteLogTraceMessage("-- обновление данных...");
+
+            updateTimer.Stop();
+            //DateTime dt1 = DateTime.Now;
             loadItems();
+            //System.Diagnostics.Debug.Print("-- " + DateTime.Now.Subtract(dt1).TotalMilliseconds);
+            updateTimer.Start();
+
+            AppLib.WriteLogTraceMessage("-- обновление данных - READY");
         }
 
         private void loadItems()
         {
+            AppLib.WriteLogTraceMessage("---- получение данных...");
             List<Order> orders = getOrders();
-            if ((orders == null) || (orders.Count == 0)) return;
+            AppLib.WriteLogTraceMessage("---- получение данных - READY (получено " + orders.Count.ToString() + " записей)");
+
+            if ((orders == null) || (orders.Count == 0))
+            {
+                hideCells(G15); hideCells(G24);
+                return;
+            }
 
             if (orders.Count <= 15)
             {
-
+                fillCells(G15, orders);
                 setGridVisibility(G24, Visibility.Collapsed);
                 setGridVisibility(G15 , Visibility.Visible);
             }
             else
             {
+                fillCells(G24, orders);
                 setGridVisibility(G15, Visibility.Collapsed);
                 setGridVisibility(G24, Visibility.Visible);
+            }
+        }
+
+        private void hideCells(Grid grid)
+        {
+            CellContainer cc;
+            for (int i = 0; i < grid.Children.Count; i++)
+            {
+                cc = (CellContainer)G15.Children[i];
+                if (cc.CellVisible) cc.CellVisible = false;
+                else break;
+            }
+        }
+
+        private void fillCells(Grid grid, List<Order> orders)
+        {
+            int rowCount = grid.RowDefinitions.Count;
+            int colCount = grid.ColumnDefinitions.Count;
+            int listIndex;
+            for (int i = 0; i < rowCount; i++)
+            {
+                for (int j = 0; j < colCount; j++)
+                {
+                    listIndex = (i * colCount) + j;
+                    CellContainer cc = (CellContainer)grid.Children[listIndex];
+                    if (listIndex < orders.Count)
+                    {
+                        Order o = orders[listIndex];
+                        cc.SetOrderData(o.Number, o.LanguageTypeId, o.QueueStatusId);
+                    }
+                    else
+                        cc.Clear();
+                }
             }
         }
 
@@ -97,7 +151,8 @@ namespace ClientOrderQueue
             {
                 using (KDSContext db = new KDSContext())
                 {
-                    retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
+                    //retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
+                    retVal = (from o in db.Order where o.QueueStatusId < 2 orderby o.Number select o).ToList();
                 }
             }
             catch (Exception ex)
@@ -119,6 +174,9 @@ namespace ClientOrderQueue
             if (AppLib.IsAppVerticalLayout)
             {
                 bgImageFile = AppLib.GetFullFileName(bgImageFile, "bg 3ver 1080x1920 background.png");
+                // пересоздать кол-во строк и столбцов
+                transposeGrid(G15);
+                transposeGrid(G24);
             }
             else
             {
@@ -128,15 +186,31 @@ namespace ClientOrderQueue
             setBackgroundImage(bgImageFile); // фон
         }
 
-        private void setLogoImage()
+        private void transposeGrid(Grid grid)
         {
+            int newColCount = grid.RowDefinitions.Count - 1;
+            int newRowCount = grid.ColumnDefinitions.Count + 1;
+
+            grid.RowDefinitions.Clear(); grid.ColumnDefinitions.Clear();
+
+            for (int i = 0; i < newRowCount; i++) grid.RowDefinitions.Add(new RowDefinition());
+            for (int i = 0; i < newColCount; i++) grid.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+
+        private void setLayoutAfterLoaded()
+        {
+            // main title
+            double fontSize = ((AppLib.IsAppVerticalLayout) ? 0.4 : 0.5) * brdTitle.ActualHeight;
+            tbMainTitle.FontSize = fontSize;
+
+            // logo image
             string logoFile = AppLib.GetAppSetting("LogoImage");
             if (logoFile != null)
             {
                 logoFile = AppLib.GetFullFileName(AppLib.GetAppSetting("ImagesPath"), logoFile);
                 double d1 = 0.2 * brdTitle.ActualHeight;
                 imgLogo.Source = ImageHelper.GetBitmapImage(logoFile);
-                imgLogo.Margin = new Thickness(0, d1, d1, d1);
+                imgLogo.Margin = new Thickness(0,d1,0,d1);
             }
         }
 
@@ -150,11 +224,6 @@ namespace ClientOrderQueue
             {
                 backgroundImage.Opacity = opacity.ToDouble();
             }
-        }
-
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            setLogoImage(); // Logo image
         }
 
         private Size getMainGridSize()

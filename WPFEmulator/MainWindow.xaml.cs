@@ -22,6 +22,8 @@ namespace WPFEmulator
     /// </summary>
     public partial class MainWindow : Window
     {
+        private string[] _langNames = { "укр", "рус", "анг" };
+
         private ObservableCollection<genOrder> _orders = new ObservableCollection<genOrder>();
         private ObservableCollection<genOrderStatus> _ordersStatus = new ObservableCollection<genOrderStatus>();
         private Timer _orderTimer = new Timer();
@@ -46,11 +48,14 @@ namespace WPFEmulator
             lbOrders.ItemsSource = _ordersStatus;
             //rbAuto.IsChecked = true;
             rbManual.IsChecked = true;
+            rbRu.IsChecked = true;
         }
 
         private void rbAuto_Checked(object sender, RoutedEventArgs e)
         {
             createAutoOrder();
+            btnPause.Visibility = Visibility.Visible;
+            btnPauseOnlyOrders.Visibility = Visibility.Visible;
         }
 
         #region auto create order
@@ -64,15 +69,25 @@ namespace WPFEmulator
         {
             this.Dispatcher.Invoke((Action)delegate
             {
-                genOrder order = new genOrder(rbAuto.IsChecked ?? false) { Number = _currNumber++ };
+                genOrder order = new genOrder(rbAuto.IsChecked ?? false) {
+                    Number = _currNumber++,
+                    LanguageTypeId = rnd.Next(1, 4)
+                };
                 order.OrderStatusChanged += NewOrder_StatusEventHandler;
+
                 lock (_threadLockObj)
                 {
                     _db.Order.Add(new Order()
                     {
-                        CreateDate = order.Date, LanguageTypeId = rnd.Next(1,3), Number = order.Number, QueueStatusId = order.StatusId,
+                        CreateDate = order.Date,
+                        LanguageTypeId = order.LanguageTypeId,
+                        Number = order.Number,
+                        QueueStatusId = order.StatusId,
                         OrderStatusId =0, DepartmentId=0,
-                        UID = Guid.NewGuid().ToString(), TableNumber = "tableName", RoomNumber="roomName", StartDate=order.Date,
+                        UID = Guid.NewGuid().ToString(),
+                        TableNumber = "tableName",
+                        RoomNumber ="roomName",
+                        StartDate =order.Date,
                         SpentTime =0, Waiter = "waiterName"
                     });
                     _db.SaveChanges();
@@ -95,16 +110,16 @@ namespace WPFEmulator
                 {
                     lock (_threadLockObj)
                     {
-                        genOrderStatus os = addListStatusItem(order);
-                        setDBOrderStatus(os);
+                        setDBOrderStatus(order.Number, order.StatusId);
+                        addListStatusItem(order);
                     }
                 }
                 else if (e.StatusId == 2)
                 {
                     lock (_threadLockObj)
                     {
-                        genOrderStatus os = addListStatusItem(order);
-                        setDBOrderStatus(os);
+                        setDBOrderStatus(order.Number, order.StatusId);
+                        addListStatusItem(order);
 
                         order.OrderStatusChanged -= NewOrder_StatusEventHandler;
                         _orders.Remove(order);
@@ -114,14 +129,16 @@ namespace WPFEmulator
             });
         }
 
-        private genOrderStatus addListStatusItem(genOrder order)
+        private void addListStatusItem(genOrder order)
         {
             genOrderStatus os = new genOrderStatus()
             {
                 Number = order.Number,
                 StatusId = order.StatusId,
                 StatusName = order.StatusName,
-                Date = order.Date
+                Date = order.Date,
+                LanguageId = order.LanguageTypeId,
+                LanguageName = _langNames[order.LanguageTypeId-1]
             };
             if (os.StatusId == 1)
             {
@@ -136,16 +153,14 @@ namespace WPFEmulator
 
             _ordersStatus.Add(os);
             lbOrders.ScrollIntoView(os);
-
-            return os;
         }
 
-        private void setDBOrderStatus(genOrderStatus gOrder)
+        private void setDBOrderStatus(int number, int statusId)
         {
-            Order dbOrder = _db.Order.FirstOrDefault(o => o.Number == gOrder.Number);
+            Order dbOrder = _db.Order.FirstOrDefault(o => o.Number == number);
             if (dbOrder != null)
             {
-                dbOrder.QueueStatusId = gOrder.StatusId;
+                dbOrder.QueueStatusId = statusId;
                 _db.SaveChanges();
             }
         }
@@ -153,7 +168,9 @@ namespace WPFEmulator
 
         private void rbManual_Checked(object sender, RoutedEventArgs e)
         {
-            _orderTimer.Stop();
+            setTimers(false,false);
+            btnPause.Visibility = Visibility.Hidden;
+            btnPauseOnlyOrders.Visibility = Visibility.Hidden;
         }
 
         private FrameworkElement FindVisualChildrenByName(DependencyObject objectFrom, string childName)
@@ -179,13 +196,16 @@ namespace WPFEmulator
 
         private void createOrder_Click(object sender, RoutedEventArgs e)
         {
-            genOrder order = new genOrder(false) { Number = _currNumber++};
+            genOrder order = new genOrder(false) {
+                Number = _currNumber++, LanguageTypeId = getSelectLang()
+            };
+
             lock (_threadLockObj)
             {
                 _db.Order.Add(new Order()
                 {
                     CreateDate = order.Date,
-                    LanguageTypeId = 2,
+                    LanguageTypeId = order.LanguageTypeId,
                     Number = order.Number,
                     QueueStatusId = order.StatusId,
                     OrderStatusId = 0,
@@ -262,7 +282,7 @@ namespace WPFEmulator
 
         private void updateBindStatus(genOrderStatus os)
         {
-            setDBOrderStatus(os);
+            setDBOrderStatus(os.Number, os.StatusId);
 
             DependencyObject obj = lbOrders.ItemContainerGenerator.ContainerFromItem(os);
             FrameworkElement tbStatus = FindVisualChildrenByName((FrameworkElement)obj, "tbStatus");
@@ -298,7 +318,77 @@ namespace WPFEmulator
             _enableEvents = true;
         }
 
+        private void btnPause_Checked(object sender, RoutedEventArgs e)
+        {
+            btnPause.Content = "Продолжить";
+            btnPause.Foreground = Brushes.Red;
+            btnPause.FontWeight = FontWeights.Bold;
 
+            System.Windows.Media.Effects.DropShadowEffect effect = (System.Windows.Media.Effects.DropShadowEffect)btnPause.Effect;
+            effect.BlurRadius = 0; effect.ShadowDepth = 0;
+
+            setTimers(false, false);
+        }
+
+        private void btnPause_Unchecked(object sender, RoutedEventArgs e)
+        {
+            btnPause.Content = "Пауза всех таймеров";
+            btnPause.Foreground = Brushes.Black;
+            btnPause.FontWeight = FontWeights.Normal;
+
+            System.Windows.Media.Effects.DropShadowEffect effect = (System.Windows.Media.Effects.DropShadowEffect)btnPause.Effect;
+            effect.BlurRadius = 10; effect.ShadowDepth = 3;
+
+            setTimers(true, false);
+        }
+
+        private void btnPauseOnlyOrders_Checked(object sender, RoutedEventArgs e)
+        {
+            btnPauseOnlyOrders.Content = "Продолжить (только заказы)";
+            btnPauseOnlyOrders.Foreground = Brushes.Red;
+            btnPauseOnlyOrders.FontWeight = FontWeights.Bold;
+
+            System.Windows.Media.Effects.DropShadowEffect effect = (System.Windows.Media.Effects.DropShadowEffect)btnPauseOnlyOrders.Effect;
+            effect.BlurRadius = 0; effect.ShadowDepth = 0;
+
+            setTimers(false, true);
+        }
+
+        private void btnPauseOnlyOrders_Unchecked(object sender, RoutedEventArgs e)
+        {
+            btnPauseOnlyOrders.Content = "Пауза (только заказы)";
+            btnPauseOnlyOrders.Foreground = Brushes.Black;
+            btnPauseOnlyOrders.FontWeight = FontWeights.Normal;
+
+            System.Windows.Media.Effects.DropShadowEffect effect = (System.Windows.Media.Effects.DropShadowEffect)btnPauseOnlyOrders.Effect;
+            effect.BlurRadius = 10; effect.ShadowDepth = 3;
+
+            setTimers(true, true);
+        }
+
+        private void setTimers(bool isRun, bool onlyOrders)
+        {
+            if (isRun) {
+                _orderTimer.Start();
+                if (onlyOrders == false) foreach (genOrder gOrd in _orders) gOrd.StartTimer();
+            }
+            else {
+                _orderTimer.Stop();
+                if (onlyOrders == false) foreach (genOrder gOrd in _orders) gOrd.StopTimer();
+            }
+
+        }
+
+        private void rbLang_Click(object sender, RoutedEventArgs e)
+        {
+            int selLang = getSelectLang();
+//            MessageBox.Show("select lang - " + selLang.ToString());
+        }
+
+        private int getSelectLang()
+        {
+            return (rbUa.IsChecked ?? false) ? 1 : (rbRu.IsChecked ?? false) ? 2 : 3;
+        }
 
     }  // class
 }
