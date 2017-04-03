@@ -12,7 +12,7 @@ using System.Data.Entity;
 using System.Data.SqlClient;
 
 
-namespace ClientOrderQueue.Lib
+namespace KDS.Lib
 {
     public static class AppLib
     {

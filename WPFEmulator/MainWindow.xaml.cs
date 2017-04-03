@@ -29,7 +29,7 @@ namespace WPFEmulator
         private Timer _orderTimer = new Timer();
         private Random rnd = new Random();
 
-        private int _currNumber = 123;
+        private int _currNumber = 10123;
         private object _threadLockObj;
         private KDSContext _db;
         private bool _enableEvents;

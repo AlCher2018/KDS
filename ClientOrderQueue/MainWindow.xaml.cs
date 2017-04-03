@@ -19,10 +19,13 @@ namespace ClientOrderQueue
         private System.Media.SoundPlayer simpleSound = null;
         private DispatcherTimer updateTimer = new DispatcherTimer();
 
+        private List<int> _cookingIds;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            _cookingIds = new List<int>();
 
             string statusReadyAudioFile = AppLib.GetFullFileName(AppLib.GetAppSetting("AudioPath"), AppLib.GetAppSetting("StatusReadyAudioFile"));
             if (System.IO.File.Exists(statusReadyAudioFile))
@@ -69,22 +72,21 @@ namespace ClientOrderQueue
 
         private void updateTimer_Tick(object sender, EventArgs e)
         {
-            AppLib.WriteLogTraceMessage("-- обновление данных...");
-
             updateTimer.Stop();
-            //DateTime dt1 = DateTime.Now;
+#if DEBUG
+            DateTime dt1 = DateTime.Now;
+#endif
             loadItems();
-            //System.Diagnostics.Debug.Print("-- " + DateTime.Now.Subtract(dt1).TotalMilliseconds);
-            updateTimer.Start();
 
-            AppLib.WriteLogTraceMessage("-- обновление данных - READY");
+#if DEBUG
+            System.Diagnostics.Debug.Print("-- " + DateTime.Now.Subtract(dt1).TotalMilliseconds);
+#endif
+            updateTimer.Start();
         }
 
         private void loadItems()
         {
-            AppLib.WriteLogTraceMessage("---- получение данных...");
             List<Order> orders = getOrders();
-            AppLib.WriteLogTraceMessage("---- получение данных - READY (получено " + orders.Count.ToString() + " записей)");
 
             if ((orders == null) || (orders.Count == 0))
             {
@@ -112,13 +114,16 @@ namespace ClientOrderQueue
             for (int i = 0; i < grid.Children.Count; i++)
             {
                 cc = (CellContainer)G15.Children[i];
-                if (cc.CellVisible) cc.CellVisible = false;
+                if (cc.CellVisible) cc.Clear();
                 else break;
             }
         }
 
         private void fillCells(Grid grid, List<Order> orders)
         {
+            List<int> s0 = new List<int>();
+            bool isCooked = false;
+
             int rowCount = grid.RowDefinitions.Count;
             int colCount = grid.ColumnDefinitions.Count;
             int listIndex;
@@ -132,11 +137,16 @@ namespace ClientOrderQueue
                     {
                         Order o = orders[listIndex];
                         cc.SetOrderData(o.Number, o.LanguageTypeId, o.QueueStatusId);
+
+                        if (o.QueueStatusId == 0) s0.Add(o.Id);
+                        else if ((o.QueueStatusId == 1) && (isCooked == false) && (_cookingIds.Contains(o.Id))) isCooked = true;
                     }
                     else
                         cc.Clear();
                 }
             }
+            _cookingIds = s0;
+            if ((isCooked) && (simpleSound != null)) simpleSound.Play();
         }
 
         private void setGridVisibility(Grid grid, Visibility visi)
@@ -163,9 +173,9 @@ namespace ClientOrderQueue
             return retVal;
         }
 
-        #endregion
+#endregion
 
-        #region set elements
+#region set elements
 
         private void setAppLayout()
         {
@@ -208,7 +218,7 @@ namespace ClientOrderQueue
             if (logoFile != null)
             {
                 logoFile = AppLib.GetFullFileName(AppLib.GetAppSetting("ImagesPath"), logoFile);
-                double d1 = 0.2 * brdTitle.ActualHeight;
+                double d1 = 0.15 * brdTitle.ActualHeight;
                 imgLogo.Source = ImageHelper.GetBitmapImage(logoFile);
                 imgLogo.Margin = new Thickness(0,d1,0,d1);
             }
@@ -235,7 +245,7 @@ namespace ClientOrderQueue
             return new Size(gridW, gridH);
         }
 
-        #endregion
+#endregion
 
 
     }  // class

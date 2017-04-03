@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPFEmulator"
         mc:Ignorable="d"
-        Title="MainWindow" Height="752" Width="484">
+        Title="Order Flow Emulator" Height="752" Width="484">
     <DockPanel LastChildFill="True">
         
         <GroupBox DockPanel.Dock="Top" Header="Генерация заказов" Margin="10" Padding="10,10,10,0" VerticalAlignment="Top">

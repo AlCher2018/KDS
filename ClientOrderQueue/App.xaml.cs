@@ -3,9 +3,6 @@ using ClientOrderQueue.Model;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
@@ -17,21 +14,13 @@ namespace ClientOrderQueue
     public partial class App : Application
     {
         public CellBrushes[] cellBrushes;
+        public double orderNumberFontSize = 0;
         public string[] statusTitleLang;
         public string[][] statusLang;
 
         [STAThread]
         public static void Main()
         {
-            // номер устройства - не число!
-            //if (AppLib.GetAppSetting("ssdID").IsNumber() == false)
-            //{
-            //    AppLib.WriteLogErrorMessage("** Номер устройства - НЕ ЧИСЛО !! **");
-            //    AppLib.WriteLogInfoMessage("************  End application  ************");
-            //    MessageBox.Show("Номер устройства - НЕ ЧИСЛО!!");
-            //    Environment.Exit(3);
-            //}
-
             AppLib.WriteLogInfoMessage("************  Start application  *************");
             App app = new App();
             app.cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes()};
@@ -42,7 +31,16 @@ namespace ClientOrderQueue
             SplashScreen splashScreen = new SplashScreen(fileName);
             splashScreen.Show(true);
 
-            app.InitializeComponent();          // определенные в app.xaml
+            // проверка доступа к БД
+            if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
+            {
+                MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+                App.Current.Shutdown(1);
+            }
+
+            // настройка приложения
+            app.InitializeComponent();  // определенные в app.xaml
+            app.orderNumberFontSize = AppLib.GetAppSetting("OrderNumberFontSize").ToDouble();
 
             AppLib.WriteLogTraceMessage("-- создание сетки для меток...");
             setCellBrushes(app);

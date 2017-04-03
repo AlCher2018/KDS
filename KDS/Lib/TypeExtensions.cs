@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace ClientOrderQueue.Lib
+namespace KDS.Lib
 {
     public static class StringExtensions
     {

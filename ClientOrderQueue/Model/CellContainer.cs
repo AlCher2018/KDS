@@ -23,18 +23,17 @@ namespace ClientOrderQueue.Model
         private TextBlock _tbStatusTitle, _tbStatusName;
         private Run _tbNumber;
         private Image _imgStatusReady;
+        private bool _isVisible;
 
-        public bool CellVisible
-        {
-            get { return (base.Visibility == Visibility.Visible); }
-            set { if (value) base.Visibility = Visibility.Visible; else Clear(); }
-        }
+        public bool CellVisible { get { return _isVisible; } }
 
         public CellContainer(double width, double height, CellBrushes[] cellBrushes, string[] statusTitleLang, string[][] statusLang)
         {
             _brushes = cellBrushes;
             _statusTitleLang = statusTitleLang;
             _statusLang = statusLang;
+            _isVisible = false;
+            base.Visibility = Visibility.Collapsed;
 
             double dMin = Math.Min(width, height);
             double d1, d2;
@@ -42,7 +41,6 @@ namespace ClientOrderQueue.Model
             base.CornerRadius = new System.Windows.CornerRadius(0.1 * dMin);
             d1 = 0.03 * dMin;
             base.Margin = new System.Windows.Thickness(d1);
-            base.Visibility = Visibility.Collapsed;
 
             _gridCell = new Grid();
             _gridCell.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1.5d, System.Windows.GridUnitType.Star) });
@@ -50,17 +48,18 @@ namespace ClientOrderQueue.Model
 
             // номер заказа в первой строке
             TextBlock tbNum = new TextBlock() { VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0.1 * dMin, 0, 0, 0)
+                Margin = new Thickness(0.06 * dMin, 0, 0, 0)
             };
-            tbNum.Inlines.Add(new Run() { Text = "№", FontSize = 0.2 * dMin });
+            tbNum.Inlines.Add(new Run() { Text = "№ ", FontSize = 0.2 * dMin });
+            double fontSize = (Application.Current as App).orderNumberFontSize;
+            if (fontSize == 0) fontSize = 0.3 * dMin;
             _tbNumber = new Run()
             {
-                FontSize = 0.4 * dMin,
+                FontSize = fontSize,
                 FontWeight = FontWeights.Normal,
                 FontFamily = new FontFamily("Impact")   // Arial Black, Impact
             };
             tbNum.Inlines.Add(_tbNumber);
-            // номер заказа
             Grid.SetRow(tbNum, 0);
             _gridCell.Children.Add(tbNum);
 
@@ -111,8 +110,8 @@ namespace ClientOrderQueue.Model
 
         public void Clear()
         {
+            _isVisible = false;
             base.Visibility = Visibility.Collapsed;
-            //base.Background = Brushes.Transparent;
         }
 
         /// <summary>
@@ -138,7 +137,12 @@ namespace ClientOrderQueue.Model
             _tbStatusName.Text = _statusLang[statusId][acceptLang];
             _imgStatusReady.Visibility = (statusId == 1) ? Visibility.Visible : Visibility.Collapsed;
 
-            if (base.Visibility != Visibility.Visible) base.Visibility = Visibility.Visible;
+            if (base.Visibility != Visibility.Visible)
+            {
+                _isVisible = true;
+                base.Visibility = Visibility.Visible;
+            }
+                
         }
 
     }  // class

@@ -1,0 +1,29 @@
+﻿<Window x:Class="KDS.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KDS"
+        xmlns:locModel ="clr-namespace:KDS.Model"
+        mc:Ignorable="d"
+        Title="KDS" Height="1080" Width="1920">
+
+    <Window.Resources>
+        <locModel:ViewOrder x:Key="testOrder1" TableName="table01" Number="1234" Garson="Алина"/>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="Images/steel.jpg"/>
+        </Grid.Background>
+        
+        <Canvas x:Name="ordersPanel">
+            <local:OrderPanel Canvas.Left="20" Canvas.Top="20">
+                <local:OrderPanel.ViewOrder>
+                    <locModel:ViewOrder Id="0" TableName="table01" Number="12345" Garson="Алина" DateCreate="07/15/2017 4:22:37"/>
+                </local:OrderPanel.ViewOrder>
+            </local:OrderPanel>
+        </Canvas>
+
+    </Grid>
+</Window>
