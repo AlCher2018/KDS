@@ -32,11 +32,11 @@ namespace ClientOrderQueue
             splashScreen.Show(true);
 
             // проверка доступа к БД
-            if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
-            {
-                MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
-                App.Current.Shutdown(1);
-            }
+            //if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
+            //{
+            //    MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+            //    App.Current.Shutdown(1);
+            //}
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml

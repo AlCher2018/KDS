@@ -167,7 +167,7 @@ namespace ClientOrderQueue
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage(string.Format("{0}\n{1}", ex.Message, ex.StackTrace));
+                AppLib.WriteLogErrorMessage(string.Format("{0}", ex.Message));
             }
 
             return retVal;

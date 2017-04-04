@@ -57,8 +57,8 @@
                 <!-- время создания заказа и счетчик приготовления -->
                 <Grid x:Name="grdHdrOrderTime" Grid.Row="2" Background="{Binding ElementName=orderPanel, Path=HeaderBackground3}" TextBlock.Foreground="{Binding ElementName=orderPanel, Path=HeaderForeground3}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="5*"/>
+                        <ColumnDefinition Width="5*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.03;0.01;0.0;0.02'}">
                         <TextBlock x:Name="tbOrderDateLabel" Text="Создан в: " Style="{StaticResource hdrLabelStyle2}"/>
@@ -66,8 +66,8 @@
                     </StackPanel>
                     <Border Grid.Column="1" Background="{Binding ElementName=orderPanel, Path=OrderCookingCounterBackground}" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.01'}" CornerRadius="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getCornerRadius}, ConverterParameter='0.02'}" Padding="5,3">
                         <StackPanel Orientation="Horizontal" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.01;0.01;0.0;0.02'}">
-                            <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло:  " Style="{StaticResource hdrLabelStyle2}"/>
-                            <TextBlock x:Name="tbOrderCookingCounter" Style="{StaticResource hdrLabelStyle1}" FontWeight="Bold"/>
+                            <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Style="{StaticResource hdrLabelStyle2}"/>
+                            <TextBlock x:Name="tbOrderCookingCounter" Style="{StaticResource hdrLabelStyle2}" FontWeight="Bold"/>
                         </StackPanel>
                     </Border>
                 </Grid>
