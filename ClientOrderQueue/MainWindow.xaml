@@ -22,7 +22,7 @@
                     <ColumnDefinition Width="0.5*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов"  Foreground="{StaticResource appTitleForegroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
+                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов / Status of orders"  Foreground="{StaticResource appTitleForegroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
 
                 <Image x:Name="imgLogo" Grid.Column="1" HorizontalAlignment="Right" Stretch="Uniform"/>
             </Grid>

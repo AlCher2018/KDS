@@ -65,7 +65,7 @@
                         <TextBlock x:Name="tbOrderDate" Text="{Binding ElementName=orderPanel, Path=ViewOrder.DateCreate, Mode=OneWay, TargetNullValue='noDate', StringFormat={}{0:HH:mm:ss}}" Style="{StaticResource hdrLabelStyle2}" FontWeight="Bold"/>
                     </StackPanel>
                     <Border Grid.Column="1" Background="{Binding ElementName=orderPanel, Path=OrderCookingCounterBackground}" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.01'}" CornerRadius="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getCornerRadius}, ConverterParameter='0.02'}" Padding="5,3">
-                        <StackPanel Orientation="Horizontal" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.01;0.01;0.0;0.02'}">
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Style="{StaticResource hdrLabelStyle2}"/>
                             <TextBlock x:Name="tbOrderCookingCounter" Style="{StaticResource hdrLabelStyle2}" FontWeight="Bold"/>
                         </StackPanel>
