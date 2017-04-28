@@ -161,13 +161,17 @@ namespace ClientOrderQueue
             {
                 using (KDSContext db = new KDSContext())
                 {
-                    //retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
-                    retVal = (from o in db.Order where o.QueueStatusId < 2 orderby o.Number select o).ToList();
+                    db.Database.Connection.Open();
+                    if (db.Database.Connection.State == System.Data.ConnectionState.Open)
+                    {
+                        //retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
+                        retVal = (from o in db.Order where o.QueueStatusId < 2 orderby o.Number select o).ToList();
+                    }
                 }
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage(string.Format("{0}", ex.Message));
+                AppLib.WriteLogErrorMessage(string.Format("{0}", ex.ToString()));
             }
 
             return retVal;

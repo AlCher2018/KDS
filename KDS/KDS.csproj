@@ -52,6 +52,8 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Management" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -78,6 +80,21 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Model\CookPhase.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\CookPhaseType.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\Department.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\DepartmentDepartmentGroup.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\DepartmentGroup.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\Converters.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
@@ -85,14 +102,36 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="OrderPanel.xaml">
+    <Page Include="View\OrderPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Model\ViewOrder.cs" />
-    <Compile Include="OrderPanel.xaml.cs">
+    <Compile Include="Model\ModelKDS.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ModelKDS.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\ModelKDS.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\ModelKDS.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ModelKDS.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModel\CookPhaseEnum.cs" />
+    <Compile Include="ViewModel\OrderViewModel.cs" />
+    <Compile Include="Model\Order.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\OrderDish.cs">
+      <DependentUpon>ModelKDS.tt</DependentUpon>
+    </Compile>
+    <Compile Include="View\OrderPanel.xaml.cs">
       <DependentUpon>OrderPanel.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -112,6 +151,13 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EntityDeploy Include="Model\ModelKDS.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>ModelKDS.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="Model\ModelKDS.edmx.diagram">
+      <DependentUpon>ModelKDS.edmx</DependentUpon>
+    </None>
     <None Include="NLog.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -124,10 +170,23 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\1.png" />
-    <Resource Include="Images\doski.jpg" />
     <Resource Include="Images\steel.jpg" />
     <Resource Include="Images\steel.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Model\ModelKDS.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>ModelKDS.edmx</DependentUpon>
+      <LastGenOutput>ModelKDS.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="Model\ModelKDS.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>ModelKDS.edmx</DependentUpon>
+      <LastGenOutput>ModelKDS.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

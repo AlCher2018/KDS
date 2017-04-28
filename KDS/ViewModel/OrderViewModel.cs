@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDS.Model
+namespace KDS.ViewModel
 {
-    public class ViewOrder
+    public class OrderViewModel
     {
         public int Id { get; set; }
-        public OrderStatusEnum OrderStatusId { get; set; }
+        public CookPhaseEnum OrderStatusId { get; set; }
         public string UID { get; set; }
         public int Number { get; set; }
 
@@ -21,17 +21,6 @@ namespace KDS.Model
         public string TableName { get; set; }
 
         public string Garson { get; set; }
-    }
-
-
-    public enum OrderStatusEnum
-    {
-        Wait = 0,
-        InProcess = 1,
-        Finished = 2,
-        Took = 3,
-        Cancelled = 4,
-        Return = 5
     }
 
 }
