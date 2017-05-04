@@ -21,6 +21,12 @@ namespace CookingEmulator
 
         static void Main(string[] args)
         {
+            var v1 = Convert.ToBoolean(null);
+            var v3 = Convert.ToBoolean("true");
+            var v4 = Convert.ToBoolean(0);
+            var v5 = Convert.ToBoolean(-10);
+            var v6 = Convert.ToBoolean(1);
+
             _db = new KDS_06_10Entities();
 
             _threadLockObj = new object();

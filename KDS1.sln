@@ -16,7 +16,16 @@ Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "OrderQueueSetup", "Setup1\S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDS", "KDS\KDS.csproj", "{B7D4E6B3-B718-4FDB-83AB-7006DE31D894}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WcfServiceLibrary1", "WcfServiceLibrary1\WcfServiceLibrary1.csproj", "{35D90A99-E78C-4762-AEE1-A6652A134BCB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSService", "KDSService\KDSService.csproj", "{C81D45F6-9F1B-4D58-AD91-F909E58CB61F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSWinSvcHost", "KDSWinSvcHost\KDSWinSvcHost.csproj", "{D993561F-3A85-4773-A9D2-4F76ABF7D53C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleSvcHost", "KDSConsoleSvcHost\KDSConsoleSvcHost.csproj", "{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F} = {C81D45F6-9F1B-4D58-AD91-F909E58CB61F}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleClient", "KDSConsoleClient\KDSConsoleClient.csproj", "{B9CCB564-B8AC-497A-BB9F-F27BB503A4F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,10 +51,22 @@ Global
 		{B7D4E6B3-B718-4FDB-83AB-7006DE31D894}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7D4E6B3-B718-4FDB-83AB-7006DE31D894}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7D4E6B3-B718-4FDB-83AB-7006DE31D894}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35D90A99-E78C-4762-AEE1-A6652A134BCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35D90A99-E78C-4762-AEE1-A6652A134BCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35D90A99-E78C-4762-AEE1-A6652A134BCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35D90A99-E78C-4762-AEE1-A6652A134BCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9CCB564-B8AC-497A-BB9F-F27BB503A4F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9CCB564-B8AC-497A-BB9F-F27BB503A4F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9CCB564-B8AC-497A-BB9F-F27BB503A4F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9CCB564-B8AC-497A-BB9F-F27BB503A4F5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

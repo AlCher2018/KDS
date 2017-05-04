@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/KDSService" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/KDSService" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="OrderCommand">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Command" type="tns:OrderCommandEnum" />
+      <xs:element minOccurs="0" name="DishId" type="xs:int" />
+      <xs:element minOccurs="0" name="OrderId" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="OrderCommand" nillable="true" type="tns:OrderCommand" />
+  <xs:simpleType name="OrderCommandEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="StartCooking" />
+      <xs:enumeration value="CancelCooking" />
+      <xs:enumeration value="FinishCooking" />
+      <xs:enumeration value="Return" />
+      <xs:enumeration value="TookAway" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="OrderCommandEnum" nillable="true" type="tns:OrderCommandEnum" />
+</xs:schema>

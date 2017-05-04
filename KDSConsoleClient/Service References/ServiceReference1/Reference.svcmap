@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="fe866aa2-aea0-433d-8b49-892e139da800" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://localhost:8733/KDSService/mex" Protocol="mex" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="39faa216-7fd6-4831-9b33-5ebfc732fc07" SourceId="1" SourceUrl="http://localhost:8733/KDSService/mex" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="c10a4df4-f4e1-4635-b6b0-e09ae0613a4d" SourceId="1" SourceUrl="http://localhost:8733/KDSService/mex" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="ad751a37-8b23-4dcd-94bb-3c386bfeb7fa" SourceId="1" SourceUrl="http://localhost:8733/KDSService/mex" />
+    <MetadataFile FileName="KDSService.AppModel.xsd" MetadataType="Schema" ID="c19647a8-c9ab-4185-b2d0-ab629c53cbd9" SourceId="1" SourceUrl="http://localhost:8733/KDSService/mex" />
+    <MetadataFile FileName="KDSService.xsd" MetadataType="Schema" ID="3b2670c9-88ac-4431-8ac2-d08b5eb2b88f" SourceId="1" SourceUrl="http://localhost:8733/KDSService/mex" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>
