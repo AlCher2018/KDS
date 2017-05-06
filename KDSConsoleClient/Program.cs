@@ -1,4 +1,6 @@
-﻿using System;
+﻿using KDSConsoleClient.ServiceReference1;
+using KDSService.AppModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
@@ -11,20 +13,30 @@ namespace KDSConsoleClient
     {
         static void Main(string[] args)
         {
-            ChannelFactory<KDSService.IKDSService> factory = new ChannelFactory<KDSService.IKDSService>(new NetTcpBinding(), new EndpointAddress("net.tcp://localhost:8000/KDSService"));
+            //ChannelFactory<KDSService.IKDSService> factory = new ChannelFactory<KDSService.IKDSService>(new NetTcpBinding(), new EndpointAddress("net.tcp://localhost:8000/KDSService"));
 
-            KDSService.IKDSService channel = factory.CreateChannel();
+            //KDSService.IKDSService channel = factory.CreateChannel();
 
-            while (true)
+            //while (true)
+            //{
+            //    OrderCltModel[] orders = channel.GetArrayOrdersForClient();
+            //    Console.WriteLine("Заказов - " + orders.Length);
+
+            //    string sBuf = Console.ReadLine();
+            //    if (string.IsNullOrEmpty(sBuf)) break;
+            //}
+            //factory.Close();
+
+            using (KDSServiceClient client = new KDSServiceClient())
             {
-                List<KDSService.AppModel.Order> orders = channel.GetOrders();
-                Console.WriteLine("Заказов - " + orders.Count);
+                int i = client.GetOrdersCount();
+                Console.WriteLine(i.ToString());
 
-                string sBuf = Console.ReadLine();
-                if (string.IsNullOrEmpty(sBuf)) break;
+                OrderCltModel[] orders = client.GetArrayOrdersForClient();
+                Console.WriteLine("Заказов - " + orders.Length);
+
             }
-
-            factory.Close();
+            Console.Read();
         }
     }
 }

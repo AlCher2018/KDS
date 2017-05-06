@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,11 +14,31 @@ namespace KDSService
     [ServiceContract]
     public interface IKDSService
     {
-        [OperationContract]
+        // получить словари
+        DepartmentGroup[] GetDepartmentGroups();
+        Department[] GetDepartments();
+
         // получить список заказов
-        List<Order> GetOrders();
+        [OperationContract]
+        OrdersCltModel GetOrdersCltModel();
+
 
         [OperationContract]
-        void ChangeOrderStatus(OrderCommand command);
+        void ChangeStatus(OrderCommand command);
     }
+
+
+    [DataContract]
+    public class CltOrders
+    {
+        [DataMember]
+        public List<OrdersCltModel> Orders { get; set; }
+
+        public CltOrders(List<OrdersCltModel> orders)
+        {
+            Orders = orders;
+        }
+    }
+
+
 }

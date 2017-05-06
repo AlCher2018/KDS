@@ -1,10 +1,12 @@
 ﻿using KDSService.AppModel;
+using KDSService.DataSourse;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Linq;
+using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +18,8 @@ namespace KDSService
     /// 1. Периодический опрос заказов из БД
     /// </summary>
 
-    public class KDSService : IKDSService, IDisposable
+    [ServiceBehavior(IncludeExceptionDetailInFaults = true)]
+    public class KDSServiceClass : IDisposable, IKDSService
     {
         private const double _ObserveTimerInterval = 500;
 
@@ -25,30 +28,49 @@ namespace KDSService
 
         // логгер
         private Logger _logger;
-        private List<Order> _orders;
+        // заказы на стороне службы (с таймерами)
+        private OrdersSvcModel _ordersModel;  
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
 
 
-        public KDSService()
+        public KDSServiceClass()
         {
             _logger = LogManager.GetLogger("fileLogger");
-
+            
             Console.WriteLine("конструктор KDSService");
 
             _props = new AppProperties();
             getAppPropertiesFromConfigFile();
 
-            writeLogInfoMessage("*******  START SERVICE  ********");
+            writeLogInfoMessage("*******  CREATE INSTANCE KDSService  ********");
 
             // вывести в лог настройки из config-файла
             string cfgValuesString = getConfigString();
             writeLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
 
-            _orders = new List<Order>();
             _observeTimer = new Timer(_ObserveTimerInterval);
             _observeTimer.Elapsed += _observeTimer_Elapsed;
+            _observeTimer.Start();
+
+            _ordersModel = new OrdersSvcModel();
+            // DEBUG
+            _observeTimer_Elapsed(null, null);
         }
+
+        public void Dispose()
+        {
+            writeLogInfoMessage("*******  PURGE KDSService  ********");
+
+            // таймер остановить, отписаться от события и уничтожить
+            if (_observeTimer != null)
+            {
+                if (_observeTimer.Enabled == true) _observeTimer.Stop();
+                _observeTimer.Elapsed -= _observeTimer_Elapsed;
+                _observeTimer.Dispose();
+            }
+        }
+
 
         private string getConfigString()
         {
@@ -77,41 +99,38 @@ namespace KDSService
                 _props.SetProperty("IsLogUserAction", value.ToBool());
         }
 
+        // *** начало работы и периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            updateOrdersFromDB();
+            // DEBUG
+            _observeTimer.Stop();
+
+            _ordersModel.UpdateOrders();
         }
 
-        #region private methods
-        private void updateOrdersFromDB()
-        {
-            //DBContext
-        }
-        #endregion
 
+        // ****  SERVICE CONTRACT  *****
         #region service contract
-        public void ChangeOrderStatus(OrderCommand command)
+        public void ChangeStatus(OrderCommand command)
         {
             throw new NotImplementedException();
         }
 
-        public List<Order> GetOrders()
+        public AppModel.DepartmentGroup[] GetDepartmentGroups()
         {
-            return _orders;
+            return ServiceDics.DepGroups.GetClientInstance();
         }
 
-        public void Dispose()
+        public AppModel.Department[] GetDepartments()
         {
-            writeLogInfoMessage("*******  STOP SERVICE  ********");
-
-            // таймер остановить, отписаться от события и уничтожить
-            if (_observeTimer != null)
-            {
-                if (_observeTimer.Enabled == true) _observeTimer.Stop();
-                _observeTimer.Elapsed -= _observeTimer_Elapsed;
-                _observeTimer.Dispose();
-            }
+            return ServiceDics.Departments.GetClientInstance();
         }
+
+        public OrdersCltModel GetOrdersCltModel()
+        {
+            return _ordersModel.GetClientInstance();
+        }
+
         #endregion
 
         #region App logger
@@ -140,6 +159,7 @@ namespace KDSService
                 writeLogTraceMessage(msg);
             }
         }
+
         #endregion
 
     }  // class

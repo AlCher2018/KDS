@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSService.AppModel
+namespace KDSService.DataSource
 {
     using System;
     using System.Data.Entity;

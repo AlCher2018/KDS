@@ -15,11 +15,17 @@ namespace KDSConsoleClient.ServiceReference1 {
     [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ServiceReference1.IKDSService")]
     public interface IKDSService {
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        KDSService.AppModel.Order[] GetOrders();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersCount", ReplyAction="http://tempuri.org/IKDSService/GetOrdersCountResponse")]
+        int GetOrdersCount();
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<KDSService.AppModel.Order[]> GetOrdersAsync();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersCount", ReplyAction="http://tempuri.org/IKDSService/GetOrdersCountResponse")]
+        System.Threading.Tasks.Task<int> GetOrdersCountAsync();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetArrayOrdersForClient", ReplyAction="http://tempuri.org/IKDSService/GetArrayOrdersForClientResponse")]
+        KDSService.AppModel.OrderCltModel[] GetArrayOrdersForClient();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetArrayOrdersForClient", ReplyAction="http://tempuri.org/IKDSService/GetArrayOrdersForClientResponse")]
+        System.Threading.Tasks.Task<KDSService.AppModel.OrderCltModel[]> GetArrayOrdersForClientAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSService/ChangeOrderStatusResponse")]
         void ChangeOrderStatus(KDSService.OrderCommand command);
@@ -55,12 +61,20 @@ namespace KDSConsoleClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public KDSService.AppModel.Order[] GetOrders() {
-            return base.Channel.GetOrders();
+        public int GetOrdersCount() {
+            return base.Channel.GetOrdersCount();
         }
         
-        public System.Threading.Tasks.Task<KDSService.AppModel.Order[]> GetOrdersAsync() {
-            return base.Channel.GetOrdersAsync();
+        public System.Threading.Tasks.Task<int> GetOrdersCountAsync() {
+            return base.Channel.GetOrdersCountAsync();
+        }
+        
+        public KDSService.AppModel.OrderCltModel[] GetArrayOrdersForClient() {
+            return base.Channel.GetArrayOrdersForClient();
+        }
+        
+        public System.Threading.Tasks.Task<KDSService.AppModel.OrderCltModel[]> GetArrayOrdersForClientAsync() {
+            return base.Channel.GetArrayOrdersForClientAsync();
         }
         
         public void ChangeOrderStatus(KDSService.OrderCommand command) {

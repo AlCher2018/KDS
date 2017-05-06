@@ -11,12 +11,8 @@ namespace KDSConsoleSvcHost
     {
         static void Main(string[] args)
         {
-            Uri tcp_base_adr = new Uri("net.tcp://localhost:8000/");
-
-            using (ServiceHost host = new ServiceHost(typeof(KDSService.KDSService), tcp_base_adr))
+            using (ServiceHost host = new ServiceHost(typeof(KDSService.KDSService)))
             {
-                host.AddServiceEndpoint(typeof(KDSService.IKDSService), new NetTcpBinding(), "KDSService");
-
                 host.Open();
 
                 DisplayHostInfo(host);

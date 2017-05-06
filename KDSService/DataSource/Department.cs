@@ -7,34 +7,28 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSService.AppModel
+namespace KDSService.DataSource
 {
     using System;
     using System.Collections.Generic;
     
-    public partial class Order
+    public partial class Department
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public Order()
+        public Department()
         {
+            this.DepartmentDepartmentGroup = new HashSet<DepartmentDepartmentGroup>();
             this.OrderDish = new HashSet<OrderDish>();
         }
     
         public int Id { get; set; }
-        public int OrderStatusId { get; set; }
-        public int DepartmentId { get; set; }
+        public string Name { get; set; }
         public string UID { get; set; }
-        public int Number { get; set; }
-        public string TableNumber { get; set; }
-        public System.DateTime CreateDate { get; set; }
-        public string RoomNumber { get; set; }
-        public Nullable<System.DateTime> StartDate { get; set; }
-        public int SpentTime { get; set; }
-        public string Waiter { get; set; }
-        public int QueueStatusId { get; set; }
-        public int LanguageTypeId { get; set; }
+        public Nullable<bool> IsAutoStart { get; set; }
+        public Nullable<int> DishQuantity { get; set; }
     
-        public virtual OrderStatus OrderStatus { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DepartmentDepartmentGroup> DepartmentDepartmentGroup { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDish> OrderDish { get; set; }
     }
