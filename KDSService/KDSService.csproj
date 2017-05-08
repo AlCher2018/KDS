@@ -80,7 +80,6 @@
   <ItemGroup>
     <Compile Include="AppModel\AppActionEnum.cs" />
     <Compile Include="AppModel\AppProperties.cs" />
-    <Compile Include="AppModel\ClientModels.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\ServiceDics.cs" />
     <Compile Include="AppModel\ServiceModels.cs" />
@@ -161,7 +160,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{3D9AD99F-2412-4246-B90B-4EAA41C64699}">
         <WcfProjectProperties>
-          <AutoStart>True</AutoStart>
+          <AutoStart>False</AutoStart>
         </WcfProjectProperties>
       </FlavorProperties>
     </VisualStudio>

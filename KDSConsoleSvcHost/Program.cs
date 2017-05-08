@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KDSService.AppModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
@@ -11,16 +12,20 @@ namespace KDSConsoleSvcHost
     {
         static void Main(string[] args)
         {
-            using (ServiceHost host = new ServiceHost(typeof(KDSService.KDSService)))
-            {
-                host.Open();
+            Console.Title = "SERVICE";
 
-                DisplayHostInfo(host);
+            ServiceHost host = new ServiceHost(typeof(KDSService.KDSServiceClass));
+            host.Open();
 
-                Console.WriteLine("Для завершения нажмите Enter"); Console.ReadKey();
-                host.Close();
-            }
+            DisplayHostInfo(host);
+            Console.WriteLine("Служба готова к приему сообщений.");
+            Console.WriteLine("Для завершения нажмите Enter");
 
+            //KDSService.KDSServiceClass service = new KDSService.KDSServiceClass();
+            //Dictionary<int, DepartmentModel> dg = service.GetDepartments();
+
+            Console.ReadKey();
+            host.Close(); host = null;
         }
 
         static void DisplayHostInfo(ServiceHost host)

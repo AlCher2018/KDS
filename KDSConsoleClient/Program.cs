@@ -1,11 +1,10 @@
-﻿using KDSConsoleClient.ServiceReference1;
-using KDSService.AppModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using AppKDS;
+using KDSConsoleClient.ServiceReference1;
 
 namespace KDSConsoleClient
 {
@@ -13,30 +12,51 @@ namespace KDSConsoleClient
     {
         static void Main(string[] args)
         {
-            //ChannelFactory<KDSService.IKDSService> factory = new ChannelFactory<KDSService.IKDSService>(new NetTcpBinding(), new EndpointAddress("net.tcp://localhost:8000/KDSService"));
+            Console.Title = "CLIENT";
 
-            //KDSService.IKDSService channel = factory.CreateChannel();
+            KDSServiceClient client = new KDSServiceClient();
 
-            //while (true)
-            //{
-            //    OrderCltModel[] orders = channel.GetArrayOrdersForClient();
-            //    Console.WriteLine("Заказов - " + orders.Length);
+            //testDepGroups(client);
 
-            //    string sBuf = Console.ReadLine();
-            //    if (string.IsNullOrEmpty(sBuf)) break;
-            //}
-            //factory.Close();
+            // получить словари
+            //   групп отделов
+            Dictionary<int, DepartmentGroupModel> depGroups = client.GetDepartmentGroups();
+            //   отделов
+            Dictionary<int, DepartmentModel> deps = client.GetDepartments();
 
-            using (KDSServiceClient client = new KDSServiceClient())
-            {
-                int i = client.GetOrdersCount();
-                Console.WriteLine(i.ToString());
+            List<OrderModel> orders = client.GetOrders();
+            Console.WriteLine("Заказов " + orders.Count);
 
-                OrderCltModel[] orders = client.GetArrayOrdersForClient();
-                Console.WriteLine("Заказов - " + orders.Length);
-
-            }
             Console.Read();
         }
-    }
+
+        private static void testDepGroups(KDSServiceClient client)
+        {
+            Console.WriteLine("ГРУППЫ ОТДЕЛОВ");
+            while (true)
+            {
+                Dictionary<int, DepartmentGroupModel> depGroups = client.GetDepartmentGroups();
+                Console.WriteLine("введите Ид группы: ");
+                string resp = Console.ReadLine();
+                if (resp.IsNull()) break;
+
+                if (resp == "0")
+                    Console.WriteLine("групп отделов - {0}", depGroups.Count);
+                else
+                {
+                    int id = Convert.ToInt32(resp);
+                    if (depGroups.ContainsKey(id))
+                    {
+                        DepartmentGroupModel dg = depGroups[id];
+                        Console.WriteLine("key {0}, value {{id: {0}, name: {1}}}", dg.Id, dg.Name);
+                    }
+                    else
+                    {
+                        Console.WriteLine("нет такого Ид");
+                    }
+                }
+            }
+        }
+    }  // class
+
 }

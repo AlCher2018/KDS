@@ -4,6 +4,8 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using KDSConsoleSvcHost;
+
 
 namespace KDSService.AppModel
 {
@@ -15,59 +17,59 @@ namespace KDSService.AppModel
     internal static class ServiceDics
     {
         // группы отделов
-        private static DepartmentGroups _depGroups;
-        internal static DepartmentGroups DepGroups { get { return _depGroups; } }
+        private static DepartmentGroupsModel _depGroups;
+        internal static DepartmentGroupsModel DepGroups { get { return _depGroups; } }
 
         // отделы
-        private static Departments _deps;
-        internal static Departments Departments { get { return _deps; } }
+        private static DepartmentsModel _deps;
+        internal static DepartmentsModel Departments { get { return _deps; } }
 
         static ServiceDics()
         {
-            _depGroups = new DepartmentGroups();
-            _deps = new Departments();
+            _depGroups = new DepartmentGroupsModel();
+            _deps = new DepartmentsModel();
         }
 
     }
 
 
     // отделы
-    internal class Departments
+    internal class DepartmentsModel
     {
-        private Dictionary<int, Department> _deps;
+        private Dictionary<int, DepartmentModel> _deps;
 
         //ctor
-        public Departments()
+        public DepartmentsModel()
         {
-            _deps = new Dictionary<int, Department>();
+            _deps = new Dictionary<int, DepartmentModel>();
         }
 
-        internal Department GetDepartmentById(int id)
+        internal DepartmentModel GetDepartmentById(int id)
         {
             return (_deps.ContainsKey(id)) ? _deps[id] : null;
         }
-        public Dictionary<int, Department> GetDictionary()
+        public Dictionary<int, DepartmentModel> GetDictionary()
         {
             return _deps;
         }
 
         internal void UpdateFromDB()
         {
-            using (KDSService.DataSource.DBContext db = new KDSService.DataSource.DBContext())
+            using (KDSEntities db = new KDSEntities())
             {
-                if (_deps == null) _deps = new Dictionary<int, Department>();
+                if (_deps == null) _deps = new Dictionary<int, DepartmentModel>();
                 else _deps.Clear();
 
-                foreach (KDSService.DataSource.Department dbDep in db.Department)
+                foreach (Department dbDep in db.Department)
                 {
-                    Department dep = new Department()
+                    DepartmentModel dep = new DepartmentModel()
                     {
                         Id = dbDep.Id,
                         Name = dbDep.Name,
                         IsAutoStart = dbDep.IsAutoStart ?? false,
                         DishQuantity = dbDep.DishQuantity ?? 0,
                     };
-                    dep.DepGroups = dbDep.DepartmentDepartmentGroup.Select<KDSService.DataSource.DepartmentDepartmentGroup, DepartmentGroup>(dbGroup => new DepartmentGroup()
+                    dep.DepGroups = dbDep.DepartmentDepartmentGroup.Select<DepartmentDepartmentGroup, DepartmentGroupModel>(dbGroup => new DepartmentGroupModel()
                     {
                         Id = dbGroup.DepartmentGroup.Id,
                         Name = dbGroup.DepartmentGroup.Name
@@ -81,7 +83,7 @@ namespace KDSService.AppModel
     }  // class Departments
 
     [DataContract]
-    public class Department
+    public class DepartmentModel
     {
         [DataMember]
         public int Id { get; set; }
@@ -95,8 +97,8 @@ namespace KDSService.AppModel
         [DataMember]
         public int DishQuantity { get; set; }
 
-        private List<DepartmentGroup> _depGroups;
-        internal List<DepartmentGroup> DepGroups { get; set; }
+        private List<DepartmentGroupModel> _depGroups;
+        internal List<DepartmentGroupModel> DepGroups { get; set; }
 
         // для передачи клиенту списка Ид групп отделов
         [DataMember]
@@ -106,25 +108,26 @@ namespace KDSService.AppModel
             set { }
         }
 
-        public Department()
+        public DepartmentModel()
         {
+            _depGroups = new List<DepartmentGroupModel>();
         }
 
     }  // class Department
 
 
     // группы отделов
-    internal class DepartmentGroups
+    internal class DepartmentGroupsModel
     {
-        private Dictionary<int, DepartmentGroup> _groups;
+        private Dictionary<int, DepartmentGroupModel> _groups;
 
         // ctor
-        internal DepartmentGroups()
+        internal DepartmentGroupsModel()
         {
-            _groups = new Dictionary<int, DepartmentGroup>();
+            _groups = new Dictionary<int, DepartmentGroupModel>();
         }
 
-        internal Dictionary<int, DepartmentGroup> GetDictionary()
+        internal Dictionary<int, DepartmentGroupModel> GetDictionary()
         {
             return _groups;
         }
@@ -132,31 +135,33 @@ namespace KDSService.AppModel
         // для сервиса
         internal void UpdateFromDB()
         {
-            using (KDSService.DataSource.DBContext db = new KDSService.DataSource.DBContext())
+            using (KDSEntities db = new KDSEntities())
             {
-                if (_groups == null) _groups = new Dictionary<int, DepartmentGroup>();
+                if (_groups == null) _groups = new Dictionary<int, DepartmentGroupModel>();
                 else _groups.Clear();
 
-                foreach  (DataSource.DepartmentGroup dbGroup in db.DepartmentGroup)
+                foreach  (DepartmentGroup dbGroup in db.DepartmentGroup)
                 {
-                    _groups.Add(dbGroup.Id, new DepartmentGroup() { Id = dbGroup.Id,Name = dbGroup.Name });
+                    _groups.Add(dbGroup.Id, new DepartmentGroupModel() { Id = dbGroup.Id,Name = dbGroup.Name });
                 }
             }
         }
 
-        internal DepartmentGroup GetDepGroupById(int id)
+        internal DepartmentGroupModel GetDepGroupById(int id)
         {
             return (_groups.ContainsKey(id)) ? _groups[id] : null;
         }
 
     }
 
-    // клиенту не передается
-    // через ссылку на проект использовать у клиента dll
-    public class DepartmentGroup
+    [DataContract]
+    public class DepartmentGroupModel
     {
+        [DataMember]
         public int Id { get; set; }
 
+        [DataMember]
         public string Name { get; set; }
-    }
+    }  // class
+
 }

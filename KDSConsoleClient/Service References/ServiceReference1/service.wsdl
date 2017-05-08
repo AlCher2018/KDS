@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<wsdl:definitions xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:tns="http://tempuri.org/" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="KDSService" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+<wsdl:definitions xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:tns="http://tempuri.org/" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="KDSServiceClass" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
   <wsp:Policy wsu:Id="NetTcpBinding_IKDSService_policy">
     <wsp:ExactlyOne>
       <wsp:All>
@@ -37,48 +37,59 @@
     <xsd:schema targetNamespace="http://tempuri.org/Imports">
       <xsd:import namespace="http://tempuri.org/" />
       <xsd:import namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+      <xsd:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
       <xsd:import namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel" />
       <xsd:import namespace="http://schemas.datacontract.org/2004/07/KDSService" />
     </xsd:schema>
   </wsdl:types>
-  <wsdl:message name="IKDSService_GetOrdersCount_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrdersCount" />
+  <wsdl:message name="IKDSService_GetDepartmentGroups_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetDepartmentGroups" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetOrdersCount_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrdersCountResponse" />
+  <wsdl:message name="IKDSService_GetDepartmentGroups_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetDepartmentGroupsResponse" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetArrayOrdersForClient_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetArrayOrdersForClient" />
+  <wsdl:message name="IKDSService_GetDepartments_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetDepartments" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetArrayOrdersForClient_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetArrayOrdersForClientResponse" />
+  <wsdl:message name="IKDSService_GetDepartments_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetDepartmentsResponse" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_ChangeOrderStatus_InputMessage">
-    <wsdl:part name="parameters" element="tns:ChangeOrderStatus" />
+  <wsdl:message name="IKDSService_GetOrders_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetOrders" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_ChangeOrderStatus_OutputMessage">
-    <wsdl:part name="parameters" element="tns:ChangeOrderStatusResponse" />
+  <wsdl:message name="IKDSService_GetOrders_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetOrdersResponse" />
+  </wsdl:message>
+  <wsdl:message name="IKDSService_ChangeStatus_InputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeStatus" />
+  </wsdl:message>
+  <wsdl:message name="IKDSService_ChangeStatus_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeStatusResponse" />
   </wsdl:message>
   <wsdl:portType name="IKDSService">
-    <wsdl:operation name="GetOrdersCount">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrdersCount" message="tns:IKDSService_GetOrdersCount_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrdersCountResponse" message="tns:IKDSService_GetOrdersCount_OutputMessage" />
+    <wsdl:operation name="GetDepartmentGroups">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetDepartmentGroups" message="tns:IKDSService_GetDepartmentGroups_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse" message="tns:IKDSService_GetDepartmentGroups_OutputMessage" />
     </wsdl:operation>
-    <wsdl:operation name="GetArrayOrdersForClient">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetArrayOrdersForClient" message="tns:IKDSService_GetArrayOrdersForClient_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetArrayOrdersForClientResponse" message="tns:IKDSService_GetArrayOrdersForClient_OutputMessage" />
+    <wsdl:operation name="GetDepartments">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetDepartments" message="tns:IKDSService_GetDepartments_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetDepartmentsResponse" message="tns:IKDSService_GetDepartments_OutputMessage" />
     </wsdl:operation>
-    <wsdl:operation name="ChangeOrderStatus">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/ChangeOrderStatus" message="tns:IKDSService_ChangeOrderStatus_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/ChangeOrderStatusResponse" message="tns:IKDSService_ChangeOrderStatus_OutputMessage" />
+    <wsdl:operation name="GetOrders">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrders" message="tns:IKDSService_GetOrders_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrdersResponse" message="tns:IKDSService_GetOrders_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeStatus">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/ChangeStatus" message="tns:IKDSService_ChangeStatus_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/ChangeStatusResponse" message="tns:IKDSService_ChangeStatus_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="NetTcpBinding_IKDSService" type="tns:IKDSService">
     <wsp:PolicyReference URI="#NetTcpBinding_IKDSService_policy">
     </wsp:PolicyReference>
     <soap12:binding transport="http://schemas.microsoft.com/soap/tcp" />
-    <wsdl:operation name="GetOrdersCount">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrdersCount" style="document" />
+    <wsdl:operation name="GetDepartmentGroups">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetDepartmentGroups" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -86,8 +97,8 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="GetArrayOrdersForClient">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetArrayOrdersForClient" style="document" />
+    <wsdl:operation name="GetDepartments">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetDepartments" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -95,8 +106,17 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="ChangeOrderStatus">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/ChangeOrderStatus" style="document" />
+    <wsdl:operation name="GetOrders">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrders" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeStatus">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/ChangeStatus" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -105,7 +125,7 @@
       </wsdl:output>
     </wsdl:operation>
   </wsdl:binding>
-  <wsdl:service name="KDSService">
+  <wsdl:service name="KDSServiceClass">
     <wsdl:port name="NetTcpBinding_IKDSService" binding="tns:NetTcpBinding_IKDSService">
       <soap12:address location="net.tcp://localhost:8733/KDSService/" />
       <wsa10:EndpointReference>

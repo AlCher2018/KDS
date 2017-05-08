@@ -1,11 +1,12 @@
-﻿using KDSService.DataSource;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using KDSConsoleSvcHost;
+
 
 namespace KDSService.AppModel
 {
@@ -14,6 +15,7 @@ namespace KDSService.AppModel
     public class OrdersModel
     {
         private Dictionary<int,OrderModel> _orders;
+        public Dictionary<int, OrderModel> Orders { get { return _orders; } }
 
         private string _errorMsg;
 
@@ -24,13 +26,13 @@ namespace KDSService.AppModel
 
         public void UpdateOrders()
         {
-            DBContext db = new DBContext();
+            KDSEntities db = new KDSEntities();
             // в запрос включить блюда, отделы и группы отделов
-            IEnumerable<Order> dbOrders = db.Order.
-                Include("Order.OrderDish").
-                Include("Order.OrderDish.Department").
-                Include("Order.OrderDish.Department.DepartmentDepartmentGroup").
-                Where(o => (o.OrderStatusId < 2));
+            var dbOrders = db.Order.
+                Include("OrderDish").
+                Include("OrderDish.Department").
+                Include("OrderDish.Department.DepartmentDepartmentGroup").
+                Where(o => (o.OrderStatusId < 2)).ToList();
 
             OrderModel curOrder;
             foreach (Order dbOrder in dbOrders)
@@ -83,7 +85,11 @@ namespace KDSService.AppModel
 
         private Dictionary<int,OrderDishModel> _dishes;
         [DataMember]
-        public Dictionary<int, OrderDishModel> Dishes { get { return _dishes; } }
+        public Dictionary<int, OrderDishModel> Dishes
+        {
+            get { return _dishes; }
+            set { }
+        }
 
         private Timer _timer;
 
@@ -104,7 +110,7 @@ namespace KDSService.AppModel
             HallName = dbOrder.RoomNumber; TableName = dbOrder.TableNumber;
             Waiter = dbOrder.Waiter;
 
-            Status = (OrderStatusEnum)Enum.Parse(typeof(OrderStatusEnum), dbOrder.OrderStatus.ToString());
+            Status = (OrderStatusEnum)Enum.Parse(typeof(OrderStatusEnum), dbOrder.OrderStatusId.ToString());
 
             _dishes.Clear();
             foreach (OrderDishModel dish in dbOrder.OrderDish.Select(od => new OrderDishModel(od)))
@@ -140,9 +146,13 @@ namespace KDSService.AppModel
         [DataMember]
         public OrderStatusEnum Status { get; set; }
 
-        private Department _department;
+        private DepartmentModel _department;
         [DataMember]
-        public Department Department { get { return _department; } }
+        public DepartmentModel Department
+        {
+            get { return _department; }
+            set { }
+        }
 
         private Timer _timer;
 
@@ -153,7 +163,7 @@ namespace KDSService.AppModel
             UpdateFromDBEntity(dbDish);
         }
 
-        internal void UpdateFromDBEntity(KDSService.DataSource.OrderDish dbDish)
+        internal void UpdateFromDBEntity(OrderDish dbDish)
         {
             Id = dbDish.Id; Uid = dbDish.UID;
             CreateDate = dbDish.CreateDate;
@@ -163,9 +173,10 @@ namespace KDSService.AppModel
 
             // отдел
             _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
-            _department.DepGroups.Clear();
+            if (_department == null) _department = new DepartmentModel();
+            else _department.DepGroups.Clear();
             // группы отделов
-            foreach (KDSService.DataSource.DepartmentDepartmentGroup ddg in dbDish.Department.DepartmentDepartmentGroup)
+            foreach (DepartmentDepartmentGroup ddg in dbDish.Department.DepartmentDepartmentGroup)
             {
                 _department.DepGroups.Add(ServiceDics.DepGroups.GetDepGroupById(ddg.DepartmentGroupId));
             }

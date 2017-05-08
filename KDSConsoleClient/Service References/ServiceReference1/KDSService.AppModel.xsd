@@ -1,35 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/KDSService.AppModel" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  <xs:complexType name="ArrayOfOrderCltModel">
-    <xs:sequence>
-      <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderCltModel" nillable="true" type="tns:OrderCltModel" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="ArrayOfOrderCltModel" nillable="true" type="tns:ArrayOfOrderCltModel" />
-  <xs:complexType name="OrderCltModel">
-    <xs:sequence>
-      <xs:element minOccurs="0" name="Dishes" nillable="true" type="tns:ArrayOfOrderDishCltModel" />
-      <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="Id" type="xs:int" />
-      <xs:element minOccurs="0" name="OrderNumber" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="Status" type="xs:int" />
-      <xs:element minOccurs="0" name="TableName" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="UID" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="Waiter" nillable="true" type="xs:string" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="OrderCltModel" nillable="true" type="tns:OrderCltModel" />
-  <xs:complexType name="ArrayOfOrderDishCltModel">
-    <xs:sequence>
-      <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderDishCltModel" nillable="true" type="tns:OrderDishCltModel" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="ArrayOfOrderDishCltModel" nillable="true" type="tns:ArrayOfOrderDishCltModel" />
-  <xs:complexType name="OrderDishCltModel">
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:complexType name="DepartmentGroupModel">
     <xs:sequence>
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
-  <xs:element name="OrderDishCltModel" nillable="true" type="tns:OrderDishCltModel" />
+  <xs:element name="DepartmentGroupModel" nillable="true" type="tns:DepartmentGroupModel" />
+  <xs:complexType name="DepartmentModel">
+    <xs:sequence>
+      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="DepGroupsIdList" nillable="true" type="q1:ArrayOfint" />
+      <xs:element minOccurs="0" name="DishQuantity" type="xs:int" />
+      <xs:element minOccurs="0" name="Id" type="xs:int" />
+      <xs:element minOccurs="0" name="IsAutoStart" type="xs:boolean" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="DepartmentModel" nillable="true" type="tns:DepartmentModel" />
+  <xs:complexType name="ArrayOfOrderModel">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderModel" nillable="true" type="tns:OrderModel" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfOrderModel" nillable="true" type="tns:ArrayOfOrderModel" />
+  <xs:complexType name="OrderModel">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
+      <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q2:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
+      <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Id" type="xs:int" />
+      <xs:element minOccurs="0" name="Number" type="xs:int" />
+      <xs:element minOccurs="0" name="Status" type="tns:OrderStatusEnum" />
+      <xs:element minOccurs="0" name="TableName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Waiter" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="OrderModel" nillable="true" type="tns:OrderModel" />
+  <xs:complexType name="OrderDishModel">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="Department" nillable="true" type="tns:DepartmentModel" />
+      <xs:element minOccurs="0" name="Id" type="xs:int" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Quantity" type="xs:decimal" />
+      <xs:element minOccurs="0" name="Status" type="tns:OrderStatusEnum" />
+      <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="OrderDishModel" nillable="true" type="tns:OrderDishModel" />
+  <xs:simpleType name="OrderStatusEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Wait" />
+      <xs:enumeration value="InProcess" />
+      <xs:enumeration value="Finished" />
+      <xs:enumeration value="Took" />
+      <xs:enumeration value="Cancelled" />
+      <xs:enumeration value="Return" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="OrderStatusEnum" nillable="true" type="tns:OrderStatusEnum" />
 </xs:schema>

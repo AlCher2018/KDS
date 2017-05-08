@@ -17,14 +17,14 @@ namespace KDSService
         // получить словари
         //    группы отделов
         [OperationContract]
-        Dictionary<int, DepartmentGroup> GetDepartmentGroups();
+        Dictionary<int, DepartmentGroupModel> GetDepartmentGroups();
         //    отделы
         [OperationContract]
-        Dictionary<int, Department> GetDepartments();
+        Dictionary<int, DepartmentModel> GetDepartments();
 
         // получить список заказов
-        //[OperationContract]
-        //OrdersModel GetOrdersModel();
+        [OperationContract]
+        List<OrderModel> GetOrders();
 
 
         [OperationContract]

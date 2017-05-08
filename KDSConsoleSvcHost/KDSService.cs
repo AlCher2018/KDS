@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Timers;
 
@@ -45,9 +46,15 @@ namespace KDSService
             string cfgValuesString = getConfigString();
             writeLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
 
+            // проверить доступность БД
+
+            // сохранить в служебном классе словари из БД
+            ServiceDics.DepGroups.UpdateFromDB();
+            ServiceDics.Departments.UpdateFromDB();
+
             _observeTimer = new Timer(_ObserveTimerInterval);
-            _observeTimer.Elapsed += _observeTimer_Elapsed;
-            _observeTimer.Start();
+            //_observeTimer.Elapsed += _observeTimer_Elapsed;
+            //_observeTimer.Start();
 
             _ordersModel = new OrdersModel();
             // DEBUG
@@ -56,6 +63,7 @@ namespace KDSService
 
         public void Dispose()
         {
+            Console.WriteLine("dispose KDSService");
             writeLogInfoMessage("*******  PURGE KDSService  ********");
 
             // таймер остановить, отписаться от события и уничтожить
@@ -99,7 +107,7 @@ namespace KDSService
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             // DEBUG
-            _observeTimer.Stop();
+            //_observeTimer.Stop();
 
             _ordersModel.UpdateOrders();
         }
@@ -112,14 +120,31 @@ namespace KDSService
             throw new NotImplementedException();
         }
 
-        public Dictionary<int, DepartmentGroup> GetDepartmentGroups()
+        public Dictionary<int, DepartmentGroupModel> GetDepartmentGroups()
         {
+            //OperationContext context = OperationContext.Current;
+            //if (context != null && context.RequestContext != null)
+            //{
+            //    Message msg = context.RequestContext.RequestMessage;
+            //    Console.WriteLine(msg.ToString());
+            //}
+
             return ServiceDics.DepGroups.GetDictionary();
         }
 
-        public Dictionary<int, Department> GetDepartments()
+        public Dictionary<int, DepartmentModel> GetDepartments()
         {
             return ServiceDics.Departments.GetDictionary();
+        }
+
+        public List<OrderModel> GetOrders()
+        {
+            _ordersModel.UpdateOrders();
+
+            List<OrderModel> retVal = new List<OrderModel>();
+            retVal.AddRange(_ordersModel.Orders.Values);
+
+            return retVal;
         }
 
         #endregion
