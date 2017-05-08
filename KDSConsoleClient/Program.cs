@@ -2,6 +2,7 @@
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Collections.Generic;
 using AppKDS;
 using KDSConsoleClient.ServiceReference1;
@@ -24,8 +25,33 @@ namespace KDSConsoleClient
             //   отделов
             Dictionary<int, DepartmentModel> deps = client.GetDepartments();
 
-            List<OrderModel> orders = client.GetOrders();
-            Console.WriteLine("Заказов " + orders.Count);
+            while (true)
+            {
+                Console.WriteLine("введите Ид заказа: ");
+                string resp = Console.ReadLine();
+                if (resp.IsNull()) break;
+                else
+                {
+                    List<OrderModel> orders = client.GetOrders();
+                    if (resp == "0")
+                        Console.WriteLine("Заказов " + orders.Count);
+                    else if (resp == "-1")
+                    {
+                        // all records
+                        foreach (OrderModel om in orders)
+                        {
+                            Console.WriteLine("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
+                        }
+                    }
+                    else
+                    {
+                        int id = Convert.ToInt32(resp);
+                        OrderModel om = orders.FirstOrDefault(o => o.Id==id);
+                        if (om != null)
+                            Console.WriteLine("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
+                    }
+                }
+            }  // while
 
             Console.Read();
         }

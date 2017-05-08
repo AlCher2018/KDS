@@ -98,13 +98,20 @@ namespace KDSService.AppModel
         public int DishQuantity { get; set; }
 
         private List<DepartmentGroupModel> _depGroups;
-        internal List<DepartmentGroupModel> DepGroups { get; set; }
+        internal List<DepartmentGroupModel> DepGroups
+        {
+            get { return _depGroups; }
+            set { _depGroups = value; }
+        }
 
         // для передачи клиенту списка Ид групп отделов
         [DataMember]
         public List<int> DepGroupsIdList
         {
-            get { return _depGroups.Select(dg => dg.Id).ToList(); }
+            get {
+                List<int> retVal = _depGroups.Select(dg => dg.Id).ToList();
+                return _depGroups.Select(dg => dg.Id).ToList();
+            }
             set { }
         }
 

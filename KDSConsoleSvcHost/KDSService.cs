@@ -53,12 +53,12 @@ namespace KDSService
             ServiceDics.Departments.UpdateFromDB();
 
             _observeTimer = new Timer(_ObserveTimerInterval);
-            //_observeTimer.Elapsed += _observeTimer_Elapsed;
-            //_observeTimer.Start();
+            _observeTimer.Elapsed += _observeTimer_Elapsed;
+            _observeTimer.Start();
 
             _ordersModel = new OrdersModel();
             // DEBUG
-            _observeTimer_Elapsed(null, null);
+            //_observeTimer_Elapsed(null, null);
         }
 
         public void Dispose()
@@ -106,10 +106,12 @@ namespace KDSService
         // *** начало работы и периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            // DEBUG
-            //_observeTimer.Stop();
+            _observeTimer.Stop();
+            Console.WriteLine("  update Orders");
 
             _ordersModel.UpdateOrders();
+
+            if (_observeTimer != null) _observeTimer.Start();
         }
 
 
@@ -139,7 +141,7 @@ namespace KDSService
 
         public List<OrderModel> GetOrders()
         {
-            _ordersModel.UpdateOrders();
+            //_ordersModel.UpdateOrders();
 
             List<OrderModel> retVal = new List<OrderModel>();
             retVal.AddRange(_ordersModel.Orders.Values);

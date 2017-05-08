@@ -54,7 +54,7 @@ namespace AppKDS
 
         public static bool IsNull(this string source)
         {
-            return (string.IsNullOrEmpty(source));
+            return (string.IsNullOrEmpty(source) || source.Equals(System.DBNull.Value));
         }
 
         public static bool IsNumber(this string source)
