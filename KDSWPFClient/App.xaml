@@ -1,0 +1,14 @@
+﻿<Application x:Class="KDSClient.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:KDSClient"
+             xmlns:locLib="clr-namespace:KDSClient.Lib"
+             >
+    
+    <Application.Resources>
+        <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
+        <locLib:GetMargin x:Key="getMargin"/>
+        <locLib:GetCornerRadius x:Key="getCornerRadius"/>
+    </Application.Resources>
+    
+</Application>

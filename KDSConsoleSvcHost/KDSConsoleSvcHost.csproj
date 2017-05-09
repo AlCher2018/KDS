@@ -63,8 +63,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppEnv.cs" />
     <Compile Include="AppModel\AppActionEnum.cs" />
-    <Compile Include="AppModel\AppProperties.cs" />
+    <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="AppModel\OrderCommand.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\ServiceDics.cs" />

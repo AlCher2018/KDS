@@ -24,15 +24,25 @@ namespace KDSService.AppModel
             _orders = new Dictionary<int, OrderModel>();
         }
 
-        public void UpdateOrders()
+        public string UpdateOrders()
         {
-            KDSEntities db = new KDSEntities();
-            // в запрос включить блюда, отделы и группы отделов
-            var dbOrders = db.Order.
-                Include("OrderDish").
-                Include("OrderDish.Department").
-                Include("OrderDish.Department.DepartmentDepartmentGroup").
-                Where(o => (o.OrderStatusId < 2)).ToList();
+            KDSEntities db = null;
+            List<Order> dbOrders = null;
+            try
+            {
+                db = new KDSEntities();
+                // в запрос включить блюда, отделы и группы отделов
+                dbOrders = db.Order
+                    .Include("OrderDish")
+                    .Include("OrderDish.Department")
+                    .Include("OrderDish.Department.DepartmentDepartmentGroup")
+                    .Where(o => (o.OrderStatusId < 2))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
 
             OrderModel curOrder;
             foreach (Order dbOrder in dbOrders)
@@ -52,6 +62,9 @@ namespace KDSService.AppModel
             // ключи для удаления
             IEnumerable<int> delKeys = _orders.Keys.Except(dbOrders.Select(o => o.Id));
             foreach (int key in delKeys) _orders.Remove(key);
+
+            if (db != null) db.Dispose();
+            return null;
         }
 
     }

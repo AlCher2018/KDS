@@ -15,6 +15,9 @@ namespace KDSService
     public interface IKDSService
     {
         // получить словари
+        //    статусов заказа/блюда
+        [OperationContract]
+        List<OrderStatusModel> GetOrderStatusList();
         //    группы отделов
         [OperationContract]
         Dictionary<int, DepartmentGroupModel> GetDepartmentGroups();

@@ -1,9 +1,8 @@
-﻿using KDSService.AppModel;
+﻿using KDSConsoleSvcHost;
+using KDSService.AppModel;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Configuration;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Text;
@@ -15,16 +14,12 @@ namespace KDSService
     /// 1. Периодический опрос заказов из БД
     /// </summary>
 
-    [ServiceBehavior(IncludeExceptionDetailInFaults = true)]
+    [ServiceBehavior(IncludeExceptionDetailInFaults = true, 
+        InstanceContextMode = InstanceContextMode.Single)]
     public class KDSServiceClass : IDisposable, IKDSService
     {
         private const double _ObserveTimerInterval = 500;
 
-        // словарь глобальных свойств
-        private AppProperties _props;
-
-        // логгер
-        private Logger _logger;
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;  
         // таймер наблюдения за заказами в БД
@@ -33,38 +28,30 @@ namespace KDSService
 
         public KDSServiceClass()
         {
-            _logger = LogManager.GetLogger("fileLogger");
-            
-            Console.WriteLine("конструктор KDSService");
-
-            _props = new AppProperties();
-            getAppPropertiesFromConfigFile();
-
-            writeLogInfoMessage("*******  CREATE INSTANCE KDSService  ********");
-
-            // вывести в лог настройки из config-файла
-            string cfgValuesString = getConfigString();
-            writeLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
-
-            // проверить доступность БД
-
-            // сохранить в служебном классе словари из БД
-            ServiceDics.DepGroups.UpdateFromDB();
-            ServiceDics.Departments.UpdateFromDB();
+            string msg = "**** Создание служебного класса KDSService ****";
+            Console.WriteLine(msg);
+            AppEnv.WriteLogInfoMessage(msg);
 
             _observeTimer = new Timer(_ObserveTimerInterval);
             _observeTimer.Elapsed += _observeTimer_Elapsed;
-            _observeTimer.Start();
 
             _ordersModel = new OrdersModel();
-            // DEBUG
-            //_observeTimer_Elapsed(null, null);
+            startService();
         }
 
+        private void startService()
+        {
+            _observeTimer.Start();
+        }
+        private void stopService()
+        {
+            _observeTimer.Stop();
+        }
         public void Dispose()
         {
-            Console.WriteLine("dispose KDSService");
-            writeLogInfoMessage("*******  PURGE KDSService  ********");
+            string msg = "**** Закрытие служебного класса KDSService ****";
+            Console.WriteLine(msg);
+            AppEnv.WriteLogInfoMessage(msg);
 
             // таймер остановить, отписаться от события и уничтожить
             if (_observeTimer != null)
@@ -76,40 +63,14 @@ namespace KDSService
         }
 
 
-        private string getConfigString()
-        {
-            NameValueCollection cfg = ConfigurationManager.AppSettings;
-            StringBuilder sb = new StringBuilder();
-
-            putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
-            putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
-
-            return sb.ToString();
-        }
-        private void putCfgValueToStrBuilder(NameValueCollection cfg, StringBuilder sb, string key)
-        {
-            string value;
-            if ((value = cfg[key]) != null) sb.Append(string.Format("{0}{1}: {2}", (sb.Length == 0 ? "" : "; "), key, value));
-        }
-
-        private void getAppPropertiesFromConfigFile()
-        {
-            NameValueCollection cfg = ConfigurationManager.AppSettings;
-            string value;
-
-            if ((value = cfg["IsWriteTraceMessages"]) != null)
-                _props.SetProperty("IsWriteTraceMessages", value.ToBool());
-            if ((value = cfg["IsLogUserAction"]) != null)
-                _props.SetProperty("IsLogUserAction", value.ToBool());
-        }
-
-        // *** начало работы и периодический просмотр заказов
+        // периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             _observeTimer.Stop();
-            Console.WriteLine("  update Orders");
+            //Console.WriteLine("  update Orders");
 
-            _ordersModel.UpdateOrders();
+            string errMsg = _ordersModel.UpdateOrders();
+            if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
 
             if (_observeTimer != null) _observeTimer.Start();
         }
@@ -117,6 +78,16 @@ namespace KDSService
 
         // ****  SERVICE CONTRACT  *****
         #region service contract
+
+        public List<OrderStatusModel> GetOrderStatusList()
+        {
+            string errMsg = null;
+            List<OrderStatusModel>  retVal = ServiceDics.GetOrderStatusList(out errMsg);
+
+            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+            return retVal;
+        }
+
         public void ChangeStatus(OrderCommand command)
         {
             throw new NotImplementedException();
@@ -141,8 +112,6 @@ namespace KDSService
 
         public List<OrderModel> GetOrders()
         {
-            //_ordersModel.UpdateOrders();
-
             List<OrderModel> retVal = new List<OrderModel>();
             retVal.AddRange(_ordersModel.Orders.Values);
 
@@ -151,34 +120,6 @@ namespace KDSService
 
         #endregion
 
-        #region App logger
-
-        private void writeLogTraceMessage(string msg)
-        {
-            if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(" " + msg);
-        }
-
-        private void writeLogInfoMessage(string msg)
-        {
-            _logger.Info(msg);
-        }
-
-        private void writeLogErrorMessage(string msg)
-        {
-            _logger.Error(msg);
-        }
-
-        private void writeAppAction(AppActionEnum action, string value = null)
-        {
-            if (_props.GetBoolProperty("IsLogUserAction"))
-            {
-                string msg = action.ToString();
-                if (value != null) msg += ". " + value;
-                writeLogTraceMessage(msg);
-            }
-        }
-
-        #endregion
 
     }  // class
 }
