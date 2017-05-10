@@ -24,50 +24,88 @@ namespace KDSService.AppModel
             _orders = new Dictionary<int, OrderModel>();
         }
 
+        //**************************************
+        // ГЛАВНАЯ ПРОЦЕДУРА ОБНОВЛЕНИЯ ЗАКАЗОВ
+        //**************************************
         public string UpdateOrders()
         {
-            KDSEntities db = null;
+            // получить заказы из БД
             List<Order> dbOrders = null;
             try
             {
-                db = new KDSEntities();
-                // в запрос включить блюда, отделы и группы отделов
-                dbOrders = db.Order
-                    .Include("OrderDish")
-                    .Include("OrderDish.Department")
-                    .Include("OrderDish.Department.DepartmentDepartmentGroup")
-                    .Where(o => (o.OrderStatusId < 2))
-                    .ToList();
+                using (KDSEntities db = new KDSEntities())
+                {
+                    // в запрос включить блюда, отделы и группы отделов
+                    // отсортированные по порядке появления в таблице
+                    dbOrders = db.Order
+                        .Include("OrderDish")
+                        .Include("OrderDish.Department")
+                        .Include("OrderDish.Department.DepartmentDepartmentGroup")
+                        .Where(o => (o.OrderStatusId < 2))
+                        .OrderBy(o => o.Id)
+                        .ToList();
+                }
             }
             catch (Exception ex)
             {
                 return ex.Message;
             }
 
-            OrderModel curOrder;
-            foreach (Order dbOrder in dbOrders)
+            // цикл по полученным из БД заказам
+            if (dbOrders != null)
             {
-                if (_orders.ContainsKey(dbOrder.Id))
+                lock (dbOrders)
                 {
-                    // обновить существующий заказ
-                    curOrder = _orders[dbOrder.Id];
-                    curOrder.UpdateFromDBEntity(dbOrder);
-                }
-                else
+                    // сохранить в свойствах приложения словарь блюд с их количеством, 
+                    // которые ожидают готовки или уже готовятся
+                    Dictionary<int, decimal> dishesQty = getDishesQty(dbOrders);
+                    AppEnv.SetAppProperty("dishesQty", dishesQty);
+
+                    OrderModel curOrder;
+                    foreach (Order dbOrder in dbOrders)
+                    {
+                        if (_orders.ContainsKey(dbOrder.Id))
+                        {
+                            // обновить существующий заказ
+                            curOrder = _orders[dbOrder.Id];
+                            curOrder.UpdateFromDBEntity(dbOrder);
+                        }
+                        else
+                        {
+                            // добавление заказа в словарь
+                            curOrder = new OrderModel(dbOrder);
+                            _orders.Add(dbOrder.Id, curOrder);
+                        }
+                        curOrder
+                    }
+                    // ключи для удаления
+                    IEnumerable<int> delKeys = _orders.Keys.Except(dbOrders.Select(o => o.Id));
+                    foreach (int key in delKeys) _orders.Remove(key);
+                }  // lock
+            }
+
+            return null;
+        }  // method
+
+        private Dictionary<int, decimal> getDishesQty(List<Order> dbOrders)
+        {
+            Dictionary<int, decimal> retVal = new Dictionary<int, decimal>();
+            foreach (Order order in dbOrders)
+            {
+                foreach (OrderDish dish in order.OrderDish)
                 {
-                    // добавление заказа в словарь
-                    _orders.Add(dbOrder.Id, new OrderModel(dbOrder));
+                    if (retVal.ContainsKey(dish.Id))
+                        retVal[dish.Id] += dish.Quantity;
+                    else
+                        retVal.Add(dish.Id, dish.Quantity);
                 }
             }
-            // ключи для удаления
-            IEnumerable<int> delKeys = _orders.Keys.Except(dbOrders.Select(o => o.Id));
-            foreach (int key in delKeys) _orders.Remove(key);
 
-            if (db != null) db.Dispose();
-            return null;
-        }
+            return (retVal.Count == 0) ? null : retVal;
+        }  // method
 
-    }
+    }  // class
+
 
     [DataContract]
     public class OrderModel
@@ -141,6 +179,19 @@ namespace KDSService.AppModel
     [DataContract]
     public class OrderDishModel
     {
+        #region Fields
+        // поля для фиксации времени между сменой статусов
+        private DateTime _dtFrom, _dtTo;  // дата 
+        // поля дат входа в состояние
+        private DateTime _dtStartCook;
+        // и отображения таймера ожидания смены статуса
+        private string _strTimer;
+        #endregion
+
+        #region Properties
+        [DataMember]
+        public string WaitTimer { get { return _strTimer; } }
+
         [DataMember]
         public int Id { get; set; }
 
@@ -167,34 +218,104 @@ namespace KDSService.AppModel
             set { }
         }
 
-        private Timer _timer;
+        // время (в сек) "Готовить позже"
+        // клентам нет смысла передавать
+        public int DelayedStartTime { get; set; }
+        #endregion
 
         // ctor
         public OrderDishModel(OrderDish dbDish)
         {
-            _timer = new Timer();
             UpdateFromDBEntity(dbDish);
+
+            // ДЛЯ НОВОГО БЛЮДА
+            // дата создания блюда со сдвигом "готовить позже"
+            _dtFrom = CreateDate.AddSeconds(DelayedStartTime);
         }
 
+        // новое блюдо или обновить существующее из БД
         internal void UpdateFromDBEntity(OrderDish dbDish)
         {
             Id = dbDish.Id; Uid = dbDish.UID;
             CreateDate = dbDish.CreateDate;
             Name = dbDish.DishName;
             Quantity = dbDish.Quantity;
-            Status = (OrderStatusEnum)Enum.Parse(typeof(OrderStatusEnum), dbDish.DishStatusId.ToString());
+            DelayedStartTime = dbDish.DelayedStartTime;
 
-            // отдел
-            _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
-            if (_department == null) _department = new DepartmentModel();
-            else _department.DepGroups.Clear();
-            // группы отделов
-            foreach (DepartmentDepartmentGroup ddg in dbDish.Department.DepartmentDepartmentGroup)
+            // статус блюда
+            OrderStatusEnum newStatus = (OrderStatusEnum)Enum.Parse(typeof(OrderStatusEnum), dbDish.DishStatusId.ToString());
+            bool isNewStatus = (newStatus != Status);     // статус изменен
+
+            // если поменялся отдел
+            if (_department.Id != dbDish.DepartmentId)
             {
-                _department.DepGroups.Add(ServiceDics.DepGroups.GetDepGroupById(ddg.DepartmentGroupId));
+                // необходимо обновить статус
+                isNewStatus = true;
+                // сохранить в поле
+                _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
+                if (_department == null) _department = new DepartmentModel();
+                // группы отделов
+                foreach (DepartmentDepartmentGroup ddg in dbDish.Department.DepartmentDepartmentGroup)
+                {
+                    _department.DepGroups.Add(ServiceDics.DepGroups.GetDepGroupById(ddg.DepartmentGroupId));
+                }
             }
-            
+
+            if (isNewStatus) UpdateStatus(newStatus);
+
+        }  // method
+
+        // команды на изменение статуса блюда могут приходить как от КДС, так и из FrontOffice (при чтении из БД)
+        public void UpdateStatus(OrderStatusEnum newStatus)
+        {
+            DateTime dtNow = DateTime.Now;
+            // промежуток времени, который будет отображаться на КДС
+            TimeSpan ts = TimeSpan.Zero;   
+
+            // ожидание начала приготовления блюда
+            if (newStatus == OrderStatusEnum.Wait)
+            {
+                // автоматический старт счетчика
+                if ((_department.IsAutoStart == true) && (checkStartTimer(dtNow) == true))
+                    ts = dtNow - _dtFrom;
+                // ручной запуск готовки: таймер не отображаем
+//                else
+
+                // форматированный промежуток времени
+                if (ts.Equals(TimeSpan.Zero) == false)
+                {
+                    _strTimer = (ts.TotalDays > 0d) ? ts.ToString("d.hh:mm:ss") : ts.ToString("hh:mm:ss");
+                }
+            }  // if (newStatus == OrderStatusEnum.Wait)
+
+            // переход в состояние "В ПРОЦЕССЕ"
+            else if (newStatus == OrderStatusEnum.InProcess)
+            {
+                // сохранить в БД время ожидания готовки
+
+            }
+
+        }  // method UpdateStatus
+
+        // проверка возможности запуска таймера ожидания готовки
+        private bool checkStartTimer(DateTime dtNow)
+        {
+            // 1. таймер тикаем, если текущее время больше времени 
+            bool retVal = (dtNow > _dtFrom);
+
+            // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
+            if (retVal == false)
+            {
+                Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppEnv.GetAppProperty("dishesQty");
+                if (dishesQty != null)
+                    retVal = (dishesQty[this.Id] < _department.DishQuantity);
+                else
+                    retVal = true;
+            }
+
+            return retVal;
         }
+
 
     }  // class OrderDishModel
 

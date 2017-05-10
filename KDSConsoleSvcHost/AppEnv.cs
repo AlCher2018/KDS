@@ -77,6 +77,21 @@ namespace KDSConsoleSvcHost
             else return null;
         }
 
+        #region App properties
+
+        public static void SetAppProperty(string name, object propObj)
+        {
+            _props.SetProperty(name, propObj);
+        }
+
+        public static object GetAppProperty(string name)
+        {
+            if (_props.ContainsKey(name))
+                return _props.GetProperty(name);
+            else
+                return null;
+        }
+
         private static string getConfigString()
         {
             NameValueCollection cfg = ConfigurationManager.AppSettings;
@@ -103,7 +118,7 @@ namespace KDSConsoleSvcHost
             if ((value = cfg["IsLogUserAction"]) != null)
                 _props.SetProperty("IsLogUserAction", value.ToBool());
         }
-
+        #endregion
 
 
         // проверка базы данных

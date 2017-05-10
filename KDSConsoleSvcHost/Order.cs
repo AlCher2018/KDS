@@ -31,8 +31,8 @@ namespace KDSConsoleSvcHost
         public Nullable<System.DateTime> StartDate { get; set; }
         public int SpentTime { get; set; }
         public string Waiter { get; set; }
-        public int QueueStatusId { get; set; }
-        public int LanguageTypeId { get; set; }
+        public int InPreporationSpentTime { get; set; }
+        public int ReadySpentTime { get; set; }
     
         public virtual OrderStatus OrderStatus { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

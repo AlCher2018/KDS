@@ -32,6 +32,7 @@ namespace KDSConsoleSvcHost
         public Nullable<System.DateTime> RollbackDate { get; set; }
         public int ReadySpentTime { get; set; }
         public string UID1C { get; set; }
+        public int DelayedStartTime { get; set; }
     
         public virtual Department Department { get; set; }
         public virtual Order Order { get; set; }

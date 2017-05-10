@@ -65,47 +65,47 @@
   <ItemGroup>
     <Compile Include="AppEnv.cs" />
     <Compile Include="AppModel\AppActionEnum.cs" />
+    <Compile Include="Department.cs">
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DepartmentDepartmentGroup.cs">
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DepartmentGroup.cs">
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="KDSEntityDataModel.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntityDataModel.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="KDSEntityDataModel.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="KDSEntityDataModel.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+    </Compile>
     <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="AppModel\OrderCommand.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\ServiceDics.cs" />
     <Compile Include="AppModel\ServiceModels.cs" />
-    <Compile Include="Department.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DepartmentDepartmentGroup.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DepartmentGroup.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
-    </Compile>
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
-    <Compile Include="KDS_EFModel.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDS_EFModel.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Include="KDS_EFModel.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
-    </Compile>
-    <Compile Include="KDS_EFModel.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDS_EFModel.edmx</DependentUpon>
-    </Compile>
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="Order.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
     </Compile>
     <Compile Include="OrderDish.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
     </Compile>
     <Compile Include="OrderStatus.cs">
-      <DependentUpon>KDS_EFModel.tt</DependentUpon>
+      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -114,32 +114,30 @@
     <Content Include="App.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EntityDeploy Include="KDS_EFModel.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>KDS_EFModel.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <None Include="KDS_EFModel.edmx.diagram">
-      <DependentUpon>KDS_EFModel.edmx</DependentUpon>
-    </None>
+    <Content Include="KDSEntityDataModel.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+      <LastGenOutput>KDSEntityDataModel.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="KDSEntityDataModel.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+      <LastGenOutput>KDSEntityDataModel.cs</LastGenOutput>
+    </Content>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <EntityDeploy Include="KDSEntityDataModel.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>KDSEntityDataModel.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="KDSEntityDataModel.edmx.diagram">
+      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="KDS_EFModel.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDS_EFModel.edmx</DependentUpon>
-      <LastGenOutput>KDS_EFModel.Context.cs</LastGenOutput>
-    </Content>
-    <Content Include="KDS_EFModel.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDS_EFModel.edmx</DependentUpon>
-      <LastGenOutput>KDS_EFModel.cs</LastGenOutput>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

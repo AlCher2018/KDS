@@ -143,7 +143,7 @@ namespace KDSService.AppModel
         public bool IsAutoStart { get; set; }
 
         [DataMember]
-        public int DishQuantity { get; set; }
+        public decimal DishQuantity { get; set; }
 
         private List<DepartmentGroupModel> _depGroups;
         internal List<DepartmentGroupModel> DepGroups

@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="KDSModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+      <Schema Namespace="KDSEntities.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Department">
           <Key>
             <PropertyRef Name="Id" />
@@ -12,8 +12,8 @@
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
-          <Property Name="IsAutoStart" Type="bit" />
-          <Property Name="DishQuantity" Type="int" />
+          <Property Name="IsAutoStart" Type="bit" Nullable="false" />
+          <Property Name="DishQuantity" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="DepartmentDepartmentGroup">
           <Key>
@@ -27,8 +27,9 @@
           <Key>
             <PropertyRef Name="Id" />
           </Key>
-          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
+          <Property Name="UID" Type="nvarchar" MaxLength="50" />
         </EntityType>
         <EntityType Name="Order">
           <Key>
@@ -45,8 +46,8 @@
           <Property Name="StartDate" Type="datetime" />
           <Property Name="SpentTime" Type="int" Nullable="false" />
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
-          <Property Name="QueueStatusId" Type="int" Nullable="false" />
-          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+          <Property Name="InPreporationSpentTime" Type="int" Nullable="false" />
+          <Property Name="ReadySpentTime" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -70,6 +71,7 @@
           <Property Name="RollbackDate" Type="datetime" />
           <Property Name="ReadySpentTime" Type="int" Nullable="false" />
           <Property Name="UID1C" Type="nvarchar" MaxLength="50" />
+          <Property Name="DelayedStartTime" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderStatus">
           <Key>
@@ -139,7 +141,7 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityContainer Name="KDSModelStoreContainer">
+        <EntityContainer Name="KDSEntitiesStoreContainer">
           <EntitySet Name="Department" EntityType="Self.Department" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="DepartmentDepartmentGroup" EntityType="Self.DepartmentDepartmentGroup" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="DepartmentGroup" EntityType="Self.DepartmentGroup" Schema="dbo" store:Type="Tables" />
@@ -171,7 +173,7 @@
     </edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
-      <Schema Namespace="KDSModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+      <Schema Namespace="KDSEntities" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
         <EntityType Name="Department">
           <Key>
             <PropertyRef Name="Id" />
@@ -179,8 +181,8 @@
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="IsAutoStart" Type="Boolean" />
-          <Property Name="DishQuantity" Type="Int32" />
+          <Property Name="IsAutoStart" Type="Boolean" Nullable="false" />
+          <Property Name="DishQuantity" Type="Int32" Nullable="false" />
           <NavigationProperty Name="DepartmentDepartmentGroup" Relationship="Self.FK_DepartmentDepartmentGroup_Department" FromRole="Department" ToRole="DepartmentDepartmentGroup" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Department" FromRole="Department" ToRole="OrderDish" />
         </EntityType>
@@ -198,8 +200,9 @@
           <Key>
             <PropertyRef Name="Id" />
           </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="DepartmentDepartmentGroup" Relationship="Self.FK_DepartmentDepartmentGroup_DepartmentGroup" FromRole="DepartmentGroup" ToRole="DepartmentDepartmentGroup" />
         </EntityType>
         <EntityType Name="Order">
@@ -217,8 +220,8 @@
           <Property Name="StartDate" Type="DateTime" Precision="3" />
           <Property Name="SpentTime" Type="Int32" Nullable="false" />
           <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
-          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <Property Name="InPreporationSpentTime" Type="Int32" Nullable="false" />
+          <Property Name="ReadySpentTime" Type="Int32" Nullable="false" />
           <NavigationProperty Name="OrderStatus" Relationship="Self.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
         </EntityType>
@@ -244,6 +247,7 @@
           <Property Name="RollbackDate" Type="DateTime" Precision="3" />
           <Property Name="ReadySpentTime" Type="Int32" Nullable="false" />
           <Property Name="UID1C" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="DelayedStartTime" Type="Int32" Nullable="false" />
           <NavigationProperty Name="Department" Relationship="Self.FK_OrderDish_Department" FromRole="OrderDish" ToRole="Department" />
           <NavigationProperty Name="Order" Relationship="Self.FK_OrderDish_Order" FromRole="OrderDish" ToRole="Order" />
         </EntityType>
@@ -349,9 +353,9 @@
     <!-- C-S mapping content -->
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
-        <EntityContainerMapping StorageEntityContainer="KDSModelStoreContainer" CdmEntityContainer="KDSEntities">
+        <EntityContainerMapping StorageEntityContainer="KDSEntitiesStoreContainer" CdmEntityContainer="KDSEntities">
           <EntitySetMapping Name="Department">
-            <EntityTypeMapping TypeName="KDSModel.Department">
+            <EntityTypeMapping TypeName="KDSEntities.Department">
               <MappingFragment StoreEntitySet="Department">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
@@ -362,7 +366,7 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="DepartmentDepartmentGroup">
-            <EntityTypeMapping TypeName="KDSModel.DepartmentDepartmentGroup">
+            <EntityTypeMapping TypeName="KDSEntities.DepartmentDepartmentGroup">
               <MappingFragment StoreEntitySet="DepartmentDepartmentGroup">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
@@ -371,15 +375,16 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="DepartmentGroup">
-            <EntityTypeMapping TypeName="KDSModel.DepartmentGroup">
+            <EntityTypeMapping TypeName="KDSEntities.DepartmentGroup">
               <MappingFragment StoreEntitySet="DepartmentGroup">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="Order">
-            <EntityTypeMapping TypeName="KDSModel.Order">
+            <EntityTypeMapping TypeName="KDSEntities.Order">
               <MappingFragment StoreEntitySet="Order">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
@@ -392,13 +397,13 @@
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
                 <ScalarProperty Name="Waiter" ColumnName="Waiter" />
-                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
-                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
+                <ScalarProperty Name="InPreporationSpentTime" ColumnName="InPreporationSpentTime" />
+                <ScalarProperty Name="ReadySpentTime" ColumnName="ReadySpentTime" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="OrderDish">
-            <EntityTypeMapping TypeName="KDSModel.OrderDish">
+            <EntityTypeMapping TypeName="KDSEntities.OrderDish">
               <MappingFragment StoreEntitySet="OrderDish">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderId" ColumnName="OrderId" />
@@ -418,11 +423,12 @@
                 <ScalarProperty Name="RollbackDate" ColumnName="RollbackDate" />
                 <ScalarProperty Name="ReadySpentTime" ColumnName="ReadySpentTime" />
                 <ScalarProperty Name="UID1C" ColumnName="UID1C" />
+                <ScalarProperty Name="DelayedStartTime" ColumnName="DelayedStartTime" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="OrderStatus">
-            <EntityTypeMapping TypeName="KDSModel.OrderStatus">
+            <EntityTypeMapping TypeName="KDSEntities.OrderStatus">
               <MappingFragment StoreEntitySet="OrderStatus">
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
