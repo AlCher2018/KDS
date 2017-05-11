@@ -66,28 +66,28 @@
     <Compile Include="AppEnv.cs" />
     <Compile Include="AppModel\AppActionEnum.cs" />
     <Compile Include="Department.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="DepartmentDepartmentGroup.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="DepartmentGroup.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="KDSEntityDataModel.Context.cs">
+    <Compile Include="KDSEntities.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntityDataModel.Context.tt</DependentUpon>
+      <DependentUpon>KDSEntities.Context.tt</DependentUpon>
     </Compile>
-    <Compile Include="KDSEntityDataModel.cs">
+    <Compile Include="KDSEntities.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="KDSEntityDataModel.Designer.cs">
+    <Compile Include="KDSEntities.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
     </Compile>
     <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="AppModel\OrderCommand.cs" />
@@ -99,13 +99,22 @@
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="Order.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="OrderDish.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="OrderDishReturnTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="OrderDishRunTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="OrderRunTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="OrderStatus.cs">
-      <DependentUpon>KDSEntityDataModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -114,25 +123,25 @@
     <Content Include="App.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="KDSEntityDataModel.Context.tt">
+    <Content Include="KDSEntities.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
-      <LastGenOutput>KDSEntityDataModel.Context.cs</LastGenOutput>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+      <LastGenOutput>KDSEntities.Context.cs</LastGenOutput>
     </Content>
-    <Content Include="KDSEntityDataModel.tt">
+    <Content Include="KDSEntities.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
-      <LastGenOutput>KDSEntityDataModel.cs</LastGenOutput>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+      <LastGenOutput>KDSEntities.cs</LastGenOutput>
     </Content>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EntityDeploy Include="KDSEntityDataModel.edmx">
+    <EntityDeploy Include="KDSEntities.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>KDSEntityDataModel.Designer.cs</LastGenOutput>
+      <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
     </EntityDeploy>
-    <None Include="KDSEntityDataModel.edmx.diagram">
-      <DependentUpon>KDSEntityDataModel.edmx</DependentUpon>
+    <None Include="KDSEntities.edmx.diagram">
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
     </None>
     <None Include="packages.config" />
   </ItemGroup>

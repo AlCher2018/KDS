@@ -21,6 +21,9 @@ namespace CookingEmulator
 
         static void Main(string[] args)
         {
+            TimeSpan ts1 = DateTime.Now - (DateTime.Now.AddDays(20));
+            string s1 = ts1.ToString(@"d\.hh\:mm\:ss");
+
             var v1 = Convert.ToBoolean(null);
             var v3 = Convert.ToBoolean("true");
             var v4 = Convert.ToBoolean(0);

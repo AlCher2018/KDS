@@ -31,5 +31,8 @@ namespace KDSConsoleSvcHost
         public virtual DbSet<Order> Order { get; set; }
         public virtual DbSet<OrderDish> OrderDish { get; set; }
         public virtual DbSet<OrderStatus> OrderStatus { get; set; }
+        public virtual DbSet<OrderDishReturnTime> OrderDishReturnTime { get; set; }
+        public virtual DbSet<OrderDishRunTime> OrderDishRunTime { get; set; }
+        public virtual DbSet<OrderRunTime> OrderRunTime { get; set; }
     }
 }

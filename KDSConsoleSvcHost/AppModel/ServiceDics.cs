@@ -105,8 +105,8 @@ namespace KDSService.AppModel
                             Id = dbDep.Id,
                             Name = dbDep.Name,
                             UID = dbDep.UID,
-                            IsAutoStart = dbDep.IsAutoStart ?? false,
-                            DishQuantity = dbDep.DishQuantity ?? 0,
+                            IsAutoStart = dbDep.IsAutoStart,
+                            DishQuantity = dbDep.DishQuantity,
                         };
                         dep.DepGroups = dbDep.DepartmentDepartmentGroup.Select<DepartmentDepartmentGroup, DepartmentGroupModel>(dbGroup => new DepartmentGroupModel()
                         {

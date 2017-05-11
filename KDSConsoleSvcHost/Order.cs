@@ -18,6 +18,7 @@ namespace KDSConsoleSvcHost
         public Order()
         {
             this.OrderDish = new HashSet<OrderDish>();
+            this.OrderRunTime = new HashSet<OrderRunTime>();
         }
     
         public int Id { get; set; }
@@ -37,5 +38,7 @@ namespace KDSConsoleSvcHost
         public virtual OrderStatus OrderStatus { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDish> OrderDish { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<OrderRunTime> OrderRunTime { get; set; }
     }
 }
