@@ -1,11 +1,14 @@
-﻿using KDSService.AppModel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Threading;
+using KDSService.AppModel;
 using KDSService.Lib;
+using KDSConsoleSvcHost.AppModel;
 
 
 namespace KDSConsoleSvcHost

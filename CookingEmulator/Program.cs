@@ -21,14 +21,14 @@ namespace CookingEmulator
 
         static void Main(string[] args)
         {
-            TimeSpan ts1 = DateTime.Now - (DateTime.Now.AddDays(20));
-            string s1 = ts1.ToString(@"d\.hh\:mm\:ss");
+            TimeSpan t1 = TimeSpan.Zero;
+            TimeSpan t2 = TimeSpan.FromMilliseconds(234235213453456);
+            TimeSpan t3 = t1 + TimeSpan.FromMilliseconds(1234214);
+            t3 += t2;
 
-            var v1 = Convert.ToBoolean(null);
-            var v3 = Convert.ToBoolean("true");
-            var v4 = Convert.ToBoolean(0);
-            var v5 = Convert.ToBoolean(-10);
-            var v6 = Convert.ToBoolean(1);
+            TimeSpan ts1 = new TimeSpan(0, 0, 0, 0, 2147483647);   //  2,147,483,647
+
+            string s1 = ts1.ToString(@"d\.hh\:mm\:ss");
 
             _db = new KDS_06_10Entities();
 

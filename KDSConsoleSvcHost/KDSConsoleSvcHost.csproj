@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="AppEnv.cs" />
     <Compile Include="AppModel\AppActionEnum.cs" />
+    <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="Department.cs">
       <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>

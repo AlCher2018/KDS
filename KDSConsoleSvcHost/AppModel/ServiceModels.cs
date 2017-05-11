@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
+using KDSConsoleSvcHost.AppModel;
 
 namespace KDSService.AppModel
 {
@@ -195,18 +196,19 @@ namespace KDSService.AppModel
         private DateTime _dtReturn;         // возврат
         private DateTime _dtCancel;         // отмена
         private DateTime _dtCommit;         // фиксация
-        private TimeSpan _tsWaitingCook;    // время ожидания пригтовления
-        private TimeSpan _tsCooking;        // время приготовления
-        private TimeSpan _tsWaitingTake;    // время ожидания выдачи
-        private TimeSpan _tsWaitingCommit;  // время ожидания фиксации заказа
+        private IncrementalTimer _tsWaitingCook;    // накопительный таймер ожидания начала приготовления
+        private IncrementalTimer _tsCooking;        // накопительный таймер времени приготовления
+        private IncrementalTimer _tsWaitingTake;    // накопительный таймер времени ожидания выдачи
+        private IncrementalTimer _tsWaitingCommit;  // накопительный таймер времени ожидания фиксации заказа
+        private IncrementalTimer _curTimer;         // текущий таймер для выдачи клиенту значения таймера
 
         // таймер ожидания смены статуса или нахождения в состоянии
-        private TimeSpan _tsTimerBase;      // базовое значение врем.пром., для накопительных значений после возврата
-        private DateTime _dtTimerFrom;      // дата начала временного промежутка
-        private TimeSpan _tsTimerIncr;      // приращение таймера
-        private TimeSpan _tsTimerValue;     // временной промежуток, рассчитываемый в таймере по формуле
-                                            //  _tsTimerBase + Now - _dtTempTSFrom
-        private Timer _timer;               // таймер, изменяющий временный промежуток
+        //private TimeSpan _tsTimerBase;      // базовое значение врем.пром., для накопительных значений после возврата
+        //private DateTime _dtTimerFrom;      // дата начала временного промежутка
+        //private TimeSpan _tsTimerIncr;      // приращение таймера
+        //private TimeSpan _tsTimerValue;     // временной промежуток, рассчитываемый в таймере по формуле
+        //                                    //  _tsTimerBase + Now - _dtTempTSFrom
+        //private Timer _timer;               // таймер, изменяющий временный промежуток
 
         // записи БД для сохранения блюда
         private OrderDish _dbDish = null;                   // запись блюда
@@ -221,8 +223,12 @@ namespace KDSService.AppModel
         public string WaitingTimerString {
             get {
                 string retVal = null;
-                if (_tsTimerValue.IsZero() == false)
+                if (_curTimer != null)
                 {
+                    int iVal = _curTimer.Value;
+                    TimeSpan ts = new TimeSpan(0);
+                    ts.Ticks
+
                     retVal = (_tsTimerValue.TotalDays > 0d) ? _tsTimerValue.ToString(@"d\.hh\:mm\:ss") : _tsTimerValue.ToString(@"hh\:mm\:ss");
                     // отрицательное время
                     if (_tsTimerValue.Ticks < 0) retVal = "-" + retVal;
@@ -596,7 +602,11 @@ namespace KDSService.AppModel
 
         public void Dispose()
         {
-            if (_timer != null) { _timer.Stop(); _timer.Dispose(); _timer = null; }
+            if (_tsWaitingCook != null) _tsWaitingCook.Dispose();
+            if (_tsCooking != null) _tsCooking.Dispose();
+            if (_tsWaitingTake != null) _tsWaitingTake.Dispose();
+            if (_tsWaitingCommit != null) _tsWaitingCommit.Dispose();
+            if (_curTimer != null) _curTimer.Dispose();
         }
     }  // class OrderDishModel
 
