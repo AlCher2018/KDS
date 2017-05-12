@@ -21,6 +21,9 @@ namespace CookingEmulator
 
         static void Main(string[] args)
         {
+            int? i1 = null;
+            int i2 = Convert.ToInt32(i1);
+
             TimeSpan t1 = TimeSpan.Zero;
             TimeSpan t2 = TimeSpan.FromMilliseconds(234235213453456);
             TimeSpan t3 = t1 + TimeSpan.FromMilliseconds(1234214);

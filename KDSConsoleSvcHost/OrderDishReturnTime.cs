@@ -16,12 +16,10 @@ namespace KDSConsoleSvcHost
     {
         public int Id { get; set; }
         public int OrderDishId { get; set; }
-        public int StatusFrom { get; set; }
         public System.DateTime ReturnDate { get; set; }
-        public Nullable<System.DateTime> ReadyDate { get; set; }
-        public Nullable<System.DateTime> TakeDate { get; set; }
-        public Nullable<int> CookingTS { get; set; }
-        public Nullable<int> WaitingTakeTS { get; set; }
+        public int StatusFrom { get; set; }
+        public int StatusFromTimeSpan { get; set; }
+        public int StatusTo { get; set; }
     
         public virtual OrderDish OrderDish { get; set; }
     }

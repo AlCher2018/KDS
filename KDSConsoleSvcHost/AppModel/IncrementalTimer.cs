@@ -30,8 +30,12 @@ namespace KDSConsoleSvcHost.AppModel
         // properties
         public int Interval { get { return _interval; } }
         public int Value { get { return _value; } }
+        public int Increment { get { return _increment; } }
+
         public TimeSpan IntervalTS { get { return _tsInterval; } }
         public TimeSpan ValueTS { get { return _tsValue; } }
+        public TimeSpan IncrementTS { get { return _tsIncrement; } }
+
 
         // ctor
         public IncrementalTimer(int interval)

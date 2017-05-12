@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Data.Entity;
 using System.Data.SqlClient;
+using KDSService.AppModel;
 
 namespace KDSService
 {
@@ -27,6 +28,29 @@ namespace KDSService
         }
         #endregion
 
+        #region OrderStatusEnum funcs
+        public static OrderStatusEnum GetStatusEnumFromNullableInt(int? dbIntValue)
+        {
+            if (dbIntValue == null)
+                return OrderStatusEnum.None;
+            else
+            {
+                OrderStatusEnum eVal;
+                if (Enum.TryParse<OrderStatusEnum>(dbIntValue.ToString(), out eVal)
+                    && (Enum.IsDefined(typeof(OrderStatusEnum), eVal)))
+                    return eVal;
+                else
+                    return OrderStatusEnum.None;
+            }
+        }
+
+        #endregion
+
+        // вернуть признак того, что int из поля БД пустой или нулевой
+        public static bool isDBIntZero(int? dbValue)
+        {
+            return (Convert.ToInt32(dbValue) == 0);
+        }
 
     }  // class
 
