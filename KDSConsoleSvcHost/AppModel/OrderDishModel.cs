@@ -8,7 +8,7 @@ using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
 using KDSConsoleSvcHost.AppModel;
-
+using System.Diagnostics;
 
 namespace KDSService.AppModel
 {
@@ -23,20 +23,7 @@ namespace KDSService.AppModel
     [DataContract]
     public class OrderDishModel: IDisposable
     {
-        #region Fields
-        // поля дат состояний и временных промежутков
-        private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
-        private TimeSpan _tsCookingEstimated;   // время приготовления
-        // накопительные счетчики нахождения в конкретном состоянии
-        private Dictionary<OrderStatusEnum, IncrementalTimer> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
-        private IncrementalTimer _curTimer;  // текущий таймер для выдачи клиенту значения таймера
-
-        // записи БД для сохранения блюда
-        private OrderDishRunTime _dbRunTimeRecord = null;         // запись дат/времени прямого пути 
-        private string _serviceErrorMessage;
-        #endregion
-
-        #region Properties
+        #region Service contract Properties
         // форматированное представление временного промежутка для внешних клиентов
         [DataMember]
         public string WaitingTimerString {
@@ -87,12 +74,9 @@ namespace KDSService.AppModel
         [DataMember]
         public string Comment { get; set; }
 
-        public int EstimatedTime { get; set; }
-
         [DataMember]
         public OrderStatusEnum Status { get; set; }
 
-        private DepartmentModel _department;
         [DataMember]
         public DepartmentModel Department
         {
@@ -100,26 +84,68 @@ namespace KDSService.AppModel
             set { }
         }
 
-        // время (в сек) "Готовить позже"
-        // клентам нет смысла передавать
-        public int DelayedStartTime { get; set; }
-
         [DataMember]
         public string ServiceErrorMessage { get { return _serviceErrorMessage; } set { } }
 
         #endregion
 
+
+        public int EstimatedTime { get; set; }
+        // время (в сек) "Готовить позже"
+        // клентам нет смысла передавать
+        public int DelayedStartTime { get; set; }
+        public Dictionary<int, DateTime> EnterStatusDict { get { return _dtEnterStatusDict; } }
+
+        #region Fields
+        private DepartmentModel _department;
+
+        // поля дат состояний и временных промежутков
+        private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
+        private TimeSpan _tsCookingEstimated;   // время приготовления
+        // словарь дат входа в состояние
+        private Dictionary<int, DateTime> _dtEnterStatusDict; 
+        // накопительные счетчики нахождения в конкретном состоянии
+        private Dictionary<OrderStatusEnum, IncrementalTimer> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
+        private IncrementalTimer _curTimer;  // текущий таймер для выдачи клиенту значения таймера
+
+        // записи БД для сохранения блюда
+        private OrderDishRunTime _dbRunTimeRecord = null;         // запись дат/времени прямого пути 
+        private string _serviceErrorMessage;
+
+        // ссылка на родительский заказ для обратных вызовов
+        private OrderModel _modelOrder;
+        #endregion
+
+
         // ctor
         // ДЛЯ НОВОГО БЛЮДА
-        public OrderDishModel(OrderDish dbDish)
+        public OrderDishModel(OrderDish dbDish, OrderModel modelOrder)
         {
-            UpdateFromDBEntity(dbDish, true);
+            _modelOrder = modelOrder;
+
+            Id = dbDish.Id; Uid = dbDish.UID;
+            CreateDate = dbDish.CreateDate;
+            Name = dbDish.DishName;
+            FilingNumber = dbDish.FilingNumber;
+            ParentUid = dbDish.ParentUid;
+            Comment = dbDish.Comment;
+            Quantity = dbDish.Quantity;
+            DelayedStartTime = dbDish.DelayedStartTime;
+            EstimatedTime = dbDish.EstimatedTime;
+            Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+            // объект отдела взять из справочника
+            _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
+
 
             // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
             _dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
             _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
 
+            _dtEnterStatusDict = new Dictionary<int, DateTime>();
+            for (int i = 0; i < 6; i++) _dtEnterStatusDict.Add(i, DateTime.MinValue);
+
             // создать словарь накопительных счетчиков
+            _tsTimersDict = new Dictionary<OrderStatusEnum, IncrementalTimer>();
             // таймер ожидания начала приготовления
             _tsTimersDict.Add(OrderStatusEnum.WaitingCook, new IncrementalTimer(500));
             // таймер времени приготовления
@@ -131,6 +157,8 @@ namespace KDSService.AppModel
 
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
+
+            UpdateFromDBEntity(dbDish);
         }
 
         private OrderDishRunTime getDBRunTimeRecord(int id)
@@ -149,8 +177,7 @@ namespace KDSService.AppModel
                     }
                     catch (Exception ex)
                     {
-                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", id);
-                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}: {1}", id, ex.ToString());
+                        writeDBException(ex, "создания");
                         runtimeRecord = null;
                     }
                 }
@@ -158,37 +185,20 @@ namespace KDSService.AppModel
             return runtimeRecord;
         }  // method
 
-        // новое блюдо или обновить существующее из БД
-        internal void UpdateFromDBEntity(OrderDish dbDish, bool isNew)
+        // обновить из БД
+        internal void UpdateFromDBEntity(OrderDish dbDish)
         {
+            Debug.Print("id {0}, status {1}",dbDish.Id, dbDish.DishStatusId);
             lock (this)
             {
-                #region simple fields
-                if (isNew)
-                {
-                    Id = dbDish.Id; Uid = dbDish.UID;
-                    CreateDate = dbDish.CreateDate;
-                    Name = dbDish.DishName;
-                    FilingNumber = dbDish.FilingNumber;
-                    ParentUid = dbDish.ParentUid;
-                    Comment = dbDish.Comment;
-                    Quantity = dbDish.Quantity;
-                    DelayedStartTime = dbDish.DelayedStartTime;
-                    EstimatedTime = dbDish.EstimatedTime;
-                    Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
-                }
-                else
-                {
-                    if (Uid.IsNull() || (Uid != dbDish.UID)) Uid = dbDish.UID;
-                    if (CreateDate != dbDish.CreateDate) CreateDate = dbDish.CreateDate;
-                    if (Name.IsNull() || (Name != dbDish.DishName)) Name = dbDish.DishName;
-                    if (FilingNumber != dbDish.FilingNumber) FilingNumber = dbDish.FilingNumber;
-                    if (ParentUid.IsNull() || (ParentUid != dbDish.ParentUid)) ParentUid = dbDish.ParentUid;
-                    if (Comment.IsNull() || (Comment != dbDish.Comment)) Comment = dbDish.Comment;
-                    if (Quantity != dbDish.Quantity) Quantity = dbDish.Quantity;
-                    if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
-                }
-                #endregion
+                if (Uid.IsNull() || (Uid != dbDish.UID)) Uid = dbDish.UID;
+                if (CreateDate != dbDish.CreateDate) CreateDate = dbDish.CreateDate;
+                if (Name.IsNull() || (Name != dbDish.DishName)) Name = dbDish.DishName;
+                if (FilingNumber != dbDish.FilingNumber) FilingNumber = dbDish.FilingNumber;
+                if (ParentUid.IsNull() || (ParentUid != dbDish.ParentUid)) ParentUid = dbDish.ParentUid;
+                if (Comment.IsNull() || (Comment != dbDish.Comment)) Comment = dbDish.Comment;
+                if (Quantity != dbDish.Quantity) Quantity = dbDish.Quantity;
+                if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
 
                 // статус блюда
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
@@ -206,17 +216,11 @@ namespace KDSService.AppModel
                 {
                     // необходимо обновить статус
                     isNewStatus = true;
-                    // сохранить в поле
+                    // объект отдела взять из справочника
                     _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
-                    if (_department == null) _department = new DepartmentModel();
-                    // группы отделов
-                    foreach (DepartmentDepartmentGroup ddg in dbDish.Department.DepartmentDepartmentGroup)
-                    {
-                        _department.DepGroups.Add(ServiceDics.DepGroups.GetDepGroupById(ddg.DepartmentGroupId));
-                    }
                 }
 
-                if (isNewStatus) UpdateStatus(newStatus);
+                if (isNewStatus) UpdateStatus(newStatus, false);
 
             }  // lock
 
@@ -230,9 +234,12 @@ namespace KDSService.AppModel
         // ******************************************
         // команды на изменение статуса блюда могут приходить как от КДС, так и из FrontOffice (при чтении из БД)
         // состояния и даты сохраняются в БД при каждом изменении
-        public void UpdateStatus(OrderStatusEnum newStatus)
+        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateParentOrder)
         {
             if (this.Status == newStatus) return; // если статус не поменялся, то ничего не делать
+
+            // если это ингредиент, то ничего не делать
+//            if (this.ParentUid.IsNull() == false) return;
 
             // дата входа в НОВОЕ состояние
             DateTime dtEnterToNewStatus = DateTime.Now;
@@ -246,6 +253,12 @@ namespace KDSService.AppModel
             }
             // запись или в RunTimeRecord или в ReturnTable
             writeStatusEnterEventToDB(Status, newStatus, dtEnterToNewStatus, tsStoodInPrevState);
+            // тоже самое для ингредиентов
+            if (this.ParentUid.IsNull())
+            {
+                List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
+                if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, true));
+            }
 
             // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
             _curTimer = null;
@@ -256,12 +269,23 @@ namespace KDSService.AppModel
             }
             // сохранить новый статус в объекте
             Status = newStatus;
+            saveStatusToDB(); // и в БД
+
+            // попытка обновить статус Заказа проверкой состояний всех блюд
+            // if (isUpdateParentOrder) 
+            _modelOrder.UpdateStatusByVerificationDishes();
+
         }  // method UpdateStatus
 
+
+        #region DB FUNCS
         // для предыдущего состояния сохранить время нахождения в этом состоянии
         // для текущего состояния сохранить дату входа в это состояние
         private void writeStatusEnterEventToDB(OrderStatusEnum prevStatus, OrderStatusEnum newStatus, DateTime dtEnterToNewStatus, TimeSpan tsStoodInPrevState)
         {
+            // сохранить дату входа в состояние во внутреннем словаре
+            _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
+
             if (_dbRunTimeRecord == null) return;
 
             // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
@@ -309,9 +333,29 @@ namespace KDSService.AppModel
                         writeDBException(ex, "добавления");
                     }
                 }
+
             }
         }  // method
 
+        private void saveStatusToDB()
+        {
+            using (KDSEntities db = new KDSEntities())
+            {
+                try
+                {
+                    OrderDish dbDish = db.OrderDish.Find(this.Id);
+                    if (dbDish != null)
+                    {
+                        dbDish.DishStatusId = (int)this.Status;
+                        db.SaveChanges();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    writeDBException(ex, "сохранения");
+                }
+            }
+        }
 
         // метод, который или возвращает признак null-значения поля даты входа в состояние (isNullCheck == true)
         // или устанавливает в это поле текущую дату (isNullCheck == false)
@@ -383,12 +427,6 @@ namespace KDSService.AppModel
             }
         }
 
-        private void writeDBException(Exception ex, string subMsg1)
-        {
-            _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}", this.Id, ex.Message);
-        }
-
         private int getRunTimeTSByStatus(OrderStatusEnum status)
         {
             int retVal = 0;
@@ -419,6 +457,13 @@ namespace KDSService.AppModel
             return retVal;
         }
 
+        private void writeDBException(Exception ex, string subMsg1)
+        {
+            _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
+            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}, Source: {2}", this.Id, ex.Message, ex.Source);
+        }
+
+        #endregion
 
         // проверка возможности АВТОМАТИЧЕСКОГО перехода в состояние Cooking
         private bool canAutoPassToCookingStatus()
@@ -441,6 +486,8 @@ namespace KDSService.AppModel
 
         public void Dispose()
         {
+            AppEnv.WriteLogTraceMessage("    dispose class OrderDishModel id {0}", this.Id);
+
             if (_tsTimersDict != null)
             {
                 foreach (var item in _tsTimersDict) item.Value.Dispose();

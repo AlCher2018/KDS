@@ -56,6 +56,8 @@ namespace KDSService.AppModel
         // записи БД для сохранения блюда
         private OrderRunTime _dbRunTimeRecord = null;   // запись дат/времени прямого пути 
         private string _serviceErrorMessage;
+
+        private bool _isUpdStatusFromDishes;
         #endregion
 
 
@@ -67,8 +69,7 @@ namespace KDSService.AppModel
             UpdateFromDBEntity(dbOrder, true);
 
             // создать словарь накопительных счетчиков
-            // таймер ожидания начала приготовления
-            _tsTimersDict.Add(OrderStatusEnum.WaitingCook, new IncrementalTimer(500));
+            _tsTimersDict = new Dictionary<OrderStatusEnum, IncrementalTimer>();
             // таймер времени приготовления
             _tsTimersDict.Add(OrderStatusEnum.Cooking, new IncrementalTimer(500));
             // таймер времени ожидания выдачи, нахождение в состоянии Готов
@@ -76,33 +77,12 @@ namespace KDSService.AppModel
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
             _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(500));
 
+            // для заказа сразу стартуем таймер приготовления
+            _curTimer = _tsTimersDict[OrderStatusEnum.Cooking];
+            _curTimer.Start();
+
             // получить отсоединенную RunTime запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbOrder.Id);
-        }
-
-        private OrderRunTime getDBRunTimeRecord(int id)
-        {
-            OrderRunTime runtimeRecord = null;
-            using (KDSEntities db = new KDSEntities())
-            {
-                runtimeRecord = db.OrderRunTime.FirstOrDefault(rec => rec.OrderId == id);
-                if (runtimeRecord == null)
-                {
-                    runtimeRecord = new OrderRunTime() { OrderId = id };
-                    db.OrderRunTime.Add(runtimeRecord);
-                    try
-                    {
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderRunTime для блюда id {0}", id);
-                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderRunTime для блюда id {0}: {1}", id, ex.ToString());
-                        runtimeRecord = null;
-                    }
-                }
-            }
-            return runtimeRecord;
         }
 
         // translate Order to OrderSvcModel
@@ -140,19 +120,39 @@ namespace KDSService.AppModel
                     _dishesDict[idDish].Dispose(); _dishesDict.Remove(idDish);
 
                 }
+
+                _isUpdStatusFromDishes = false;
                 // обновить состояние или добавить блюда
                 foreach (OrderDish dbDish in dbOrder.OrderDish)
                 {
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
-                        this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish, false);
+                        // если это ингредиент, то он может быть уже обновлен предыдущим блюдом
+                        if (dbDish.ParentUid.IsNull() == false)
+                        {
+                            OrderDish dbIngrDish;
+                            KDSEntities db = new KDSEntities();
+                            dbIngrDish = db.OrderDish.Find(dbDish.Id);
+                            if (dbIngrDish != null) this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbIngrDish);
+                        }
+                        else
+                            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
+
+                        // статус заказа мог поменяться блюдом !!!!
+                        //using (KDSEntities db = new KDSEntities())
+                        //{
+                        //    Order curOrder = db.Order.Find(this.Id);
+                        //    if ()
+                        //}
+
                         // если статус поменялся в БД у заказа, то поменять статус у всех блюд
-                        if (this.Status != newStatus) this._dishesDict[dbDish.Id].UpdateStatus(newStatus);
+                        if ((_isUpdStatusFromDishes == false) && (this.Status != newStatus))
+                            this._dishesDict[dbDish.Id].UpdateStatus(newStatus, false);
                     }
                     // иначе - добавить 
                     else
                     {
-                        OrderDishModel newDish = new OrderDishModel(dbDish);
+                        OrderDishModel newDish = new OrderDishModel(dbDish, this);
                         this._dishesDict.Add(newDish.Id, newDish);
                     }
                 }
@@ -160,19 +160,32 @@ namespace KDSService.AppModel
         }  // method UpdateFromDBEntity
 
         // внешнее обновление состояния заказа
-        public void UpdateStatus(OrderStatusEnum newStatus)
+        // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ, из БД/КДС
+        //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
+        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus)
         {
             if (this.Status == newStatus) return; // если статус не поменялся, то ничего не делать
 
-            // дата входа в НОВОЕ состояние
-            DateTime dtEnterToNewStatus = DateTime.Now;
+            DateTime dtEnterToNewStatus = DateTime.MinValue;
             TimeSpan tsAllTimeInPrevState = TimeSpan.Zero;
-            if (_curTimer != null)   // если есть таймер предыдущего состояния
+
+            // если есть таймер предыдущего состояния, то остановить его
+            if (_curTimer != null)
             {
-                _curTimer.Stop(); // остановить таймер состояния
-                // получить ОБЩЕЕ время нахождения в состоянии
+                _curTimer.Stop();
                 tsAllTimeInPrevState = _curTimer.ValueTS;
             }
+
+            // дата входа в НОВОЕ состояние
+            if (isUpdateDishStatus)  // обновление заказа извне
+            {
+                dtEnterToNewStatus = DateTime.Now;
+            }
+            else  // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд
+            {
+                dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
+            }
+
             // запись в RunTimeRecord
             writeStatusEnterEventToDB(Status, newStatus, dtEnterToNewStatus, tsAllTimeInPrevState);
 
@@ -185,15 +198,92 @@ namespace KDSService.AppModel
             }
             // сохранить новый статус в объекте
             Status = newStatus;
-
-            _curTimer.Stop();
+            saveStatusToDB(); // и в БД
 
             // просто обновить состояние блюд
+            if (isUpdateDishStatus)
+            {
+                foreach (OrderDishModel modelDish in _dishesDict.Values)
+                {
+                    modelDish.UpdateStatus(newStatus, false);
+                }
+            }
+        }  // method
+
+
+        // обновление состояния заказа проверкой состояний всех блюд
+        // установить сост.заказа в 0,2,3,4,5 если ВСЕ блюда наход.в этом состоянии
+        // установить сост.заказа в 1, если ХОТЬ одно блюдо наход.в сост. 1
+        public void UpdateStatusByVerificationDishes()
+        {
+            int iLen = 10;
+            int[] statArray = new int[iLen];
+
+            int iStatus, iDishesCount = _dishesDict.Count;
             foreach (OrderDishModel modelDish in _dishesDict.Values)
             {
-                modelDish.UpdateStatus(newStatus);
+                iStatus = (int)modelDish.Status;
+                statArray[iStatus]++;
             }
+
+            for(int i=0; i < iLen; i++)
+            {
+                if ((i == 1) && (statArray[i] > 0))
+                    UpdateStatus(OrderStatusEnum.Cooking, false);
+                else if (statArray[i] == iDishesCount)
+                {
+                    OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
+                    if (this.Status != statDishes)
+                    {
+                        UpdateStatus(statDishes, false);
+                        _isUpdStatusFromDishes = true;
+                    }
+                    break;
+                }
+            }
+        }  // method
+
+        // получить последнюю дату входа в состояние из блюд
+        private DateTime getMaxDishEnterStateDate(OrderStatusEnum newStatus)
+        {
+            DateTime retVal = DateTime.MinValue, dt;
+
+            foreach (OrderDishModel modelDish in _dishesDict.Values)
+            {
+                dt = modelDish.EnterStatusDict[(int)newStatus];  // словарь в блюде дат входов в состояния
+                if (dt > retVal) retVal = dt;
+            }
+
+            return retVal;
         }
+
+        #region DB funcs
+        //   DB FUNCS
+        private OrderRunTime getDBRunTimeRecord(int id)
+        {
+            OrderRunTime runtimeRecord = null;
+            using (KDSEntities db = new KDSEntities())
+            {
+                runtimeRecord = db.OrderRunTime.FirstOrDefault(rec => rec.OrderId == id);
+                if (runtimeRecord == null)
+                {
+                    runtimeRecord = new OrderRunTime() { OrderId = id };
+                    db.OrderRunTime.Add(runtimeRecord);
+                    try
+                    {
+                        db.SaveChanges();
+                    }
+                    catch (Exception ex)
+                    {
+                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderRunTime для блюда id {0}", id);
+                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderRunTime для блюда id {0}: {1}", id, ex.ToString());
+                        runtimeRecord = null;
+                    }
+                }
+            }
+            return runtimeRecord;
+        }
+
 
         private void writeStatusEnterEventToDB(OrderStatusEnum prevStatus, OrderStatusEnum newStatus, DateTime dtEnterToNewStatus, TimeSpan tsAllTimeInPrevState)
         {
@@ -292,6 +382,26 @@ namespace KDSService.AppModel
             }
         }
 
+        private void saveStatusToDB()
+        {
+            using (KDSEntities db = new KDSEntities())
+            {
+                try
+                {
+                    Order dbOrder = db.Order.Find(this.Id);
+                    if (dbOrder != null)
+                    {
+                        dbOrder.OrderStatusId = (int)this.Status;
+                        db.SaveChanges();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    writeDBException(ex, "сохранения");
+                }
+            }
+        }
+
 
         private void writeDBException(Exception ex, string subMsg1)
         {
@@ -299,8 +409,12 @@ namespace KDSService.AppModel
             AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}", this.Id, ex.Message);
         }
 
+        #endregion
+
         public void Dispose()
         {
+            AppEnv.WriteLogTraceMessage("   dispose class OrderModel id {0}", this.Id);
+
             // таймеры
             if (_tsTimersDict != null)
             {

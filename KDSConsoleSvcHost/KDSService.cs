@@ -16,7 +16,7 @@ namespace KDSService
 
     [ServiceBehavior(IncludeExceptionDetailInFaults = true, 
         InstanceContextMode = InstanceContextMode.Single)]
-    public class KDSServiceClass : IDisposable, IKDSService
+    public class KDSServiceClass : IDisposable, IKDSService, IKDSCommandService
     {
         private const double _ObserveTimerInterval = 500;
 
@@ -47,20 +47,6 @@ namespace KDSService
         {
             _observeTimer.Stop();
         }
-        public void Dispose()
-        {
-            string msg = "**** Закрытие служебного класса KDSService ****";
-            Console.WriteLine(msg);
-            AppEnv.WriteLogInfoMessage(msg);
-
-            // таймер остановить, отписаться от события и уничтожить
-            if (_observeTimer != null)
-            {
-                if (_observeTimer.Enabled == true) _observeTimer.Stop();
-                _observeTimer.Elapsed -= _observeTimer_Elapsed;
-                _observeTimer.Dispose();
-            }
-        }
 
 
         // периодический просмотр заказов
@@ -77,7 +63,7 @@ namespace KDSService
 
 
         // ****  SERVICE CONTRACT  *****
-        #region service contract
+        #region IKDSService inplementation
 
         public List<OrderStatusModel> GetOrderStatusList()
         {
@@ -86,11 +72,6 @@ namespace KDSService
 
             if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
             return retVal;
-        }
-
-        public void ChangeStatus(OrderCommand command)
-        {
-            throw new NotImplementedException();
         }
 
         public Dictionary<int, DepartmentGroupModel> GetDepartmentGroups()
@@ -117,9 +98,49 @@ namespace KDSService
 
             return retVal;
         }
-
         #endregion
 
+        #region IKDSCommandService implementation
+
+        // обновление статуса заказа с КДСа
+        public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
+        {
+            if (_ordersModel.Orders.ContainsKey(orderId))
+            {
+                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
+            }
+        }
+        
+        // обновление статуса блюда с КДСа
+        public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        {
+            if (_ordersModel.Orders.ContainsKey(orderId))
+            {
+                OrderModel modelOrder = _ordersModel.Orders[orderId];
+                if (modelOrder.Dishes.ContainsKey(orderDishId))
+                {
+                    OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
+                    modelDish.UpdateStatus(orderDishStatus, true);
+                }
+            }
+        }
+        #endregion
+
+        public void Dispose()
+        {
+            string msg = "**** Закрытие служебного класса KDSService ****";
+            Console.WriteLine(msg);
+            AppEnv.WriteLogInfoMessage(msg);
+            _ordersModel.Dispose();
+
+            // таймер остановить, отписаться от события и уничтожить
+            if (_observeTimer != null)
+            {
+                if (_observeTimer.Enabled == true) _observeTimer.Stop();
+                _observeTimer.Elapsed -= _observeTimer_Elapsed;
+                _observeTimer.Dispose();
+            }
+        }
 
     }  // class
 }

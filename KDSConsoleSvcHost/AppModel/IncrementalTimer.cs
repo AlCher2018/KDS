@@ -65,12 +65,12 @@ namespace KDSConsoleSvcHost.AppModel
             _increment = 0;
             _tsIncrement = TimeSpan.Zero;
 
-            _timer.Start();
+            if (_timer != null) _timer.Start();
         }
 
         public int Stop()
         {
-            _timer.Stop();
+            if (_timer != null) _timer.Stop();
             return _increment;
         }
 

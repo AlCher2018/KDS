@@ -13,13 +13,15 @@ using KDSConsoleSvcHost.AppModel;
 namespace KDSService.AppModel
 {
     // основной класс службы
-    public class OrdersModel
+    public class OrdersModel : IDisposable
     {
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
 
         private string _errorMsg;
 
+
+        // CONSTRUCTOR
         public OrdersModel()
         {
             _orders = new Dictionary<int, OrderModel>();
@@ -36,13 +38,14 @@ namespace KDSService.AppModel
             {
                 using (KDSEntities db = new KDSEntities())
                 {
+                    // отобрать заказы, которые не были закрыты (статус < 5)
                     // в запрос включить блюда, отделы и группы отделов
                     // отсортированные по порядке появления в таблице
                     dbOrders = db.Order
                         .Include("OrderDish")
                         .Include("OrderDish.Department")
                         .Include("OrderDish.Department.DepartmentDepartmentGroup")
-                        .Where(o => (o.OrderStatusId < 2))
+                        .Where(o => ((o.OrderStatusId <= 2) || (o.OrderStatusId == 4)))
                         .OrderBy(o => o.Id)
                         .ToList();
                 }
@@ -59,14 +62,21 @@ namespace KDSService.AppModel
                 {
                     // сохранить в свойствах приложения словарь блюд с их количеством, 
                     // которые ожидают готовки или уже готовятся
-                    Dictionary<int, decimal> dishesQty = getDishesQty(dbOrders);
+                    Dictionary<int, decimal> dishesQty = getDishesQuantity(dbOrders);
                     AppEnv.SetAppProperty("dishesQty", dishesQty);
 
                     // удалить из внутр.словаря заказы, которых уже нет в БД
-                    IEnumerable<int> delIds = _orders.Keys.Except(dbOrders.Select(o => o.Id));
+                    // причины две: или запись была удалена из БД, или по условию отбора запись получила статут 5
+                    //    словарь состояний заказов
+                    Dictionary<int, OrderStatusEnum> ordersStatusDict = new Dictionary<int, OrderStatusEnum>();
+                    dbOrders.ForEach(o => ordersStatusDict.Add(o.Id, AppLib.GetStatusEnumFromNullableInt(o.OrderStatusId)));
+
+                    int[] delIds = _orders.Keys.Except(ordersStatusDict.Keys).ToArray();
                     foreach (int id in delIds)
                     {
-                        _orders[id].Dispose(); _orders.Remove(id);
+                        //if (_orders[id].Status == OrderStatusEnum.Commit) _orders[id].UpdateStatus(OrderStatusEnum.Commit, true);
+                        _orders[id].Dispose();
+                        _orders.Remove(id);
                     }
 
                     // обновить или добавить заказы во внутр.словаре
@@ -91,7 +101,7 @@ namespace KDSService.AppModel
             return null;
         }  // method
 
-        private Dictionary<int, decimal> getDishesQty(List<Order> dbOrders)
+        private Dictionary<int, decimal> getDishesQuantity(List<Order> dbOrders)
         {
             Dictionary<int, decimal> retVal = new Dictionary<int, decimal>();
             foreach (Order order in dbOrders)
@@ -108,6 +118,16 @@ namespace KDSService.AppModel
             return (retVal.Count == 0) ? null : retVal;
         }  // method
 
-    }  // class
+        public void Dispose()
+        {
+            if (_orders != null)
+            {
+                AppEnv.WriteLogTraceMessage("dispose class OrdersModel");
+                foreach (OrderModel modelOrder in _orders.Values) modelOrder.Dispose();
+                _orders.Clear();
+                _orders = null;
+            }
+        }
 
+    }  // class
 }

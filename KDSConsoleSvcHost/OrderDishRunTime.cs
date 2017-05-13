@@ -16,7 +16,7 @@ namespace KDSConsoleSvcHost
     {
         public int Id { get; set; }
         public int OrderDishId { get; set; }
-        public System.DateTime CookingStartEstimatedDate { get; set; }
+        public Nullable<System.DateTime> CookingStartEstimatedDate { get; set; }
         public Nullable<int> WaitingCookTS { get; set; }
         public Nullable<System.DateTime> CookingStartDate { get; set; }
         public Nullable<int> CookingTS { get; set; }

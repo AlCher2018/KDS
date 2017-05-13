@@ -90,16 +90,16 @@
           </Key>
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="OrderDishId" Type="int" Nullable="false" />
-          <Property Name="CookingStartEstimatedDate" Type="datetime" Nullable="false" />
+          <Property Name="CookingStartEstimatedDate" Type="datetime" />
           <Property Name="WaitingCookTS" Type="int" />
           <Property Name="CookingStartDate" Type="datetime" />
           <Property Name="CookingTS" Type="int" />
           <Property Name="ReadyDate" Type="datetime" />
           <Property Name="WaitingTakeTS" Type="int" />
           <Property Name="TakeDate" Type="datetime" />
-          <Property Name="CancelDate" Type="datetime" />
-          <Property Name="CommitDate" Type="datetime" />
           <Property Name="WaitingCommitTS" Type="int" />
+          <Property Name="CommitDate" Type="datetime" />
+          <Property Name="CancelDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderRunTime">
           <Key>
@@ -113,9 +113,9 @@
           <Property Name="ReadyDate" Type="datetime" />
           <Property Name="WaitingTakeTS" Type="int" />
           <Property Name="TakeDate" Type="datetime" />
-          <Property Name="CancelDate" Type="datetime" />
-          <Property Name="CommitDate" Type="datetime" />
           <Property Name="WaitingCommitTS" Type="int" />
+          <Property Name="CommitDate" Type="datetime" />
+          <Property Name="CancelDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderStatus">
           <Key>
@@ -466,7 +466,7 @@
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="OrderDishId" Type="Int32" Nullable="false" />
-          <Property Name="CookingStartEstimatedDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="CookingStartEstimatedDate" Type="DateTime" Precision="3" />
           <Property Name="WaitingCookTS" Type="Int32" />
           <Property Name="CookingStartDate" Type="DateTime" Precision="3" />
           <Property Name="CookingTS" Type="Int32" />

@@ -1,11 +1,7 @@
-﻿using KDSService.AppModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
+using KDSService.AppModel;
+
 
 namespace KDSService
 {
@@ -25,13 +21,9 @@ namespace KDSService
         [OperationContract]
         Dictionary<int, DepartmentModel> GetDepartments();
 
-        // получить список заказов
+
+        // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
         [OperationContract]
         List<OrderModel> GetOrders();
-
-
-        [OperationContract]
-        void ChangeStatus(OrderCommand command);
     }
-
 }

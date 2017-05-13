@@ -36,7 +36,9 @@ namespace KDSConsoleSvcHost
                 // параметры канала считываются из app.config
                 // создает сервис при первом обращении
                 //host = new ServiceHost(typeof(KDSService.KDSServiceClass));
+
                 service = new KDSService.KDSServiceClass();
+
                 host = new ServiceHost(service);
                 host.Open();
                 DisplayHostInfo(host);

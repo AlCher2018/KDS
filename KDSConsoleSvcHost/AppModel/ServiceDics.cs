@@ -78,6 +78,7 @@ namespace KDSService.AppModel
         public DepartmentsModel()
         {
             _deps = new Dictionary<int, DepartmentModel>();
+            UpdateFromDB();
         }
 
         internal DepartmentModel GetDepartmentById(int id)
@@ -100,20 +101,7 @@ namespace KDSService.AppModel
 
                     foreach (Department dbDep in db.Department)
                     {
-                        DepartmentModel dep = new DepartmentModel()
-                        {
-                            Id = dbDep.Id,
-                            Name = dbDep.Name,
-                            UID = dbDep.UID,
-                            IsAutoStart = dbDep.IsAutoStart,
-                            DishQuantity = dbDep.DishQuantity,
-                        };
-                        dep.DepGroups = dbDep.DepartmentDepartmentGroup.Select<DepartmentDepartmentGroup, DepartmentGroupModel>(dbGroup => new DepartmentGroupModel()
-                        {
-                            Id = dbGroup.DepartmentGroup.Id,
-                            Name = dbGroup.DepartmentGroup.Name
-                        }).ToList();
-
+                        DepartmentModel dep = new DepartmentModel(dbDep);
                         _deps.Add(dbDep.Id, dep);
                     }
                 }
@@ -163,9 +151,17 @@ namespace KDSService.AppModel
             set { }
         }
 
-        public DepartmentModel()
+        public DepartmentModel(Department dbDep)
         {
+            Id = dbDep.Id; Name = dbDep.Name; UID = dbDep.UID;
+            IsAutoStart = dbDep.IsAutoStart; DishQuantity = dbDep.DishQuantity;
+
             _depGroups = new List<DepartmentGroupModel>();
+            _depGroups = dbDep.DepartmentDepartmentGroup.Select<DepartmentDepartmentGroup, DepartmentGroupModel>(dbGroup => new DepartmentGroupModel()
+            {
+                Id = dbGroup.DepartmentGroup.Id,
+                Name = dbGroup.DepartmentGroup.Name
+            }).ToList();
         }
 
     }  // class Department
