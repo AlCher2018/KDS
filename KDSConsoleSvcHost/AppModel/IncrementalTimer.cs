@@ -47,7 +47,10 @@ namespace KDSConsoleSvcHost.AppModel
             }
         }
 
-        // ctor
+        public bool Enabled { get { return _timer.Enabled; } }
+        
+
+        // CTOR
         public IncrementalTimer(int interval)
         {
             _interval = interval;
@@ -68,6 +71,11 @@ namespace KDSConsoleSvcHost.AppModel
 
             _tsIncrement += _tsInterval;
             _tsValue += _tsInterval;
+        }
+
+        public void InitDateTimeValue(DateTime value)
+        {
+            _dtBase = value;
         }
 
         public void Start()
@@ -97,7 +105,11 @@ namespace KDSConsoleSvcHost.AppModel
 
         public void Dispose()
         {
-            if (_timer != null) { _timer.Stop(); _timer.Dispose(); _timer = null; }
+            if (_timer != null)
+            {
+                if (_timer.Enabled) _timer.Stop();
+                _timer.Dispose(); _timer = null;
+            }
         }
     }  // class
 }

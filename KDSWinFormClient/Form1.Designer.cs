@@ -39,6 +39,10 @@
             this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column5 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column6 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btnStartCooking = new System.Windows.Forms.Button();
+            this.btnFinishCooking = new System.Windows.Forms.Button();
+            this.btnTake = new System.Windows.Forms.Button();
+            this.btnCancel = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -136,11 +140,55 @@
             this.Column6.Name = "Column6";
             this.Column6.ReadOnly = true;
             // 
+            // btnStartCooking
+            // 
+            this.btnStartCooking.Location = new System.Drawing.Point(601, 114);
+            this.btnStartCooking.Name = "btnStartCooking";
+            this.btnStartCooking.Size = new System.Drawing.Size(125, 23);
+            this.btnStartCooking.TabIndex = 5;
+            this.btnStartCooking.Text = "начать готовку";
+            this.btnStartCooking.UseVisualStyleBackColor = true;
+            this.btnStartCooking.Click += new System.EventHandler(this.btnStartCooking_Click);
+            // 
+            // btnFinishCooking
+            // 
+            this.btnFinishCooking.Location = new System.Drawing.Point(601, 153);
+            this.btnFinishCooking.Name = "btnFinishCooking";
+            this.btnFinishCooking.Size = new System.Drawing.Size(125, 23);
+            this.btnFinishCooking.TabIndex = 6;
+            this.btnFinishCooking.Text = "закончить готовку";
+            this.btnFinishCooking.UseVisualStyleBackColor = true;
+            this.btnFinishCooking.Click += new System.EventHandler(this.btnFinishCooking_Click);
+            // 
+            // btnTake
+            // 
+            this.btnTake.Location = new System.Drawing.Point(601, 201);
+            this.btnTake.Name = "btnTake";
+            this.btnTake.Size = new System.Drawing.Size(125, 23);
+            this.btnTake.TabIndex = 7;
+            this.btnTake.Text = "выдать";
+            this.btnTake.UseVisualStyleBackColor = true;
+            this.btnTake.Click += new System.EventHandler(this.btnTake_Click);
+            // 
+            // btnCancel
+            // 
+            this.btnCancel.Location = new System.Drawing.Point(601, 246);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(125, 25);
+            this.btnCancel.TabIndex = 8;
+            this.btnCancel.Text = "отмена";
+            this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(591, 426);
+            this.ClientSize = new System.Drawing.Size(767, 475);
+            this.Controls.Add(this.btnCancel);
+            this.Controls.Add(this.btnTake);
+            this.Controls.Add(this.btnFinishCooking);
+            this.Controls.Add(this.btnStartCooking);
             this.Controls.Add(this.dataGridView1);
             this.Controls.Add(this.lblOrderTimer);
             this.Controls.Add(this.lblOrderStatus);
@@ -167,6 +215,10 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column5;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column6;
+        private System.Windows.Forms.Button btnStartCooking;
+        private System.Windows.Forms.Button btnFinishCooking;
+        private System.Windows.Forms.Button btnTake;
+        private System.Windows.Forms.Button btnCancel;
     }
 }
 

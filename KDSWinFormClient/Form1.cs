@@ -161,5 +161,72 @@ namespace KDSWinFormClient
             }
         }  // method
 
+        private void btnStartCooking_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dataGridView1.SelectedRows[0];
+
+                OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
+                if (dishStatus == OrderStatusEnum.WaitingCook)
+                {
+                    int dishId = (int)row.Cells[0].Value;
+                    _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.Cooking);
+                }
+            }
+        }  // method
+
+        private OrderStatusEnum getStatusEnumByString(string statusString)
+        {
+            OrderStatusEnum eVal;
+            if ((Enum.TryParse(statusString, out eVal) == true) 
+                && (Enum.IsDefined(typeof(OrderStatusEnum), eVal) == true))
+                return eVal;
+            else
+                return OrderStatusEnum.None;
+        }
+
+        private void btnFinishCooking_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dataGridView1.SelectedRows[0];
+
+                OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
+                if (dishStatus == OrderStatusEnum.Cooking)
+                {
+                    int dishId = (int)row.Cells[0].Value;
+                    _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.Ready);
+                }
+            }
+        }
+
+        private void btnTake_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dataGridView1.SelectedRows[0];
+
+                OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
+                if (dishStatus == OrderStatusEnum.Ready)
+                {
+                    int dishId = (int)row.Cells[0].Value;
+                    _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.Took);
+                }
+            }
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dataGridView1.SelectedRows[0];
+
+                OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
+                int dishId = (int)row.Cells[0].Value;
+                _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.Cancelled);
+            }
+        }
+
     }  // class
 }

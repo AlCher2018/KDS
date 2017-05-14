@@ -81,7 +81,7 @@ namespace KDSService.AppModel
         #endregion
 
 
-        // ctor
+        // *** CONSTRUCTOR  ***
         public OrderModel(Order dbOrder)
         {
             _dishesDict = new Dictionary<int, OrderDishModel>();
@@ -99,11 +99,24 @@ namespace KDSService.AppModel
 
             UpdateFromDBEntity(dbOrder, true);
 
-            // для заказа сразу стартуем таймер приготовления
-            _curTimer = _tsTimersDict[OrderStatusEnum.Cooking];
-            _curTimer.Start();
+            // для сохраненного статуса берем время в секундах из БД
+            int? savedTS = setRunTimeStatusTimeSpan(this.Status, true, 0);
+            if (savedTS != null)
+            {
+                int tsSeconds = Convert.ToInt32(savedTS);
+                DateTime initDT = DateTime.Now.AddSeconds(-tsSeconds);
+                // сразу стартуем таймер приготовления
+                _curTimer = _tsTimersDict[this.Status];
+                _curTimer.InitDateTimeValue(initDT);
+                _curTimer.Start();
 
-        }
+                if (runTimeStatusEnterDate(this.Status, true, null) == true)
+                {
+                    runTimeStatusEnterDate(this.Status, false, initDT);
+                    saveRunTimeRecord();
+                }
+            }
+        }  // ctor
 
         // translate Order to OrderSvcModel
         public void UpdateFromDBEntity(Order dbOrder, bool isNew)
@@ -306,29 +319,14 @@ namespace KDSService.AppModel
             // сохраняем дату входа в новое состояние
             runTimeStatusEnterDate(newStatus, false, dtEnterToNewStatus);
             // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
-            setRunTimeStatusTimeSpan(prevStatus, tsAllTimeInPrevState.ToIntSec());
+            setRunTimeStatusTimeSpan(prevStatus, false, tsAllTimeInPrevState.ToIntSec());
 
-            // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
-            using (KDSEntities db = new KDSEntities())
-            {
-                try
-                {
-                    db.OrderRunTime.Attach(_dbRunTimeRecord);
-                    // указать, что запись изменилась
-                    db.Entry(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "обновления");
-                }
-            }
+            saveRunTimeRecord();
         }
-
 
         // метод, который или возвращает признак null-значения поля даты входа в состояние (isNullCheck == true)
         // или устанавливает в это поле текущую дату (isNullCheck == false)
-        private bool runTimeStatusEnterDate(OrderStatusEnum status, bool isNullCheck, DateTime dtEnterToNewStatus)
+        private bool runTimeStatusEnterDate(OrderStatusEnum status, bool isNullCheck, DateTime? dtEnterToNewStatus)
         {
             switch (status)
             {
@@ -369,23 +367,27 @@ namespace KDSService.AppModel
         }
 
         // записать в поле RunTimeRecord время нахождения (seconds) в состоянии status
-        private void setRunTimeStatusTimeSpan(OrderStatusEnum status, int seconds)
+        private int? setRunTimeStatusTimeSpan(OrderStatusEnum status, bool isNullCheck, int seconds)
         {
             switch (status)
             {
                 case OrderStatusEnum.None:
                     break;
                 case OrderStatusEnum.WaitingCook:
-                    _dbRunTimeRecord.WaitingCookTS = seconds;
+                    if (isNullCheck) return _dbRunTimeRecord.WaitingCookTS;
+                    else _dbRunTimeRecord.WaitingCookTS = seconds;
                     break;
                 case OrderStatusEnum.Cooking:
-                    _dbRunTimeRecord.CookingTS = seconds;
+                    if (isNullCheck) return _dbRunTimeRecord.CookingTS;
+                    else _dbRunTimeRecord.CookingTS = seconds;
                     break;
                 case OrderStatusEnum.Ready:
-                    _dbRunTimeRecord.WaitingTakeTS = seconds;
+                    if (isNullCheck) return _dbRunTimeRecord.WaitingTakeTS;
+                    else _dbRunTimeRecord.WaitingTakeTS = seconds;
                     break;
                 case OrderStatusEnum.Took:
-                    _dbRunTimeRecord.WaitingCommitTS = seconds;
+                    if (isNullCheck) return _dbRunTimeRecord.WaitingCommitTS;
+                    else _dbRunTimeRecord.WaitingCommitTS = seconds;
                     break;
                 case OrderStatusEnum.Cancelled:
                     break;
@@ -393,6 +395,26 @@ namespace KDSService.AppModel
                     break;
                 default:
                     break;
+            }
+            return null;
+        }
+
+        private void saveRunTimeRecord()
+        {
+            // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
+            using (KDSEntities db = new KDSEntities())
+            {
+                try
+                {
+                    db.OrderRunTime.Attach(_dbRunTimeRecord);
+                    // указать, что запись изменилась
+                    db.Entry(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    writeDBException(ex, "обновления");
+                }
             }
         }
 
@@ -432,7 +454,20 @@ namespace KDSService.AppModel
             // таймеры
             if (_tsTimersDict != null)
             {
-                foreach (var item in _tsTimersDict) item.Value.Dispose();
+                foreach (var item in _tsTimersDict.Values)
+                {
+                    if (item.Enabled)
+                    {
+                        item.Stop();
+                        if (_dbRunTimeRecord != null)
+                        {
+                            // сохраняем в записи RunTimeRecord время нахождения в текущем состоянии
+                            setRunTimeStatusTimeSpan(this.Status, false, item.ValueTS);
+                            saveRunTimeRecord();
+                        }
+                    }
+                    item.Dispose();
+                }
             }
 
             // задиспозить блюда
