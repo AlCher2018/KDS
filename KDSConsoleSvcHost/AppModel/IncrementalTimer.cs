@@ -25,6 +25,8 @@ namespace KDSConsoleSvcHost.AppModel
         private TimeSpan _tsValue;
         private TimeSpan _tsIncrement;
 
+        private DateTime _dtBase, _dtStart, _dtStop;
+
         private Timer _timer;
         
         // properties
@@ -32,16 +34,24 @@ namespace KDSConsoleSvcHost.AppModel
         public int Value { get { return _value; } }
         public int Increment { get { return _increment; } }
 
-        public TimeSpan IntervalTS { get { return _tsInterval; } }
-        public TimeSpan ValueTS { get { return _tsValue; } }
-        public TimeSpan IncrementTS { get { return _tsIncrement; } }
-
+        //public TimeSpan ValueTS { get { return _tsValue; } }
+        //public TimeSpan IncrementTS { get { return _tsIncrement; } }
+        public int ValueTS {
+            get {
+                return (int)(DateTime.Now - _dtBase).TotalSeconds;
+            }
+        }
+        public int IncrementTS {
+            get {
+                return (int)(DateTime.Now - _dtStop).TotalSeconds;
+            }
+        }
 
         // ctor
         public IncrementalTimer(int interval)
         {
             _interval = interval;
-            _value = 0;
+            _value = 0; _dtBase = DateTime.MinValue;
 
             _tsInterval = TimeSpan.FromMilliseconds(interval);
             _tsValue = TimeSpan.Zero;
@@ -65,12 +75,16 @@ namespace KDSConsoleSvcHost.AppModel
             _increment = 0;
             _tsIncrement = TimeSpan.Zero;
 
+            _dtStart = DateTime.Now;
+            if (_dtBase.Equals(DateTime.MinValue)) _dtBase = _dtStart;
+
             if (_timer != null) _timer.Start();
         }
 
         public int Stop()
         {
             if (_timer != null) _timer.Stop();
+            _dtStop = DateTime.Now;
             return _increment;
         }
 
@@ -78,6 +92,7 @@ namespace KDSConsoleSvcHost.AppModel
         {
             _value = 0;
             _tsValue = TimeSpan.Zero;
+            _dtBase = DateTime.MinValue;
         }
 
         public void Dispose()

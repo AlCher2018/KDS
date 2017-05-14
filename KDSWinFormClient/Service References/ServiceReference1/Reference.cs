@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSConsoleClient.ServiceReference1 {
+namespace KDSWinFormClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
     
@@ -164,7 +164,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         private System.Collections.Generic.List<int> DepGroupsIdListField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private int DishQuantityField;
+        private decimal DishQuantityField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
@@ -202,7 +202,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public int DishQuantity {
+        public decimal DishQuantity {
             get {
                 return this.DishQuantityField;
             }
@@ -289,7 +289,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         private System.DateTime CreateDateField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.OrderDishModel> DishesField;
+        private System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.OrderDishModel> DishesField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string HallNameField;
@@ -301,7 +301,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         private int NumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSConsoleClient.ServiceReference1.OrderStatusEnum StatusField;
+        private KDSWinFormClient.ServiceReference1.OrderStatusEnum StatusField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string TableNameField;
@@ -311,6 +311,9 @@ namespace KDSConsoleClient.ServiceReference1 {
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string WaiterField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string WaitingTimerStringField;
         
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
@@ -336,7 +339,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.OrderDishModel> Dishes {
+        public System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.OrderDishModel> Dishes {
             get {
                 return this.DishesField;
             }
@@ -388,7 +391,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSConsoleClient.ServiceReference1.OrderStatusEnum Status {
+        public KDSWinFormClient.ServiceReference1.OrderStatusEnum Status {
             get {
                 return this.StatusField;
             }
@@ -439,6 +442,19 @@ namespace KDSConsoleClient.ServiceReference1 {
             }
         }
         
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string WaitingTimerString {
+            get {
+                return this.WaitingTimerStringField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.WaitingTimerStringField, value) != true)) {
+                    this.WaitingTimerStringField = value;
+                    this.RaisePropertyChanged("WaitingTimerString");
+                }
+            }
+        }
+        
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         
         protected void RaisePropertyChanged(string propertyName) {
@@ -459,10 +475,16 @@ namespace KDSConsoleClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string CommentField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private System.DateTime CreateDateField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSConsoleClient.ServiceReference1.DepartmentModel DepartmentField;
+        private KDSWinFormClient.ServiceReference1.DepartmentModel DepartmentField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int FilingNumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
@@ -471,13 +493,22 @@ namespace KDSConsoleClient.ServiceReference1 {
         private string NameField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string ParentUidField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private decimal QuantityField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSConsoleClient.ServiceReference1.OrderStatusEnum StatusField;
+        private string ServiceErrorMessageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private KDSWinFormClient.ServiceReference1.OrderStatusEnum StatusField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string UidField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string WaitingTimerStringField;
         
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
@@ -486,6 +517,19 @@ namespace KDSConsoleClient.ServiceReference1 {
             }
             set {
                 this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string Comment {
+            get {
+                return this.CommentField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.CommentField, value) != true)) {
+                    this.CommentField = value;
+                    this.RaisePropertyChanged("Comment");
+                }
             }
         }
         
@@ -503,7 +547,7 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSConsoleClient.ServiceReference1.DepartmentModel Department {
+        public KDSWinFormClient.ServiceReference1.DepartmentModel Department {
             get {
                 return this.DepartmentField;
             }
@@ -511,6 +555,19 @@ namespace KDSConsoleClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.DepartmentField, value) != true)) {
                     this.DepartmentField = value;
                     this.RaisePropertyChanged("Department");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int FilingNumber {
+            get {
+                return this.FilingNumberField;
+            }
+            set {
+                if ((this.FilingNumberField.Equals(value) != true)) {
+                    this.FilingNumberField = value;
+                    this.RaisePropertyChanged("FilingNumber");
                 }
             }
         }
@@ -542,6 +599,19 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
+        public string ParentUid {
+            get {
+                return this.ParentUidField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.ParentUidField, value) != true)) {
+                    this.ParentUidField = value;
+                    this.RaisePropertyChanged("ParentUid");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
         public decimal Quantity {
             get {
                 return this.QuantityField;
@@ -555,7 +625,20 @@ namespace KDSConsoleClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSConsoleClient.ServiceReference1.OrderStatusEnum Status {
+        public string ServiceErrorMessage {
+            get {
+                return this.ServiceErrorMessageField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
+                    this.ServiceErrorMessageField = value;
+                    this.RaisePropertyChanged("ServiceErrorMessage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public KDSWinFormClient.ServiceReference1.OrderStatusEnum Status {
             get {
                 return this.StatusField;
             }
@@ -580,6 +663,19 @@ namespace KDSConsoleClient.ServiceReference1 {
             }
         }
         
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string WaitingTimerString {
+            get {
+                return this.WaitingTimerStringField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.WaitingTimerStringField, value) != true)) {
+                    this.WaitingTimerStringField = value;
+                    this.RaisePropertyChanged("WaitingTimerString");
+                }
+            }
+        }
+        
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         
         protected void RaisePropertyChanged(string propertyName) {
@@ -595,13 +691,16 @@ namespace KDSConsoleClient.ServiceReference1 {
     public enum OrderStatusEnum : int {
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        Wait = 0,
+        None = -1,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        InProcess = 1,
+        WaitingCook = 0,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        Finished = 2,
+        Cooking = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Ready = 2,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
         Took = 3,
@@ -610,104 +709,10 @@ namespace KDSConsoleClient.ServiceReference1 {
         Cancelled = 4,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        Return = 5,
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
-    [System.Runtime.Serialization.DataContractAttribute(Name="OrderCommand", Namespace="http://schemas.datacontract.org/2004/07/KDSService")]
-    [System.SerializableAttribute()]
-    public partial class OrderCommand : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
-        
-        [System.NonSerializedAttribute()]
-        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSConsoleClient.ServiceReference1.OrderCommandEnum CommandField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private int DishIdField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private int OrderIdField;
-        
-        [global::System.ComponentModel.BrowsableAttribute(false)]
-        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
-            get {
-                return this.extensionDataField;
-            }
-            set {
-                this.extensionDataField = value;
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSConsoleClient.ServiceReference1.OrderCommandEnum Command {
-            get {
-                return this.CommandField;
-            }
-            set {
-                if ((this.CommandField.Equals(value) != true)) {
-                    this.CommandField = value;
-                    this.RaisePropertyChanged("Command");
-                }
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public int DishId {
-            get {
-                return this.DishIdField;
-            }
-            set {
-                if ((this.DishIdField.Equals(value) != true)) {
-                    this.DishIdField = value;
-                    this.RaisePropertyChanged("DishId");
-                }
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public int OrderId {
-            get {
-                return this.OrderIdField;
-            }
-            set {
-                if ((this.OrderIdField.Equals(value) != true)) {
-                    this.OrderIdField = value;
-                    this.RaisePropertyChanged("OrderId");
-                }
-            }
-        }
-        
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-        
-        protected void RaisePropertyChanged(string propertyName) {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null)) {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-            }
-        }
-    }
-    
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
-    [System.Runtime.Serialization.DataContractAttribute(Name="OrderCommandEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService")]
-    public enum OrderCommandEnum : int {
+        Commit = 5,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        StartCooking = 0,
-        
-        [System.Runtime.Serialization.EnumMemberAttribute()]
-        CancelCooking = 1,
-        
-        [System.Runtime.Serialization.EnumMemberAttribute()]
-        FinishCooking = 2,
-        
-        [System.Runtime.Serialization.EnumMemberAttribute()]
-        Return = 3,
-        
-        [System.Runtime.Serialization.EnumMemberAttribute()]
-        TookAway = 4,
+        CancelConfirmed = 6,
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -715,28 +720,37 @@ namespace KDSConsoleClient.ServiceReference1 {
     public interface IKDSService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatusList", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusListResponse")]
-        System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel> GetOrderStatusList();
+        System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderStatusModel> GetOrderStatusList();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatusList", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusListResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderStatusModel>> GetOrderStatusListAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartmentGroups", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse")]
-        System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups();
+        System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartmentGroups", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentGroupModel>> GetDepartmentGroupsAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.DepartmentModel> GetDepartments();
+        System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentModel> GetDepartments();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel> GetOrders();
+        System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderModel> GetOrders();
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/ChangeStatus", ReplyAction="http://tempuri.org/IKDSService/ChangeStatusResponse")]
-        void ChangeStatus(KDSConsoleClient.ServiceReference1.OrderCommand command);
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderModel>> GetOrdersAsync();
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public interface IKDSServiceChannel : KDSConsoleClient.ServiceReference1.IKDSService, System.ServiceModel.IClientChannel {
+    public interface IKDSServiceChannel : KDSWinFormClient.ServiceReference1.IKDSService, System.ServiceModel.IClientChannel {
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public partial class KDSServiceClient : System.ServiceModel.ClientBase<KDSConsoleClient.ServiceReference1.IKDSService>, KDSConsoleClient.ServiceReference1.IKDSService {
+    public partial class KDSServiceClient : System.ServiceModel.ClientBase<KDSWinFormClient.ServiceReference1.IKDSService>, KDSWinFormClient.ServiceReference1.IKDSService {
         
         public KDSServiceClient() {
         }
@@ -757,24 +771,97 @@ namespace KDSConsoleClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel> GetOrderStatusList() {
+        public System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderStatusModel> GetOrderStatusList() {
             return base.Channel.GetOrderStatusList();
         }
         
-        public System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups() {
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderStatusModel>> GetOrderStatusListAsync() {
+            return base.Channel.GetOrderStatusListAsync();
+        }
+        
+        public System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups() {
             return base.Channel.GetDepartmentGroups();
         }
         
-        public System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.DepartmentModel> GetDepartments() {
+        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentGroupModel>> GetDepartmentGroupsAsync() {
+            return base.Channel.GetDepartmentGroupsAsync();
+        }
+        
+        public System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentModel> GetDepartments() {
             return base.Channel.GetDepartments();
         }
         
-        public System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel> GetOrders() {
+        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync() {
+            return base.Channel.GetDepartmentsAsync();
+        }
+        
+        public System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderModel> GetOrders() {
             return base.Channel.GetOrders();
         }
         
-        public void ChangeStatus(KDSConsoleClient.ServiceReference1.OrderCommand command) {
-            base.Channel.ChangeStatus(command);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWinFormClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
+            return base.Channel.GetOrdersAsync();
+        }
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
+    [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ServiceReference1.IKDSCommandService")]
+    public interface IKDSCommandService {
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
+        void ChangeOrderStatus(int orderId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
+        System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
+        void ChangeOrderDishStatus(int orderId, int orderDishId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
+        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
+    public interface IKDSCommandServiceChannel : KDSWinFormClient.ServiceReference1.IKDSCommandService, System.ServiceModel.IClientChannel {
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
+    public partial class KDSCommandServiceClient : System.ServiceModel.ClientBase<KDSWinFormClient.ServiceReference1.IKDSCommandService>, KDSWinFormClient.ServiceReference1.IKDSCommandService {
+        
+        public KDSCommandServiceClient() {
+        }
+        
+        public KDSCommandServiceClient(string endpointConfigurationName) : 
+                base(endpointConfigurationName) {
+        }
+        
+        public KDSCommandServiceClient(string endpointConfigurationName, string remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress) {
+        }
+        
+        public KDSCommandServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress) {
+        }
+        
+        public KDSCommandServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(binding, remoteAddress) {
+        }
+        
+        public void ChangeOrderStatus(int orderId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            base.Channel.ChangeOrderStatus(orderId, orderStatus);
+        }
+        
+        public System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            return base.Channel.ChangeOrderStatusAsync(orderId, orderStatus);
+        }
+        
+        public void ChangeOrderDishStatus(int orderId, int orderDishId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            base.Channel.ChangeOrderDishStatus(orderId, orderDishId, orderDishStatus);
+        }
+        
+        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            return base.Channel.ChangeOrderDishStatusAsync(orderId, orderDishId, orderDishStatus);
         }
     }
 }

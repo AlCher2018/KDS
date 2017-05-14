@@ -24,30 +24,6 @@ namespace KDSService.AppModel
     public class OrderDishModel: IDisposable
     {
         #region Service contract Properties
-        // форматированное представление временного промежутка для внешних клиентов
-        [DataMember]
-        public string WaitingTimerString {
-            get {
-                string retVal = null;
-                if (_curTimer != null)
-                {
-                    TimeSpan tsTimerValue = _curTimer.ValueTS;
-
-                    // если для состояния приготовления есть время приготовления, то рассчитываем отображаемое значение
-                    if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
-                    {
-                        tsTimerValue = _tsCookingEstimated - tsTimerValue;
-                    }
-
-                    retVal = (tsTimerValue.TotalDays > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
-                    // отрицательное время
-                    if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
-                }
-                return retVal;
-            }
-            set { }  // необходимо для DataMember
-        }
-
         [DataMember]
         public int Id { get; set; }
 
@@ -86,6 +62,32 @@ namespace KDSService.AppModel
 
         [DataMember]
         public string ServiceErrorMessage { get { return _serviceErrorMessage; } set { } }
+
+        // форматированное представление временного промежутка для внешних клиентов
+        [DataMember]
+        public string WaitingTimerString
+        {
+            get
+            {
+                string retVal = null;
+                if (_curTimer != null)
+                {
+                    TimeSpan tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
+
+                    // если для состояния приготовления есть время приготовления, то рассчитываем отображаемое значение
+                    if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
+                    {
+                        tsTimerValue = _tsCookingEstimated - tsTimerValue;
+                    }
+
+                    retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
+                    // отрицательное время
+                    if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
+                }
+                return retVal;
+            }
+            set { }  // необходимо для DataMember
+        }
 
         #endregion
 
@@ -147,13 +149,13 @@ namespace KDSService.AppModel
             // создать словарь накопительных счетчиков
             _tsTimersDict = new Dictionary<OrderStatusEnum, IncrementalTimer>();
             // таймер ожидания начала приготовления
-            _tsTimersDict.Add(OrderStatusEnum.WaitingCook, new IncrementalTimer(500));
+            _tsTimersDict.Add(OrderStatusEnum.WaitingCook, new IncrementalTimer(1000));
             // таймер времени приготовления
-            _tsTimersDict.Add(OrderStatusEnum.Cooking, new IncrementalTimer(500));
+            _tsTimersDict.Add(OrderStatusEnum.Cooking, new IncrementalTimer(1000));
             // таймер времени ожидания выдачи, нахождение в состоянии Готов
-            _tsTimersDict.Add(OrderStatusEnum.Ready, new IncrementalTimer(500));
+            _tsTimersDict.Add(OrderStatusEnum.Ready, new IncrementalTimer(1000));
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
-            _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(500));
+            _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(1000));
 
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
@@ -249,7 +251,7 @@ namespace KDSService.AppModel
             {
                 _curTimer.Stop(); // остановить таймер состояния
                 // получить время нахождения в состоянии с момента последнего входа
-                tsStoodInPrevState = _curTimer.IncrementTS;
+                tsStoodInPrevState = TimeSpan.FromSeconds(_curTimer.IncrementTS);
             }
             // запись или в RunTimeRecord или в ReturnTable
             writeStatusEnterEventToDB(Status, newStatus, dtEnterToNewStatus, tsStoodInPrevState);
@@ -260,13 +262,6 @@ namespace KDSService.AppModel
                 if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, true));
             }
 
-            // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
-            _curTimer = null;
-            if (_tsTimersDict.ContainsKey(newStatus))
-            {
-                _curTimer = _tsTimersDict[newStatus];
-                _curTimer.Start();
-            }
             // сохранить новый статус в объекте
             Status = newStatus;
             saveStatusToDB(); // и в БД
@@ -274,6 +269,14 @@ namespace KDSService.AppModel
             // попытка обновить статус Заказа проверкой состояний всех блюд
             // if (isUpdateParentOrder) 
             _modelOrder.UpdateStatusByVerificationDishes();
+
+            // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
+            _curTimer = null;
+            if (_tsTimersDict.ContainsKey(newStatus))
+            {
+                _curTimer = _tsTimersDict[newStatus];
+                _curTimer.Start();
+            }
 
         }  // method UpdateStatus
 

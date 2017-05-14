@@ -17,6 +17,16 @@ namespace KDSConsoleSvcHost
     {
         static void Main(string[] args)
         {
+            //IncrementalTimer t = new IncrementalTimer(500);
+            //t.Start();
+            //Thread.Sleep(2000);
+            //t.Stop();
+            //Debug.Print("t.value {0}, t.incr {1}", t.ValueTS.ToString(), t.IncrementTS.ToString());
+            //t.Start();
+            //Thread.Sleep(1500);
+            //t.Stop();
+            //Debug.Print("t.value {0}, t.incr {1}", t.ValueTS.ToString(), t.IncrementTS.ToString());
+
             Console.Title = "KDS SERVICE";
 
             // инициализация приложения

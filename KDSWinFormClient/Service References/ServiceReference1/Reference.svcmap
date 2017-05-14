@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="ae064bcf-3223-40c8-af17-53576585e992" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings>
+      <CollectionMapping TypeName="System.Collections.Generic.List`1" Category="List" />
+    </CollectionMappings>
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="net.tcp://localhost/mex" Protocol="mex" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="90c4d1ae-e1f9-4fb0-8693-26abba16f972" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="dbc0181a-dcd6-4674-8f9f-e378843231cf" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="86802340-04a6-422a-a0a3-9f3c4eb57066" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="KDSService.AppModel.xsd" MetadataType="Schema" ID="82e29d66-6d4b-4daf-9fd1-b15f28344ce5" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="Arrays.xsd" MetadataType="Schema" ID="d5f7639b-2ba0-4465-97a3-7711f1c8f4d3" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>
