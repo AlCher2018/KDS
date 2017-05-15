@@ -196,7 +196,6 @@ namespace KDSService.AppModel
         // обновить из БД
         internal void UpdateFromDBEntity(OrderDish dbDish)
         {
-            Debug.Print("id {0}, status {1}",dbDish.Id, dbDish.DishStatusId);
             lock (this)
             {
                 if (Uid.IsNull() || (Uid != dbDish.UID)) Uid = dbDish.UID;
@@ -256,8 +255,9 @@ namespace KDSService.AppModel
                 if (_curTimer != null)   // если есть таймер предыдущего состояния
                 {
                     _curTimer.Stop(); // остановить таймер состояния
-                                      // получить время нахождения в состоянии с момента последнего входа
-                    secondsInPrevState = _curTimer.IncrementTS;
+                    // получить время нахождения в состоянии с момента последнего входа
+                    secondsInPrevState = _curTimer.ValueTS;
+                    Debug.Print("secondsInPrevState {0}", secondsInPrevState);
                 }
 
                 // **** запись или в RunTimeRecord или в ReturnTable
@@ -273,6 +273,8 @@ namespace KDSService.AppModel
                         setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
                         // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
                         setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
+
+                        Debug.Print("status from {0} ts {1}; status to {2}, dt {3}", this.Status, secondsInPrevState, newStatus, dtEnterToNewStatus);
                         saveRunTimeRecord();
                     }
                     // создать новую запись в Return table
@@ -283,29 +285,31 @@ namespace KDSService.AppModel
                 }
                 // ****
 
-                // сохранить новый статус в объекте
-                Status = newStatus;
-                saveStatusToDB(); // и в БД
-
-                // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
-                _curTimer = null;
-                if (_tsTimersDict.ContainsKey(newStatus))
+                // сохранить новый статус в БД
+                if (saveStatusToDB(newStatus))
                 {
-                    _curTimer = _tsTimersDict[newStatus];
-                    _curTimer.Start();
+                    // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
+                    _curTimer = null;
+                    if (_tsTimersDict.ContainsKey(newStatus))
+                    {
+                        _curTimer = _tsTimersDict[newStatus];
+                        _curTimer.Start();
+                    }
+
+                    // сохранить новый статус в объекте
+                    Status = newStatus;
+
+                    // поменять статус и запустить таймеры для ингредиентов
+                    if (this.ParentUid.IsNull())
+                    {
+                        List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
+                        if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, false));
+                    }
+
+                    // попытка обновить статус Заказа проверкой состояний всех блюд
+                    if (isUpdateParentOrder)
+                        _modelOrder.UpdateStatusByVerificationDishes();
                 }
-
-                // поменять статус и запустить таймеры для ингредиентов
-                if (this.ParentUid.IsNull())
-                {
-                    List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
-                    if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, false));
-                }
-
-                // попытка обновить статус Заказа проверкой состояний всех блюд
-                if (isUpdateParentOrder) 
-                    _modelOrder.UpdateStatusByVerificationDishes();
-
             }
         }  // method UpdateStatus
 
@@ -465,8 +469,9 @@ namespace KDSService.AppModel
             }
         }
 
-        private void saveStatusToDB()
+        private bool saveStatusToDB(OrderStatusEnum status)
         {
+            bool retVal = false;
             using (KDSEntities db = new KDSEntities())
             {
                 try
@@ -474,8 +479,9 @@ namespace KDSService.AppModel
                     OrderDish dbDish = db.OrderDish.Find(this.Id);
                     if (dbDish != null)
                     {
-                        dbDish.DishStatusId = (int)this.Status;
+                        dbDish.DishStatusId = (int)status;
                         db.SaveChanges();
+                        retVal = true;
                     }
                 }
                 catch (Exception ex)
@@ -483,6 +489,7 @@ namespace KDSService.AppModel
                     writeDBException(ex, "сохранения");
                 }
             }
+            return retVal;
         }
 
         private void writeDBException(Exception ex, string subMsg1)
