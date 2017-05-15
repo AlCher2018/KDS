@@ -96,6 +96,7 @@ namespace KDSService.AppModel
         // время (в сек) "Готовить позже"
         // клентам нет смысла передавать
         public int DelayedStartTime { get; set; }
+        // нужен заказу, чтобы определять мин/макс дату по любому состоянию
         public Dictionary<int, DateTime> EnterStatusDict { get { return _dtEnterStatusDict; } }
 
         #region Fields
@@ -161,31 +162,36 @@ namespace KDSService.AppModel
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
 
             UpdateFromDBEntity(dbDish);
-        }
 
-        private OrderDishRunTime getDBRunTimeRecord(int id)
-        {
-            OrderDishRunTime runtimeRecord = null;
-            using (KDSEntities db = new KDSEntities())
+            #region условия запуска таймера текущего состояния
+            // *** базовое значение таймера состояния
+            _curTimer = null;
+            if (_tsTimersDict.ContainsKey(this.Status))
             {
-                runtimeRecord = db.OrderDishRunTime.FirstOrDefault(rec => rec.OrderDishId == id);
-                if (runtimeRecord == null)
+                _curTimer = _tsTimersDict[this.Status];
+
+                // для сохраненного статуса берем дату и время в секундах из БД
+                StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+                // для текущего статуса НЕТ сохраненной даты входа - стартуем с текущей даты (или с даты на TimeStanding секунд раньше) и сохраняем ее как дату входа в состояние
+                if (statusDTS.DateEntered.IsZero())
                 {
-                    runtimeRecord = new OrderDishRunTime() { OrderDishId = id};
-                    db.OrderDishRunTime.Add(runtimeRecord);
-                    try
-                    {
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        writeDBException(ex, "создания");
-                        runtimeRecord = null;
-                    }
+                    int tsSeconds = statusDTS.TimeStanding;
+                    DateTime initDT = (tsSeconds == 0) ? DateTime.Now : DateTime.Now.AddSeconds(-tsSeconds);
+
+                    _curTimer.InitDateTimeValue(initDT);
+
+                    setStatusRunTimeDTS(this.Status, initDT, 0);
+                    saveRunTimeRecord();
                 }
+                else
+                {
+                    _curTimer.InitDateTimeValue(statusDTS.DateEntered);
+                }
+                _curTimer.Start();    // стартуем таймер состояния
             }
-            return runtimeRecord;
-        }  // method
+            #endregion
+
+        }  // constructor
 
         // обновить из БД
         internal void UpdateFromDBEntity(OrderDish dbDish)
@@ -240,105 +246,224 @@ namespace KDSService.AppModel
         {
             if (this.Status == newStatus) return; // если статус не поменялся, то ничего не делать
 
-            // если это ингредиент, то ничего не делать
-//            if (this.ParentUid.IsNull() == false) return;
-
-            // дата входа в НОВОЕ состояние
-            DateTime dtEnterToNewStatus = DateTime.Now;
-            // время нахождения в ПРЕДЫДУЩЕМ состоянии
-            TimeSpan tsStoodInPrevState = TimeSpan.Zero;
-            if (_curTimer != null)   // если есть таймер предыдущего состояния
+            // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
+            lock (this)
             {
-                _curTimer.Stop(); // остановить таймер состояния
-                // получить время нахождения в состоянии с момента последнего входа
-                tsStoodInPrevState = TimeSpan.FromSeconds(_curTimer.IncrementTS);
+                // дата входа в НОВОЕ состояние
+                DateTime dtEnterToNewStatus = DateTime.Now;
+                // время нахождения в ПРЕДЫДУЩЕМ состоянии, в секундах
+                int secondsInPrevState = 0;
+                if (_curTimer != null)   // если есть таймер предыдущего состояния
+                {
+                    _curTimer.Stop(); // остановить таймер состояния
+                                      // получить время нахождения в состоянии с момента последнего входа
+                    secondsInPrevState = _curTimer.IncrementTS;
+                }
+
+                // **** запись или в RunTimeRecord или в ReturnTable
+                // сохранить дату входа в состояние во внутреннем словаре
+                _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
+                // и в БД
+                if (_dbRunTimeRecord != null)
+                {
+                    // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
+                    if (getStatusRunTimeDTS(newStatus).DateEntered.IsZero())  // возв. true, если поле == null
+                    {
+                        // сохраняем дату входа в новое состояние
+                        setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
+                        // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
+                        setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
+                        saveRunTimeRecord();
+                    }
+                    // создать новую запись в Return table
+                    else
+                    {
+                        saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
+                    }
+                }
+                // ****
+
+                // сохранить новый статус в объекте
+                Status = newStatus;
+                saveStatusToDB(); // и в БД
+
+                // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
+                _curTimer = null;
+                if (_tsTimersDict.ContainsKey(newStatus))
+                {
+                    _curTimer = _tsTimersDict[newStatus];
+                    _curTimer.Start();
+                }
+
+                // поменять статус и запустить таймеры для ингредиентов
+                if (this.ParentUid.IsNull())
+                {
+                    List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
+                    if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, false));
+                }
+
+                // попытка обновить статус Заказа проверкой состояний всех блюд
+                if (isUpdateParentOrder) 
+                    _modelOrder.UpdateStatusByVerificationDishes();
+
             }
-            // запись или в RunTimeRecord или в ReturnTable
-            writeStatusEnterEventToDB(Status, newStatus, dtEnterToNewStatus, tsStoodInPrevState);
-            // тоже самое для ингредиентов
-            if (this.ParentUid.IsNull())
-            {
-                List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
-                if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, true));
-            }
-
-            // сохранить новый статус в объекте
-            Status = newStatus;
-            saveStatusToDB(); // и в БД
-
-            // попытка обновить статус Заказа проверкой состояний всех блюд
-            // if (isUpdateParentOrder) 
-            _modelOrder.UpdateStatusByVerificationDishes();
-
-            // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
-            _curTimer = null;
-            if (_tsTimersDict.ContainsKey(newStatus))
-            {
-                _curTimer = _tsTimersDict[newStatus];
-                _curTimer.Start();
-            }
-
         }  // method UpdateStatus
 
 
         #region DB FUNCS
-        // для предыдущего состояния сохранить время нахождения в этом состоянии
-        // для текущего состояния сохранить дату входа в это состояние
-        private void writeStatusEnterEventToDB(OrderStatusEnum prevStatus, OrderStatusEnum newStatus, DateTime dtEnterToNewStatus, TimeSpan tsStoodInPrevState)
+        private OrderDishRunTime getDBRunTimeRecord(int id)
         {
-            // сохранить дату входа в состояние во внутреннем словаре
-            _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
-
-            if (_dbRunTimeRecord == null) return;
-
-            // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
-            if (runTimeStatusEnterDate(newStatus, true, dtEnterToNewStatus) == true)  // возв. true, если поле == null
+            OrderDishRunTime runtimeRecord = null;
+            using (KDSEntities db = new KDSEntities())
             {
-                // сохраняем дату входа в новое состояние
-                runTimeStatusEnterDate(newStatus, false, dtEnterToNewStatus);
-                // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
-                setRunTimeStatusTimeSpan(prevStatus, tsStoodInPrevState.ToIntSec());
-
-                // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
-                using (KDSEntities db = new KDSEntities())
+                runtimeRecord = db.OrderDishRunTime.FirstOrDefault(rec => rec.OrderDishId == id);
+                if (runtimeRecord == null)
                 {
-                    try
-                    {
-                        db.OrderDishRunTime.Attach(_dbRunTimeRecord);
-                        // указать, что запись изменилась
-                        db.Entry(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;  
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        writeDBException(ex, "обновления");
-                    }
-                }
-            }
-
-            // создать новую запись в Return table
-            else
-            {
-                using (KDSEntities db = new KDSEntities())
-                {
-                    db.OrderDishReturnTime.Add(new OrderDishReturnTime()
-                    {
-                        OrderDishId = this.Id, ReturnDate = dtEnterToNewStatus,
-                        StatusFrom = (int)prevStatus, StatusFromTimeSpan = tsStoodInPrevState.ToIntSec(),
-                        StatusTo = (int)newStatus
-                    });
+                    runtimeRecord = new OrderDishRunTime() { OrderDishId = id };
+                    db.OrderDishRunTime.Add(runtimeRecord);
                     try
                     {
                         db.SaveChanges();
                     }
                     catch (Exception ex)
                     {
-                        writeDBException(ex, "добавления");
+                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", id);
+                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}: {1}", id, ex.ToString());
+                        runtimeRecord = null;
                     }
                 }
-
             }
+            return runtimeRecord;
         }  // method
+
+
+        // метод, который возвращает значения полей даты/времени состояния
+        private StatusDTS getStatusRunTimeDTS(OrderStatusEnum status)
+        {
+            StatusDTS retVal = new StatusDTS();
+            switch (status)
+            {
+                case OrderStatusEnum.None:
+                    break;
+
+                case OrderStatusEnum.WaitingCook:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.InitDate);
+                    retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.WaitingCookTS);
+                    break;
+
+                case OrderStatusEnum.Cooking:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CookingStartDate);
+                    retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.CookingTS);
+                    break;
+
+                case OrderStatusEnum.Ready:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.ReadyDate);
+                    retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.WaitingTakeTS);
+                    break;
+
+                case OrderStatusEnum.Took:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.TakeDate);
+                    retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.WaitingCommitTS);
+                    break;
+
+                case OrderStatusEnum.Cancelled:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CancelDate);
+                    break;
+
+                case OrderStatusEnum.Commit:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CommitDate);
+                    break;
+
+                default:
+                    break;
+            }
+            return retVal;
+        }
+
+        // записать в поля RunTimeRecord дату входа и время нахождения (seconds) в состоянии status
+        // метод, который устанавливает значения полей даты/времени состояния
+        private void setStatusRunTimeDTS(OrderStatusEnum status, DateTime dateEntered, int timeStanding)
+        {
+            switch (status)
+            {
+                case OrderStatusEnum.None:
+                    break;
+
+                case OrderStatusEnum.WaitingCook:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.InitDate = dateEntered;
+                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCookTS = timeStanding;
+                    break;
+
+                case OrderStatusEnum.Cooking:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CookingStartDate = dateEntered;
+                    if (timeStanding != 0) _dbRunTimeRecord.CookingTS = timeStanding;
+                    break;
+
+                case OrderStatusEnum.Ready:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.ReadyDate = dateEntered;
+                    if (timeStanding != 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
+                    break;
+
+                case OrderStatusEnum.Took:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.TakeDate = dateEntered;
+                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
+                    break;
+
+                case OrderStatusEnum.Cancelled:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CancelDate = dateEntered;
+                    break;
+
+                case OrderStatusEnum.Commit:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CommitDate = dateEntered;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+
+        private void saveRunTimeRecord()
+        {
+            // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
+            using (KDSEntities db = new KDSEntities())
+            {
+                try
+                {
+                    db.OrderDishRunTime.Attach(_dbRunTimeRecord);
+                    // указать, что запись изменилась
+                    db.Entry<OrderDishRunTime>(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    writeDBException(ex, "обновления");
+                }
+            }
+        }
+
+        private void saveReturnTimeRecord(OrderStatusEnum statusFrom, OrderStatusEnum statusTo, DateTime dtEnterToNewStatus, int secondsInPrevState)
+        {
+            using (KDSEntities db = new KDSEntities())
+            {
+                db.OrderDishReturnTime.Add(new OrderDishReturnTime()
+                {
+                    OrderDishId = this.Id,
+                    ReturnDate = dtEnterToNewStatus,
+                    StatusFrom = (int)statusFrom,
+                    StatusFromTimeSpan = secondsInPrevState,
+                    StatusTo = (int)statusTo
+                });
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    writeDBException(ex, "добавления");
+                }
+            }
+        }
 
         private void saveStatusToDB()
         {
@@ -358,106 +483,6 @@ namespace KDSService.AppModel
                     writeDBException(ex, "сохранения");
                 }
             }
-        }
-
-        // метод, который или возвращает признак null-значения поля даты входа в состояние (isNullCheck == true)
-        // или устанавливает в это поле текущую дату (isNullCheck == false)
-        private bool runTimeStatusEnterDate(OrderStatusEnum status, bool isNullCheck, DateTime dtEnterToNewStatus)
-        {
-            switch (status)
-            {
-                case OrderStatusEnum.None:
-                    break;
-                case OrderStatusEnum.WaitingCook:
-                    break;
-
-                case OrderStatusEnum.Cooking:
-                    if (isNullCheck) return (_dbRunTimeRecord.CookingStartDate == null);
-                    else _dbRunTimeRecord.CookingStartDate = dtEnterToNewStatus;
-                    break;
-
-                case OrderStatusEnum.Ready:
-                    if (isNullCheck) return (_dbRunTimeRecord.ReadyDate == null);
-                    else _dbRunTimeRecord.ReadyDate = dtEnterToNewStatus;
-                    break;
-
-                case OrderStatusEnum.Took:
-                    if (isNullCheck) return (_dbRunTimeRecord.TakeDate == null);
-                    else _dbRunTimeRecord.TakeDate = dtEnterToNewStatus;
-                    break;
-
-                case OrderStatusEnum.Cancelled:
-                    if (isNullCheck) return (_dbRunTimeRecord.CancelDate == null);
-                    else _dbRunTimeRecord.CancelDate = dtEnterToNewStatus;
-                    break;
-
-                case OrderStatusEnum.Commit:
-                    if (isNullCheck) return (_dbRunTimeRecord.CommitDate == null);
-                    else _dbRunTimeRecord.CommitDate = dtEnterToNewStatus;
-                    break;
-
-                default:
-                    break;
-            }
-            return false;
-        }
-
-        // записать в поле RunTimeRecord время нахождения (seconds) в состоянии status
-        private void setRunTimeStatusTimeSpan(OrderStatusEnum status, int seconds)
-        {
-            switch (status)
-            {
-                case OrderStatusEnum.None:
-                    break;
-                case OrderStatusEnum.WaitingCook:
-                    _dbRunTimeRecord.WaitingCookTS = seconds;
-                    break;
-                case OrderStatusEnum.Cooking:
-                    _dbRunTimeRecord.CookingTS = seconds;
-                    break;
-                case OrderStatusEnum.Ready:
-                    _dbRunTimeRecord.WaitingTakeTS = seconds;
-                    break;
-                case OrderStatusEnum.Took:
-                    _dbRunTimeRecord.WaitingCommitTS = seconds;
-                    break;
-                case OrderStatusEnum.Cancelled:
-                    break;
-                case OrderStatusEnum.Commit:
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private int getRunTimeTSByStatus(OrderStatusEnum status)
-        {
-            int retVal = 0;
-            switch (status)
-            {
-                case OrderStatusEnum.None:
-                    break;
-                case OrderStatusEnum.WaitingCook:
-                    retVal = Convert.ToInt32(_dbRunTimeRecord.WaitingCookTS);
-                    break;
-                case OrderStatusEnum.Cooking:
-                    retVal = Convert.ToInt32(_dbRunTimeRecord.CookingTS);
-                    break;
-                case OrderStatusEnum.Ready:
-                    retVal = Convert.ToInt32(_dbRunTimeRecord.WaitingTakeTS);
-                    break;
-                case OrderStatusEnum.Took:
-                    retVal = Convert.ToInt32(_dbRunTimeRecord.WaitingCommitTS);
-                    break;
-                case OrderStatusEnum.Cancelled:
-                    break;
-                case OrderStatusEnum.Commit:
-                    break;
-                default:
-                    break;
-            }
-
-            return retVal;
         }
 
         private void writeDBException(Exception ex, string subMsg1)
@@ -491,11 +516,24 @@ namespace KDSService.AppModel
         {
             AppEnv.WriteLogTraceMessage("    dispose class OrderDishModel id {0}", this.Id);
 
+            // сохраняем в записи RunTimeRecord время нахождения в текущем состоянии
+            if ((_curTimer != null) && (_curTimer.Enabled))
+            {
+                _curTimer.Stop();
+                if (_dbRunTimeRecord != null)
+                {
+                    setStatusRunTimeDTS(this.Status, DateTime.MinValue, _curTimer.ValueTS);
+                    saveRunTimeRecord();
+                }
+            }
+
+            // уничтожить таймеры
             if (_tsTimersDict != null)
             {
-                foreach (var item in _tsTimersDict) item.Value.Dispose();
+                foreach (var statTimer in _tsTimersDict.Values) statTimer.Dispose();
+                _tsTimersDict.Clear();
             }
-        }
-    }  // class OrderDishModel
+        }  // dispose
 
+    }  // class OrderDishModel
 }

@@ -68,6 +68,7 @@
     <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="AppModel\OrderModel.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
+    <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="Department.cs">
       <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>

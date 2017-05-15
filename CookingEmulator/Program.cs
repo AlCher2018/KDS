@@ -17,17 +17,23 @@ namespace CookingEmulator
         private static object _threadLockObj;
         private static KDS_06_10Entities _db;
 
-
-
         static void Main(string[] args)
         {
             int? i1 = null;
             int i2 = Convert.ToInt32(i1);
 
-            TimeSpan t1 = TimeSpan.Zero;
-            TimeSpan t2 = TimeSpan.FromMilliseconds(234235213453456);
-            TimeSpan t3 = t1 + TimeSpan.FromMilliseconds(1234214);
-            t3 += t2;
+            DateTime dt1 = Convert.ToDateTime(null);
+            bool b1 = dt1.Equals(DateTime.MinValue);
+
+            double d = 5.5;
+            int i11 = Convert.ToInt32(d);
+
+            TimeSpan t1 = new TimeSpan(0,0,0,5,900);
+            TimeSpan t2 = new TimeSpan(0,0,0,5,100);
+            int sec1 = Convert.ToInt32(Math.Round((double)t1.Seconds, 0));
+            int sec2 = (int)t2.Seconds;
+            int sec3 = Convert.ToInt32(t1.Seconds);
+
 
             TimeSpan ts1 = new TimeSpan(0, 0, 0, 0, 2147483647);   //  2,147,483,647
 

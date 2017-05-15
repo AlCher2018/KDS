@@ -38,12 +38,12 @@ namespace KDSConsoleSvcHost.AppModel
         //public TimeSpan IncrementTS { get { return _tsIncrement; } }
         public int ValueTS {
             get {
-                return (int)(DateTime.Now - _dtBase).TotalSeconds;
+                return Convert.ToInt32((DateTime.Now - _dtBase).TotalSeconds);
             }
         }
         public int IncrementTS {
             get {
-                return (int)(DateTime.Now - _dtStop).TotalSeconds;
+                return Convert.ToInt32((DateTime.Now - _dtStop).TotalSeconds);
             }
         }
 

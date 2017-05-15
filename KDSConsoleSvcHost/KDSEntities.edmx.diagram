@@ -16,12 +16,12 @@
         <AssociationConnector Association="KDSServiceModel.FK_DepartmentDepartmentGroup_DepartmentGroup" ManuallyRouted="false" />
         <AssociationConnector Association="KDSServiceModel.FK_Order_OrderStatus" ManuallyRouted="false" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderDish_Order" ManuallyRouted="false" />
-        <EntityTypeShape EntityType="KDSServiceModel.OrderDishRunTime" Width="2.375" PointX="9.25" PointY="6.125" />
-        <EntityTypeShape EntityType="KDSServiceModel.OrderRunTime" Width="1.875" PointX="7.25" PointY="10.625" />
-        <AssociationConnector Association="KDSServiceModel.FK_OrderRunTime_Order" />
-        <AssociationConnector Association="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" />
         <EntityTypeShape EntityType="KDSServiceModel.OrderDishReturnTime" Width="2" PointX="9.25" PointY="2.875" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderDishReturnTime_OrderDish" />
+        <EntityTypeShape EntityType="KDSServiceModel.OrderDishRunTime" Width="1.875" PointX="9.25" PointY="6.375" />
+        <EntityTypeShape EntityType="KDSServiceModel.OrderRunTime" Width="2" PointX="6.625" PointY="10.25" />
+        <AssociationConnector Association="KDSServiceModel.FK_OrderRunTime_Order" />
+        <AssociationConnector Association="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

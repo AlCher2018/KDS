@@ -43,6 +43,9 @@
             this.btnFinishCooking = new System.Windows.Forms.Button();
             this.btnTake = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.btnCancelConfirm = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -180,11 +183,44 @@
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
+            // btnCancelConfirm
+            // 
+            this.btnCancelConfirm.Location = new System.Drawing.Point(601, 291);
+            this.btnCancelConfirm.Name = "btnCancelConfirm";
+            this.btnCancelConfirm.Size = new System.Drawing.Size(125, 23);
+            this.btnCancelConfirm.TabIndex = 9;
+            this.btnCancelConfirm.Text = "подтв.отмены";
+            this.btnCancelConfirm.UseVisualStyleBackColor = true;
+            this.btnCancelConfirm.Click += new System.EventHandler(this.btnCancelConfirm_Click);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(417, 13);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(110, 23);
+            this.button1.TabIndex = 10;
+            this.button1.Text = "начать готовку";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(417, 43);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(110, 23);
+            this.button2.TabIndex = 11;
+            this.button2.Text = "закончить готовку";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(767, 475);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnCancelConfirm);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnTake);
             this.Controls.Add(this.btnFinishCooking);
@@ -219,6 +255,9 @@
         private System.Windows.Forms.Button btnFinishCooking;
         private System.Windows.Forms.Button btnTake;
         private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.Button btnCancelConfirm;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }
 

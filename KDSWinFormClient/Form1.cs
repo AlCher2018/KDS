@@ -41,11 +41,28 @@ namespace KDSWinFormClient
         {
             _timer.Stop();
 
-            List<OrderModel> clientOrders = _getClient.GetOrders();
+            List<OrderModel> clientOrders = null;
+            try
+            {
+                clientOrders = _getClient.GetOrders();
+            }
+            catch (Exception)
+            {
+                lblOrderStatus.Text = "сервис не запущен";
+                _timer.Start(); return;
+            }
+
             updateAppOrdersList(clientOrders);
             _testOrder = _orders.Find(o => o.Id == 2);
 
-            if (_testOrder != null)
+            if (_testOrder == null)
+            {
+                lblOrderNumber.Text = "--";
+                lblOrderStatus.Text = "--";
+                lblOrderTimer.Text = "--";
+                dataGridView1.Rows.Clear();
+            }
+            else
             {
                 lblOrderNumber.Text = _testOrder.Number.ToString();
                 lblOrderStatus.Text = _testOrder.Status.ToString();
@@ -225,6 +242,39 @@ namespace KDSWinFormClient
                 OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
                 int dishId = (int)row.Cells[0].Value;
                 _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.Cancelled);
+            }
+        }
+
+        private void btnCancelConfirm_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dataGridView1.SelectedRows[0];
+
+                OrderStatusEnum dishStatus = getStatusEnumByString(row.Cells[4].Value.ToString());
+                if (dishStatus == OrderStatusEnum.Cancelled)
+                {
+                    int dishId = (int)row.Cells[0].Value;
+                    _setClient.ChangeOrderDishStatus(_testOrder.Id, dishId, OrderStatusEnum.CancelConfirmed);
+                }
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            OrderStatusEnum status = getStatusEnumByString(_testOrder.Status.ToString());
+            if ((int)status <= 1)
+            {
+                _setClient.ChangeOrderStatus(_testOrder.Id, OrderStatusEnum.Cooking);
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            int iStatus = (int)getStatusEnumByString(_testOrder.Status.ToString());
+            if ((iStatus == 1) || (iStatus == 2))
+            {
+                _setClient.ChangeOrderStatus(_testOrder.Id, OrderStatusEnum.Ready);
             }
         }
 

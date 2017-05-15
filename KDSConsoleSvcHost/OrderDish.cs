@@ -17,8 +17,8 @@ namespace KDSConsoleSvcHost
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public OrderDish()
         {
-            this.OrderDishRunTime = new HashSet<OrderDishRunTime>();
             this.OrderDishReturnTime = new HashSet<OrderDishReturnTime>();
+            this.OrderDishRunTime = new HashSet<OrderDishRunTime>();
         }
     
         public int Id { get; set; }
@@ -44,8 +44,8 @@ namespace KDSConsoleSvcHost
         public virtual Department Department { get; set; }
         public virtual Order Order { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<OrderDishRunTime> OrderDishRunTime { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDishReturnTime> OrderDishReturnTime { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<OrderDishRunTime> OrderDishRunTime { get; set; }
     }
 }
