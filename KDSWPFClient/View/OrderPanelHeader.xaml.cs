@@ -23,6 +23,18 @@ namespace KDSWPFClient.View
         public OrderPanelHeader()
         {
             InitializeComponent();
+            this.Width = 250d;
         }
-    }
+
+        //protected override Size ArrangeOverride(Size arrangeBounds)
+        //{
+        //    return base.ArrangeOverride(arrangeBounds);
+        //}
+
+        //protected override Size MeasureOverride(Size constraint)
+        //{
+        //    return base.MeasureOverride(constraint);
+        //}
+
+    }// class 
 }

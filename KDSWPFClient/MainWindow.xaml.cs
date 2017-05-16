@@ -24,10 +24,14 @@ namespace KDSWPFClient
 
         private List<OrderViewModel> _viewOrders;
 
+        private bool _isReArrange = false;
+        private int _rePosition = 0;
+
         public MainWindow()
         {
             InitializeComponent();
 
+            this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
             _viewOrders = new List<OrderViewModel>();
@@ -35,13 +39,77 @@ namespace KDSWPFClient
             List<TestData.OrderTestModel> orders = TestData.TestDataHelper.GetTestOrders(5, 10);
 
             OrderPanelHeader hdr = new OrderPanelHeader();
+            hdr.Name = "hdr1";
+            hdr.tbWaiter.Text = "qewrqwer werweqr wqerwer dfgsdf sdfg sdfg sdfg hjyuiyui";
             hdr.SetValue(Canvas.LeftProperty, 50d);
+            hdr.SetValue(Canvas.TopProperty, 20d);
+            ordersPanel.Children.Add(hdr);
+
+            hdr = new OrderPanelHeader();
+            hdr.Name = "hdr2";
+            hdr.tbWaiter.Text = "qewrqwer werweqr";
+            hdr.SetValue(Canvas.LeftProperty, 500d);
             hdr.SetValue(Canvas.TopProperty, 20d);
             ordersPanel.Children.Add(hdr);
 
             //_timer = new Timer(1000);
             //_timer.Elapsed += _timer_Elapsed;
             //_timer.Start();
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            reArrangeChildren();
+        }
+
+        //protected override Size ArrangeOverride(Size arrangeBounds)
+        //{
+        //    Debug.Print(" ***  ArrangeOverride");
+        //    foreach (UIElement child in ordersPanel.Children)
+        //    {
+        //        Size size = child.RenderSize;
+        //    }
+        //    return base.ArrangeOverride(arrangeBounds);
+        //}
+
+
+
+        //protected override Size MeasureOverride(Size availableSize)
+        //{
+        //    _isReArrange = !_isReArrange;
+
+        //    if (_isReArrange == false) reArrangeChildren();
+        //    return base.MeasureOverride(availableSize);
+        //}
+
+        private void reArrangeChildren()
+        {
+            double dTop = 0d;
+            foreach (UIElement child in ordersPanel.Children)
+            {
+                Size size = child.DesiredSize;
+                if (size.Height > 0)
+                {
+                    if (dTop == 0d)
+                    {
+                        dTop = Convert.ToDouble(child.GetValue(Canvas.TopProperty));
+                        dTop += child.RenderSize.Height;
+                    }
+                    else
+                    {
+                        dTop += 5d;
+                        child.SetValue(Canvas.TopProperty, dTop);
+                        child.SetValue(Canvas.LeftProperty, 50d);
+                        
+                        if ((child is FrameworkElement) && ((FrameworkElement)child).Name == "hdr2")
+                            child.SetValue(Canvas.LeftProperty, (_rePosition == 0) ? 50d : 500d);
+
+                        dTop += child.RenderSize.Height;
+                    }
+                }
+            }
+            if (_rePosition == 0) _rePosition = 1;
+            else _rePosition = 0;
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -142,6 +210,11 @@ namespace KDSWPFClient
             //    Garson = "Orderman"
             //});
 
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            reArrangeChildren();
         }
     }  // class MainWindow
 }

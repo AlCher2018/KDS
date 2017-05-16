@@ -9,19 +9,19 @@
 
     <Window.Resources>
     </Window.Resources>
-    
+
     <Grid>
         <Grid.Background>
             <ImageBrush ImageSource="Images/steel.jpg"/>
         </Grid.Background>
-        
+
         <Canvas x:Name="ordersPanel">
             <!--<local:OrderPanel Canvas.Left="20" Canvas.Top="20">
                 <local:OrderPanel.ViewOrder>
                     <locModel:ViewOrder Id="0" TableName="table01" Number="12345" Garson="Алина" DateCreate="07/15/2017 4:22:37"/>
                 </local:OrderPanel.ViewOrder>
             </local:OrderPanel>-->
+            <Button Height="30" Width="110" Canvas.Left="635" Canvas.Top="65" Click="Button_Click" >change position</Button>
         </Canvas>
-
     </Grid>
 </Window>

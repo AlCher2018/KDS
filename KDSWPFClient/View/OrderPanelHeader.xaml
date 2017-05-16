@@ -23,7 +23,7 @@
     </UserControl.Resources>
     
     <!-- строка заголовка, содержит 3 строки -->
-    <Grid x:Name="grdHeader" Background="Transparent">
+    <Grid x:Name="grdHeader" Background="Aqua">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition/>
@@ -42,8 +42,8 @@
             <TextBlock x:Name="tbOrderNumber" Grid.Column="1" Style="{StaticResource hdrLabelStyle1}" Text="{Binding ElementName=orderPanel, Path=ViewOrder.Number, Mode=OneWay}" HorizontalAlignment="Center" FontWeight="Bold"/>
         </Grid>
         <!-- официант -->
-        <Grid x:Name="grdHdrWaiter" Grid.Row="1" TextBlock.Foreground="{Binding ElementName=orderPanel, Path=HeaderForeground12}">
-            <TextBlock x:Name="tbWaiter" Text="{Binding ElementName=orderPanel, Path=ViewOrder.Garson, Mode=OneWay, TargetNullValue='noName'}" Style="{StaticResource hdrLabelStyle2}" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.03;0.0;0.0;0.0'}"/>
+        <Grid x:Name="grdHdrWaiter" Grid.Row="1" TextBlock.Foreground="{Binding ElementName=orderPanel, Path=HeaderForeground12}" Background="Beige">
+            <TextBlock x:Name="tbWaiter" Text="{Binding ElementName=orderPanel, Path=ViewOrder.Garson, Mode=OneWay, TargetNullValue='noName'}" Style="{StaticResource hdrLabelStyle2}" Margin="{Binding ElementName=orderPanel, Path=PanelWidth, Converter={StaticResource getMargin}, ConverterParameter='0.03;0.0;0.0;0.0'}" TextWrapping="Wrap" FontSize="22"/>
         </Grid>
         <!-- время создания заказа и счетчик приготовления -->
         <Grid x:Name="grdHdrOrderTime" Grid.Row="2" Background="{Binding ElementName=orderPanel, Path=HeaderBackground3}" TextBlock.Foreground="{Binding ElementName=orderPanel, Path=HeaderForeground3}">
