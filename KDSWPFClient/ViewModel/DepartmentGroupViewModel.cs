@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSClient.ViewModel
+namespace KDSWPFClient.ViewModel
 {
     public class DepartmentGroupViewModel
     {

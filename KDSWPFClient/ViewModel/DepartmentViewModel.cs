@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSClient.ViewModel
+namespace KDSWPFClient.ViewModel
 {
     public class DepartmentViewModel
     {
@@ -16,7 +16,7 @@ namespace KDSClient.ViewModel
 
         public bool IsAutoStart { get; set; }
 
-        public int DishQuantity { get; set; }
+        public decimal DishQuantity { get; set; }
 
         private List<DepartmentGroupViewModel> _depGroups;
         public List<DepartmentGroupViewModel> DepartmentGroups { get { return _depGroups; } }

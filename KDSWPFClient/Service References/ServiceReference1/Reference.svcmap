@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="1911cd1c-5ecf-42e1-9ceb-9e0e62fd5012" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="6ea1d34d-b0cb-4aa7-9e78-59c10dd5aeda" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
   <ClientOptions>
     <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
     <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
@@ -21,15 +21,14 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="net.tcp://localhost:8733/KDSService/mex" Protocol="mex" SourceId="1" />
+    <MetadataSource Address="net.tcp://localhost/mex" Protocol="mex" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="59186577-5e62-48a4-8173-c211d04fa55b" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
-    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="cb36a9f6-6ddd-4aa5-8e86-52dbbce46e9c" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
-    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="6644cf75-660e-419c-9d5c-0ee222cce074" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
-    <MetadataFile FileName="KDSService.AppModel.xsd" MetadataType="Schema" ID="736d6298-a763-44fe-ae0f-1b8d36d7b1e6" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
-    <MetadataFile FileName="Arrays.xsd" MetadataType="Schema" ID="ccd1e79f-9f06-4d97-9a88-7b0d9a42ce56" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
-    <MetadataFile FileName="KDSService.xsd" MetadataType="Schema" ID="974087f6-e260-47c8-aa90-f805ebb6dd1b" SourceId="1" SourceUrl="net.tcp://localhost:8733/KDSService/mex" />
+    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="da6ce5bd-ec93-4f90-bd9d-9014ae103b6f" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="1c871c24-9e6c-4a4f-9da0-c961646ac497" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="f72c91f4-038a-4814-be6c-4a95d26a12ed" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="KDSService.AppModel.xsd" MetadataType="Schema" ID="893c5d5c-f3ac-4476-a7f6-b59b95b3bafe" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
+    <MetadataFile FileName="Arrays.xsd" MetadataType="Schema" ID="0a36b3a8-793b-4f10-b0ba-195dde2f1ff1" SourceId="1" SourceUrl="net.tcp://localhost/mex" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />

@@ -1,11 +1,11 @@
-﻿using KDSClient.ServiceReference1;
+﻿using KDSWPFClient.ServiceReference1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSClient.ViewModel
+namespace KDSWPFClient.ViewModel
 {
     public class OrderDishViewModel
     {

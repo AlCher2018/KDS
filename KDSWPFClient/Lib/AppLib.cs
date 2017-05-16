@@ -11,7 +11,7 @@ using System.Data;
 using System.Data.SqlClient;
 
 
-namespace KDSClient.Lib
+namespace KDSWPFClient.Lib
 {
     public static class AppLib
     {
@@ -28,8 +28,9 @@ namespace KDSClient.Lib
         public static void WriteLogTraceMessage(string msg)
         {
             if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
-                AppLogger.Trace(msg);
+                AppLogger.Trace(msg??"null");
         }
+
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
             if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
@@ -38,7 +39,7 @@ namespace KDSClient.Lib
 
         public static void WriteLogInfoMessage(string msg)
         {
-            if (AppLogger.IsInfoEnabled) AppLogger.Info(msg);
+            if (AppLogger.IsInfoEnabled) AppLogger.Info(msg??"null");
         }
         public static void WriteLogInfoMessage(string format, params object[] args)
         {
@@ -47,7 +48,7 @@ namespace KDSClient.Lib
 
         public static void WriteLogErrorMessage(string msg)
         {
-            if (AppLogger.IsErrorEnabled) AppLogger.Error(msg);
+            if (AppLogger.IsErrorEnabled) AppLogger.Error(msg??"null");
         }
         public static void WriteLogErrorMessage(string format, params object[] args)
         {
@@ -56,8 +57,41 @@ namespace KDSClient.Lib
         #endregion
 
         #region system info
+        internal static string GetEnvironmentString()
+        {
+            return string.Format("Environment: machine={0}, user={1}, current directory={2}, OS version={3}, isOS64bit={4}, processor count={5}, free RAM={6} Mb",
+                Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, getAvailableRAM());
+        }
+
+        // настройки из config-файла
+        internal static string GetAppSettingsFromConfigFile()
+        {
+            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
+        }
+        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
+        {
+            if (appSettingNames == null) return null;
+            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
+        }
+        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
+        {
+            StringBuilder sb = new StringBuilder();
+            string sValue;
+            foreach (string settingName in appSettingNames)
+            {
+                sValue = ConfigurationManager.AppSettings[settingName];
+                if (sValue.IsNull() == false)
+                {
+                    if (sb.Length > 0) sb.Append("; ");
+                    sb.Append(settingName + "=" + sValue);
+                }
+            }
+            return sb.ToString();
+        }
+
+
         // in Mb
-        public static int getAvailableRAM()
+        private static int getAvailableRAM()
         {
             int retVal = 0;
 
@@ -73,15 +107,19 @@ namespace KDSClient.Lib
             return retVal;
         }
 
-        //internal static bool CheckDBConnection(Type dbType)
+
+        //public static bool CheckDBConnection(Type dbType)
         //{
-        //    AppLib.WriteLogTraceMessage("- проверка доступа к базе данных...");
-            
+        //    string s;
+        //    WriteLogInfoMessage("Проверка доступа к базе данных...");
+
         //    // контекст БД
         //    DbContext dbContext = (DbContext)Activator.CreateInstance(dbType);
 
         //    SqlConnection dbConn = (SqlConnection)dbContext.Database.Connection;
-        //    AppLib.WriteLogTraceMessage("-- строка подключения: " + dbConn.ConnectionString);
+        //    s = " - строка подключения: " + dbConn.ConnectionString;
+        //    Console.WriteLine("\n**** SQL Connection String ****\n{0}\n****", dbConn.ConnectionString);
+        //    WriteLogInfoMessage(s);
 
         //    // создать такое же подключение, но с TimeOut = 1 сек
         //    SqlConnectionStringBuilder confBld = new SqlConnectionStringBuilder(dbConn.ConnectionString);
@@ -113,7 +151,7 @@ namespace KDSClient.Lib
         //        testConn = null;
         //    }
 
-        //    AppLib.WriteLogTraceMessage("- проверка доступа к базе данных - " + ((retVal) ? "READY" : "ERROR!!!"));
+        //    WriteLogInfoMessage("Проверка доступа к базе данных... " + ((retVal) ? "READY" : "ERROR!!!"));
         //    return retVal;
         //}
 
@@ -158,10 +196,7 @@ namespace KDSClient.Lib
         // получить настройки приложения из config-файла
         public static string GetAppSetting(string key)
         {
-            if (ConfigurationManager.AppSettings.AllKeys.Any(k => k.ToLower().Equals(key.ToLower())) == true)
-                return ConfigurationManager.AppSettings.Get(key);
-            else
-                return null;
+            return ConfigurationManager.AppSettings[key];
         }
 
         // получить глобальное значение приложения из его свойств

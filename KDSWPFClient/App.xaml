@@ -1,8 +1,8 @@
-﻿<Application x:Class="KDSClient.App"
+﻿<Application x:Class="KDSWPFClient.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:KDSClient"
-             xmlns:locLib="clr-namespace:KDSClient.Lib"
+             xmlns:local="clr-namespace:KDSWPFClient"
+             xmlns:locLib="clr-namespace:KDSWPFClient.Lib"
              >
     
     <Application.Resources>

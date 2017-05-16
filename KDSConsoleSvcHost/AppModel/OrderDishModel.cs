@@ -79,6 +79,10 @@ namespace KDSService.AppModel
                     {
                         tsTimerValue = _tsCookingEstimated - tsTimerValue;
                     }
+                    else if ((Status == OrderStatusEnum.WaitingCook) && (_dtCookingStartEstimated.IsZero() == false))
+                    {
+                        tsTimerValue = TimeSpan.FromSeconds(Convert.ToInt32((_dtCookingStartEstimated - DateTime.Now).TotalSeconds));
+                    }
 
                     retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
                     // отрицательное время
@@ -141,7 +145,9 @@ namespace KDSService.AppModel
 
 
             // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
-            _dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
+            //_dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
+            _dtCookingStartEstimated = DateTime.Now.AddSeconds(DelayedStartTime); // for debug
+
             _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
 
             _dtEnterStatusDict = new Dictionary<int, DateTime>();
@@ -205,6 +211,7 @@ namespace KDSService.AppModel
                 if (ParentUid.IsNull() || (ParentUid != dbDish.ParentUid)) ParentUid = dbDish.ParentUid;
                 if (Comment.IsNull() || (Comment != dbDish.Comment)) Comment = dbDish.Comment;
                 if (Quantity != dbDish.Quantity) Quantity = dbDish.Quantity;
+                if (DelayedStartTime != dbDish.DelayedStartTime) DelayedStartTime = dbDish.DelayedStartTime;
                 if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
 
                 // статус блюда
@@ -241,10 +248,11 @@ namespace KDSService.AppModel
         // ******************************************
         // команды на изменение статуса блюда могут приходить как от КДС, так и из FrontOffice (при чтении из БД)
         // состояния и даты сохраняются в БД при каждом изменении
-        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateParentOrder)
+        public bool UpdateStatus(OrderStatusEnum newStatus, bool isUpdateParentOrder)
         {
-            if (this.Status == newStatus) return; // если статус не поменялся, то ничего не делать
+            if (this.Status == newStatus) return false; // если статус не поменялся, то ничего не делать
 
+            bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
             lock (this)
             {
@@ -260,34 +268,34 @@ namespace KDSService.AppModel
                     Debug.Print("secondsInPrevState {0}", secondsInPrevState);
                 }
 
-                // **** запись или в RunTimeRecord или в ReturnTable
-                // сохранить дату входа в состояние во внутреннем словаре
-                _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
-                // и в БД
-                if (_dbRunTimeRecord != null)
-                {
-                    // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
-                    if (getStatusRunTimeDTS(newStatus).DateEntered.IsZero())  // возв. true, если поле == null
-                    {
-                        // сохраняем дату входа в новое состояние
-                        setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
-                        // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
-                        setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
-
-                        Debug.Print("status from {0} ts {1}; status to {2}, dt {3}", this.Status, secondsInPrevState, newStatus, dtEnterToNewStatus);
-                        saveRunTimeRecord();
-                    }
-                    // создать новую запись в Return table
-                    else
-                    {
-                        saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
-                    }
-                }
-                // ****
-
                 // сохранить новый статус в БД
                 if (saveStatusToDB(newStatus))
                 {
+                    // **** запись или в RunTimeRecord или в ReturnTable
+                    // сохранить дату входа в состояние во внутреннем словаре
+                    _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
+                    // и в БД
+                    if (_dbRunTimeRecord != null)
+                    {
+                        // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
+                        if (getStatusRunTimeDTS(newStatus).DateEntered.IsZero())  // возв. true, если поле == null
+                        {
+                            // сохраняем дату входа в новое состояние
+                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
+                            // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
+                            setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
+
+                            Debug.Print("status from {0} ts {1}; status to {2}, dt {3}", this.Status, secondsInPrevState, newStatus, dtEnterToNewStatus);
+                            saveRunTimeRecord();
+                        }
+                        // создать новую запись в Return table
+                        else
+                        {
+                            saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
+                        }
+                    }
+                    // ****
+
                     // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
                     _curTimer = null;
                     if (_tsTimersDict.ContainsKey(newStatus))
@@ -303,14 +311,18 @@ namespace KDSService.AppModel
                     if (this.ParentUid.IsNull())
                     {
                         List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
-                        if (dishes != null) dishes.ForEach(od => od.UpdateStatus(newStatus, false));
+                        if ((dishes != null) && (dishes.Count > 0))
+                            dishes.ForEach(od => od.UpdateStatus(newStatus, false));
                     }
 
                     // попытка обновить статус Заказа проверкой состояний всех блюд
                     if (isUpdateParentOrder)
                         _modelOrder.UpdateStatusByVerificationDishes();
+                    isUpdSuccess = true;
                 }
             }
+
+            return isUpdSuccess;
         }  // method UpdateStatus
 
 

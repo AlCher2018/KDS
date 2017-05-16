@@ -1,6 +1,6 @@
-﻿using KDSClient.Lib;
-using KDSClient.ServiceReference1;
-using KDSClient.ViewModel;
+﻿using KDSWPFClient.ServiceReference1;
+using KDSWPFClient.Lib;
+using KDSWPFClient.ViewModel;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,12 +8,15 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ServiceModel;
 
-namespace KDSClient
+
+namespace KDSWPFClient
 {
     public class AppDataProvider: IDisposable
     {
-        private KDSServiceClient _client = null;
+        private KDSServiceClient _getClient = null;
+        private KDSCommandServiceClient _setClient = null;
 
         // **** СЛОВАРИ
         //   статусов
@@ -26,10 +29,22 @@ namespace KDSClient
         private Dictionary<int, DepartmentViewModel> _deps;
         public Dictionary<int, DepartmentViewModel> Departments { get { return _deps; } }
 
-        public AppDataProvider(KDSServiceClient client)
-        {
-            _client = client;
+        public string ErrorMessage { get; set; }
 
+        public AppDataProvider()
+        {
+            ErrorMessage = null;
+            try
+            {
+                _getClient = new KDSServiceClient();
+                _setClient = new KDSCommandServiceClient();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+                return;
+            }
+            
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _depGroups = new Dictionary<int, DepartmentGroupViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
@@ -37,18 +52,26 @@ namespace KDSClient
 
 
         #region set dictionaries from service
-        public void SetDictDataFromService()
+        public bool SetDictDataFromService()
         {
-            setOrderStatusFromService();
-            setDepGroupsFromService();
-            setDepartmentsFromService();
+            bool retVal = false;
+            try
+            {
+                setOrderStatusFromService();
+                setDepGroupsFromService();
+                setDepartmentsFromService();
+                retVal = true;
+            }
+            catch (Exception)
+            { }
+            return retVal;
         }
         private void setOrderStatusFromService()
         {
             _ordStatuses.Clear();
             try
             {
-                List<OrderStatusModel> svcList = _client.GetOrderStatusList();
+                List<OrderStatusModel> svcList = _getClient.GetOrderStatusList();
                 svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
                     new OrderStatusViewModel()
                     {
@@ -59,7 +82,8 @@ namespace KDSClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("{0}: {1}", ex.Message, ex.InnerException.Message);
+                ErrorMessage = string.Format("{0}{1}", ex.Message, (ex.InnerException==null) ? "" : ex.InnerException.Message);
+                throw;
             }
         }
         private void setDepGroupsFromService()
@@ -67,7 +91,7 @@ namespace KDSClient
             _depGroups.Clear();
             try
             {
-                Dictionary<int, DepartmentGroupModel> svcDict = _client.GetDepartmentGroups();
+                Dictionary<int, DepartmentGroupModel> svcDict = _getClient.GetDepartmentGroups();
                 foreach (KeyValuePair<int, DepartmentGroupModel> kvp in svcDict)
                 {
                     _depGroups.Add(kvp.Key, new DepartmentGroupViewModel()
@@ -78,7 +102,8 @@ namespace KDSClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("{0}: {1}", ex.Message, ex.InnerException.Message);
+                ErrorMessage = string.Format("{0}{1}", ex.Message, (ex.InnerException==null) ? "" : ex.InnerException.Message);
+                throw;
             }
         }
         private void setDepartmentsFromService()
@@ -86,7 +111,7 @@ namespace KDSClient
             _deps.Clear();
             try
             {
-                Dictionary<int, DepartmentModel> svcDict = _client.GetDepartments();
+                Dictionary<int, DepartmentModel> svcDict = _getClient.GetDepartments();
                 foreach (KeyValuePair<int, DepartmentModel> kvp in svcDict)
                 {
                     DepartmentViewModel newDep = new DepartmentViewModel()
@@ -104,25 +129,33 @@ namespace KDSClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("{0}: {1}", ex.Message, ex.InnerException.Message);
+                ErrorMessage = string.Format("{0}: {1}", ex.Message, (ex.InnerException == null) ? "" : ex.InnerException.Message);
             }
         }
         #endregion
 
         public List<OrderModel> GetOrders()
         {
-            return _client.GetOrders();
+            return _getClient.GetOrders();
         }
 
         public void Dispose()
         {
-            if (_client != null)
+            disposeServiceClient(_getClient);
+            disposeServiceClient(_setClient);
+
+            if (_ordStatuses != null) { _ordStatuses.Clear(); _ordStatuses = null; }
+            if (_depGroups != null) { _depGroups.Clear(); _depGroups = null; }
+            if (_deps != null) { _deps.Clear(); _deps = null; }
+        }
+
+        private void disposeServiceClient(System.ServiceModel.ICommunicationObject client)
+        {
+            if (client != null)
             {
-                _client.Close(); _client = null;
+                if (client.State == System.ServiceModel.CommunicationState.Opened) client.Close();
+                client = null;
             }
-            _ordStatuses.Clear(); _ordStatuses = null;
-            _depGroups.Clear(); _depGroups = null;
-            _deps.Clear(); _deps = null;
         }
     }  // class
 }

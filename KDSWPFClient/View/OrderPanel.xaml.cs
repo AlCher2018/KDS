@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 
 
-namespace KDSClient.View
+namespace KDSWPFClient.View
 {
     /// <summary>
     /// Interaction logic for OrderPanel.xaml

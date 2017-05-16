@@ -1,11 +1,11 @@
-﻿<Window x:Class="KDSClient.MainWindow"
+﻿<Window x:Class="KDSWPFClient.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:KDSClient"
+        xmlns:local="clr-namespace:KDSWPFClient"
         mc:Ignorable="d"
-        Title="KDS" Height="1080" Width="1920">
+        Title="KDS" Height="728" Width="1024">
 
     <Window.Resources>
     </Window.Resources>

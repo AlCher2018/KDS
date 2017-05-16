@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
-namespace KDSClient.Lib
+namespace KDSWPFClient.Lib
 {
     [ValueConversion(typeof(double), typeof(double))]
     public class MultiplyParamValueConverter : IValueConverter

@@ -1,4 +1,5 @@
-﻿using KDSClient.ServiceReference1;
+﻿using KDSWPFClient;
+using KDSWPFClient.ServiceReference1;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,7 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSClient.ViewModel
+
+
+namespace KDSWPFClient.ViewModel
 {
     public class OrderViewModel
     {
@@ -32,6 +35,7 @@ namespace KDSClient.ViewModel
         public OrderViewModel()
         {
         }
+
         public OrderViewModel(OrderModel svcOrder)
         {
             Id = svcOrder.Id;

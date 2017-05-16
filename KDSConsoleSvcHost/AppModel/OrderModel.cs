@@ -176,10 +176,10 @@ namespace KDSService.AppModel
                         // если это ингредиент, то он может быть уже обновлен предыдущим блюдом
                         if (dbDish.ParentUid.IsNull() == false)
                         {
-                            OrderDish dbIngrDish;
-                            KDSEntities db = new KDSEntities();
-                            dbIngrDish = db.OrderDish.Find(dbDish.Id);
-                            if (dbIngrDish != null) this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbIngrDish);
+                            //OrderDish dbIngrDish;
+                            //KDSEntities db = new KDSEntities();
+                            //dbIngrDish = db.OrderDish.Find(dbDish.Id);
+                            //if (dbIngrDish != null) this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbIngrDish);
                         }
                         else
                             this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
@@ -203,66 +203,84 @@ namespace KDSService.AppModel
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
         public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus)
         {
-            // если статус не поменялся, то ничего не делать
-            //if (this.Status == newStatus) return; 
-
             lock (this)
             {
-                DateTime dtEnterToNewStatus = DateTime.MinValue;
-                int secondsInPrevState = 0;
-
-                // если есть таймер предыдущего состояния, то остановить его
-                if (_curTimer != null)
+                // если статус не поменялся, то попытаться обновить только статус блюд
+                if (this.Status == newStatus)
                 {
-                    _curTimer.Stop();
-                    secondsInPrevState = _curTimer.ValueTS;
+                    if (isUpdateDishStatus) updateDishesStatus(newStatus);
                 }
+                else
+                {
+                    DateTime dtEnterToNewStatus = DateTime.MinValue;
+                    int secondsInPrevState = 0;
 
-                // дата входа в НОВОЕ состояние
-                if (isUpdateDishStatus)  // обновление заказа извне
-                {
-                    dtEnterToNewStatus = DateTime.Now;
-                }
-                else  // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд
-                {
-                    dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
-                }
-
-                // запись в RunTimeRecord
-                if (_dbRunTimeRecord != null)
-                {
-                    // сохраняем в записи RunTimeRecord дату входа в новое состояние и время нахождения в предыдущем состоянии
-                    setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
-                    setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
-                    saveRunTimeRecord();
-                }
-
-                // сохранить новый статус в БД
-                if (saveStatusToDB(newStatus))
-                {
-                    // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
-                    _curTimer = null;
-                    if (_tsTimersDict.ContainsKey(newStatus))
+                    // если есть таймер предыдущего состояния, то остановить его
+                    if (_curTimer != null)
                     {
-                        _curTimer = _tsTimersDict[newStatus];
-                        _curTimer.Start();
+                        _curTimer.Stop();
+                        secondsInPrevState = _curTimer.ValueTS;
                     }
 
-                    // сохранить новый статус в объекте
-                    Status = newStatus;
-
-                    // просто обновить состояние блюд
-                    if (isUpdateDishStatus)
+                    // дата входа в НОВОЕ состояние
+                    if (isUpdateDishStatus)  // обновление заказа извне
                     {
-                        foreach (OrderDishModel modelDish in _dishesDict.Values)
+                        dtEnterToNewStatus = DateTime.Now;
+                    }
+                    else  // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд
+                    {
+                        dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
+                    }
+
+                    bool dishesUpdSuccess = true;
+                    if (isUpdateDishStatus) dishesUpdSuccess = updateDishesStatus(newStatus);
+
+                    // сохранить новый статус в БД
+                    if (dishesUpdSuccess && saveStatusToDB(newStatus))
+                    {
+                        // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
+                        _curTimer = null;
+                        if (_tsTimersDict.ContainsKey(newStatus))
                         {
-                            modelDish.UpdateStatus(newStatus, false);
+                            _curTimer = _tsTimersDict[newStatus];
+                            _curTimer.Start();
                         }
-                    }
-                }
+
+                        // запись в RunTimeRecord
+                        if (_dbRunTimeRecord != null)
+                        {
+                            // сохраняем в записи RunTimeRecord дату входа в новое состояние и время нахождения в предыдущем состоянии
+                            setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
+                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
+                            saveRunTimeRecord();
+                        }
+                        // сохранить новый статус в объекте
+                        Status = newStatus;
+                    }  // save order status
+
+                }  // if status changed
 
             }  // lock
         }  // method
+
+
+        // попытаться обновить статус блюд
+        private bool updateDishesStatus(OrderStatusEnum newStatus)
+        {
+            bool dishUpdSuccess = true;
+            try
+            {
+                foreach (OrderDishModel modelDish in _dishesDict.Values)
+                {
+                    dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.Message);
+            }
+            return dishUpdSuccess;
+        }
 
 
         // обновление состояния заказа проверкой состояний всех блюд

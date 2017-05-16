@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/KDSService.AppModel" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
   <xs:complexType name="ArrayOfOrderStatusModel">
     <xs:sequence>
       <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderStatusModel" nillable="true" type="tns:OrderStatusModel" />
@@ -25,7 +26,7 @@
   <xs:complexType name="DepartmentModel">
     <xs:sequence>
       <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="DepGroupsIdList" nillable="true" type="q1:ArrayOfint" />
-      <xs:element minOccurs="0" name="DishQuantity" type="xs:int" />
+      <xs:element minOccurs="0" name="DishQuantity" type="xs:decimal" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="IsAutoStart" type="xs:boolean" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
@@ -50,29 +51,85 @@
       <xs:element minOccurs="0" name="TableName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Waiter" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="WaitingTimerString" nillable="true" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
   <xs:element name="OrderModel" nillable="true" type="tns:OrderModel" />
   <xs:complexType name="OrderDishModel">
     <xs:sequence>
+      <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
       <xs:element minOccurs="0" name="Department" nillable="true" type="tns:DepartmentModel" />
+      <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="ParentUid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Quantity" type="xs:decimal" />
+      <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Status" type="tns:OrderStatusEnum" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="WaitingTimerString" nillable="true" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
   <xs:element name="OrderDishModel" nillable="true" type="tns:OrderDishModel" />
   <xs:simpleType name="OrderStatusEnum">
     <xs:restriction base="xs:string">
-      <xs:enumeration value="Wait" />
-      <xs:enumeration value="InProcess" />
-      <xs:enumeration value="Finished" />
-      <xs:enumeration value="Took" />
-      <xs:enumeration value="Cancelled" />
-      <xs:enumeration value="Return" />
+      <xs:enumeration value="None">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">-1</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="WaitingCook">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">0</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Cooking">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">1</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Ready">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">2</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Took">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">3</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Cancelled">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">4</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Commit">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">5</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="CancelConfirmed">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">6</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:element name="OrderStatusEnum" nillable="true" type="tns:OrderStatusEnum" />

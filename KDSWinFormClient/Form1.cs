@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -32,6 +33,11 @@ namespace KDSWinFormClient
 
             _getClient = new KDSServiceClient();
             _setClient = new KDSCommandServiceClient();
+
+            IContextChannel contextChannel = (_getClient.InnerChannel as IContextChannel);
+            contextChannel.OperationTimeout = TimeSpan.FromMinutes(10);  // for debug
+
+            //var v2 = _getClient.Endpoint.Binding.SendTimeout;
 
             _orders = new List<OrderModel>();
 
@@ -278,5 +284,31 @@ namespace KDSWinFormClient
             }
         }
 
+        private void button3_Click(object sender, EventArgs e)
+        {
+            int iStatus = (int)getStatusEnumByString(_testOrder.Status.ToString());
+            if (iStatus <= 2)
+            {
+                _setClient.ChangeOrderStatus(_testOrder.Id, OrderStatusEnum.Took);
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            int iStatus = (int)getStatusEnumByString(_testOrder.Status.ToString());
+            if (iStatus <= 3)
+            {
+                _setClient.ChangeOrderStatus(_testOrder.Id, OrderStatusEnum.Cancelled);
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            int iStatus = (int)getStatusEnumByString(_testOrder.Status.ToString());
+            if (iStatus == 4)
+            {
+                _setClient.ChangeOrderStatus(_testOrder.Id, OrderStatusEnum.CancelConfirmed);
+            }
+        }
     }  // class
 }

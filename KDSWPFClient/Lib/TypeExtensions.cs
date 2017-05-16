@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace KDSClient.Lib
+namespace KDSWPFClient.Lib
 {
     public static class StringExtensions
     {

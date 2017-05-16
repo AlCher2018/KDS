@@ -1,7 +1,7 @@
-﻿using KDSClient.Lib;
-using KDSClient.ServiceReference1;
-using KDSClient.View;
-using KDSClient.ViewModel;
+﻿using KDSWPFClient.Lib;
+using KDSWPFClient.ServiceReference1;
+using KDSWPFClient.View;
+using KDSWPFClient.ViewModel;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 
-namespace KDSClient
+namespace KDSWPFClient
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -22,22 +22,25 @@ namespace KDSClient
         private static Timer _timer;
         private static AppDataProvider _dataProvider;
 
-        private ObservableCollection<OrderViewModel> _viewOrders;
+        private List<OrderViewModel> _viewOrders;
 
         public MainWindow()
         {
             InitializeComponent();
 
             this.Closing += MainWindow_Closing;
-            KDSServiceClient client = new KDSServiceClient();
-            _dataProvider = new AppDataProvider(client);
-            // получить словари
-            _dataProvider.SetDictDataFromService();
 
-            _viewOrders = new ObservableCollection<OrderViewModel>();
+            _viewOrders = new List<OrderViewModel>();
 
-            _timer = new Timer(1000);
-            _timer.Elapsed += _timer_Elapsed;
+            List<TestData.OrderTestModel> orders = TestData.TestDataHelper.GetTestOrders(5, 10);
+
+            OrderPanelHeader hdr = new OrderPanelHeader();
+            hdr.SetValue(Canvas.LeftProperty, 50d);
+            hdr.SetValue(Canvas.TopProperty, 20d);
+            ordersPanel.Children.Add(hdr);
+
+            //_timer = new Timer(1000);
+            //_timer.Elapsed += _timer_Elapsed;
             //_timer.Start();
         }
 
@@ -47,7 +50,6 @@ namespace KDSClient
             {
                 _timer.Stop(); _timer.Dispose();
             }
-            _dataProvider.Dispose(); _dataProvider = null;
         }
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)

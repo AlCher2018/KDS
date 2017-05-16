@@ -2,7 +2,6 @@
 <xs:schema xmlns:tns="http://tempuri.org/" elementFormDefault="qualified" targetNamespace="http://tempuri.org/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:import namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel" />
   <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
-  <xs:import namespace="http://schemas.datacontract.org/2004/07/KDSService" />
   <xs:element name="GetOrderStatusList">
     <xs:complexType>
       <xs:sequence />
@@ -51,14 +50,29 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:element name="ChangeStatus">
+  <xs:element name="ChangeOrderStatus">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q5="http://schemas.datacontract.org/2004/07/KDSService" minOccurs="0" name="command" nillable="true" type="q5:OrderCommand" />
+        <xs:element minOccurs="0" name="orderId" type="xs:int" />
+        <xs:element xmlns:q5="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q5:OrderStatusEnum" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:element name="ChangeStatusResponse">
+  <xs:element name="ChangeOrderStatusResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeOrderDishStatus">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="orderId" type="xs:int" />
+        <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
+        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q6:OrderStatusEnum" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeOrderDishStatusResponse">
     <xs:complexType>
       <xs:sequence />
     </xs:complexType>
