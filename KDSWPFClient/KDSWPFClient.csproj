@@ -77,6 +77,10 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="View\OrdersPages.cs" />
+    <Compile Include="View\DishPanel.xaml.cs">
+      <DependentUpon>DishPanel.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\OrderPanelHeader.xaml.cs">
       <DependentUpon>OrderPanelHeader.xaml</DependentUpon>
     </Compile>
@@ -100,6 +104,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="View\DishPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\OrderPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

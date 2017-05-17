@@ -76,7 +76,8 @@ namespace KDSWPFClient
 
         private static void setAppGlobalValues()
         {
-            string cfgValue;
+            string cfgValue; int iVal;
+
             if ((cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages")) != null)
                 AppLib.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
             if ((cfgValue = AppLib.GetAppSetting("IsLogUserAction")) != null)
@@ -84,6 +85,31 @@ namespace KDSWPFClient
 
             if ((cfgValue = AppLib.GetAppSetting("AppMainScale")) != null)
                 AppLib.SetAppGlobalValue("AppMainScale", cfgValue.ToDouble());
+
+            // размеры элементов панели заказа
+            //   кол-во столбцов заказов
+            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
+            int cntCols = (cfgValue == null) ? 4 : cfgValue.ToInt();  // по умолчанию - 4
+            AppLib.SetAppGlobalValue("OrdersColumnsCount", cntCols);
+            //   ширина столбцов заказов и расстояния между столбцами
+            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
+            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
+            // где, koef = доля поля от ширины колонки
+            double koef = 0.2;
+            double colWidth = screenWidth / (cntCols + koef*(cntCols+1));
+            double colMargin = koef * colWidth;
+            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+
+            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 12);
+            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 12);
+            AppLib.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 14);
+            AppLib.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 14);
+            AppLib.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 12);
+            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 12);
+            AppLib.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10);
+            //   отступ сверху/снизу для панели заказов
+            AppLib.SetAppGlobalValue("ordPnlTopBotMargin", 15d);
         }
 
     }  // class App
