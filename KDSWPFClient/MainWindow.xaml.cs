@@ -2,6 +2,7 @@
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using KDSWPFClient.ViewModel;
+using KDSWPFClient.Model;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -24,8 +25,13 @@ namespace KDSWPFClient
 
         private OrdersPages _pages;
 
-        //private List<OrderViewModel> _viewOrders;
-        private List<TestData.OrderTestModel> _viewOrders;
+        private List<OrderViewModel> _viewOrders;
+        //private List<TestData.OrderTestModel> _viewOrders;
+
+        // фильтр данных
+        // эти поля устанавливаются где-либо и используются при обращении к службе за данными (getOrdersFromService)
+        private ServiceOrderQueueEnum _svcQueue = ServiceOrderQueueEnum.None;  // тип запроса к сервису
+        private int _svcQueueIntValue;      // int-значение при обращении к сервису
 
         private bool _isUpdateLayout = false;
 
@@ -36,56 +42,30 @@ namespace KDSWPFClient
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
-            double topBotMargValue = (double)AppLib.GetAppGlobalValue("ordPnlTopBotMargin");
+            double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
 
             _pages = new OrdersPages();
-            //_viewOrders = new List<OrderViewModel>();
-            _viewOrders = TestData.TestDataHelper.GetTestOrders(5, 10);
-            updateViewOrders();
+            _viewOrders = new List<OrderViewModel>();
+            // debug test data
+            //Button_Click(null,null);
 
-            //createTestData();
+            _timer = new Timer(1000);
+            _timer.Elapsed += _timer_Elapsed;
+            _timer.Start();
 
-            //_timer = new Timer(1000);
-            //_timer.Elapsed += _timer_Elapsed;
-            //_timer.Start();
-        }
-
-        private void createTestData()
-        {
-            OrderPanel ordPnl = new OrderPanel();
-            ordPnl.Width = 300d; ordPnl.Name = "op1";
-            ordPnl.SetValue(Canvas.LeftProperty, 50d);
-            ordPnl.SetValue(Canvas.TopProperty, 20d);
-            OrderPanelHeader hdr = new OrderPanelHeader();
-            hdr.tbWaiter.Text = "qewrqwer werweqr wqerwer dfgsdf sdfg sdfg sdfg hjyuiyui";
-            ordPnl.SetHeader(hdr);
-            // блюда
-            ordPnl.AddDish(new DishPanel(1, 1, "блюдо 1", 1));
-            ordPnl.AddDish(new DishPanel(2, 1, "блюдо 2", 2));
-            ordPnl.AddDish(new DishPanel(3, 2, "блюдо 3", 0.5m));
-            ordPnl.AddDish(new DishPanel(4, 2, "блюдо 4", 1));
-
-            cnvOrders.Children.Add(ordPnl);
-
-            ordPnl = new OrderPanel();
-            ordPnl.Width = 300d; ordPnl.Name = "op2";
-            ordPnl.SetValue(Canvas.LeftProperty, 500d);
-            ordPnl.SetValue(Canvas.TopProperty, 400d);
-            hdr = new OrderPanelHeader();
-            hdr.tbWaiter.Text = "qewrqwer werweqr";
-            ordPnl.SetHeader(hdr);
-            // блюда
-            ordPnl.AddDish(new DishPanel(1, 1, "суп", 1));
-            ordPnl.AddDish(new DishPanel(2, 1, "лапша с курицей", 2));
-            ordPnl.AddDish(new DishPanel(3, 2, "пиво", 0.5m));
-
-            cnvOrders.Children.Add(ordPnl);
+            // кнопки переключения страниц
+            btnSetPagePrevious.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            btnSetPagePrevious.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            
+            //btnScrollLeft.Visibility = Visibility.Visible;
+            //btnScrollRight.Visibility = Visibility.Visible;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            //reArrangeChildrens();
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -100,100 +80,142 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
-            try
-            {
-                List<OrderModel> orders = _dataProvider.GetOrders();
-                if (orders != null)
-                {
-                    //OrderModel om = orders[0];
-                    //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
-                    //Debug.Print(s);
-                    //updateOrders(orders);
+            // получение различных наборов данных согласно условий отбора
+            List<OrderModel> orders = getOrdersFromService();
+            if (orders != null) updateOrders(orders);
 
+            _timer.Start();
+        }  // method
+
+        private List<OrderModel> getOrdersFromService()
+        {
+            if (_svcQueue != ServiceOrderQueueEnum.None)
+            {
+                try
+                {
+                    List<OrderModel> retVal = null;
+                    switch (_svcQueue)
+                    {
+                        case ServiceOrderQueueEnum.None:
+                            break;
+                        case ServiceOrderQueueEnum.AllOrders:
+                            retVal = _dataProvider.GetOrdersByConditions();
+                            break;
+                        case ServiceOrderQueueEnum.ByDishStatus:
+                            retVal = _dataProvider.GetOrdersByConditions();
+                            break;
+                        case ServiceOrderQueueEnum.ByDepartment:
+                            retVal = _dataProvider.GetOrdersByConditions();
+                            break;
+                        case ServiceOrderQueueEnum.ByDepartmentGroup:
+                            retVal = _dataProvider.GetOrdersByConditions();
+                            break;
+                        default:
+                            break;
+                    }
+                    return retVal;
+                }
+                catch (Exception ex)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка чтения заказов: {0}", ex.Message);
+                    return null;
                 }
             }
-            catch (Exception ex)
-            {
-                AppLib.WriteLogErrorMessage("Ошибка чтения заказов: {0}", ex.Message);
-            }
-            finally
-            {
-                _timer.Start();
-            }
-        }  // method
+            return null;
+        }
 
 
         // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
-        private void updateOrders()
+        private void updateOrders(List<OrderModel> svcOrders)
         {
-            //foreach (OrderModel svcOrder in orders)
-            //{
-            //    OrderViewModel ovm = _viewOrders.FirstOrDefault(o => o.Id == svcOrder.Id);
-            //    if (ovm == null)
-            //    {
-            //        // добавление заказа в словарь
-            //        _viewOrders.Add(new OrderViewModel(svcOrder));
-            //    }
-            //    else
-            //    {
-            //        // обновить существующий заказ
-            //        //curOrder = _orders[dbOrder.Id];
-            //        //curOrder.UpdateFromDBEntity(dbOrder);
-            //    }
-            //}
-            // ключи для удаления
-            //IEnumerable<int> delKeys = _orders.Keys.Except(dbOrders.Select(o => o.Id));
-            //foreach (int key in delKeys) _orders.Remove(key);
+            //OrderModel om = orders[0];
+            //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
+            //Debug.Print(s);
+
+            // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ orders
+            // удаление заказов
+            IEnumerable<int> delKeys = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id));
+            foreach (int key in delKeys) _viewOrders.Remove(_viewOrders.Find(vo => vo.Id == key));
+
+            foreach (OrderModel svcOrder in svcOrders)
+            {
+                OrderViewModel ovm = _viewOrders.FirstOrDefault(o => o.Id == svcOrder.Id);
+                if (ovm == null)
+                {
+                    // добавление заказа в словарь
+                    _viewOrders.Add(new OrderViewModel(svcOrder));
+                }
+                else
+                {
+                    // обновить существующий заказ
+                    //curOrder = _orders[dbOrder.Id];
+                    //curOrder.UpdateFromDBEntity(dbOrder);
+                }
+            }
         }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            reArrangeChildrens();
+            //_viewOrders = TestData.TestDataHelper.GetTestOrders(5, 30);
+
+            //updateViewOrders();
         }
 
-        private void reArrangeChildrens()
-        {
-            double dTop = 0d;
-            foreach (UIElement child in cnvOrders.Children.OfType<OrderPanel>())
-            {
-                Size size = child.DesiredSize;
-                if (size.Height > 0)
-                {
-                    if (dTop == 0d)
-                    {
-                        dTop = Convert.ToDouble(child.GetValue(Canvas.TopProperty));
-                        dTop += child.RenderSize.Height;
-                    }
-                    else
-                    {
-                        dTop += 5d;
-                        child.SetValue(Canvas.TopProperty, dTop);
-                        child.SetValue(Canvas.LeftProperty, 50d);
-
-                        if ((child is FrameworkElement) && ((FrameworkElement)child).Name == "op2")
-                            child.SetValue(Canvas.LeftProperty, (_isUpdateLayout) ? 50d : 500d);
-
-                        dTop += child.RenderSize.Height;
-                    }
-                }
-            }
-            _isUpdateLayout = !_isUpdateLayout;
-        }
 
         private void updateViewOrders()
         {
-            //cnvOrders.Visibility = Visibility.Hidden;
-            // очистить панели заказов
-            _pages.Clear();
+            DateTime dt = DateTime.Now;
+            _pages.Clear(); // очистить панели заказов
+            Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
 
-            foreach (TestData.OrderTestModel ord in _viewOrders)
-            {
-                _pages.AddOrder(ord);
-            }
+            // добавить заказы
+            dt = DateTime.Now;
+            _pages.AddOrders(_viewOrders);
+            Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
+
+            setChangePageButtonsState();
 
             this.vbxOrders.Child = _pages.CurrentPage;
         }  // method
+
+        private void setChangePageButtonsState()
+        {
+            btnSetPagePrevious.Visibility = Visibility.Hidden;
+            btnSetPageNext.Visibility = Visibility.Hidden;
+            if (_pages.Count == 0) return;
+
+            // состояние кнопки перехода на предыдущюю страницу
+            if ((_pages.CurrentPageIndex - 1) > 0)
+            {
+                tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
+                btnSetPagePrevious.Visibility = Visibility.Visible;
+            }
+            // и на следующую страницу
+            else if (_pages.CurrentPageIndex < _pages.Count)
+            {
+                tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
+                btnSetPageNext.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_pages.SetNextPage())
+            {
+                this.vbxOrders.Child = _pages.CurrentPage;
+                setChangePageButtonsState();
+            }
+        }
+
+        private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_pages.SetPreviousPage())
+            {
+                this.vbxOrders.Child = _pages.CurrentPage;
+                setChangePageButtonsState();
+            }
+        }
 
     }  // class MainWindow
 }

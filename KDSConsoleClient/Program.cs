@@ -10,6 +10,20 @@ using System.Timers;
 
 namespace KDSConsoleClient
 {
+    public class Person
+    {
+        public int Age { get; set; }
+        public string Name { get; set; }
+
+        public int IntField { get { return 2 + 3; } }
+
+        public Person ShallowCopy()
+        {
+            return (Person)this.MemberwiseClone();
+        }
+    }
+
+
     class Program
     {
         private static Timer _timer;
@@ -17,6 +31,21 @@ namespace KDSConsoleClient
 
         static void Main(string[] args)
         {
+            // Create an instance of Person and assign values to its fields.
+            Person p1 = new Person();
+            p1.Age = 42;
+            p1.Name = "Sam";
+
+            // Perform a shallow copy of p1 and assign it to p2.
+            Person p2 = p1.ShallowCopy();
+
+            // Display values of p1, p2
+            Console.WriteLine("Original values of p1 and p2:");
+            Console.WriteLine("   p1 instance values: ");
+            DisplayValues(p1);
+            Console.WriteLine("   p2 instance values:");
+            DisplayValues(p2);
+
             Console.Title = "CLIENT";
 
             KDSServiceClient client = new KDSServiceClient();
@@ -30,6 +59,12 @@ namespace KDSConsoleClient
 
             _timer.Stop();
             client.Close();
+        }
+
+        public static void DisplayValues(Person p)
+        {
+            Console.WriteLine("      Name: {0:s}, Age: {1:d}", p.Name, p.Age);
+//            Console.WriteLine("      Value: {0:d}", p.IdInfo.IdNumber);
         }
 
         private static void _timer_Elapsed(object sender, ElapsedEventArgs e)

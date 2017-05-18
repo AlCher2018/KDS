@@ -1,4 +1,4 @@
-﻿using KDSWPFClient;
+﻿using KDSWPFClient.ServiceReference1;
 using System;
 using System.Collections.Generic;
 using System.Linq;

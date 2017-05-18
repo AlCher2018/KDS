@@ -50,11 +50,27 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+  <xs:element name="GetOrdersByConditions">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q5="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="dishStatus" type="q5:OrderStatusEnum" />
+        <xs:element minOccurs="0" name="departmentId" type="xs:int" />
+        <xs:element minOccurs="0" name="departmentGroupId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOrdersByConditionsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="GetOrdersByConditionsResult" nillable="true" type="q6:ArrayOfOrderModel" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
   <xs:element name="ChangeOrderStatus">
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element xmlns:q5="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q5:OrderStatusEnum" />
+        <xs:element xmlns:q7="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q7:OrderStatusEnum" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -68,7 +84,7 @@
       <xs:sequence>
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
         <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
-        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q6:OrderStatusEnum" />
+        <xs:element xmlns:q8="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q8:OrderStatusEnum" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>

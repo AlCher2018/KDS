@@ -8,6 +8,12 @@
              mc:Ignorable="d"
              d:DesignHeight="20" d:DesignWidth="300">
 
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid >
         <Grid.RowDefinitions>
             <!-- 0. строка заголовка заказа, может содержать OrderPanelHeader-->
@@ -21,8 +27,8 @@
         <Grid x:Name="grdHeader" x:FieldModifier="private" Grid.Row="0"/>
 
         <!-- заголовок таблицы блюд -->
-        <Border Grid.Row="1" Background="AliceBlue" BorderBrush="DarkGray" BorderThickness="1">
-            <Grid>
+        <Border Grid.Row="1" Background="AliceBlue" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
+            <Grid x:Name="grdTblHeader">
                 <Grid.ColumnDefinitions>
                     <!-- 0. № п/п -->
                     <ColumnDefinition Width="0.2*"/>
@@ -35,11 +41,11 @@
                     <!-- 4. таймер состояния -->
                     <ColumnDefinition Width="0.6*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="№п/п" Grid.Column="0" VerticalAlignment="Center"/>
-                <TextBlock Text="Подача" Grid.Column="1" VerticalAlignment="Center"/>
-                <TextBlock Text="Блюдо" Grid.Column="2" VerticalAlignment="Center"/>
-                <TextBlock Text="Кол-во" Grid.Column="3" VerticalAlignment="Center"/>
-                <TextBlock Text="Время" Grid.Column="4" VerticalAlignment="Center"/>
+                <TextBlock Text="№п/п" Grid.Column="0"/>
+                <TextBlock Text="Пдч" Grid.Column="1"/>
+                <TextBlock Text="Блюдо" Grid.Column="2"/>
+                <TextBlock Text="Кол-во" Grid.Column="3"/>
+                <TextBlock Text="Время" Grid.Column="4"/>
             </Grid>
         </Border>
 

@@ -16,9 +16,73 @@
         <Grid.Background>
             <ImageBrush ImageSource="Images/steel.jpg"/>
         </Grid.Background>
-        
-        <Canvas x:Name="cnvOrders"/>
+
         <Viewbox x:Name="vbxOrders" Stretch="Fill"/>
+        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Margin="780,-15,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+
+        <Viewbox x:Name="btnSetPagePrevious" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden" Stretch="Uniform">
+            <Canvas Width="100" Height="100" MouseDown="btnSetPagePrevious_MouseDown">
+                <Path>
+                    <Path.Fill>
+                        <LinearGradientBrush EndPoint="0,0.5" StartPoint="1.0,0.5" Opacity="0.7">
+                            <GradientStop Color="DarkMagenta" Offset="1"/>
+                            <GradientStop Color="Black" Offset="0"/>
+                        </LinearGradientBrush>
+                    </Path.Fill>
+                    <Path.Data>
+                        <PathGeometry>
+                            <PathFigure StartPoint="0,0" IsClosed="True" IsFilled="True">
+                                <ArcSegment Point="0,100" Size="50,50" SweepDirection="Clockwise"/>
+                            </PathFigure>
+                        </PathGeometry>
+                    </Path.Data>
+                </Path>
+                <Grid Width="100" Height="100">
+                    <TextBlock x:Name="tbPagePreviousNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" Margin="-10">
+                        <TextBlock.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform/>
+                                <SkewTransform/>
+                                <RotateTransform Angle="-90"/>
+                                <TranslateTransform X="1.248" Y="2.016"/>
+                            </TransformGroup>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Grid>
+            </Canvas>
+        </Viewbox>
+        <Viewbox x:Name="btnSetPageNext" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Hidden">
+            <Canvas Width="100" Height="100" MouseDown="btnSetPageNext_MouseDown">
+                <Path>
+                    <Path.Fill>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5" Opacity="0.7">
+                            <GradientStop Color="DarkMagenta" Offset="1"/>
+                            <GradientStop Color="Black" Offset="0"/>
+                        </LinearGradientBrush>
+                    </Path.Fill>
+                    <Path.Data>
+                        <PathGeometry>
+                            <PathFigure StartPoint="100,100" IsClosed="True" IsFilled="True">
+                                <ArcSegment Point="100,0" Size="50,50" SweepDirection="Clockwise"/>
+                            </PathFigure>
+                        </PathGeometry>
+                    </Path.Data>
+                </Path>
+                <Grid Width="100" Height="100">
+                    <TextBlock x:Name="tbPageNextNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" Margin="-10">
+                        <TextBlock.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform/>
+                                <SkewTransform/>
+                                <RotateTransform Angle="90"/>
+                                <TranslateTransform X="1.248" Y="2.016"/>
+                            </TransformGroup>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Grid>
+
+            </Canvas>
+        </Viewbox>
 
     </Grid>
 </Window>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KDSWPFClient.Lib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,11 +21,27 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class DishPanel : UserControl
     {
-
+        private double _fontSize;
 
         public DishPanel()
         {
             InitializeComponent();
+
+            double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
+            double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
+            _fontSize = fontSize * fontScale;
+
+            // на уровне всего элемента для всех TextBlock-ов
+            this.SetValue(TextBlock.FontSizeProperty, _fontSize);
+            // отдельно для некоторых TextBlock-ов
+            this.tbDishIndex.FontSize = 0.7 * _fontSize;
+
+
+            //IEnumerable<TextBlock> tbs = grdDishLine.Children.OfType<TextBlock>();
+            //foreach (TextBlock tb in tbs)
+            //{
+            //    tb.FontSize = _fontSize;
+            //}
         }
 
         public DishPanel(int index, int filingNumber, string dishName, decimal quantity): this()

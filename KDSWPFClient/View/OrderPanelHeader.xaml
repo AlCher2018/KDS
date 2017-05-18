@@ -28,7 +28,7 @@
     </UserControl.Resources>
     
     <!-- строка заголовка, содержит 3 строки -->
-    <Grid x:Name="grdHeader" Background="White">
+    <Grid x:Name="grdHeader" Background="Transparent">
         <Grid.RowDefinitions>
             <!-- 0. наимен.стола и номер заказа -->
             <RowDefinition Height="1.2*"/>
@@ -39,7 +39,7 @@
         </Grid.RowDefinitions>
         
         <!-- строка с наимен.стола и номером заказа -->
-        <Border x:Name="brdHrdTableRow" Style="{StaticResource cornRadTopStyle}" Background="Yellow">
+        <Border x:Name="brdHrdTableRow" Style="{StaticResource cornRadTopStyle}" Background="Yellow" BorderBrush="DarkBlue" BorderThickness="1,1,1,0">
             <Grid x:Name="grdHdrTableRow" Grid.Row="0" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
@@ -54,27 +54,30 @@
         </Border>
         
         <!-- официант -->
-        <Grid x:Name="grdHdrWaiter" Grid.Row="1" Style="{StaticResource rowMarginStyle}" Background="Yellow">
-            <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding ElementName=root, Path=WaiterName}"/>
-        </Grid>
+        <Border Grid.Row="1" Background="Yellow" BorderBrush="DarkBlue" BorderThickness="1,0,1,0">
+            <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
+                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding ElementName=root, Path=WaiterName}" FontWeight="Bold"/>
+            </Grid>
+        </Border>
         
         <!-- время создания заказа и счетчик приготовления -->
-        <Grid x:Name="grdHdrOrderTime" Grid.Row="2" Style="{StaticResource rowMarginStyle}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="5*"/>
-                <ColumnDefinition Width="5*"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0">
-                <TextBlock x:Name="tbOrderDateLabel" Text="Создан в: " VerticalAlignment="Center"/>
-                <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding ElementName=root, Path=CreateDate, Mode=OneWay, TargetNullValue='noDate', StringFormat={}{0:HH:mm:ss}}"/>
-            </StackPanel>
-            <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="Aqua">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " VerticalAlignment="Center"/>
-                    <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" VerticalAlignment="Center"/>
+        <Border Grid.Row="2" Background="White" BorderBrush="DarkBlue" BorderThickness="1">
+            <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="5*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <TextBlock x:Name="tbOrderDateLabel" Text="Создан в: " VerticalAlignment="Center"/>
+                    <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding ElementName=root, Path=CreateDate, Mode=OneWay, TargetNullValue='noDate', StringFormat={}{0:HH:mm:ss}}"/>
                 </StackPanel>
-            </Border>
-        </Grid>
-        
+                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="Aqua">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " VerticalAlignment="Center"/>
+                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

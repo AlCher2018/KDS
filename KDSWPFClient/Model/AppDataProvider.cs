@@ -139,6 +139,12 @@ namespace KDSWPFClient
             return _getClient.GetOrders();
         }
 
+        public List<OrderModel> GetOrdersByConditions(OrderStatusEnum status, int departmentId, int departmentGroupId)
+        {
+            return _getClient.GetOrdersByConditions(status, departmentId, departmentGroupId);
+        }
+
+
         public void Dispose()
         {
             disposeServiceClient(_getClient);

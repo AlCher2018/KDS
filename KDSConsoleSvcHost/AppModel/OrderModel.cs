@@ -44,7 +44,7 @@ namespace KDSService.AppModel
         public Dictionary<int, OrderDishModel> Dishes
         {
             get { return _dishesDict; }
-            set { }
+            set { _dishesDict = value; }
         }
 
         // форматированное представление временного промежутка для внешних клиентов
@@ -82,6 +82,9 @@ namespace KDSService.AppModel
 
 
         // *** CONSTRUCTOR  ***
+        public OrderModel()
+        {}
+
         public OrderModel(Order dbOrder)
         {
             _dishesDict = new Dictionary<int, OrderDishModel>();
@@ -130,6 +133,21 @@ namespace KDSService.AppModel
             #endregion
 
         }  // ctor
+
+        // копия только значений, без ссылок
+        public OrderModel Copy()
+        {
+            OrderModel retVal = (OrderModel)this.MemberwiseClone();
+
+            // удалить все ссылки
+            retVal._dishesDict = null;  // без ссылки на блюда
+            retVal._tsTimersDict = null;
+            retVal._curTimer = null;
+            retVal._dbRunTimeRecord = null;
+            retVal.Dishes = null;
+
+            return retVal;
+        }
 
         // translate Order to OrderSvcModel
         public void UpdateFromDBEntity(Order dbOrder, bool isNew)

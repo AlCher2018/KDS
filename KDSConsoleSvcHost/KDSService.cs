@@ -3,6 +3,7 @@ using KDSService.AppModel;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Text;
@@ -91,6 +92,7 @@ namespace KDSService
             return ServiceDics.Departments.GetDictionary();
         }
 
+        // все заказы
         public List<OrderModel> GetOrders()
         {
             List<OrderModel> retVal = new List<OrderModel>();
@@ -98,6 +100,64 @@ namespace KDSService
 
             return retVal;
         }
+        // по состоянию какого-либо блюда в заказе, отбор ТОЛЬКО блюд с указанным статусом!!
+        public List<OrderModel> GetOrdersByConditions(OrderStatusEnum dishStatus = OrderStatusEnum.None, int departmentId = 0, int departmentGroupId = 0)
+        {
+            List<OrderModel> retVal = new List<OrderModel>();
+            OrderModel curOrder = null;
+            lock (_ordersModel)
+            {
+                foreach (OrderModel ord in _ordersModel.Orders.Values)
+                {
+                    // отобрать блюда по условию
+                    Dictionary<int, OrderDishModel> filteredDishes = null;
+                    foreach (OrderDishModel dish in ord.Dishes.Values)
+                    {
+                        bool selected = false;
+                        if ((selected == false) && (dishStatus != OrderStatusEnum.None) && (dish.Status == dishStatus)) selected = true;
+                        if ((selected == false) && (departmentId != 0) && (departmentId == dish.Department.Id)) selected = true;
+                        if ((selected == false) && (departmentGroupId != 0) && (dish.Department.DepGroups.Any(dg => dg.Id == departmentGroupId))) selected = true;
+
+                        if (selected == true)
+                        {
+                            if (filteredDishes == null) filteredDishes = new Dictionary<int, OrderDishModel>();
+                            filteredDishes.Add(dish.Id, dish);
+                        }
+                    }
+                        
+                    if (filteredDishes != null)
+                    {
+                        curOrder = ord.Copy();
+                        curOrder.Dishes = filteredDishes;
+                        retVal.Add(curOrder);
+                    }
+                }
+            }
+            return retVal;
+        }
+        // по группе НП
+        public List<OrderModel> GetOrdersByDepartmentGroup(int departmentGroupId)
+        {
+            List<OrderModel> retVal = new List<OrderModel>();
+            OrderModel curOrder = null;
+            lock (_ordersModel)
+            {
+                foreach (OrderModel ord in _ordersModel.Orders.Values)
+                {
+                    // отобрать блюда по условию
+                    Dictionary<int, OrderDishModel> filteredDishes = ord.Dishes.Values
+                        .Where(d => d.Department.DepGroups.Any(dg => dg.Id == departmentGroupId)).ToDictionary(d => d.Id);
+                    if (filteredDishes.Count != 0)
+                    {
+                        curOrder = ord.Copy();
+                        curOrder.Dishes = filteredDishes;
+                        retVal.Add(curOrder);
+                    }
+                }
+            }
+            return retVal;
+        }
+
         #endregion
 
         #region IKDSCommandService implementation

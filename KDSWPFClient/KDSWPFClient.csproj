@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -77,6 +77,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\ServiceOrderQueueEnum.cs" />
     <Compile Include="View\OrdersPages.cs" />
     <Compile Include="View\DishPanel.xaml.cs">
       <DependentUpon>DishPanel.xaml</DependentUpon>
@@ -125,7 +126,6 @@
     </Compile>
     <Compile Include="TestData\OrderDishTestModel.cs" />
     <Compile Include="TestData\OrderTestModel.cs" />
-    <Compile Include="Model\OrderStatusEnum.cs" />
     <Compile Include="TestData\TestDataHelper.cs" />
     <Compile Include="ViewModel\DepartmentGroupViewModel.cs" />
     <Compile Include="ViewModel\DepartmentViewModel.cs" />

@@ -20,14 +20,14 @@ namespace KDSWPFClient.ViewModel
         public string UID { get; set; }
         public int Number { get; set; }
 
-        public DateTime DateCreate { get; set; }
-        public DateTime DateStart { get; set; }
+        public DateTime CreateDate { get; set; }
+        public DateTime StartDate { get; set; }
         public int SpentTime { get; set; }
 
         public string HallName { get; set; }
         public string TableName { get; set; }
 
-        public string Garson { get; set; }
+        public string Waiter { get; set; }
 
         public virtual List<OrderDishViewModel> OrderDish { get; set; }
 

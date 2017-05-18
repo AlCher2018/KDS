@@ -742,6 +742,12 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersByConditions", ReplyAction="http://tempuri.org/IKDSService/GetOrdersByConditionsResponse")]
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrdersByConditions(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersByConditions", ReplyAction="http://tempuri.org/IKDSService/GetOrdersByConditionsResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersByConditionsAsync(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -801,6 +807,14 @@ namespace KDSWPFClient.ServiceReference1 {
         
         public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
             return base.Channel.GetOrdersAsync();
+        }
+        
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrdersByConditions(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId) {
+            return base.Channel.GetOrdersByConditions(dishStatus, departmentId, departmentGroupId);
+        }
+        
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersByConditionsAsync(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId) {
+            return base.Channel.GetOrdersByConditionsAsync(dishStatus, departmentId, departmentGroupId);
         }
     }
     

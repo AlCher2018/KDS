@@ -9,12 +9,12 @@
 
     <UserControl.Resources>
         <Style TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </UserControl.Resources>
 
-    <Border x:Name="brdMain" Background="White" BorderBrush="Gray" BorderThickness="0,0,0,1">
-        <Grid >
+    <Border x:Name="brdMain" Background="White" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
+        <Grid x:Name="grdDishLine">
             <Grid.ColumnDefinitions>
                 <!-- 0. № п/п -->
                 <ColumnDefinition Width="0.2*"/>
@@ -28,7 +28,7 @@
                 <ColumnDefinition Width="0.6*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock x:Name="tbDishIndex" Grid.Column="0" />
+            <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center"/>
             <TextBlock x:Name="tbDishFilingNumber" Grid.Column="1"/>
             <TextBlock x:Name="tbDishName" Grid.Column="2" TextWrapping="Wrap"/>
             <TextBlock x:Name="tbDishQuantity" Grid.Column="3"/>

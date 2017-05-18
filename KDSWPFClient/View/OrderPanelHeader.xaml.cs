@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KDSWPFClient.Lib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -110,6 +111,20 @@ namespace KDSWPFClient.View
         public OrderPanelHeader()
         {
             InitializeComponent();
+
+            double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
+
+            double fSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
+            tbTableLabel.FontSize = fSize;
+            tbOrderDateLabel.FontSize = fSize;
+            tbOrderCookingCounterLabel.FontSize = fSize;
+
+            tbTableName.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrTableNameFontSize");  // 14d
+            tbOrderNumber.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");  // 14d
+            tbWaiter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");  // 12d
+            tbOrderDate.FontSize = tbTableName.FontSize;
+
+            tbOrderCookingCounter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
         }
 
     }// class 

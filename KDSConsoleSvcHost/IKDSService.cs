@@ -24,6 +24,11 @@ namespace KDSService
 
         // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
         [OperationContract]
-        List<OrderModel> GetOrders();
+        List<OrderModel> GetOrders();     // все
+
+        [OperationContract]
+        // по состоянию блюд, ид отдела или ид группы отделов
+        List<OrderModel> GetOrdersByConditions(OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
+
     }
 }

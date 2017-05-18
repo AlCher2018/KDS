@@ -28,7 +28,8 @@ namespace KDSWPFClient
 
             getAppLayout();
             // splash
-            //string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
+            string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
+            SplashScreen splashScreen = null;
             //SplashScreen splashScreen = new SplashScreen(fileName);
             //splashScreen.Show(true);
 
@@ -43,21 +44,24 @@ namespace KDSWPFClient
             if (dataProvider.ErrorMessage != null)
             {
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-                //splashScreen.Close(TimeSpan.FromMinutes(10));
+                if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
                 MessageBox.Show("Ошибка создания каналов к службе KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 Environment.Exit(1);
             }
             AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService... Ok");
             // и получить словари
-            //AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService...");
-            //if (dataProvider.SetDictDataFromService() == false)
-            //{
-            //    AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-            //    splashScreen.Close(TimeSpan.FromMinutes(10));
-            //    MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-            //    Environment.Exit(2);
-            //}
-            //AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService... Ok");
+            AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService...");
+            if (dataProvider.SetDictDataFromService() == false)
+            {
+                AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
+                if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
+                MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+                Environment.Exit(2);
+            }
+            AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService... Ok");
+
+            
+
 
             // основное окно приложения
             MainWindow mWindow = new MainWindow();
@@ -76,15 +80,15 @@ namespace KDSWPFClient
 
         private static void setAppGlobalValues()
         {
-            string cfgValue; int iVal;
+            string cfgValue;
 
-            if ((cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages")) != null)
-                AppLib.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
-            if ((cfgValue = AppLib.GetAppSetting("IsLogUserAction")) != null)
-                AppLib.SetAppGlobalValue("IsLogUserAction", cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
+            AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null)?false:cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("IsLogUserAction");
+            AppLib.SetAppGlobalValue("IsLogUserAction", (cfgValue == null)?false:cfgValue.ToBool());
 
-            if ((cfgValue = AppLib.GetAppSetting("AppMainScale")) != null)
-                AppLib.SetAppGlobalValue("AppMainScale", cfgValue.ToDouble());
+            cfgValue = AppLib.GetAppSetting("AppFontScale");
+            AppLib.SetAppGlobalValue("AppFontScale", (cfgValue == null)?1d:cfgValue.ToDouble());
 
             // размеры элементов панели заказа
             //   кол-во столбцов заказов
@@ -99,17 +103,25 @@ namespace KDSWPFClient
             double colWidth = screenWidth / (cntCols + koef*(cntCols+1));
             double colMargin = koef * colWidth;
             AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);  // поле между заказами по горизонтали
 
-            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 12);
-            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 12);
-            AppLib.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 14);
-            AppLib.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 14);
-            AppLib.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 12);
-            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 12);
-            AppLib.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10);
             //   отступ сверху/снизу для панели заказов
-            AppLib.SetAppGlobalValue("ordPnlTopBotMargin", 15d);
+            AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
+            //   отступ между заказами по вертикали
+            AppLib.SetAppGlobalValue("ordPnlTopMargin", 50d);
+            // шрифты для панели заказа
+            //    заголовок заказа
+            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
+            AppLib.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
+            AppLib.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
+            AppLib.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
+            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 20d);
+            //    шрифт заголовка таблицы блюд
+            AppLib.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
+            //    шрифт строки блюда
+            AppLib.SetAppGlobalValue("ordPnlDishLineFontSize", 24d);
+            // кнопки прокрутки страниц
+            AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
         }
 
     }  // class App
