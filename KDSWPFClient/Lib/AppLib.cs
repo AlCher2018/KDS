@@ -63,32 +63,6 @@ namespace KDSWPFClient.Lib
                 Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, getAvailableRAM());
         }
 
-        // настройки из config-файла
-        internal static string GetAppSettingsFromConfigFile()
-        {
-            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
-        }
-        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
-        {
-            if (appSettingNames == null) return null;
-            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
-        }
-        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
-        {
-            StringBuilder sb = new StringBuilder();
-            string sValue;
-            foreach (string settingName in appSettingNames)
-            {
-                sValue = ConfigurationManager.AppSettings[settingName];
-                if (sValue.IsNull() == false)
-                {
-                    if (sb.Length > 0) sb.Append("; ");
-                    sb.Append(settingName + "=" + sValue);
-                }
-            }
-            return sb.ToString();
-        }
-
 
         // in Mb
         private static int getAvailableRAM()
@@ -198,6 +172,47 @@ namespace KDSWPFClient.Lib
         {
             return ConfigurationManager.AppSettings[key];
         }
+
+        // настройки из config-файла
+        internal static string GetAppSettingsFromConfigFile()
+        {
+            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
+        }
+        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
+        {
+            if (appSettingNames == null) return null;
+            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
+        }
+        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
+        {
+            StringBuilder sb = new StringBuilder();
+            string sValue;
+            foreach (string settingName in appSettingNames)
+            {
+                sValue = ConfigurationManager.AppSettings[settingName];
+                if (sValue.IsNull() == false)
+                {
+                    if (sb.Length > 0) sb.Append("; ");
+                    sb.Append(settingName + "=" + sValue);
+                }
+            }
+            return sb.ToString();
+        }
+
+        // запись значения в config-файл
+        public static void SaveValueToConfig(string key, string value)
+        {
+            // Open App.Config of executable
+            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            // Add an Application Setting.
+            config.AppSettings.Settings.Remove(key);
+            config.AppSettings.Settings.Add(key, value);
+            // Save the configuration file.
+            config.Save(ConfigurationSaveMode.Modified);
+            // Force a reload of a changed section.
+            ConfigurationManager.RefreshSection("appSettings");
+        }
+
 
         // получить глобальное значение приложения из его свойств
         public static object GetAppGlobalValue(string key, object defaultValue = null)

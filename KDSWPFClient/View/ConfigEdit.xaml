@@ -1,0 +1,25 @@
+﻿<Window x:Class="KDSWPFClient.View.ConfigEdit"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KDSWPFClient.View"
+        mc:Ignorable="d"
+        Title="ConfigEdit" Height="307" Width="304">
+    <Grid>
+        <TextBlock x:Name="textBlock" Margin="10,10,20,0" TextWrapping="Wrap" VerticalAlignment="Top"  Text="Выберите отделы, которые будут отображаться на данном КДС-е"/>
+        <ListBox x:Name="listBoxDepartments"  Margin="10,42,20,60" SelectionMode="Multiple">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Id}"/>
+                        <TextBlock Text="{Binding Name}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Button x:Name="btnCancel" Content="Отмена" HorizontalAlignment="Right" Margin="0,0,20,20"  VerticalAlignment="Bottom" Width="75" IsCancel="True" Click="btnCancel_Click"/>
+        <Button x:Name="btnSave" Content="Сохранить" HorizontalAlignment="Right" Margin="0,0,120,20" VerticalAlignment="Bottom" Width="75" IsDefault="True"/>
+
+    </Grid>
+</Window>

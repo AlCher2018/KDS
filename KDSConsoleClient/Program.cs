@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using AppKDS;
 using KDSConsoleClient.ServiceReference1;
 using System.Timers;
+using System.Configuration;
+
 
 namespace KDSConsoleClient
 {
@@ -31,22 +33,45 @@ namespace KDSConsoleClient
 
         static void Main(string[] args)
         {
+            //foreach (var item in ConfigurationManager.AppSettings)
+            //{
+            //    Console.WriteLine(item.ToString());
+            //}
+            //string[] aStr = ConfigurationManager.AppSettings.GetValues("appSet1");
+            //string s = string.Join("; ", aStr);
+            //Console.WriteLine(s);
+
+            string s = ConfigurationManager.AppSettings.Get("appSet1");
+            
+            // Open App.Config of executable
+            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            // Add an Application Setting.
+            config.AppSettings.Settings.Remove("appSet1");
+            config.AppSettings.Settings.Add("appSet1", "555");
+            // Save the configuration file.
+            config.Save(ConfigurationSaveMode.Modified);
+            // Force a reload of a changed section.
+            ConfigurationManager.RefreshSection("appSettings");
+            Console.WriteLine(ConfigurationManager.AppSettings.Get("appSet1"));
+
+            Console.Read();
             // Create an instance of Person and assign values to its fields.
-            Person p1 = new Person();
-            p1.Age = 42;
-            p1.Name = "Sam";
+            //Person p1 = new Person();
+            //p1.Age = 42;
+            //p1.Name = "Sam";
 
-            // Perform a shallow copy of p1 and assign it to p2.
-            Person p2 = p1.ShallowCopy();
+            //// Perform a shallow copy of p1 and assign it to p2.
+            //Person p2 = p1.ShallowCopy();
 
-            // Display values of p1, p2
-            Console.WriteLine("Original values of p1 and p2:");
-            Console.WriteLine("   p1 instance values: ");
-            DisplayValues(p1);
-            Console.WriteLine("   p2 instance values:");
-            DisplayValues(p2);
+            //// Display values of p1, p2
+            //Console.WriteLine("Original values of p1 and p2:");
+            //Console.WriteLine("   p1 instance values: ");
+            //DisplayValues(p1);
+            //Console.WriteLine("   p2 instance values:");
+            //DisplayValues(p2);
 
             Console.Title = "CLIENT";
+            return;
 
             KDSServiceClient client = new KDSServiceClient();
             dataProv = new AppDataProvider(client);

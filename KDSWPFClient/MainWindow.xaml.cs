@@ -22,6 +22,7 @@ namespace KDSWPFClient
     {
         private static Timer _timer;   // статический, чтобы не было повторяющихся чисел
         private static AppDataProvider _dataProvider;
+        public AppDataProvider DataProvider { set { _dataProvider = value; } }
 
         private OrdersPages _pages;
 
@@ -94,25 +95,25 @@ namespace KDSWPFClient
                 try
                 {
                     List<OrderModel> retVal = null;
-                    switch (_svcQueue)
-                    {
-                        case ServiceOrderQueueEnum.None:
-                            break;
-                        case ServiceOrderQueueEnum.AllOrders:
-                            retVal = _dataProvider.GetOrdersByConditions();
-                            break;
-                        case ServiceOrderQueueEnum.ByDishStatus:
-                            retVal = _dataProvider.GetOrdersByConditions();
-                            break;
-                        case ServiceOrderQueueEnum.ByDepartment:
-                            retVal = _dataProvider.GetOrdersByConditions();
-                            break;
-                        case ServiceOrderQueueEnum.ByDepartmentGroup:
-                            retVal = _dataProvider.GetOrdersByConditions();
-                            break;
-                        default:
-                            break;
-                    }
+                    //switch (_svcQueue)
+                    //{
+                    //    case ServiceOrderQueueEnum.None:
+                    //        break;
+                    //    case ServiceOrderQueueEnum.AllOrders:
+                    //        retVal = _dataProvider.GetOrdersByConditions();
+                    //        break;
+                    //    case ServiceOrderQueueEnum.ByDishStatus:
+                    //        retVal = _dataProvider.GetOrdersByConditions();
+                    //        break;
+                    //    case ServiceOrderQueueEnum.ByDepartment:
+                    //        retVal = _dataProvider.GetOrdersByConditions();
+                    //        break;
+                    //    case ServiceOrderQueueEnum.ByDepartmentGroup:
+                    //        retVal = _dataProvider.GetOrdersByConditions();
+                    //        break;
+                    //    default:
+                    //        break;
+                    //}
                     return retVal;
                 }
                 catch (Exception ex)
@@ -217,5 +218,12 @@ namespace KDSWPFClient
             }
         }
 
+        private void button1_Click(object sender, RoutedEventArgs e)
+        {
+            ConfigEdit cfgEdit = new ConfigEdit();
+            cfgEdit.DepartmentsDict = _dataProvider.Departments;
+
+            cfgEdit.ShowDialog();
+        }
     }  // class MainWindow
 }

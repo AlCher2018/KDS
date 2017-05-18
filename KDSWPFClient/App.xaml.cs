@@ -60,12 +60,11 @@ namespace KDSWPFClient
             }
             AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService... Ok");
 
-            
-
 
             // основное окно приложения
-            MainWindow mWindow = new MainWindow();
-            app.Run(mWindow);
+            MainWindow mainWindow = new MainWindow();
+            mainWindow.DataProvider = dataProvider;
+            app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
             AppLib.WriteLogInfoMessage("************  End KDS Client (WPF)  *************");
