@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
-using KDSConsoleSvcHost.AppModel;
 
 
 namespace KDSService.AppModel
@@ -44,7 +43,6 @@ namespace KDSService.AppModel
                     dbOrders = db.Order
                         .Include("OrderDish")
                         .Include("OrderDish.Department")
-                        .Include("OrderDish.Department.DepartmentDepartmentGroup")
                         .Where(isProcessingOrderStatusId)
                         .OrderBy(o => o.Id)
                         .ToList();
@@ -144,6 +142,7 @@ namespace KDSService.AppModel
 
             return (retVal.Count == 0) ? null : retVal;
         }  // method
+
 
         public void Dispose()
         {

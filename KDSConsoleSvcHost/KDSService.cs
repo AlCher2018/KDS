@@ -19,24 +19,41 @@ namespace KDSService
         InstanceContextMode = InstanceContextMode.Single)]
     public class KDSServiceClass : IDisposable, IKDSService, IKDSCommandService
     {
+        // периодичность опроса БД, в мсек
         private const double _ObserveTimerInterval = 500;
 
         // заказы на стороне службы (с таймерами)
-        private OrdersModel _ordersModel;  
+        private OrdersModel _ordersModel; 
+         
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
 
 
         public KDSServiceClass()
         {
-            string msg = "**** Создание служебного класса KDSService ****";
-            Console.WriteLine(msg);
-            AppEnv.WriteLogInfoMessage(msg);
+            // сохранить в служебном классе словари из БД
+            //    отделы
+            //errMsg = ServiceDics.Departments.UpdateFromDB();
+            //if (errMsg != null)
+            //{
+            //    WriteLogErrorMessage("Ошибка чтения из БД: " + errMsg);
+            //    return false;
+            //}
+
+
+            string msg = "  получение словарей приложения из БД...";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
+
+            if (ModelDicts.UpdateModelDictsFromDB(out msg) == false) throw new Exception(msg);
+
+            msg = "  получение словарей приложения из БД... Ok";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
 
             _observeTimer = new Timer(_ObserveTimerInterval);
             _observeTimer.Elapsed += _observeTimer_Elapsed;
 
             _ordersModel = new OrdersModel();
+
             startService();
         }
 
@@ -66,30 +83,24 @@ namespace KDSService
         // ****  SERVICE CONTRACT  *****
         #region IKDSService inplementation
 
-        public List<OrderStatusModel> GetOrderStatusList()
+        public List<OrderStatusModel> GetOrderStatuses()
         {
             string errMsg = null;
-            List<OrderStatusModel>  retVal = ServiceDics.GetOrderStatusList(out errMsg);
+            List<OrderStatusModel>  retVal = ModelDicts.GetOrderStatusesList(out errMsg);
 
             if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+
             return retVal;
         }
 
-        public Dictionary<int, DepartmentGroupModel> GetDepartmentGroups()
+        public List<DepartmentModel> GetDepartments()
         {
-            //OperationContext context = OperationContext.Current;
-            //if (context != null && context.RequestContext != null)
-            //{
-            //    Message msg = context.RequestContext.RequestMessage;
-            //    Console.WriteLine(msg.ToString());
-            //}
+            string errMsg = null;
+            List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
 
-            return ServiceDics.DepGroups.GetDictionary();
-        }
+            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
 
-        public Dictionary<int, DepartmentModel> GetDepartments()
-        {
-            return ServiceDics.Departments.GetDictionary();
+            return retVal;
         }
 
         // все заказы
@@ -98,63 +109,6 @@ namespace KDSService
             List<OrderModel> retVal = new List<OrderModel>();
             retVal.AddRange(_ordersModel.Orders.Values);
 
-            return retVal;
-        }
-        // по состоянию какого-либо блюда в заказе, отбор ТОЛЬКО блюд с указанным статусом!!
-        public List<OrderModel> GetOrdersByConditions(OrderStatusEnum dishStatus = OrderStatusEnum.None, int departmentId = 0, int departmentGroupId = 0)
-        {
-            List<OrderModel> retVal = new List<OrderModel>();
-            OrderModel curOrder = null;
-            lock (_ordersModel)
-            {
-                foreach (OrderModel ord in _ordersModel.Orders.Values)
-                {
-                    // отобрать блюда по условию
-                    Dictionary<int, OrderDishModel> filteredDishes = null;
-                    foreach (OrderDishModel dish in ord.Dishes.Values)
-                    {
-                        bool selected = false;
-                        if ((selected == false) && (dishStatus != OrderStatusEnum.None) && (dish.Status == dishStatus)) selected = true;
-                        if ((selected == false) && (departmentId != 0) && (departmentId == dish.Department.Id)) selected = true;
-                        if ((selected == false) && (departmentGroupId != 0) && (dish.Department.DepGroups.Any(dg => dg.Id == departmentGroupId))) selected = true;
-
-                        if (selected == true)
-                        {
-                            if (filteredDishes == null) filteredDishes = new Dictionary<int, OrderDishModel>();
-                            filteredDishes.Add(dish.Id, dish);
-                        }
-                    }
-                        
-                    if (filteredDishes != null)
-                    {
-                        curOrder = ord.Copy();
-                        curOrder.Dishes = filteredDishes;
-                        retVal.Add(curOrder);
-                    }
-                }
-            }
-            return retVal;
-        }
-        // по группе НП
-        public List<OrderModel> GetOrdersByDepartmentGroup(int departmentGroupId)
-        {
-            List<OrderModel> retVal = new List<OrderModel>();
-            OrderModel curOrder = null;
-            lock (_ordersModel)
-            {
-                foreach (OrderModel ord in _ordersModel.Orders.Values)
-                {
-                    // отобрать блюда по условию
-                    Dictionary<int, OrderDishModel> filteredDishes = ord.Dishes.Values
-                        .Where(d => d.Department.DepGroups.Any(dg => dg.Id == departmentGroupId)).ToDictionary(d => d.Id);
-                    if (filteredDishes.Count != 0)
-                    {
-                        curOrder = ord.Copy();
-                        curOrder.Dishes = filteredDishes;
-                        retVal.Add(curOrder);
-                    }
-                }
-            }
             return retVal;
         }
 
@@ -189,8 +143,7 @@ namespace KDSService
         public void Dispose()
         {
             string msg = "**** Закрытие служебного класса KDSService ****";
-            Console.WriteLine(msg);
-            AppEnv.WriteLogInfoMessage(msg);
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
             _ordersModel.Dispose();
 
             // таймер остановить, отписаться от события и уничтожить

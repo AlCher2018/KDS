@@ -92,76 +92,12 @@ namespace KDSWPFClient.ServiceReference1 {
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
-    [System.Runtime.Serialization.DataContractAttribute(Name="DepartmentGroupModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
-    [System.SerializableAttribute()]
-    public partial class DepartmentGroupModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
-        
-        [System.NonSerializedAttribute()]
-        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private int IdField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private string NameField;
-        
-        [global::System.ComponentModel.BrowsableAttribute(false)]
-        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
-            get {
-                return this.extensionDataField;
-            }
-            set {
-                this.extensionDataField = value;
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public int Id {
-            get {
-                return this.IdField;
-            }
-            set {
-                if ((this.IdField.Equals(value) != true)) {
-                    this.IdField = value;
-                    this.RaisePropertyChanged("Id");
-                }
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public string Name {
-            get {
-                return this.NameField;
-            }
-            set {
-                if ((object.ReferenceEquals(this.NameField, value) != true)) {
-                    this.NameField = value;
-                    this.RaisePropertyChanged("Name");
-                }
-            }
-        }
-        
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-        
-        protected void RaisePropertyChanged(string propertyName) {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null)) {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-            }
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="DepartmentModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
     public partial class DepartmentModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private System.Collections.Generic.List<int> DepGroupsIdListField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private decimal DishQuantityField;
@@ -185,19 +121,6 @@ namespace KDSWPFClient.ServiceReference1 {
             }
             set {
                 this.extensionDataField = value;
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public System.Collections.Generic.List<int> DepGroupsIdList {
-            get {
-                return this.DepGroupsIdListField;
-            }
-            set {
-                if ((object.ReferenceEquals(this.DepGroupsIdListField, value) != true)) {
-                    this.DepGroupsIdListField = value;
-                    this.RaisePropertyChanged("DepGroupsIdList");
-                }
             }
         }
         
@@ -719,35 +642,23 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ServiceReference1.IKDSService")]
     public interface IKDSService {
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatusList", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusListResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatusList();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses();
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatusList", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusListResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusListAsync();
-        
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartmentGroups", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse")]
-        System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups();
-        
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartmentGroups", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentGroupModel>> GetDepartmentGroupsAsync();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments();
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync();
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
         System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync();
-        
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersByConditions", ReplyAction="http://tempuri.org/IKDSService/GetOrdersByConditionsResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrdersByConditions(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
-        
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrdersByConditions", ReplyAction="http://tempuri.org/IKDSService/GetOrdersByConditionsResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersByConditionsAsync(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -777,27 +688,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatusList() {
-            return base.Channel.GetOrderStatusList();
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses() {
+            return base.Channel.GetOrderStatuses();
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusListAsync() {
-            return base.Channel.GetOrderStatusListAsync();
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync() {
+            return base.Channel.GetOrderStatusesAsync();
         }
         
-        public System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentGroupModel> GetDepartmentGroups() {
-            return base.Channel.GetDepartmentGroups();
-        }
-        
-        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentGroupModel>> GetDepartmentGroupsAsync() {
-            return base.Channel.GetDepartmentGroupsAsync();
-        }
-        
-        public System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments() {
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments() {
             return base.Channel.GetDepartments();
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync() {
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync() {
             return base.Channel.GetDepartmentsAsync();
         }
         
@@ -807,14 +710,6 @@ namespace KDSWPFClient.ServiceReference1 {
         
         public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
             return base.Channel.GetOrdersAsync();
-        }
-        
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrdersByConditions(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId) {
-            return base.Channel.GetOrdersByConditions(dishStatus, departmentId, departmentGroupId);
-        }
-        
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersByConditionsAsync(KDSWPFClient.ServiceReference1.OrderStatusEnum dishStatus, int departmentId, int departmentGroupId) {
-            return base.Channel.GetOrdersByConditionsAsync(dishStatus, departmentId, departmentGroupId);
         }
     }
     

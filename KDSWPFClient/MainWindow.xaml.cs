@@ -2,7 +2,6 @@
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using KDSWPFClient.ViewModel;
-using KDSWPFClient.Model;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -29,10 +28,7 @@ namespace KDSWPFClient
         private List<OrderViewModel> _viewOrders;
         //private List<TestData.OrderTestModel> _viewOrders;
 
-        // фильтр данных
-        // эти поля устанавливаются где-либо и используются при обращении к службе за данными (getOrdersFromService)
-        private ServiceOrderQueueEnum _svcQueue = ServiceOrderQueueEnum.None;  // тип запроса к сервису
-        private int _svcQueueIntValue;      // int-значение при обращении к сервису
+        private OrderStatusEnum _allowStatus = OrderStatusEnum.None;
 
         private bool _isUpdateLayout = false;
 
@@ -60,9 +56,7 @@ namespace KDSWPFClient
             btnSetPagePrevious.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
             btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
             btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            
-            //btnScrollLeft.Visibility = Visibility.Visible;
-            //btnScrollRight.Visibility = Visibility.Visible;
+        
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -81,57 +75,32 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
-            // получение различных наборов данных согласно условий отбора
-            List<OrderModel> orders = getOrdersFromService();
-            if (orders != null) updateOrders(orders);
+            updateOrders();
 
             _timer.Start();
         }  // method
 
-        private List<OrderModel> getOrdersFromService()
-        {
-            if (_svcQueue != ServiceOrderQueueEnum.None)
-            {
-                try
-                {
-                    List<OrderModel> retVal = null;
-                    //switch (_svcQueue)
-                    //{
-                    //    case ServiceOrderQueueEnum.None:
-                    //        break;
-                    //    case ServiceOrderQueueEnum.AllOrders:
-                    //        retVal = _dataProvider.GetOrdersByConditions();
-                    //        break;
-                    //    case ServiceOrderQueueEnum.ByDishStatus:
-                    //        retVal = _dataProvider.GetOrdersByConditions();
-                    //        break;
-                    //    case ServiceOrderQueueEnum.ByDepartment:
-                    //        retVal = _dataProvider.GetOrdersByConditions();
-                    //        break;
-                    //    case ServiceOrderQueueEnum.ByDepartmentGroup:
-                    //        retVal = _dataProvider.GetOrdersByConditions();
-                    //        break;
-                    //    default:
-                    //        break;
-                    //}
-                    return retVal;
-                }
-                catch (Exception ex)
-                {
-                    AppLib.WriteLogErrorMessage("Ошибка чтения заказов: {0}", ex.Message);
-                    return null;
-                }
-            }
-            return null;
-        }
-
 
         // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
-        private void updateOrders(List<OrderModel> svcOrders)
+        // с учетом фильтрации блюд (состояние и отдел)
+        private void updateOrders()
         {
             //OrderModel om = orders[0];
             //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
             //Debug.Print(s);
+
+            // получение заказов
+            List<OrderModel> svcOrders = _dataProvider.GetOrders();
+            if (svcOrders == null) return;
+
+            // удалить из svcOrders блюда, не входящие в условия фильтрации
+            foreach (OrderModel ord in svcOrders)
+            {
+                foreach (OrderDishModel item in ord.Dishes.Values)
+                {
+                    if (isDishAllow(item) == false) ord.Dishes.Remove(item.Id);
+                }
+            }
 
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ orders
             // удаление заказов
@@ -155,6 +124,22 @@ namespace KDSWPFClient
             }
         }
 
+        private bool isDishAllow(OrderDishModel item)
+        {
+            // проверка на отдел
+            DepartmentViewModel dep = _dataProvider.GetDepartmentById(item.Department.Id);
+            if (dep.IsViewOnKDS == false) return false;
+
+            // проверка состояния
+            if (_allowStatus == OrderStatusEnum.None)
+                return true;
+            else if ((item.Status != _allowStatus) && (item.Status != OrderStatusEnum.Cancelled))
+            {
+                return false;
+            }
+
+            return true;
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -220,10 +205,10 @@ namespace KDSWPFClient
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
-            ConfigEdit cfgEdit = new ConfigEdit();
-            cfgEdit.DepartmentsDict = _dataProvider.Departments;
-
+            ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
         }
+
+
     }  // class MainWindow
 }

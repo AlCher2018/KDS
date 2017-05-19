@@ -19,6 +19,11 @@ namespace KDSConsoleClient
 
         public int IntField { get { return 2 + 3; } }
 
+        public Person()
+        {
+            throw new Exception("исключение из конструктора");
+        }
+
         public Person ShallowCopy()
         {
             return (Person)this.MemberwiseClone();
@@ -33,6 +38,19 @@ namespace KDSConsoleClient
 
         static void Main(string[] args)
         {
+            // исключение из конструктора - объект НЕ создается и равен null
+            Person p1 = null;
+            try
+            {
+                p1 = new Person();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            Console.Read();
+
             //foreach (var item in ConfigurationManager.AppSettings)
             //{
             //    Console.WriteLine(item.ToString());

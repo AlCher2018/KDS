@@ -18,22 +18,7 @@ namespace KDSWPFClient.ViewModel
 
         public decimal DishQuantity { get; set; }
 
-        private List<DepartmentGroupViewModel> _depGroups;
-        public List<DepartmentGroupViewModel> DepartmentGroups { get { return _depGroups; } }
-
-        public DepartmentViewModel()
-        {
-            _depGroups = new List<DepartmentGroupViewModel>();
-        }
-
-        public void setDepGroupsByIdList(List<int> idGroupList, Dictionary<int, DepartmentGroupViewModel> groups)
-        {
-            _depGroups.Clear();
-            foreach (int groupId in idGroupList)
-            {
-                if (groups.ContainsKey(groupId)) _depGroups.Add(groups[groupId]);
-            }
-        }
+        public bool IsViewOnKDS { get; set; }
 
     }  // class DepartmentViewModel
 }

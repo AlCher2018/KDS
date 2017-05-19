@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace KDSConsoleSvcHost.AppModel
+namespace KDSService.AppModel
 {
     /// <summary>
     /// IncrementalTimer - инкрементирующий таймер

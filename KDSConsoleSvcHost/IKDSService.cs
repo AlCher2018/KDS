@@ -13,22 +13,15 @@ namespace KDSService
         // получить словари
         //    статусов заказа/блюда
         [OperationContract]
-        List<OrderStatusModel> GetOrderStatusList();
-        //    группы отделов
-        [OperationContract]
-        Dictionary<int, DepartmentGroupModel> GetDepartmentGroups();
+        List<OrderStatusModel> GetOrderStatuses();
+
         //    отделы
         [OperationContract]
-        Dictionary<int, DepartmentModel> GetDepartments();
+        List<DepartmentModel> GetDepartments();
 
 
         // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
         [OperationContract]
-        List<OrderModel> GetOrders();     // все
-
-        [OperationContract]
-        // по состоянию блюд, ид отдела или ид группы отделов
-        List<OrderModel> GetOrdersByConditions(OrderStatusEnum dishStatus, int departmentId, int departmentGroupId);
-
+        List<OrderModel> GetOrders();
     }
 }

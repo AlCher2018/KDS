@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSConsoleSvcHost
+namespace KDSService
 {
     using System;
     using System.Collections.Generic;

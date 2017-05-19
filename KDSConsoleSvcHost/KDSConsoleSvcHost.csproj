@@ -7,7 +7,7 @@
     <ProjectGuid>{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>KDSConsoleSvcHost</RootNamespace>
+    <RootNamespace>KDSService</RootNamespace>
     <AssemblyName>KDSConsoleSvcHost</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -66,16 +66,11 @@
     <Compile Include="AppEnv.cs" />
     <Compile Include="AppModel\AppActionEnum.cs" />
     <Compile Include="AppModel\IncrementalTimer.cs" />
+    <Compile Include="AppModel\ModelDicts.cs" />
     <Compile Include="AppModel\OrderModel.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="Department.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DepartmentDepartmentGroup.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DepartmentGroup.cs">
       <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="IKDSCommandService.cs" />
@@ -96,7 +91,6 @@
     </Compile>
     <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
-    <Compile Include="AppModel\ServiceDics.cs" />
     <Compile Include="AppModel\OrderDishModel.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
@@ -124,9 +118,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="App.config" />
     <Content Include="KDSEntities.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <DependentUpon>KDSEntities.edmx</DependentUpon>

@@ -16,16 +16,14 @@
     </xs:sequence>
   </xs:complexType>
   <xs:element name="OrderStatusModel" nillable="true" type="tns:OrderStatusModel" />
-  <xs:complexType name="DepartmentGroupModel">
+  <xs:complexType name="ArrayOfDepartmentModel">
     <xs:sequence>
-      <xs:element minOccurs="0" name="Id" type="xs:int" />
-      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="DepartmentModel" nillable="true" type="tns:DepartmentModel" />
     </xs:sequence>
   </xs:complexType>
-  <xs:element name="DepartmentGroupModel" nillable="true" type="tns:DepartmentGroupModel" />
+  <xs:element name="ArrayOfDepartmentModel" nillable="true" type="tns:ArrayOfDepartmentModel" />
   <xs:complexType name="DepartmentModel">
     <xs:sequence>
-      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="DepGroupsIdList" nillable="true" type="q1:ArrayOfint" />
       <xs:element minOccurs="0" name="DishQuantity" type="xs:decimal" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="IsAutoStart" type="xs:boolean" />
@@ -43,7 +41,7 @@
   <xs:complexType name="OrderModel">
     <xs:sequence>
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
-      <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q2:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
+      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q1:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
       <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Number" type="xs:int" />

@@ -15,22 +15,6 @@
           <Property Name="IsAutoStart" Type="bit" Nullable="false" />
           <Property Name="DishQuantity" Type="int" Nullable="false" />
         </EntityType>
-        <EntityType Name="DepartmentDepartmentGroup">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="DepartmentId" Type="int" Nullable="false" />
-          <Property Name="DepartmentGroupId" Type="int" Nullable="false" />
-        </EntityType>
-        <EntityType Name="DepartmentGroup">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" />
-        </EntityType>
         <EntityType Name="Order">
           <Key>
             <PropertyRef Name="Id" />
@@ -126,30 +110,6 @@
           <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="UID" Type="nvarchar" MaxLength="50" />
         </EntityType>
-        <Association Name="FK_DepartmentDepartmentGroup_Department">
-          <End Role="Department" Type="Self.Department" Multiplicity="1" />
-          <End Role="DepartmentDepartmentGroup" Type="Self.DepartmentDepartmentGroup" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Department">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="DepartmentDepartmentGroup">
-              <PropertyRef Name="DepartmentId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DepartmentDepartmentGroup_DepartmentGroup">
-          <End Role="DepartmentGroup" Type="Self.DepartmentGroup" Multiplicity="1" />
-          <End Role="DepartmentDepartmentGroup" Type="Self.DepartmentDepartmentGroup" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="DepartmentGroup">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="DepartmentDepartmentGroup">
-              <PropertyRef Name="DepartmentGroupId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Order_OrderStatus">
           <End Role="OrderStatus" Type="Self.OrderStatus" Multiplicity="1" />
           <End Role="Order" Type="Self.Order" Multiplicity="*" />
@@ -224,22 +184,12 @@
         </Association>
         <EntityContainer Name="KDSServiceModelStoreContainer">
           <EntitySet Name="Department" EntityType="Self.Department" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="DepartmentDepartmentGroup" EntityType="Self.DepartmentDepartmentGroup" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="DepartmentGroup" EntityType="Self.DepartmentGroup" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDish" EntityType="Self.OrderDish" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDishReturnTime" EntityType="Self.OrderDishReturnTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDishRunTime" EntityType="Self.OrderDishRunTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderRunTime" EntityType="Self.OrderRunTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK_DepartmentDepartmentGroup_Department" Association="Self.FK_DepartmentDepartmentGroup_Department">
-            <End Role="Department" EntitySet="Department" />
-            <End Role="DepartmentDepartmentGroup" EntitySet="DepartmentDepartmentGroup" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DepartmentDepartmentGroup_DepartmentGroup" Association="Self.FK_DepartmentDepartmentGroup_DepartmentGroup">
-            <End Role="DepartmentGroup" EntitySet="DepartmentGroup" />
-            <End Role="DepartmentDepartmentGroup" EntitySet="DepartmentDepartmentGroup" />
-          </AssociationSet>
           <AssociationSet Name="FK_Order_OrderStatus" Association="Self.FK_Order_OrderStatus">
             <End Role="OrderStatus" EntitySet="OrderStatus" />
             <End Role="Order" EntitySet="Order" />
@@ -278,27 +228,7 @@
           <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="IsAutoStart" Type="Boolean" Nullable="false" />
           <Property Name="DishQuantity" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="DepartmentDepartmentGroup" Relationship="Self.FK_DepartmentDepartmentGroup_Department" FromRole="Department" ToRole="DepartmentDepartmentGroup" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Department" FromRole="Department" ToRole="OrderDish" />
-        </EntityType>
-        <EntityType Name="DepartmentDepartmentGroup">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="DepartmentId" Type="Int32" Nullable="false" />
-          <Property Name="DepartmentGroupId" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="Department" Relationship="Self.FK_DepartmentDepartmentGroup_Department" FromRole="DepartmentDepartmentGroup" ToRole="Department" />
-          <NavigationProperty Name="DepartmentGroup" Relationship="Self.FK_DepartmentDepartmentGroup_DepartmentGroup" FromRole="DepartmentDepartmentGroup" ToRole="DepartmentGroup" />
-        </EntityType>
-        <EntityType Name="DepartmentGroup">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="DepartmentDepartmentGroup" Relationship="Self.FK_DepartmentDepartmentGroup_DepartmentGroup" FromRole="DepartmentGroup" ToRole="DepartmentDepartmentGroup" />
         </EntityType>
         <EntityType Name="Order">
           <Key>
@@ -358,18 +288,6 @@
           <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="Order" Relationship="Self.FK_Order_OrderStatus" FromRole="OrderStatus" ToRole="Order" />
         </EntityType>
-        <Association Name="FK_DepartmentDepartmentGroup_Department">
-          <End Role="Department" Type="Self.Department" Multiplicity="1" />
-          <End Role="DepartmentDepartmentGroup" Type="Self.DepartmentDepartmentGroup" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Department">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="DepartmentDepartmentGroup">
-              <PropertyRef Name="DepartmentId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_OrderDish_Department">
           <End Role="Department" Type="Self.Department" Multiplicity="1" />
           <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
@@ -379,18 +297,6 @@
             </Principal>
             <Dependent Role="OrderDish">
               <PropertyRef Name="DepartmentId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_DepartmentDepartmentGroup_DepartmentGroup">
-          <End Role="DepartmentGroup" Type="Self.DepartmentGroup" Multiplicity="1" />
-          <End Role="DepartmentDepartmentGroup" Type="Self.DepartmentDepartmentGroup" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="DepartmentGroup">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="DepartmentDepartmentGroup">
-              <PropertyRef Name="DepartmentGroupId" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -420,22 +326,12 @@
         </Association>
         <EntityContainer Name="KDSEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="Department" EntityType="Self.Department" />
-          <EntitySet Name="DepartmentDepartmentGroup" EntityType="Self.DepartmentDepartmentGroup" />
-          <EntitySet Name="DepartmentGroup" EntityType="Self.DepartmentGroup" />
           <EntitySet Name="Order" EntityType="Self.Order" />
           <EntitySet Name="OrderDish" EntityType="Self.OrderDish" />
           <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" />
-          <AssociationSet Name="FK_DepartmentDepartmentGroup_Department" Association="Self.FK_DepartmentDepartmentGroup_Department">
-            <End Role="Department" EntitySet="Department" />
-            <End Role="DepartmentDepartmentGroup" EntitySet="DepartmentDepartmentGroup" />
-          </AssociationSet>
           <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
             <End Role="Department" EntitySet="Department" />
             <End Role="OrderDish" EntitySet="OrderDish" />
-          </AssociationSet>
-          <AssociationSet Name="FK_DepartmentDepartmentGroup_DepartmentGroup" Association="Self.FK_DepartmentDepartmentGroup_DepartmentGroup">
-            <End Role="DepartmentGroup" EntitySet="DepartmentGroup" />
-            <End Role="DepartmentDepartmentGroup" EntitySet="DepartmentDepartmentGroup" />
           </AssociationSet>
           <AssociationSet Name="FK_Order_OrderStatus" Association="Self.FK_Order_OrderStatus">
             <End Role="OrderStatus" EntitySet="OrderStatus" />
@@ -559,24 +455,6 @@
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="IsAutoStart" ColumnName="IsAutoStart" />
                 <ScalarProperty Name="DishQuantity" ColumnName="DishQuantity" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="DepartmentDepartmentGroup">
-            <EntityTypeMapping TypeName="KDSServiceModel.DepartmentDepartmentGroup">
-              <MappingFragment StoreEntitySet="DepartmentDepartmentGroup">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
-                <ScalarProperty Name="DepartmentGroupId" ColumnName="DepartmentGroupId" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="DepartmentGroup">
-            <EntityTypeMapping TypeName="KDSServiceModel.DepartmentGroup">
-              <MappingFragment StoreEntitySet="DepartmentGroup">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

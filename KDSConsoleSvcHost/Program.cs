@@ -6,9 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Threading;
-using KDSService.AppModel;
-using KDSService.Lib;
-using KDSConsoleSvcHost.AppModel;
 
 
 namespace KDSConsoleSvcHost
@@ -21,24 +18,39 @@ namespace KDSConsoleSvcHost
 
             // инициализация приложения
             Console.WriteLine("Инициализация приложения...");
-            string errMsg = null;
-            if (AppEnv.AppInit(out errMsg) == false)
+            string msg = null;
+            if (AppEnv.AppInit(out msg) == false)
             {
-                if (errMsg != null) Console.WriteLine("Ошибка инициализации приложения: " + errMsg);
+                if (msg != null) Console.WriteLine("Ошибка инициализации приложения: " + msg);
                 exitWithPrompt(1);
             }
 
-            // открыть канал для приема сообщений
+            // создать сервисный класс, который будет обслуживать канал
+            msg = "Создание служебного класса KDSService...";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
             KDSService.KDSServiceClass service = null;
+            try
+            {
+                service = new KDSService.KDSServiceClass();
+            }
+            catch (Exception ex)
+            {
+                msg = "Ошибка создания сервисного класса: " + ex.Message;
+                Console.WriteLine(msg);
+                exitWithPrompt(2);
+            }
+            msg = "Создание служебного класса KDSService... Ok";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
+
+            // открыть канал для приема сообщений
+            msg = "Создание канала для приема сообщений...";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
             ServiceHost host = null;
             try
             {
                 // параметры канала считываются из app.config
                 // создает сервис при первом обращении
                 //host = new ServiceHost(typeof(KDSService.KDSServiceClass));
-
-                service = new KDSService.KDSServiceClass();
-
                 host = new ServiceHost(service);
                 //host.OpenTimeout = TimeSpan.FromMinutes(10);  // default 1 min
                 //host.CloseTimeout = TimeSpan.FromMinutes(1);  // default 10 sec
@@ -53,6 +65,8 @@ namespace KDSConsoleSvcHost
                 AppEnv.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}",ex.Message, Environment.NewLine, ex.StackTrace);
                 exitWithPrompt(2);
             }
+            msg = "Создание канала для приема сообщений... Ok";
+            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
 
             AppEnv.WriteLogInfoMessage("Служба готова к приему сообщений.");
             Console.WriteLine("\nСлужба готова к приему сообщений.\nДля завершения нажмите Enter\n");

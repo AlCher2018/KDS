@@ -74,17 +74,11 @@
       <xsd:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
     </xsd:schema>
   </wsdl:types>
-  <wsdl:message name="IKDSService_GetOrderStatusList_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrderStatusList" />
+  <wsdl:message name="IKDSService_GetOrderStatuses_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetOrderStatuses" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetOrderStatusList_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrderStatusListResponse" />
-  </wsdl:message>
-  <wsdl:message name="IKDSService_GetDepartmentGroups_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetDepartmentGroups" />
-  </wsdl:message>
-  <wsdl:message name="IKDSService_GetDepartmentGroups_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetDepartmentGroupsResponse" />
+  <wsdl:message name="IKDSService_GetOrderStatuses_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetOrderStatusesResponse" />
   </wsdl:message>
   <wsdl:message name="IKDSService_GetDepartments_InputMessage">
     <wsdl:part name="parameters" element="tns:GetDepartments" />
@@ -97,12 +91,6 @@
   </wsdl:message>
   <wsdl:message name="IKDSService_GetOrders_OutputMessage">
     <wsdl:part name="parameters" element="tns:GetOrdersResponse" />
-  </wsdl:message>
-  <wsdl:message name="IKDSService_GetOrdersByConditions_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrdersByConditions" />
-  </wsdl:message>
-  <wsdl:message name="IKDSService_GetOrdersByConditions_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetOrdersByConditionsResponse" />
   </wsdl:message>
   <wsdl:message name="IKDSCommandService_ChangeOrderStatus_InputMessage">
     <wsdl:part name="parameters" element="tns:ChangeOrderStatus" />
@@ -117,13 +105,9 @@
     <wsdl:part name="parameters" element="tns:ChangeOrderDishStatusResponse" />
   </wsdl:message>
   <wsdl:portType name="IKDSService">
-    <wsdl:operation name="GetOrderStatusList">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrderStatusList" message="tns:IKDSService_GetOrderStatusList_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrderStatusListResponse" message="tns:IKDSService_GetOrderStatusList_OutputMessage" />
-    </wsdl:operation>
-    <wsdl:operation name="GetDepartmentGroups">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetDepartmentGroups" message="tns:IKDSService_GetDepartmentGroups_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetDepartmentGroupsResponse" message="tns:IKDSService_GetDepartmentGroups_OutputMessage" />
+    <wsdl:operation name="GetOrderStatuses">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrderStatuses" message="tns:IKDSService_GetOrderStatuses_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrderStatusesResponse" message="tns:IKDSService_GetOrderStatuses_OutputMessage" />
     </wsdl:operation>
     <wsdl:operation name="GetDepartments">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetDepartments" message="tns:IKDSService_GetDepartments_InputMessage" />
@@ -132,10 +116,6 @@
     <wsdl:operation name="GetOrders">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrders" message="tns:IKDSService_GetOrders_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrdersResponse" message="tns:IKDSService_GetOrders_OutputMessage" />
-    </wsdl:operation>
-    <wsdl:operation name="GetOrdersByConditions">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrdersByConditions" message="tns:IKDSService_GetOrdersByConditions_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrdersByConditionsResponse" message="tns:IKDSService_GetOrdersByConditions_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:portType name="IKDSCommandService">
@@ -152,17 +132,8 @@
     <wsp:PolicyReference URI="#getData_policy">
     </wsp:PolicyReference>
     <soap12:binding transport="http://schemas.microsoft.com/soap/tcp" />
-    <wsdl:operation name="GetOrderStatusList">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrderStatusList" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetDepartmentGroups">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetDepartmentGroups" style="document" />
+    <wsdl:operation name="GetOrderStatuses">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrderStatuses" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -181,15 +152,6 @@
     </wsdl:operation>
     <wsdl:operation name="GetOrders">
       <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrders" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetOrdersByConditions">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetOrdersByConditions" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>

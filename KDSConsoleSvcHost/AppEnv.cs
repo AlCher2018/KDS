@@ -44,22 +44,6 @@ namespace KDSConsoleSvcHost
             // проверить доступность БД
             if (CheckDBConnection(typeof(KDSEntities), out errMsg) == false) return false;
 
-            // сохранить в служебном классе словари из БД
-            //    группы отделов
-            errMsg = ServiceDics.DepGroups.UpdateFromDB();
-            if (errMsg != null)
-            {
-                WriteLogErrorMessage("Ошибка чтения из БД: " + errMsg);
-                return false;
-            }
-            //    отделы
-            errMsg = ServiceDics.Departments.UpdateFromDB();
-            if (errMsg != null)
-            {
-                WriteLogErrorMessage("Ошибка чтения из БД: " + errMsg);
-                return false;
-            }
-
             return true;
         }
 

@@ -77,7 +77,8 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Model\ServiceOrderQueueEnum.cs" />
+    <Compile Include="Lib\ConfigHelper.cs" />
+    <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
       <DependentUpon>ConfigEdit.xaml</DependentUpon>
     </Compile>
@@ -134,7 +135,6 @@
     <Compile Include="TestData\OrderDishTestModel.cs" />
     <Compile Include="TestData\OrderTestModel.cs" />
     <Compile Include="TestData\TestDataHelper.cs" />
-    <Compile Include="ViewModel\DepartmentGroupViewModel.cs" />
     <Compile Include="ViewModel\DepartmentViewModel.cs" />
     <Compile Include="ViewModel\OrderDishViewModel.cs" />
     <Compile Include="ViewModel\OrderStatusViewModel.cs" />
@@ -155,9 +155,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentGroupModel.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
@@ -207,9 +204,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Images\steel.jpg">

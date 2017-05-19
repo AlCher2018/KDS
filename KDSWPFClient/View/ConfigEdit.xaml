@@ -5,21 +5,137 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="ConfigEdit" Height="307" Width="304">
-    <Grid>
-        <TextBlock x:Name="textBlock" Margin="10,10,20,0" TextWrapping="Wrap" VerticalAlignment="Top"  Text="Выберите отделы, которые будут отображаться на данном КДС-е"/>
-        <ListBox x:Name="listBoxDepartments"  Margin="10,42,20,60" SelectionMode="Multiple">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Id}"/>
-                        <TextBlock Text="{Binding Name}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        <Button x:Name="btnCancel" Content="Отмена" HorizontalAlignment="Right" Margin="0,0,20,20"  VerticalAlignment="Bottom" Width="75" IsCancel="True" Click="btnCancel_Click"/>
-        <Button x:Name="btnSave" Content="Сохранить" HorizontalAlignment="Right" Margin="0,0,120,20" VerticalAlignment="Bottom" Width="75" IsDefault="True"/>
+        Title="ConfigEdit" Height="502" Width="554">
 
-    </Grid>
+    <Window.Resources>
+        <!-- шаблон для отображения строк словаря -->
+        <DataTemplate x:Key="depsDataTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" SharedSizeGroup="IsViewColumn"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="IdColumn"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="UIDColumn"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsViewOnKDS}"/>
+                <TextBlock Grid.Column="1" Text="{Binding Id}" Margin="10,0,20,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="10,0,20,0"/>
+                <TextBlock Grid.Column="3" Text="{Binding UID}" Margin="10,0,20,0"/>
+            </Grid>
+        </DataTemplate>
+
+        <!-- шаблон текста заголовка -->
+        <ControlTemplate x:Key="Header" TargetType="{x:Type Button}">
+            <Border Background="DarkGray" TextBlock.Foreground="white" BorderBrush="White" BorderThickness="1" TextBlock.FontSize="12" Padding="10,0,10,3">
+                <ContentPresenter/>
+            </Border>
+        </ControlTemplate>
+        <!-- контрол заголовка -->
+        <Grid x:Key="ListHeader" Margin="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="IsViewColumn"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="IdColumn"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="UIDColumn"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Template="{StaticResource Header}">View</Button>
+            <Button Grid.Column="1" Template="{StaticResource Header}">Id</Button>
+            <Button Grid.Column="2" Template="{StaticResource Header}" >Name</Button>
+            <Button Grid.Column="3" Template="{StaticResource Header}">UID</Button>
+        </Grid>
+
+        <Style x:Key="HeaderedScrollViewer" TargetType="{x:Type ScrollViewer}">
+            <Setter Property="Background" Value="AliceBlue"/>
+            <Setter Property="BorderBrush" Value="DarkBlue"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid >
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <DockPanel Margin="{TemplateBinding Padding}">
+                                    <ScrollViewer DockPanel.Dock="Top"
+                                              local:SetHorizontalOffset.Offset="{Binding 
+                                                    RelativeSource={RelativeSource TemplatedParent}, 
+                                                    Path=HorizontalOffset}"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Hidden"
+                                              Focusable="false"
+                                              Content="{StaticResource ListHeader}">
+                                    </ScrollViewer>
+
+                                    <ScrollContentPresenter Name="PART_ScrollContentPresenter"
+                                        KeyboardNavigation.DirectionalNavigation="Local"/>
+                                </DockPanel>
+
+                                <ScrollBar Name="PART_HorizontalScrollBar"
+                                    Orientation="Horizontal"
+                                    Grid.Row="1"
+                                    Maximum="{TemplateBinding ScrollableWidth}"
+                                    ViewportSize="{TemplateBinding ViewportWidth}"
+                                    Value="{TemplateBinding HorizontalOffset}"
+                                    Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
+
+                                <ScrollBar Name="PART_VerticalScrollBar"
+                                    Grid.Column="1"
+                                    Maximum="{TemplateBinding ScrollableHeight}"
+                                    ViewportSize="{TemplateBinding ViewportHeight}"
+                                    Value="{TemplateBinding VerticalOffset}"
+                                    Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+    </Window.Resources>
+
+
+    <DockPanel LastChildFill="True">
+        <TextBlock x:Name="textBlock" DockPanel.Dock="Top" Margin="10,10,10,3" TextWrapping="Wrap" VerticalAlignment="Top"  Text="Выберите отделы, которые будут отображаться на данном КДС-е"/>
+
+        <StackPanel DockPanel.Dock="Bottom" Margin="10,20" Grid.IsSharedSizeScope="True" HorizontalAlignment="Right">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition SharedSizeGroup="btns"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition  SharedSizeGroup="btns"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="btnSave" Grid.Column="0" Content="Сохранить" IsDefault="True" Padding="10,5" Click="btnSave_Click"/>
+                <Button x:Name="btnCancel" Grid.Column="2" Content="Отмена" IsCancel="True"  Click="btnCancel_Click"/>
+            </Grid>
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Margin="10,10,10,0" Orientation="Horizontal">
+            <TextBlock Text="количество колонок на экране: "/>
+            <TextBox x:Name="tbxOrdersColumnsCount" Width="40"/>
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Margin="10,20,10,0" Orientation="Vertical">
+            <CheckBox x:Name="chkIsWriteTraceMessages" Content="запись в лог отладочных сообщений"/>
+            <CheckBox x:Name="chkIsLogUserAction" Content="запись в лог действий пользователя (пока не работает)" Margin="0,5"/>
+        </StackPanel>
+
+        <ListBox x:Name="listBoxDepartments" DockPanel.Dock="Top" Margin="10,0" SelectionMode="Single" ItemTemplate="{StaticResource depsDataTemplate}">
+            <ListBox.Template>
+                <ControlTemplate>
+                    <ScrollViewer Style="{StaticResource HeaderedScrollViewer}" Grid.IsSharedSizeScope="True">
+                        <StackPanel IsItemsHost="true"/>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ListBox.Template>
+        </ListBox>
+
+    </DockPanel>
 </Window>

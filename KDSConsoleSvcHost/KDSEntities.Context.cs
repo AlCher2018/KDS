@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSConsoleSvcHost
+namespace KDSService
 {
     using System;
     using System.Data.Entity;
@@ -26,8 +26,6 @@ namespace KDSConsoleSvcHost
         }
     
         public virtual DbSet<Department> Department { get; set; }
-        public virtual DbSet<DepartmentDepartmentGroup> DepartmentDepartmentGroup { get; set; }
-        public virtual DbSet<DepartmentGroup> DepartmentGroup { get; set; }
         public virtual DbSet<Order> Order { get; set; }
         public virtual DbSet<OrderDish> OrderDish { get; set; }
         public virtual DbSet<OrderStatus> OrderStatus { get; set; }

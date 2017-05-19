@@ -22,9 +22,6 @@ namespace KDSWPFClient
         //   статусов
         private Dictionary<int, OrderStatusViewModel> _ordStatuses;
         public Dictionary<int, OrderStatusViewModel> OrderStatuses { get { return _ordStatuses; } }
-        //   групп отделов
-        private Dictionary<int, DepartmentGroupViewModel> _depGroups;
-        public Dictionary<int, DepartmentGroupViewModel> DepartmentGroups { get { return _depGroups; } }
         //   отделов
         private Dictionary<int, DepartmentViewModel> _deps;
         public Dictionary<int, DepartmentViewModel> Departments { get { return _deps; } }
@@ -46,7 +43,6 @@ namespace KDSWPFClient
             }
             
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
-            _depGroups = new Dictionary<int, DepartmentGroupViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
         }
 
@@ -58,12 +54,27 @@ namespace KDSWPFClient
             try
             {
                 setOrderStatusFromService();
-                setDepGroupsFromService();
+
+                // получить отделы со службы
                 setDepartmentsFromService();
+                // прочитать из конфига отделы для отображения и сохранить их в _deps
+                string[] cfgDepUIDs = ConfigHelper.GetDepartmentsUID();
+                if (cfgDepUIDs != null)
+                {
+                    DepartmentViewModel curDep;
+                    foreach (string uid in cfgDepUIDs)
+                    {
+//                        curDep = _deps.Values.FirstOrDefault(d => d.UID == uid);
+                        curDep = _deps.Values.FirstOrDefault(d => d.Id.ToString() == uid);   // временно по ID
+                        if (curDep != null) curDep.IsViewOnKDS = true;
+                    }
+                }
+
                 retVal = true;
             }
             catch (Exception)
             { }
+
             return retVal;
         }
         private void setOrderStatusFromService()
@@ -71,14 +82,10 @@ namespace KDSWPFClient
             _ordStatuses.Clear();
             try
             {
-                List<OrderStatusModel> svcList = _getClient.GetOrderStatusList();
+                List<OrderStatusModel> svcList = _getClient.GetOrderStatuses();
                 svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
-                    new OrderStatusViewModel()
-                    {
-                        Id = o.Id,
-                        Name = o.Name,
-                        UID = o.UID
-                    }));
+                    new OrderStatusViewModel() { Id = o.Id, Name = o.Name, UID = o.UID }
+                    ));
             }
             catch (Exception ex)
             {
@@ -86,45 +93,25 @@ namespace KDSWPFClient
                 throw;
             }
         }
-        private void setDepGroupsFromService()
-        {
-            _depGroups.Clear();
-            try
-            {
-                Dictionary<int, DepartmentGroupModel> svcDict = _getClient.GetDepartmentGroups();
-                foreach (KeyValuePair<int, DepartmentGroupModel> kvp in svcDict)
-                {
-                    _depGroups.Add(kvp.Key, new DepartmentGroupViewModel()
-                    {
-                        Id = kvp.Value.Id, Name = kvp.Value.Name
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = string.Format("{0}{1}", ex.Message, (ex.InnerException==null) ? "" : ex.InnerException.Message);
-                throw;
-            }
-        }
+
         private void setDepartmentsFromService()
         {
             _deps.Clear();
             try
             {
-                Dictionary<int, DepartmentModel> svcDict = _getClient.GetDepartments();
-                foreach (KeyValuePair<int, DepartmentModel> kvp in svcDict)
+                List<DepartmentModel> svcDict = _getClient.GetDepartments();
+                foreach (DepartmentModel dep in svcDict)
                 {
                     DepartmentViewModel newDep = new DepartmentViewModel()
                     {
-                        Id = kvp.Value.Id,
-                        Name = kvp.Value.Name,
-                        UID = kvp.Value.UID,
-                        DishQuantity = kvp.Value.DishQuantity,
-                        IsAutoStart = kvp.Value.IsAutoStart
+                        Id = dep.Id, Name = dep.Name, UID = dep.UID,
+                        DishQuantity = dep.DishQuantity,
+                        IsAutoStart = dep.IsAutoStart,
+                        IsViewOnKDS = false
                     };
-                    newDep.setDepGroupsByIdList(kvp.Value.DepGroupsIdList, _depGroups);
 
-                    _deps.Add(kvp.Key, newDep);
+
+                    _deps.Add(dep.Id, newDep);
                 }
             }
             catch (Exception ex)
@@ -139,10 +126,20 @@ namespace KDSWPFClient
             return _getClient.GetOrders();
         }
 
-        public List<OrderModel> GetOrdersByConditions(OrderStatusEnum status, int departmentId, int departmentGroupId)
+        #region get app dict item
+        public OrderStatusViewModel GetOrderStatusModelById(int statusId)
         {
-            return _getClient.GetOrdersByConditions(status, departmentId, departmentGroupId);
+            if (_ordStatuses.ContainsKey(statusId)) return _ordStatuses[statusId];
+            return null;
         }
+
+        public  DepartmentViewModel GetDepartmentById(int depId)
+        {
+            if (_deps.ContainsKey(depId)) return _deps[depId];
+            return null;
+        }
+
+        #endregion
 
 
         public void Dispose()
@@ -151,7 +148,6 @@ namespace KDSWPFClient
             disposeServiceClient(_setClient);
 
             if (_ordStatuses != null) { _ordStatuses.Clear(); _ordStatuses = null; }
-            if (_depGroups != null) { _depGroups.Clear(); _depGroups = null; }
             if (_deps != null) { _deps.Clear(); _deps = null; }
         }
 

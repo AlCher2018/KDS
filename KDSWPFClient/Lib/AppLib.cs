@@ -200,6 +200,7 @@ namespace KDSWPFClient.Lib
         }
 
         // запись значения в config-файл
+        // ConfigurationManager НЕ СОХРАНЯЕТ КОММЕНТАРИИ!!!!
         public static void SaveValueToConfig(string key, string value)
         {
             // Open App.Config of executable

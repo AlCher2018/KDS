@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSConsoleSvcHost.AppModel
+namespace KDSService.AppModel
 {
     // внутренняя структура для хранения даты входа в состояние и времени нахождения в нем
     // DTS - DateTime and TimeSpan

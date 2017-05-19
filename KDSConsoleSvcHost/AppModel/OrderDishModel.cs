@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
-using KDSConsoleSvcHost.AppModel;
 using System.Diagnostics;
 
 namespace KDSService.AppModel
@@ -140,9 +139,9 @@ namespace KDSService.AppModel
             DelayedStartTime = dbDish.DelayedStartTime;
             EstimatedTime = dbDish.EstimatedTime;
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
-            // объект отдела взять из справочника
-            _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
 
+            // объект отдела взять из справочника
+            _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
             // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
             //_dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
@@ -231,7 +230,7 @@ namespace KDSService.AppModel
                     // необходимо обновить статус
                     isNewStatus = true;
                     // объект отдела взять из справочника
-                    _department = ServiceDics.Departments.GetDepartmentById(dbDish.DepartmentId);
+                    _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
                 }
 
                 if (isNewStatus) UpdateStatus(newStatus, false);
