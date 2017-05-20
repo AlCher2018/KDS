@@ -81,6 +81,9 @@ namespace KDSWPFClient
         {
             string cfgValue;
 
+            cfgValue = AppLib.GetAppSetting("depUIDs");
+            AppLib.SetAppGlobalValue("depUIDs", cfgValue);
+
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null)?false:cfgValue.ToBool());
             cfgValue = AppLib.GetAppSetting("IsLogUserAction");

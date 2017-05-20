@@ -65,7 +65,7 @@ namespace KDSWPFClient
                     foreach (string uid in cfgDepUIDs)
                     {
 //                        curDep = _deps.Values.FirstOrDefault(d => d.UID == uid);
-                        curDep = _deps.Values.FirstOrDefault(d => d.Id.ToString() == uid);   // временно по ID
+                        curDep = _deps.Values.FirstOrDefault(d => d.UID == uid);
                         if (curDep != null) curDep.IsViewOnKDS = true;
                     }
                 }

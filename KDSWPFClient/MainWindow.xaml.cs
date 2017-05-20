@@ -23,13 +23,18 @@ namespace KDSWPFClient
         private static AppDataProvider _dataProvider;
         public AppDataProvider DataProvider { set { _dataProvider = value; } }
 
+        // страницы заказов
         private OrdersPages _pages;
-
+        // фильтр заказов на данном КДС. Может быть статическим (отделы из config-файла) или динамическим (статус заказов) 
+        private ValueChecker<OrderDishModel> _valueDishChecker;
         private List<OrderViewModel> _viewOrders;
         //private List<TestData.OrderTestModel> _viewOrders;
 
         private OrderStatusEnum _allowStatus = OrderStatusEnum.None;
-
+        
+        // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
+        private List<OrderModel> _delOrderIds;
+        private List<int> _delDishIds;  
         private bool _isUpdateLayout = false;
 
         public MainWindow()
@@ -46,6 +51,9 @@ namespace KDSWPFClient
             _viewOrders = new List<OrderViewModel>();
             // debug test data
             //Button_Click(null,null);
+            // условия отбора блюд
+            _valueDishChecker = new ValueChecker<OrderDishModel>();
+            setDishCheckerForDepIds();
 
             _timer = new Timer(1000);
             _timer.Elapsed += _timer_Elapsed;
@@ -56,7 +64,18 @@ namespace KDSWPFClient
             btnSetPagePrevious.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
             btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
             btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-        
+
+            _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
+        }
+
+        private void setDishCheckerForDepIds()
+        {
+            // - отделы, разрешенные на данном КДС (из config-файла)
+            string sAllowDeps = (string)AppLib.GetAppGlobalValue("depUIDs");
+            if (sAllowDeps.IsNull() == false)
+            {
+                _valueDishChecker.Update("depId", (OrderDishModel dish) => sAllowDeps.Contains(dish.Department.UID));
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -94,14 +113,21 @@ namespace KDSWPFClient
             if (svcOrders == null) return;
 
             // удалить из svcOrders блюда, не входящие в условия фильтрации
+            _delOrderIds.Clear(); _delDishIds.Clear();
             foreach (OrderModel ord in svcOrders)
             {
-                foreach (OrderDishModel item in ord.Dishes.Values)
-                {
-                    if (isDishAllow(item) == false) ord.Dishes.Remove(item.Id);
-                }
+                // собрать ключи для удаления
+                foreach (KeyValuePair<int, OrderDishModel> item in ord.Dishes)
+                    if (_valueDishChecker.Checked(item.Value) == false) _delDishIds.Add(item.Key);
+                _delDishIds.ForEach(key => ord.Dishes.Remove(key)); // удалить неразрешенные блюда
+                if (ord.Dishes.Count == 0) _delOrderIds.Add(ord);
             }
+            //   и заказы, у которых нет разрешенных блюд
+            _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
+            Debug.Print("orders {0}", svcOrders.Count);
+            svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
+            
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ orders
             // удаление заказов
             IEnumerable<int> delKeys = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id));
@@ -205,10 +231,73 @@ namespace KDSWPFClient
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
+            _timer.Stop();
+            string sAllowDepsPre = (string)AppLib.GetAppGlobalValue("depUIDs");
+
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
+
+            // не поменялись ли разрешенные отделы?
+            string sAllowDepsNew = (string)AppLib.GetAppGlobalValue("depUIDs");
+            if (sAllowDepsNew.Equals(sAllowDepsPre) == false)
+            {
+                // обновить фильтр блюд
+                setDishCheckerForDepIds();  
+            }
+
+
+            _timer.Start();
         }
 
+
+        #region inner classes
+        // тип TObj - тип объекта, для которого будет проверяться предикат
+        private class ValueChecker<T>
+        {
+            private List<KeyValuePair<string, Predicate<T>>> _predicatesList;
+
+            public ValueChecker()
+            {
+                _predicatesList = new List<KeyValuePair<string, Predicate<T>>>();
+            }
+
+            // все условия должны быть true, т.е. соединяем по AND
+            public bool Checked(T checkObject)
+            {
+                foreach (KeyValuePair<string, Predicate<T>> item in _predicatesList)
+                {
+                    if (item.Value(checkObject) == false) return false;
+                }
+                return true;
+            }
+
+            public void Add(string key, Predicate<T> predicate)
+            {
+                _predicatesList.Add(new KeyValuePair<string, Predicate<T>>(key, predicate));
+            }
+
+            public void Update(string key, Predicate<T> newPredicate)
+            {
+                KeyValuePair<string, Predicate<T>> pred = _predicatesList.FirstOrDefault(p => p.Key == key);
+
+                if (pred.Key != null) _predicatesList.Remove(pred);
+
+                _predicatesList.Add(new KeyValuePair<string, Predicate<T>>(key, newPredicate));
+            }
+
+            // удалить ВСЕ записи с данным ключем
+            public void Remove(string key)
+            {
+                KeyValuePair<string, Predicate<T>> pred = _predicatesList.FirstOrDefault(p => p.Key == key);
+
+                if (pred.Key != null)
+                {
+                    _predicatesList.Remove(pred);
+                }
+            }
+
+        }
+        #endregion
 
     }  // class MainWindow
 }
