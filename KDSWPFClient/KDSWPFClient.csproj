@@ -77,7 +77,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Lib\ConfigHelper.cs" />
+    <Compile Include="ViewModel\KDSModeEnum.cs" />
     <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
       <DependentUpon>ConfigEdit.xaml</DependentUpon>

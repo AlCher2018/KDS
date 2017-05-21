@@ -3,7 +3,8 @@ using KDSWPFClient.Lib;
 using System;
 using System.Globalization;
 using System.Windows;
-
+using System.Collections.Generic;
+using KDSWPFClient.ViewModel;
 
 namespace KDSWPFClient
 {
@@ -81,8 +82,11 @@ namespace KDSWPFClient
         {
             string cfgValue;
 
+            // отделы на КДСе
             cfgValue = AppLib.GetAppSetting("depUIDs");
             AppLib.SetAppGlobalValue("depUIDs", cfgValue);
+            // заполнить словарь разрешенных переходов между состояниями
+            setStatesAllowedForMoveInAppProps();
 
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null)?false:cfgValue.ToBool());
@@ -125,6 +129,79 @@ namespace KDSWPFClient
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
         }
+
+
+        // заполнить словарь разрешенных переходов между состояниями
+        // словарь хранится в свойствах приложения (key = "StatesAllowedForMove")
+        // значения читаются из config-файла
+        private static void setStatesAllowedForMoveInAppProps()
+        {
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> statesAllowedForMove;
+            var oProp = AppLib.GetAppGlobalValue("StatesAllowedForMove");
+            // создать или очистить словарь
+            if (oProp == null) statesAllowedForMove = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+            else
+            {
+                statesAllowedForMove = (List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>)oProp;
+                statesAllowedForMove.Clear();
+            }
+
+            // настройки взять из config-файла
+            bool isSpecial = false;
+            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            if (cfgValue.IsNull() == false)
+            {
+                KDSModeEnum mode;
+                if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode))
+                {
+                    switch (mode)
+                    {
+                        case KDSModeEnum.Special:
+                            isSpecial = true;
+                            break;
+
+                        case KDSModeEnum.Cook:
+                            // повар
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking));
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking,  OrderStatusEnum.Ready));
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled,  OrderStatusEnum.CancelConfirmed));
+                            break;
+
+                        case KDSModeEnum.Waiter:
+                            // официант
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready,  OrderStatusEnum.Took));
+                            break;
+
+                        case KDSModeEnum.Manager:
+                            // менеджер на фронте
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking));
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cancelled));
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking,  OrderStatusEnum.Cancelled));
+                            statesAllowedForMove.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Cancelled));
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                isSpecial = true;
+            }
+
+            if (isSpecial)
+            {
+                cfgValue = AppLib.GetAppSetting("StatesAllowedForMove");
+                if (cfgValue.IsNull() == false)
+                {
+                    statesAllowedForMove = AppLib.StringToStatusCords(cfgValue);
+                }
+            }
+
+            AppLib.SetAppGlobalValue("StatesAllowedForMove", statesAllowedForMove);
+        }
+
 
     }  // class App
 }

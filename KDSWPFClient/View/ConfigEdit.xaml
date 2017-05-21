@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="ConfigEdit" Height="502" Width="554">
+        Title="ConfigEdit" Height="652" Width="539">
 
     <Window.Resources>
         <!-- шаблон для отображения строк словаря -->
@@ -117,15 +117,45 @@
             </Grid>
         </StackPanel>
 
+        <!-- кол-во колонок -->
         <StackPanel DockPanel.Dock="Bottom" Margin="10,10,10,0" Orientation="Horizontal">
             <TextBlock Text="количество колонок на экране: "/>
             <TextBox x:Name="tbxOrdersColumnsCount" Width="40"/>
         </StackPanel>
 
+        <!-- логгирование -->
         <StackPanel DockPanel.Dock="Bottom" Margin="10,20,10,0" Orientation="Vertical">
             <CheckBox x:Name="chkIsWriteTraceMessages" Content="запись в лог отладочных сообщений"/>
             <CheckBox x:Name="chkIsLogUserAction" Content="запись в лог действий пользователя (пока не работает)" Margin="0,5"/>
         </StackPanel>
+
+        <Border DockPanel.Dock="Bottom" Margin="10,0,10,0" BorderBrush="DarkBlue" BorderThickness="1" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <ListBox BorderBrush="DarkGray" BorderThickness="1">
+                        <CheckBox Content="Начать приготовление блюда/заказа" Margin="4"/>
+                        <CheckBox Content="Закончить приготовление блюда/заказа" Margin="4"/>
+                        <CheckBox Content="Забрать блюдо и отнести клиенту" Margin="4"/>
+                        <CheckBox Content="Отменить блюдо/заказ" Margin="4"/>
+                        <CheckBox Content="Подтвердить отмену блюда/заказа" Margin="4"/>
+                    </ListBox>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                    <TextBlock Text="или выберите режим работы КДС:"/>
+                    <ListBox>
+                        <RadioButton Content="КУХНЯ" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
+                        <RadioButton Content="ОФИЦИАНТ" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
+                        <RadioButton Content="МЕНЕДЖЕР" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
+                        <RadioButton Content="особый" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
+                    </ListBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <TextBlock DockPanel.Dock="Bottom" Text="Выберите действия, РАЗРЕШЕННЫЕ на данном КДСе" Margin="10,20,10,3"/>
 
         <ListBox x:Name="listBoxDepartments" DockPanel.Dock="Top" Margin="10,0" SelectionMode="Single" ItemTemplate="{StaticResource depsDataTemplate}">
             <ListBox.Template>

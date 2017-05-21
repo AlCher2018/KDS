@@ -41,7 +41,12 @@ namespace KDSWPFClient.View
                 listBoxDepartments.ItemsSource = _deps.Values;
             }
 
-            //_cfgValKeeper.AddPreValueDirectly("depUIDs", getIsViewDepIds());
+            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            if (cfgValue.IsNull() == false)
+            {
+
+            }
+
             _cfgValKeeper.AddPreValue("depUIDs", true, null);
             _cfgValKeeper.AddPreValue("IsWriteTraceMessages", true, chkIsWriteTraceMessages);
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
@@ -79,7 +84,7 @@ namespace KDSWPFClient.View
             if (appSettings.Count > 0)
             {
                 string errMsg = null;
-                if (ConfigHelper.SaveAppSettings(appSettings, out errMsg))
+                if (AppLib.SaveAppSettings(appSettings, out errMsg))
                 {
                     _cfgValKeeper.SaveToAppProps();
                     MessageBox.Show("Настройки сохранены успешно!", "Сохранение настроек в config-файле", MessageBoxButton.OK, MessageBoxImage.Information);

@@ -9,7 +9,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Data;
 using System.Data.SqlClient;
-
+using KDSWPFClient.ServiceReference1;
+using System.Xml.Linq;
 
 namespace KDSWPFClient.Lib
 {
@@ -214,6 +215,61 @@ namespace KDSWPFClient.Lib
             ConfigurationManager.RefreshSection("appSettings");
         }
 
+        // работа с config-файлом как с XML-документом - сохраняем комментарии
+        // параметр appSettingsDict - словарь из ключа и значения (string), которые необх.сохранить в разделе appSettings
+        public static bool SaveAppSettings(Dictionary<string, string> appSettingsDict, out string errorMsg)
+        {
+            // Open App.Config of executable
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            try
+            {
+                errorMsg = null;
+                string filename = config.FilePath;
+
+                //Load the config file as an XDocument
+                XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
+                if (document.Root == null)
+                {
+                    errorMsg = "Document was null for XDocument load.";
+                    return false;
+                }
+
+                // получить раздел appSettings
+                XElement xAppSettings = document.Root.Element("appSettings");
+                if (xAppSettings == null)
+                {
+                    xAppSettings = new XElement("appSettings");
+                    document.Root.Add(xAppSettings);
+                }
+
+                // цикл по ключам словаря значений
+                foreach (KeyValuePair<string, string> item in appSettingsDict)
+                {
+                    XElement appSetting = xAppSettings.Elements("add").FirstOrDefault(x => x.Attribute("key").Value == item.Key);
+                    if (appSetting == null)
+                    {
+                        //Create the new appSetting
+                        xAppSettings.Add(new XElement("add", new XAttribute("key", item.Key), new XAttribute("value", item.Value)));
+                    }
+                    else
+                    {
+                        //Update the current appSetting
+                        appSetting.Attribute("value").Value = item.Value;
+                    }
+                }
+
+                //Save the changes to the config file.
+                document.Save(filename, SaveOptions.DisableFormatting);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
+                return false;
+            }
+        }
+
 
         // получить глобальное значение приложения из его свойств
         public static object GetAppGlobalValue(string key, object defaultValue = null)
@@ -257,8 +313,94 @@ namespace KDSWPFClient.Lib
             }
         }
 
+        #endregion
+
+        #region переходы состояний блюда/заказа
+        // переход - это ребра графа, соединяющие два состояния {OrderStatusEnum, OrderSatusEnum}
+        // представлен структурой KeyValuePair, в которой Key - состояние ИЗ которого переходим, Value - состояние В которое переходим
+        public static List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> GetStatusCordsFromConfigFile(string cfgKey)
+        {
+            if (cfgKey.IsNull()) return null;
+            string sBuf = GetAppSetting(cfgKey);
+            if (sBuf.IsNull()) return null;
+
+            return StringToStatusCords(sBuf);
+        }
+
+        public static void PutStatusCordsToConfigFile(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> cords, string key)
+        {
+            string sCords = StatusCordsToString(cords);
+            if (sCords.IsNull() == false)
+            {
+                string errMsg;
+                Dictionary<string, string> appSetDict = new Dictionary<string, string>();
+                appSetDict.Add(key, sCords);
+
+                SaveAppSettings(appSetDict, out errMsg);
+            }
+        }
+
+        public static string StatusCordToString(KeyValuePair<OrderStatusEnum, OrderStatusEnum> cord)
+        {
+            return cord.Key + "," + cord.Value;
+        }
+
+        public static KeyValuePair<OrderStatusEnum, OrderStatusEnum> StringToStatusCord(string strCord)
+        {
+            KeyValuePair<OrderStatusEnum, OrderStatusEnum> cord = new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.None, OrderStatusEnum.None);
+            if (strCord.IsNull() == false)
+            {
+                string[] aStr = strCord.Split(',');
+                if (aStr.Length == 2)
+                {
+                    OrderStatusEnum eStatFrom, eStatTo;
+                    if (Enum.TryParse(aStr[0], out eStatFrom) && Enum.TryParse(aStr[1], out eStatTo)) cord = new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo);
+                }
+            }
+
+            return cord;
+        }
+
+        public static string StatusCordsToString(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> cords)
+        {
+            string retVal = "";
+
+            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in cords)
+            {
+                if (retVal.Length > 0) retVal += ";";
+                retVal += StatusCordToString(item);
+            }
+
+            return retVal;
+        }
+
+        public static List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> StringToStatusCords(string strCords)
+        {
+            if (strCords.IsNull()) return null;
+
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+            string[] astrCords = strCords.Split(';');
+
+            foreach (string item in astrCords)
+            {
+                retVal.Add(StringToStatusCord(item));
+            }
+
+            return (retVal.Count == 0) ? null : retVal;
+        }
 
         #endregion
 
-    }
+
+        //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
+        public static string[] GetDepartmentsUID()
+        {
+            string sBuf = ConfigurationManager.AppSettings["depUIDs"];
+            if (sBuf != null) return sBuf.Split(',');
+
+            return null;
+        }
+
+
+    }  // class
 }

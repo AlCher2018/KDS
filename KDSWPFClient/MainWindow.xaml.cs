@@ -30,8 +30,6 @@ namespace KDSWPFClient
         private List<OrderViewModel> _viewOrders;
         //private List<TestData.OrderTestModel> _viewOrders;
 
-        private OrderStatusEnum _allowStatus = OrderStatusEnum.None;
-        
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;
         private List<int> _delDishIds;  
@@ -67,6 +65,7 @@ namespace KDSWPFClient
 
             _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
         }
+
 
         private void setDishCheckerForDepIds()
         {
@@ -150,22 +149,6 @@ namespace KDSWPFClient
             }
         }
 
-        private bool isDishAllow(OrderDishModel item)
-        {
-            // проверка на отдел
-            DepartmentViewModel dep = _dataProvider.GetDepartmentById(item.Department.Id);
-            if (dep.IsViewOnKDS == false) return false;
-
-            // проверка состояния
-            if (_allowStatus == OrderStatusEnum.None)
-                return true;
-            else if ((item.Status != _allowStatus) && (item.Status != OrderStatusEnum.Cancelled))
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
