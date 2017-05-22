@@ -45,15 +45,9 @@
 
         <TextBlock x:Name="tbNoAllowedStates" Grid.Row="2" Text="Нет доступных действий" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Stretch">
-            <Border x:Name="btnState1">
-                <TextBlock x:Name="tbState1"/>
-            </Border>
-            <Border x:Name="btnState2">
-                <TextBlock x:Name="tbState2" />
-            </Border>
         </StackPanel>
-        
+
         <Button x:Name="btnClose" Grid.Row="3" Content="Закрыть окно БЕЗ изменения состояния" HorizontalAlignment="Right" Click="btnClose_Click"/>
-        
+
     </Grid>
 </Window>
