@@ -152,6 +152,12 @@ namespace KDSWPFClient
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            StateChange chWin = new StateChange();
+            //chWin.Order = _viewOrders[0];
+            
+
+            chWin.ShowDialog();
+
             //_viewOrders = TestData.TestDataHelper.GetTestOrders(5, 30);
 
             //updateViewOrders();

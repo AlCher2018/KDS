@@ -33,7 +33,9 @@ namespace KDSService.AppModel
         public string Waiter { get; set; }
 
         [DataMember]
-        public OrderStatusEnum Status { get; set; }
+        public int OrderStatusId { get; set; }
+
+        private OrderStatusEnum Status;
 
         private Dictionary<int, OrderDishModel> _dishesDict;
         [DataMember]
@@ -97,7 +99,11 @@ namespace KDSService.AppModel
             _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(1000));
 
             // для заказа статус по умолчанию - В ПРОЦЕССЕ ГОТОВКИ
-            if ((int)this.Status < 1) this.Status = OrderStatusEnum.Cooking;
+            if (this.OrderStatusId < 1)
+            {
+                this.OrderStatusId = 1;
+                this.Status = OrderStatusEnum.Cooking;
+            }
 
             UpdateFromDBEntity(dbOrder, true);
 
@@ -157,6 +163,7 @@ namespace KDSService.AppModel
                     CreateDate = dbOrder.CreateDate;
                     HallName = dbOrder.RoomNumber;
                     Waiter = dbOrder.Waiter;
+                    OrderStatusId = dbOrder.OrderStatusId;
                     Status = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
                 }
                 else
@@ -166,6 +173,7 @@ namespace KDSService.AppModel
                     if (TableName.IsNull() || (TableName != dbOrder.TableNumber)) TableName = dbOrder.TableNumber;
                     if (CreateDate != dbOrder.CreateDate) CreateDate = dbOrder.CreateDate;
                     if (HallName.IsNull() || (HallName != dbOrder.RoomNumber)) HallName = dbOrder.RoomNumber;
+                    if (OrderStatusId != dbOrder.OrderStatusId) OrderStatusId = dbOrder.OrderStatusId;
                     if (Waiter.IsNull() || (Waiter != dbOrder.Waiter)) Waiter = dbOrder.Waiter;
                 }
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
@@ -270,6 +278,7 @@ namespace KDSService.AppModel
                         }
                         // сохранить новый статус в объекте
                         Status = newStatus;
+                        OrderStatusId = (int)Status;
                     }  // save order status
 
                 }  // if status changed
@@ -308,7 +317,7 @@ namespace KDSService.AppModel
             int iStatus, iDishesCount = _dishesDict.Count;
             foreach (OrderDishModel modelDish in _dishesDict.Values)
             {
-                iStatus = (int)modelDish.Status;
+                iStatus = modelDish.DishStatusId;
                 statArray[iStatus]++;
             }
 

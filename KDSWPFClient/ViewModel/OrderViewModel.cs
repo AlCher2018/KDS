@@ -14,7 +14,9 @@ namespace KDSWPFClient.ViewModel
     public class OrderViewModel
     {
         public int Id { get; set; }
-        public OrderStatusEnum OrderStatus { get; set; }
+
+        public int OrderStatusId { get; set; }
+
         public int DepartmentId { get; set; }
 
         public string UID { get; set; }

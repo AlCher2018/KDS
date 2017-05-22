@@ -58,7 +58,7 @@ namespace KDSWPFClient
                 // получить отделы со службы
                 setDepartmentsFromService();
                 // прочитать из конфига отделы для отображения и сохранить их в _deps
-                string[] cfgDepUIDs = ConfigHelper.GetDepartmentsUID();
+                string[] cfgDepUIDs = AppLib.GetDepartmentsUID();
                 if (cfgDepUIDs != null)
                 {
                     DepartmentViewModel curDep;

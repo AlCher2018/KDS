@@ -1,4 +1,6 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.Model;
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -41,17 +43,111 @@ namespace KDSWPFClient.View
                 listBoxDepartments.ItemsSource = _deps.Values;
             }
 
-            string cfgValue = AppLib.GetAppSetting("KDSMode");
-            if (cfgValue.IsNull() == false)
-            {
-
-            }
-
             _cfgValKeeper.AddPreValue("depUIDs", true, null);
             _cfgValKeeper.AddPreValue("IsWriteTraceMessages", true, chkIsWriteTraceMessages);
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
             _cfgValKeeper.AddPreValue("AppFontScale", true, null);
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", true, tbxOrdersColumnsCount);
+
+            if (setStatusCordElements() == false)
+            {
+                rbCook.IsChecked = true;   // по умолчанию
+                _cfgValKeeper.AddPreValueDirectly("KDSMode", "null");
+            }
+            else
+            {
+                _cfgValKeeper.AddPreValueDirectly("KDSMode", getKDSModeFromRadioButtons());
+            }
+
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStates = getStatesCheckBoxes();
+            string sStates = StateGraphHelper.StatusCordsToString(allowedStates);
+            _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", sStates);
+        }
+
+        private string getKDSModeFromRadioButtons()
+        {
+            string retVal = null;
+            List<RadioButton> rbList = lbxKDSMode.Items.OfType<RadioButton>().ToList();
+            foreach (RadioButton item in rbList)
+            {
+                if (item.IsChecked ?? false)
+                {
+                    KDSModeEnum mode;
+                    if (Enum.TryParse<KDSModeEnum>(item.Tag.ToString(), out mode)) retVal = mode.ToString();
+                }
+            }
+            return retVal;
+        }
+
+        private bool setStatusCordElements()
+        {
+            bool retVal = false;
+            // предопределенная роль - lbxKDSMode
+            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            if (!cfgValue.IsNull())
+            {
+                KDSModeEnum mode;
+                if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode))
+                {
+                    string sMode = ((int)mode).ToString();  // числовое значение режима в символьном виде
+                    List<RadioButton> rbList = lbxKDSMode.Items.OfType<RadioButton>().ToList();
+                    RadioButton rb = rbList.FirstOrDefault(e => e.Tag.ToString().Equals(sMode));
+                    if (rb != null) rb.IsChecked = true;
+
+                    // флажки состояний
+                    List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetAllowedStatesFromConfigFile();
+                    setStatesCheckBoxes(tList);
+                    setEnableStateCordsListBox(mode);
+
+                    retVal = true;
+                }  // if
+            }  // if
+
+            return retVal;
+        }  // method
+
+
+        //  запретить изменять состояния, если роль предопределенная
+        private void setEnableStateCordsListBox(KDSModeEnum mode)
+        {
+            lbxStateCords.IsEnabled = !((mode == KDSModeEnum.Cook) || (mode == KDSModeEnum.Chef) || (mode == KDSModeEnum.Waiter));
+        }
+
+
+        private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> getStatesCheckBoxes()
+        {
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+
+            List<CheckBox> cbList = lbxStateCords.Items.OfType<CheckBox>().ToList();
+            foreach (CheckBox item in cbList)
+            {
+                if (item.IsChecked??false)
+                {
+                    retVal.Add(StateGraphHelper.StringToStatusCord(item.Tag.ToString()));
+                }
+            }
+
+            return retVal;
+        }
+
+        private void setStatesCheckBoxes(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList)
+        {
+            List<CheckBox> cbList = lbxStateCords.Items.OfType<CheckBox>().ToList();
+            cbList.ForEach(e => e.IsChecked = false);  // снять все флажки
+
+            if (tList == null) return;
+
+            CheckBox cb;
+            string sBuf;
+            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in tList)
+            {
+                sBuf = (int)item.Key + "," + (int)item.Value;
+                if (cbList != null)
+                {
+                    cb = cbList.FirstOrDefault(e => e.Tag.Equals(sBuf));
+                    if (cb != null) cb.IsChecked = true;
+                }
+            }
         }
 
         private string getIsViewDepIds()
@@ -76,9 +172,21 @@ namespace KDSWPFClient.View
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
+            // новые значения из списков
             string sBuf = getIsViewDepIds();
             _cfgValKeeper.PutNewValueDirectly("depUIDs", sBuf);
+
+            _cfgValKeeper.PutNewValueDirectly("KDSMode", getKDSModeFromRadioButtons());
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStates = getStatesCheckBoxes();
+            // сохранить в свойствах приложения
+            AppLib.SetAppGlobalValue("StatesAllowedForMove", allowedStates);
+            sBuf = StateGraphHelper.StatusCordsToString(allowedStates);
+            _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialStates", sBuf);
+
+            // новые значения из контролов
             _cfgValKeeper.PutNewValueFromControls();
+
+            // собрать словарь новых значений
             Dictionary<string, string> appSettings = _cfgValKeeper.GetNewValuesDict();
             // сделаны ли какие-нибудь изменения?
             if (appSettings.Count > 0)
@@ -287,6 +395,18 @@ namespace KDSWPFClient.View
         } // class CfgValue
         #endregion
 
+        private void rbKDSMode_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton rbChecked = (RadioButton)sender;
+            KDSModeEnum kdsMode;
+            if (Enum.TryParse<KDSModeEnum>(rbChecked.Tag.ToString(), out kdsMode))
+            {
+                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetAllowedStatesForKDSMode(kdsMode);
+                setStatesCheckBoxes(tList);
+                setEnableStateCordsListBox(kdsMode);
+            }
+
+        }
     }  // class ConfigEdit
 
 }

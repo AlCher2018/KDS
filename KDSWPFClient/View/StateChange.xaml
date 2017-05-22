@@ -1,0 +1,59 @@
+﻿<Window x:Class="KDSWPFClient.View.StateChange"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KDSWPFClient.View"
+        mc:Ignorable="d"
+        x:Name="mbWindow"
+        Height="720" Width="1280"
+        WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="#88000000"
+        DataContext="{Binding RelativeSource={RelativeSource Self}, Mode=OneWay}"
+        Title="StateChange">
+
+    <Grid x:Name="mainGrid" Width="640" Height="360" VerticalAlignment="Center" HorizontalAlignment="Center" Background="White">
+        <Grid.Effect>
+            <DropShadowEffect ShadowDepth="30" BlurRadius="15" Opacity="0.5" />
+        </Grid.Effect>
+
+        <Grid.RowDefinitions>
+            <!-- title -->
+            <RowDefinition Height="Auto"/>
+            <!-- message -->
+            <RowDefinition Height="0.7*"/>
+            <!-- buttons -->
+            <RowDefinition Height="*"/>
+            <!-- close button -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- title -->
+        <Border x:Name="borderTitle" Grid.Row="0" Background="LightSteelBlue">
+            <TextBlock x:Name="textTitle" Text="{Binding Title, ElementName=mbWindow, Mode=OneWay}"/>
+        </Border>
+
+        <Border Grid.Row="1" Background="AliceBlue">
+            <TextBlock x:Name="tbMessage" TextWrapping="Wrap" TextAlignment="Left" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Text="Заказ "/>
+            <Run x:Name="runOrderNumber" FontWeight="Bold"/>
+            <Underline><Run x:Name="runDishText"/></Underline>
+            <Run Text=" находится в состоянии "/>
+            <Run x:Name="runState" FontWeight="Bold"/>
+            </TextBlock>
+        </Border>
+
+        <TextBlock x:Name="tbNoAllowedStates" Grid.Row="2" Text="Нет доступных действий" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <Border x:Name="btnState1">
+                <TextBlock x:Name="tbState1"/>
+            </Border>
+            <Border x:Name="btnState2">
+                <TextBlock x:Name="tbState2" />
+            </Border>
+        </StackPanel>
+        
+        <Button x:Name="btnClose" Grid.Row="3" Content="Закрыть окно БЕЗ изменения состояния" HorizontalAlignment="Right" Click="btnClose_Click"/>
+        
+    </Grid>
+</Window>

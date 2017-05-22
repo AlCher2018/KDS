@@ -136,21 +136,20 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <ListBox BorderBrush="DarkGray" BorderThickness="1">
-                        <CheckBox Content="Начать приготовление блюда/заказа" Margin="4"/>
-                        <CheckBox Content="Закончить приготовление блюда/заказа" Margin="4"/>
-                        <CheckBox Content="Забрать блюдо и отнести клиенту" Margin="4"/>
-                        <CheckBox Content="Отменить блюдо/заказ" Margin="4"/>
-                        <CheckBox Content="Подтвердить отмену блюда/заказа" Margin="4"/>
+                    <ListBox x:Name="lbxStateCords" BorderBrush="DarkGray" BorderThickness="1">
+                        <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
+                        <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
+                        <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту" Margin="5,7" IsThreeState="False"/>
+                        <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа" Margin="5,7" IsThreeState="False"/>
                     </ListBox>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="20,0,0,0">
                     <TextBlock Text="или выберите режим работы КДС:"/>
-                    <ListBox>
-                        <RadioButton Content="КУХНЯ" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
-                        <RadioButton Content="ОФИЦИАНТ" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
-                        <RadioButton Content="МЕНЕДЖЕР" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
-                        <RadioButton Content="особый" Margin="5" GroupName="kdsMode" IsThreeState="False"/>
+                    <ListBox x:Name="lbxKDSMode">
+                        <RadioButton x:Name="rbCook" Content="ПОВАР" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="1" Checked="rbKDSMode_Checked"/>
+                        <RadioButton x:Name="rbChef" Content="ШЕФ-ПОВАР" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="2" Checked="rbKDSMode_Checked"/>
+                        <RadioButton x:Name="rbWaiter" Content="ОФИЦИАНТ" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="3" Checked="rbKDSMode_Checked"/>
+                        <RadioButton x:Name="rbSpecial" Content="особый" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="4" Checked="rbKDSMode_Checked"/>
                     </ListBox>
                 </StackPanel>
             </Grid>

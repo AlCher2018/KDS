@@ -165,6 +165,28 @@ namespace KDSWPFClient.Lib
 
             return retVal;
         }
+
+        public static Point GetWindowTopLeftPoint(Window window)
+        {
+            double left, top;
+            if (window.WindowState == WindowState.Maximized)
+            {
+                var leftField = typeof(Window).GetField("_actualLeft", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                left = (double)leftField.GetValue(window);
+            }
+            else
+                left = window.Left;
+
+            if (window.WindowState == WindowState.Maximized)
+            {
+                var leftField = typeof(Window).GetField("_actualTop", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                top = (double)leftField.GetValue(window);
+            }
+            else
+                top = window.Top;
+
+            return new Point(left, top);
+        }
         #endregion
 
         #region app settings
@@ -261,6 +283,10 @@ namespace KDSWPFClient.Lib
 
                 //Save the changes to the config file.
                 document.Save(filename, SaveOptions.DisableFormatting);
+
+                // Force a reload of a changed section.
+                ConfigurationManager.RefreshSection("appSettings");
+
                 return true;
             }
             catch (Exception ex)
@@ -315,82 +341,6 @@ namespace KDSWPFClient.Lib
 
         #endregion
 
-        #region переходы состояний блюда/заказа
-        // переход - это ребра графа, соединяющие два состояния {OrderStatusEnum, OrderSatusEnum}
-        // представлен структурой KeyValuePair, в которой Key - состояние ИЗ которого переходим, Value - состояние В которое переходим
-        public static List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> GetStatusCordsFromConfigFile(string cfgKey)
-        {
-            if (cfgKey.IsNull()) return null;
-            string sBuf = GetAppSetting(cfgKey);
-            if (sBuf.IsNull()) return null;
-
-            return StringToStatusCords(sBuf);
-        }
-
-        public static void PutStatusCordsToConfigFile(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> cords, string key)
-        {
-            string sCords = StatusCordsToString(cords);
-            if (sCords.IsNull() == false)
-            {
-                string errMsg;
-                Dictionary<string, string> appSetDict = new Dictionary<string, string>();
-                appSetDict.Add(key, sCords);
-
-                SaveAppSettings(appSetDict, out errMsg);
-            }
-        }
-
-        public static string StatusCordToString(KeyValuePair<OrderStatusEnum, OrderStatusEnum> cord)
-        {
-            return cord.Key + "," + cord.Value;
-        }
-
-        public static KeyValuePair<OrderStatusEnum, OrderStatusEnum> StringToStatusCord(string strCord)
-        {
-            KeyValuePair<OrderStatusEnum, OrderStatusEnum> cord = new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.None, OrderStatusEnum.None);
-            if (strCord.IsNull() == false)
-            {
-                string[] aStr = strCord.Split(',');
-                if (aStr.Length == 2)
-                {
-                    OrderStatusEnum eStatFrom, eStatTo;
-                    if (Enum.TryParse(aStr[0], out eStatFrom) && Enum.TryParse(aStr[1], out eStatTo)) cord = new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo);
-                }
-            }
-
-            return cord;
-        }
-
-        public static string StatusCordsToString(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> cords)
-        {
-            string retVal = "";
-
-            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in cords)
-            {
-                if (retVal.Length > 0) retVal += ";";
-                retVal += StatusCordToString(item);
-            }
-
-            return retVal;
-        }
-
-        public static List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> StringToStatusCords(string strCords)
-        {
-            if (strCords.IsNull()) return null;
-
-            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
-            string[] astrCords = strCords.Split(';');
-
-            foreach (string item in astrCords)
-            {
-                retVal.Add(StringToStatusCord(item));
-            }
-
-            return (retVal.Count == 0) ? null : retVal;
-        }
-
-        #endregion
-
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
         public static string[] GetDepartmentsUID()
@@ -399,6 +349,11 @@ namespace KDSWPFClient.Lib
             if (sBuf != null) return sBuf.Split(',');
 
             return null;
+        }
+
+        public static OrderStatusEnum GetStatusEnumFromInt(int statusId)
+        {
+            return (OrderStatusEnum)statusId;
         }
 
 

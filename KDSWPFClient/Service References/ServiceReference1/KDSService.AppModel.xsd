@@ -45,7 +45,7 @@
       <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Number" type="xs:int" />
-      <xs:element minOccurs="0" name="Status" type="tns:OrderStatusEnum" />
+      <xs:element minOccurs="0" name="OrderStatusId" type="xs:int" />
       <xs:element minOccurs="0" name="TableName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Waiter" nillable="true" type="xs:string" />
@@ -58,13 +58,13 @@
       <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
       <xs:element minOccurs="0" name="Department" nillable="true" type="tns:DepartmentModel" />
+      <xs:element minOccurs="0" name="DishStatusId" type="xs:int" />
       <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="ParentUid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Quantity" type="xs:decimal" />
       <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="Status" type="tns:OrderStatusEnum" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="WaitingTimerString" nillable="true" type="xs:string" />
     </xs:sequence>

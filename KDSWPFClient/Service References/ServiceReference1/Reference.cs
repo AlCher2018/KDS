@@ -224,7 +224,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private int NumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSWPFClient.ServiceReference1.OrderStatusEnum StatusField;
+        private int OrderStatusIdField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string TableNameField;
@@ -314,14 +314,14 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSWPFClient.ServiceReference1.OrderStatusEnum Status {
+        public int OrderStatusId {
             get {
-                return this.StatusField;
+                return this.OrderStatusIdField;
             }
             set {
-                if ((this.StatusField.Equals(value) != true)) {
-                    this.StatusField = value;
-                    this.RaisePropertyChanged("Status");
+                if ((this.OrderStatusIdField.Equals(value) != true)) {
+                    this.OrderStatusIdField = value;
+                    this.RaisePropertyChanged("OrderStatusId");
                 }
             }
         }
@@ -407,6 +407,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private KDSWPFClient.ServiceReference1.DepartmentModel DepartmentField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int DishStatusIdField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int FilingNumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -423,9 +426,6 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string ServiceErrorMessageField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSWPFClient.ServiceReference1.OrderStatusEnum StatusField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string UidField;
@@ -478,6 +478,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.DepartmentField, value) != true)) {
                     this.DepartmentField = value;
                     this.RaisePropertyChanged("Department");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int DishStatusId {
+            get {
+                return this.DishStatusIdField;
+            }
+            set {
+                if ((this.DishStatusIdField.Equals(value) != true)) {
+                    this.DishStatusIdField = value;
+                    this.RaisePropertyChanged("DishStatusId");
                 }
             }
         }
@@ -556,19 +569,6 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
                     this.ServiceErrorMessageField = value;
                     this.RaisePropertyChanged("ServiceErrorMessage");
-                }
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSWPFClient.ServiceReference1.OrderStatusEnum Status {
-            get {
-                return this.StatusField;
-            }
-            set {
-                if ((this.StatusField.Equals(value) != true)) {
-                    this.StatusField = value;
-                    this.RaisePropertyChanged("Status");
                 }
             }
         }

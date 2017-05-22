@@ -77,6 +77,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="ViewModel\KDSModeEnum.cs" />
     <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
@@ -88,6 +89,9 @@
     </Compile>
     <Compile Include="View\OrderPanelHeader.xaml.cs">
       <DependentUpon>OrderPanelHeader.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\StateChange.xaml.cs">
+      <DependentUpon>StateChange.xaml</DependentUpon>
     </Compile>
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -122,6 +126,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\OrderPanelHeader.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\StateChange.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

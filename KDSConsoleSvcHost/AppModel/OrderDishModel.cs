@@ -50,7 +50,9 @@ namespace KDSService.AppModel
         public string Comment { get; set; }
 
         [DataMember]
-        public OrderStatusEnum Status { get; set; }
+        public int DishStatusId { get; set; }
+
+        private OrderStatusEnum Status { get; set; }
 
         [DataMember]
         public DepartmentModel Department
@@ -138,6 +140,7 @@ namespace KDSService.AppModel
             Quantity = dbDish.Quantity;
             DelayedStartTime = dbDish.DelayedStartTime;
             EstimatedTime = dbDish.EstimatedTime;
+            DishStatusId = dbDish.DishStatusId??0;
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
             // объект отдела взять из справочника
@@ -214,6 +217,7 @@ namespace KDSService.AppModel
                 if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
 
                 // статус блюда
+                if (DishStatusId != (dbDish.DishStatusId??0)) DishStatusId = (dbDish.DishStatusId??0);
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 
                 if (newStatus <= OrderStatusEnum.WaitingCook)
@@ -305,6 +309,7 @@ namespace KDSService.AppModel
 
                     // сохранить новый статус в объекте
                     Status = newStatus;
+                    DishStatusId = (int)newStatus;
 
                     // поменять статус и запустить таймеры для ингредиентов
                     if (this.ParentUid.IsNull())
