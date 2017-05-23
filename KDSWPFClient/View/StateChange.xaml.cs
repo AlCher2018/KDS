@@ -27,7 +27,10 @@ namespace KDSWPFClient.View
 
         public bool IsShowTitle { get; set; }
 
+        private AppDataProvider _dataProvider;
         private AppViewModelEnum _modelType;
+        private OrderStatusEnum _currentState;
+
         // разрешенные переходы
         private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> _allowedStates;
 
@@ -37,6 +40,8 @@ namespace KDSWPFClient.View
             InitializeComponent();
 
             this.Loaded += StateChange_Loaded;
+
+            _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
         }
 
         private void StateChange_Loaded(object sender, RoutedEventArgs e)
@@ -44,6 +49,7 @@ namespace KDSWPFClient.View
             IsShowTitle = true;
             setModelType();
 
+            _currentState = (OrderStatusEnum)((_modelType == AppViewModelEnum.Order) ? Order.OrderStatusId : Dish.DishStatusId);
             _allowedStates = (List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>)AppLib.GetAppGlobalValue("StatesAllowedForMove");
 
             setWinLayout();
@@ -72,10 +78,10 @@ namespace KDSWPFClient.View
                     this.Title = "Изменение состояния ----";
                     break;
                 case AppViewModelEnum.Order:
-                    this.Title = "Изменение состояния ЗАКАЗА № " + Order.Number;
+                    this.Title = "Изменение состояния ЗАКАЗА";
                     break;
                 case AppViewModelEnum.Dish:
-                    this.Title = "Изменение состояния БЛЮДА \"" + Dish.DishName + "\"";
+                    this.Title = "Изменение состояния БЛЮДА";
                     break;
                 default:
                     break;
@@ -100,6 +106,7 @@ namespace KDSWPFClient.View
             tbMessage.Margin = new Thickness(messageFontSize, 0.5*messageFontSize, messageFontSize, 0.5*messageFontSize);
             runOrderNumber.Text = (Order == null) ? "---" : Order.Number.ToString();
             runDishText.Text = (Dish == null) ? "" : ", блюдо \"" + Dish.DishName + "\"";
+            runState.Text = (Dish == null) ? "---" : Dish.Status.ToString();
 
             // кнопки переходов
             double pnlWidth = pnlStateButtons.ActualWidth;
@@ -109,10 +116,9 @@ namespace KDSWPFClient.View
             // если есть объект приложения (заказ / блюдо), то настроить кнопки переходов в другие состояния
             if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish))
             {
-                // текущее состояние
-                OrderStatusEnum currentState = (OrderStatusEnum)((_modelType == AppViewModelEnum.Order) ? Order.OrderStatusId : Dish.DishStatusId);
                 // из разрешенных переходов выбрать переходы для текущего состояния
-                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState  = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == currentState));
+                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState = null;
+                if (_allowedStates != null) allowedStatesForCurrentState = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == _currentState));
 
                 if ((allowedStatesForCurrentState == null) || (allowedStatesForCurrentState.Count == 0))
                 {
@@ -287,13 +293,13 @@ namespace KDSWPFClient.View
             {
                 _modelType = AppViewModelEnum.None;
             }
-            else if (Order != null)
-            {
-                _modelType = AppViewModelEnum.Order;
-            }
             else if (Dish != null)
             {
                 _modelType = AppViewModelEnum.Dish;
+            }
+            else 
+            {
+                _modelType = AppViewModelEnum.Order;
             }
         }
 

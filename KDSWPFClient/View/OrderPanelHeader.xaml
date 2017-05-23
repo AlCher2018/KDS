@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:KDSWPFClient.View"
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
-             Name="root"
+             Name="root" MouseUp="root_MouseUp"
              d:DesignHeight="100" d:DesignWidth="300">
 
     <UserControl.Resources>

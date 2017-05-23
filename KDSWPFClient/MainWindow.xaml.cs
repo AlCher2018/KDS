@@ -20,8 +20,8 @@ namespace KDSWPFClient
     public partial class MainWindow : Window
     {
         private static Timer _timer;   // статический, чтобы не было повторяющихся чисел
-        private static AppDataProvider _dataProvider;
-        public AppDataProvider DataProvider { set { _dataProvider = value; } }
+
+        private AppDataProvider _dataProvider;
 
         // страницы заказов
         private OrdersPages _pages;
@@ -41,6 +41,8 @@ namespace KDSWPFClient
 
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
+
+            _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
             double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);

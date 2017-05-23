@@ -50,6 +50,24 @@ namespace KDSWPFClient.View
             //}
         }
 
+        private void root_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void root_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            OrderDishViewModel dishView = (OrderDishViewModel)grdDishLine.DataContext;
+            OrderViewModel orderView = null;
+            FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
+            if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
+
+            StateChange win = new StateChange() { Order = orderView, Dish = dishView };
+
+            win.ShowDialog();
+
+        //    MessageBox.Show(string.Format("dish id {0} - {1}, state {2}",dishView.Id, dishView.DishName, dishView.Status));
+        }
 
     }  // class
 }

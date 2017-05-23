@@ -73,7 +73,7 @@ namespace KDSWPFClient.View
             Size availableSize = new Size(_colWidth, dishesPanelHeight);
 
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
-            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth);
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
             ordTop = _curTopValue; // отступ сверху панели заказа
 #if DEBUG_LAYOUT
@@ -118,7 +118,7 @@ namespace KDSWPFClient.View
                         Debug.Print("  - BREAK order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
 #endif
                         //  и создать новый OrderPanel для текущего блюда с заголовком таблицы
-                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth);
+                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
                         ordPnl.Measure(availableSize);
                         setNextColumn();
                         ordTop = 0d; _curTopValue = ordPnl.DesiredSize.Height;

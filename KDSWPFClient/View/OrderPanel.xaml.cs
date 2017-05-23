@@ -17,21 +17,29 @@ namespace KDSWPFClient.View
     {
         private double _fontSize;
         private int _pageIndex;
+        private OrderViewModel _orderView;
+
+        public OrderViewModel OrderViewModel { get { return _orderView; } }
 
         public int PageIndex { get { return _pageIndex; } }
 
         // ctor
-        public OrderPanel(OrderViewModel orderView, int pageIndex, double width)
+        public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
         {
             InitializeComponent();
 
             _pageIndex = pageIndex; base.Width = width;
 
+            _orderView = orderView;
             orderView.ViewPanel = this;
-            // создать заголовок заказа
-            OrderPanelHeader hdrPnl = new OrderPanelHeader(orderView);
-            // и добавить его к заказу
-            this.grdHeader.Children.Add(hdrPnl);
+
+            if (isCreateHeaderPanel)
+            {
+                // создать заголовок заказа
+                OrderPanelHeader hdrPnl = new OrderPanelHeader(_orderView);
+                // и добавить его к заказу
+                this.grdHeader.Children.Add(hdrPnl);
+            }
 
             double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d

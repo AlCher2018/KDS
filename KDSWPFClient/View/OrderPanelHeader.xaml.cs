@@ -22,7 +22,6 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class OrderPanelHeader : UserControl
     {
-        private OrderViewModel _order;
 
         #region dependency properties
         public static readonly DependencyProperty PanelWidthProperty = DependencyProperty.Register("PanelWidth", typeof(double), typeof(OrderPanelHeader), new PropertyMetadata(300d));
@@ -77,8 +76,7 @@ namespace KDSWPFClient.View
         {
             InitializeComponent();
             
-            _order = order;
-            grdHeader.DataContext = _order;
+            grdHeader.DataContext = order;
 
             double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
 
@@ -96,5 +94,11 @@ namespace KDSWPFClient.View
             tbOrderCookingCounter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
         }
 
+        private void root_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
+            MessageBox.Show(string.Format("order id {0}, number {1}, state {2}", orderView.Id, orderView.Number, orderView.Status));
+
+        }
     }// class 
 }

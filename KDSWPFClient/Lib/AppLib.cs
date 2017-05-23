@@ -11,6 +11,7 @@ using System.Data;
 using System.Data.SqlClient;
 using KDSWPFClient.ServiceReference1;
 using System.Xml.Linq;
+using System.Windows.Media;
 
 namespace KDSWPFClient.Lib
 {
@@ -337,6 +338,39 @@ namespace KDSWPFClient.Lib
                 double appHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
                 return (appWidth < appHeight);
             }
+        }
+
+        public static FrameworkElement FindVisualParent(FrameworkElement elementFrom, Type findType, string elementName)
+        {
+            if (elementFrom == null) return null;
+
+            DependencyObject parent = elementFrom;
+
+            bool isContinue; string sName;
+            while (parent != null)
+            {
+                if (!(parent is DependencyObject)) break;
+
+                isContinue = false;
+                sName = (parent as FrameworkElement).Name;
+
+                if ((findType != null) && !parent.GetType().Equals(findType)) isContinue = true;
+                if (!isContinue && !elementName.IsNull() && !sName.IsNull() && !elementName.Equals(sName)) isContinue = true;
+
+                if (isContinue)
+                {
+                    parent = VisualTreeHelper.GetParent(parent);
+
+                    if (parent == null) break;
+                    if ((parent is Window) || (parent is Page)) { parent = null; break; }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return (parent == null) ? null : parent as FrameworkElement;
         }
 
         #endregion

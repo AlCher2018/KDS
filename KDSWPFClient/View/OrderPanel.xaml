@@ -14,7 +14,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid >
+    <Grid x:Name="grdOrderPanel">
         <Grid.RowDefinitions>
             <!-- 0. строка заголовка заказа, может содержать OrderPanelHeader-->
             <RowDefinition Height="Auto"/>

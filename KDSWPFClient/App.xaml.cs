@@ -61,11 +61,10 @@ namespace KDSWPFClient
                 Environment.Exit(2);
             }
             AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService... Ok");
-
+            AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // основное окно приложения
             MainWindow mainWindow = new MainWindow();
-            mainWindow.DataProvider = dataProvider;
             app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
