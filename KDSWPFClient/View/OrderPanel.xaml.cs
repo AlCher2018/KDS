@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-
+using KDSWPFClient.ViewModel;
 
 namespace KDSWPFClient.View
 {
@@ -16,11 +16,22 @@ namespace KDSWPFClient.View
     public partial class OrderPanel : UserControl
     {
         private double _fontSize;
+        private int _pageIndex;
+
+        public int PageIndex { get { return _pageIndex; } }
 
         // ctor
-        public OrderPanel()
+        public OrderPanel(OrderViewModel orderView, int pageIndex, double width)
         {
             InitializeComponent();
+
+            _pageIndex = pageIndex; base.Width = width;
+
+            orderView.ViewPanel = this;
+            // создать заголовок заказа
+            OrderPanelHeader hdrPnl = new OrderPanelHeader(orderView);
+            // и добавить его к заказу
+            this.grdHeader.Children.Add(hdrPnl);
 
             double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
@@ -34,10 +45,6 @@ namespace KDSWPFClient.View
 
         }
 
-        public void SetHeader(FrameworkElement header)
-        {
-            this.grdHeader.Children.Add(header);
-        }
 
         public void AddDish(DishPanel dishPanel)
         {

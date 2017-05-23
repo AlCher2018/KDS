@@ -93,7 +93,7 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
-            updateOrders();
+            this.Dispatcher.Invoke(new Action(updateOrders));
 
             _timer.Start();
         }  // method
@@ -107,47 +107,80 @@ namespace KDSWPFClient
             //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
             //Debug.Print(s);
 
-            // получение заказов
+            // получить заказы от сервиса
             List<OrderModel> svcOrders = _dataProvider.GetOrders();
             if (svcOrders == null) return;
 
             // удалить из svcOrders блюда, не входящие в условия фильтрации
             _delOrderIds.Clear(); _delDishIds.Clear();
-            foreach (OrderModel ord in svcOrders)
+            foreach (OrderModel orderMode in svcOrders)
             {
-                // собрать ключи для удаления
-                foreach (KeyValuePair<int, OrderDishModel> item in ord.Dishes)
+                // собрать Id блюд для удаления
+                foreach (KeyValuePair<int, OrderDishModel> item in orderMode.Dishes)
                     if (_valueDishChecker.Checked(item.Value) == false) _delDishIds.Add(item.Key);
-                _delDishIds.ForEach(key => ord.Dishes.Remove(key)); // удалить неразрешенные блюда
-                if (ord.Dishes.Count == 0) _delOrderIds.Add(ord);
+
+                _delDishIds.ForEach(key => orderMode.Dishes.Remove(key)); // удалить неразрешенные блюда
+
+                if (orderMode.Dishes.Count == 0) _delOrderIds.Add(orderMode);
             }
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
             Debug.Print("orders {0}", svcOrders.Count);
             svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
-            
-            // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ orders
-            // удаление заказов
-            IEnumerable<int> delKeys = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id));
-            foreach (int key in delKeys) _viewOrders.Remove(_viewOrders.Find(vo => vo.Id == key));
 
+            // *****
+            //  В svcOrder<orderModel> НАХОДИТСЯ СПИСОК, КОТОРЫЙ НЕОБХОДИМО ОТОБРАЗИТЬ НА ЭКРАНЕ
+            // *****
+            // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ svcOrders
+            bool isViewRepaint = false;   // признак необходимости перерисовать панели заказов на экране
+            // удаление заказов
+            List<int> delIds = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id)).ToList();
+            OrderViewModel orderView;
+            foreach (int delId in delIds)
+            {
+                orderView = _viewOrders.Find(vo => vo.Id == delId);
+                if (orderView != null)
+                {
+                    //_pages.RemoveOrderPanel(orderView);  // удалить панель заказа со страницы
+                    _viewOrders.Remove(orderView);  // удалить заказ из внутр.коллекции
+                }
+                if (isViewRepaint == false) isViewRepaint = true;   // перерисовать
+            }
+            // обновление списка блюд в заказах
             foreach (OrderModel svcOrder in svcOrders)
             {
-                OrderViewModel ovm = _viewOrders.FirstOrDefault(o => o.Id == svcOrder.Id);
-                if (ovm == null)
+                orderView = _viewOrders.FirstOrDefault(o => o.Id == svcOrder.Id);
+                if (orderView == null)   // из БД (от службы) пришел новый заказ! - добавить заказ в _viewOrders
                 {
-                    // добавление заказа в словарь
                     _viewOrders.Add(new OrderViewModel(svcOrder));
+                    if (isViewRepaint == false) isViewRepaint = true;   // перерисовать
                 }
                 else
                 {
-                    // обновить существующий заказ
-                    //curOrder = _orders[dbOrder.Id];
-                    //curOrder.UpdateFromDBEntity(dbOrder);
+                    orderView.UpdateFromSvc(svcOrder);
+                    if (orderView.IsDishesListUpdated && !isViewRepaint) isViewRepaint = true;
                 }
             }
-        }
+
+            // перерисовать полностью
+            if (isViewRepaint == true)
+            {
+                DateTime dt = DateTime.Now;
+                _pages.ClearPages(); // очистить панели заказов
+                Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
+
+                // добавить заказы
+                dt = DateTime.Now;
+                _pages.AddOrdersPanels(_viewOrders);
+                Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
+
+                setChangePageButtonsState();
+
+                this.vbxOrders.Child = _pages.CurrentPage;
+            }
+
+        }  // method
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -164,21 +197,6 @@ namespace KDSWPFClient
         }
 
 
-        private void updateViewOrders()
-        {
-            DateTime dt = DateTime.Now;
-            _pages.Clear(); // очистить панели заказов
-            Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
-
-            // добавить заказы
-            dt = DateTime.Now;
-            _pages.AddOrders(_viewOrders);
-            Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
-
-            setChangePageButtonsState();
-
-            this.vbxOrders.Child = _pages.CurrentPage;
-        }  // method
 
         private void setChangePageButtonsState()
         {

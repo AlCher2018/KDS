@@ -93,6 +93,7 @@
     <Compile Include="View\StateChange.xaml.cs">
       <DependentUpon>StateChange.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModel\StatusEnum.cs" />
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

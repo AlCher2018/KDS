@@ -117,17 +117,22 @@ namespace KDSWPFClient
             AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
             //   отступ между заказами по вертикали
             AppLib.SetAppGlobalValue("ordPnlTopMargin", 50d);
+            // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
-            //    заголовок заказа
             AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
             AppLib.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
             AppLib.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
             AppLib.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
-            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 20d);
+            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
             //    шрифт заголовка таблицы блюд
             AppLib.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
-            //    шрифт строки блюда
-            AppLib.SetAppGlobalValue("ordPnlDishLineFontSize", 24d);
+            // ** СТРОКА БЛЮДА
+            // шрифт строки блюда
+            AppLib.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
+            // минимальная высота строки блюда
+            double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("screenHeight") / 20d;
+            AppLib.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
+
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
         }

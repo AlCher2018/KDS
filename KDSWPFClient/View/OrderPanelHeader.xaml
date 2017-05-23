@@ -4,23 +4,44 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:KDSWPFClient.View"
+             xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
              Name="root"
-             d:DesignHeight="100" d:DesignWidth="300"
-             DataContext="{Binding RelativeSource={RelativeSource Self}}"
-             >
+             d:DesignHeight="100" d:DesignWidth="300">
 
     <UserControl.Resources>
         <Style x:Key="rowMarginStyle" TargetType="FrameworkElement">
             <Setter Property="Margin" Value="{Binding ActualWidth, ConverterParameter='0.02,0,0.02,0', Converter={StaticResource getMargin}, ElementName=root, Mode=OneWay}"/>
         </Style>
+
+        <Style x:Key="mainBackgroundStyle" TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.WaitingCook}">
+                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushWaitingCook}"/>
+                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushWaitingCook}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cooking}">
+                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCooking}"/>
+                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCooking}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Ready}">
+                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushReady}"/>
+                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushReady}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cancelled}">
+                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCancelled}"/>
+                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCancelled}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Took}">
+                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushTook}"/>
+                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushTook}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         
         <!-- стили закругленных углов в рамках -->
         <Style x:Key="cornRadAllStyle" TargetType="Border">
             <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter=0.025, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
-        </Style>
-        <Style x:Key="cornRadTopStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
         </Style>
         <Style x:Key="cornRadBottomStyle" TargetType="Border">
             <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0,0,0.03,0.03', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
@@ -28,7 +49,7 @@
     </UserControl.Resources>
     
     <!-- строка заголовка, содержит 3 строки -->
-    <Grid x:Name="grdHeader" Background="Transparent">
+    <Grid x:Name="grdHeader">
         <Grid.RowDefinitions>
             <!-- 0. наимен.стола и номер заказа -->
             <RowDefinition Height="1.2*"/>
@@ -39,42 +60,49 @@
         </Grid.RowDefinitions>
         
         <!-- строка с наимен.стола и номером заказа -->
-        <Border x:Name="brdHrdTableRow" Style="{StaticResource cornRadTopStyle}" Background="Yellow" BorderBrush="DarkBlue" BorderThickness="1,1,1,0">
+        <Border x:Name="brdHrdTableRow" Style="{StaticResource mainBackgroundStyle}" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
             <Grid x:Name="grdHdrTableRow" Grid.Row="0" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock x:Name="tbTableLabel" Text="Стол № " VerticalAlignment="Center"/>
-                    <TextBlock x:Name="tbTableName" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding TableName, ElementName=root}"/>
-                </StackPanel>
-                <TextBlock x:Name="tbOrderNumber" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Text="{Binding ElementName=root, Path=OrderNumber}"/>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                    <Run x:Name="tbTableLabel1" Text="Стол №: "/>
+                    <Run x:Name="tbTableName" FontWeight="Bold" Text="{Binding TableName}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Run x:Name="tbTableLabel2" Text="Заказ №: "/>
+                    <Run x:Name="tbOrderNumber" FontWeight="Bold" Text="{Binding Number}"/>
+                </TextBlock>
             </Grid>
         </Border>
         
         <!-- официант -->
-        <Border Grid.Row="1" Background="Yellow" BorderBrush="DarkBlue" BorderThickness="1,0,1,0">
+        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" Style="{StaticResource mainBackgroundStyle}">
             <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
-                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding ElementName=root, Path=WaiterName}" FontWeight="Bold"/>
+                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold"/>
             </Grid>
         </Border>
         
         <!-- время создания заказа и счетчик приготовления -->
-        <Border Grid.Row="2" Background="White" BorderBrush="DarkBlue" BorderThickness="1">
+        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1" Style="{StaticResource mainBackgroundStyle}">
             <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="5*"/>
                     <ColumnDefinition Width="5*"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Column="0">
-                    <TextBlock x:Name="tbOrderDateLabel" Text="Создан в: " VerticalAlignment="Center"/>
-                    <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding ElementName=root, Path=CreateDate, Mode=OneWay, TargetNullValue='noDate', StringFormat={}{0:HH:mm:ss}}"/>
-                </StackPanel>
-                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="Aqua">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " VerticalAlignment="Center"/>
-                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition x:Name="createDateColumn"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="tbOrderDateLabel" Grid.Column="0" Text="Создан в: " VerticalAlignment="Center"/>
+                    <TextBlock x:Name="tbOrderDate" FontWeight="Bold" Grid.Column="1" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay}" TextWrapping="Wrap"/>
+                </Grid>
+                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="{StaticResource orderHeaderBackBrushTimer}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " VerticalAlignment="Center" Foreground="Black" FontWeight="Bold"/>
+                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource orderHeaderForeBrushTimer}" Text="{Binding WaitingTimerString}"/>
                     </StackPanel>
                 </Border>
             </Grid>

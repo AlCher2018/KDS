@@ -110,7 +110,7 @@ namespace KDSWPFClient.View
             if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish))
             {
                 // текущее состояние
-                OrderStatusEnum currentState = (OrderStatusEnum)((_modelType == AppViewModelEnum.Order) ? Order.OrderStatusId : (Dish.DishStatusId ?? 0));
+                OrderStatusEnum currentState = (OrderStatusEnum)((_modelType == AppViewModelEnum.Order) ? Order.OrderStatusId : Dish.DishStatusId);
                 // из разрешенных переходов выбрать переходы для текущего состояния
                 List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState  = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == currentState));
 

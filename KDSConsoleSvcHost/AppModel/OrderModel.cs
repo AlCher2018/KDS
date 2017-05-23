@@ -56,7 +56,7 @@ namespace KDSService.AppModel
                 {
                     TimeSpan tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
 
-                    retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
+                    retVal = (tsTimerValue.Days > 0) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
                     // отрицательное время
                     if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
                 }
@@ -80,9 +80,6 @@ namespace KDSService.AppModel
 
 
         // *** CONSTRUCTOR  ***
-        public OrderModel()
-        {}
-
         public OrderModel(Order dbOrder)
         {
             _dishesDict = new Dictionary<int, OrderDishModel>();
@@ -123,7 +120,7 @@ namespace KDSService.AppModel
 
                     _curTimer.InitDateTimeValue(initDT);
 
-                    setStatusRunTimeDTS(this.Status, initDT, 0);
+                    setStatusRunTimeDTS(this.Status, initDT, -1);
                     saveRunTimeRecord();
                 }
                 else
@@ -271,9 +268,11 @@ namespace KDSService.AppModel
                         // запись в RunTimeRecord
                         if (_dbRunTimeRecord != null)
                         {
-                            // сохраняем в записи RunTimeRecord дату входа в новое состояние и время нахождения в предыдущем состоянии
+                            // сохраняем в записи RunTimeRecord дату входа в новое состояние
+                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, -1);
+                            //  и время нахождения в предыдущем состоянии
                             setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
-                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
+
                             saveRunTimeRecord();
                         }
                         // сохранить новый статус в объекте
@@ -346,7 +345,7 @@ namespace KDSService.AppModel
 
             foreach (OrderDishModel modelDish in _dishesDict.Values)
             {
-                dt = modelDish.EnterStatusDict[(int)newStatus];  // словарь в блюде дат входов в состояния
+                dt = modelDish.EnterStatusDict[newStatus];  // словарь в блюде дат входов в состояния
                 if (dt > retVal) retVal = dt;
             }
 
@@ -435,22 +434,33 @@ namespace KDSService.AppModel
 
                 case OrderStatusEnum.WaitingCook:
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.InitDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCookTS = timeStanding;
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingCookTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Cooking:
-                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CookingStartDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.CookingTS = timeStanding;
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.CookingStartDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                    }
+                    if (timeStanding >= 0) _dbRunTimeRecord.CookingTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Ready:
-                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.ReadyDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.ReadyDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                    }
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Took:
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.TakeDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Cancelled:

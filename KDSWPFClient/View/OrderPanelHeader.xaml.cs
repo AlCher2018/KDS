@@ -1,4 +1,5 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,8 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class OrderPanelHeader : UserControl
     {
+        private OrderViewModel _order;
+
         #region dependency properties
         public static readonly DependencyProperty PanelWidthProperty = DependencyProperty.Register("PanelWidth", typeof(double), typeof(OrderPanelHeader), new PropertyMetadata(300d));
         public double PanelWidth
@@ -66,56 +69,22 @@ namespace KDSWPFClient.View
             set { SetValue(HeaderForeground3Property, value); }
         }
 
-        // Using a DependencyProperty as the backing store for TableName.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty TableNameProperty =
-            DependencyProperty.Register("TableName", typeof(string), typeof(OrderPanelHeader), new PropertyMetadata(null));
-        public string TableName
-        {
-            get { return (string)GetValue(TableNameProperty); }
-            set { SetValue(TableNameProperty, value); }
-        }
-
-        public string OrderNumber
-        {
-            get { return (string)GetValue(OrderNumberProperty); }
-            set { SetValue(OrderNumberProperty, value); }
-        }
-        // Using a DependencyProperty as the backing store for OrderNumber.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty OrderNumberProperty =
-            DependencyProperty.Register("OrderNumber", typeof(string), typeof(OrderPanelHeader), new PropertyMetadata(""));
-
-        public string WaiterName
-        {
-            get { return (string)GetValue(WaiterNameProperty); }
-            set { SetValue(WaiterNameProperty, value); }
-        }
-        // Using a DependencyProperty as the backing store for WaiterName.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty WaiterNameProperty =
-            DependencyProperty.Register("WaiterName", typeof(string), typeof(OrderPanelHeader), new PropertyMetadata(""));
-
-
-        public DateTime CreateDate
-        {
-            get { return (DateTime)GetValue(CreateDateProperty); }
-            set { SetValue(CreateDateProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for CreateDate.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty CreateDateProperty =
-            DependencyProperty.Register("CreateDate", typeof(DateTime), typeof(OrderPanelHeader), new PropertyMetadata(DateTime.MinValue));
-
         #endregion
 
 
 
-        public OrderPanelHeader()
+        public OrderPanelHeader(OrderViewModel order)
         {
             InitializeComponent();
+            
+            _order = order;
+            grdHeader.DataContext = _order;
 
             double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
 
             double fSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
-            tbTableLabel.FontSize = fSize;
+            tbTableLabel1.FontSize = fSize;
+            tbTableLabel2.FontSize = fSize;
             tbOrderDateLabel.FontSize = fSize;
             tbOrderCookingCounterLabel.FontSize = fSize;
 

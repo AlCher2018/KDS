@@ -101,8 +101,11 @@ namespace KDSService.AppModel
         // время (в сек) "Готовить позже"
         // клентам нет смысла передавать
         public int DelayedStartTime { get; set; }
+
+        // словарь дат входа в состояние
+        private Dictionary<OrderStatusEnum, DateTime> _dtEnterStatusDict;
         // нужен заказу, чтобы определять мин/макс дату по любому состоянию
-        public Dictionary<int, DateTime> EnterStatusDict { get { return _dtEnterStatusDict; } }
+        public Dictionary<OrderStatusEnum, DateTime> EnterStatusDict { get { return _dtEnterStatusDict; } }
 
         #region Fields
         private DepartmentModel _department;
@@ -110,8 +113,6 @@ namespace KDSService.AppModel
         // поля дат состояний и временных промежутков
         private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
         private TimeSpan _tsCookingEstimated;   // время приготовления
-        // словарь дат входа в состояние
-        private Dictionary<int, DateTime> _dtEnterStatusDict; 
         // накопительные счетчики нахождения в конкретном состоянии
         private Dictionary<OrderStatusEnum, IncrementalTimer> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
         private IncrementalTimer _curTimer;  // текущий таймер для выдачи клиенту значения таймера
@@ -152,8 +153,9 @@ namespace KDSService.AppModel
 
             _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
 
-            _dtEnterStatusDict = new Dictionary<int, DateTime>();
-            for (int i = 0; i < 6; i++) _dtEnterStatusDict.Add(i, DateTime.MinValue);
+            // словарь дат входа в состояние
+            _dtEnterStatusDict = new Dictionary<OrderStatusEnum, DateTime>();
+            foreach (var item in Enum.GetValues(typeof(OrderStatusEnum))) _dtEnterStatusDict.Add((OrderStatusEnum)item, DateTime.MinValue);
 
             // создать словарь накопительных счетчиков
             _tsTimersDict = new Dictionary<OrderStatusEnum, IncrementalTimer>();
@@ -188,7 +190,7 @@ namespace KDSService.AppModel
 
                     _curTimer.InitDateTimeValue(initDT);
 
-                    setStatusRunTimeDTS(this.Status, initDT, 0);
+                    setStatusRunTimeDTS(this.Status, initDT, -1);
                     saveRunTimeRecord();
                 }
                 else
@@ -276,7 +278,7 @@ namespace KDSService.AppModel
                 {
                     // **** запись или в RunTimeRecord или в ReturnTable
                     // сохранить дату входа в состояние во внутреннем словаре
-                    _dtEnterStatusDict[(int)newStatus] = dtEnterToNewStatus;
+                    _dtEnterStatusDict[newStatus] = dtEnterToNewStatus;
                     // и в БД
                     if (_dbRunTimeRecord != null)
                     {
@@ -284,7 +286,7 @@ namespace KDSService.AppModel
                         if (getStatusRunTimeDTS(newStatus).DateEntered.IsZero())  // возв. true, если поле == null
                         {
                             // сохраняем дату входа в новое состояние
-                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, 0);
+                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, -1);
                             // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
                             setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
 
@@ -411,22 +413,33 @@ namespace KDSService.AppModel
 
                 case OrderStatusEnum.WaitingCook:
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.InitDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCookTS = timeStanding;
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingCookTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Cooking:
-                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CookingStartDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.CookingTS = timeStanding;
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.CookingStartDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                    }
+                    if (timeStanding >= 0) _dbRunTimeRecord.CookingTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Ready:
-                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.ReadyDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.ReadyDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                    }
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Took:
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.TakeDate = dateEntered;
-                    if (timeStanding != 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
+                    if (timeStanding >= 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
                     break;
 
                 case OrderStatusEnum.Cancelled:

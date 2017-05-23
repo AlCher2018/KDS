@@ -47,9 +47,9 @@ namespace KDSWPFClient.View
         }
 
         // добавить все заказы и определить кол-во страниц
-        public void AddOrders(List<OrderViewModel> orders)
+        public void AddOrdersPanels(List<OrderViewModel> orders)
         {
-            if (CurrentPage.Children.Count > 0) Clear();
+            ClearPages();
 
             _curColIndex = 1; _curTopValue = 0d;
 
@@ -58,13 +58,13 @@ namespace KDSWPFClient.View
 #if DEBUG_LAYOUT
                 Debug.Print("размещение заказа {0} (блюд {1})", ord.Number, ord.Dishes.Count);
 #endif
-                AddOrder(ord);
+                AddOrderPanel(ord);
             }
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
         }
 
-        public void AddOrder(OrderViewModel orderModel)
+        public void AddOrderPanel(OrderViewModel orderModel)
         {
             OrderPanel ordPnl; DishPanel dshPnl;
             double ordTop;  // хранит TOP заказа
@@ -72,20 +72,13 @@ namespace KDSWPFClient.View
             double dishesPanelHeight = CurrentPage.Height;
             Size availableSize = new Size(_colWidth, dishesPanelHeight);
 
-            ordPnl = new OrderPanel();
-            ordPnl.Width = _colWidth;
+            // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth);
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
             ordTop = _curTopValue; // отступ сверху панели заказа
 #if DEBUG_LAYOUT
             Debug.Print("start order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
 #endif
-            // заголовок заказа
-            OrderPanelHeader hdrPnl = new OrderPanelHeader();
-            hdrPnl.TableName = orderModel.TableName;
-            hdrPnl.OrderNumber = orderModel.Number.ToString();
-            hdrPnl.WaiterName = orderModel.Waiter;
-            hdrPnl.CreateDate = orderModel.CreateDate;
-            ordPnl.SetHeader(hdrPnl);  // добавить заголовок к заказу
 
             // узнать размер заголовка
             ordPnl.Measure(availableSize);
@@ -106,18 +99,16 @@ namespace KDSWPFClient.View
             }
 
             // блюда
-            int dishIndex = 0;
-            foreach (OrderDishViewModel dishModel in orderModel.OrderDish)
+            foreach (OrderDishViewModel dishModel in orderModel.Dishes)
             {
-                dishIndex++;
-                dshPnl = new DishPanel(dishIndex, dishModel.FilingNumber, dishModel.DishName, dishModel.Quantity);
+                dshPnl = new DishPanel(dishModel);
                 dshPnl.Width = _colWidth;
 
                 // узнать размер панели
                 dshPnl.Measure(availableSize);
                 if ((_curTopValue + dshPnl.DesiredSize.Height) >= dishesPanelHeight)  // переход в новый столбец
                 {
-                    if ((dishIndex > 2) && (_curColIndex < _pageColsCount)) // разбиваем блюда заказа
+                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount)) // разбиваем блюда заказа
                     {
                         //  добавить в канву начало заказа
                         ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
@@ -127,8 +118,7 @@ namespace KDSWPFClient.View
                         Debug.Print("  - BREAK order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
 #endif
                         //  и создать новый OrderPanel для текущего блюда с заголовком таблицы
-                        ordPnl = new OrderPanel();
-                        ordPnl.Width = _colWidth;
+                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth);
                         ordPnl.Measure(availableSize);
                         setNextColumn();
                         ordTop = 0d; _curTopValue = ordPnl.DesiredSize.Height;
@@ -168,6 +158,14 @@ namespace KDSWPFClient.View
             CurrentPage.Children.Add(ordPnl);
         }
 
+        internal void RemoveOrderPanel(OrderViewModel orderView)
+        {
+            OrderPanel oPnl = orderView.ViewPanel;
+            int pageIndex = oPnl.PageIndex - 1;
+
+            _pages[pageIndex].Children.Remove(oPnl);
+        }
+
         private void setNextColumn()
         {
             _curColIndex++;
@@ -175,13 +173,14 @@ namespace KDSWPFClient.View
             {
                 OrdersPage page = new OrdersPage();
                 _pages.Add(page);
+                _currentPageIndex = _pages.Count();
                 CurrentPage = page;
                 _curColIndex = 1;
             }
         }
 
         // очистить все страницы и удалить все, кроме первой
-        public void Clear()
+        public void ClearPages()
         {
             foreach (OrdersPage page in _pages) page.ClearOrders();
 

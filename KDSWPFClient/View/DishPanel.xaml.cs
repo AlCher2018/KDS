@@ -1,4 +1,5 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,10 +24,14 @@ namespace KDSWPFClient.View
     {
         private double _fontSize;
 
-        public DishPanel()
+        public DishPanel(OrderDishViewModel dishView)
         {
             InitializeComponent();
 
+            grdDishLine.DataContext = dishView;
+
+            double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
+            base.MinHeight = dishLineMinHeight;
             double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
@@ -34,8 +39,9 @@ namespace KDSWPFClient.View
             // на уровне всего элемента для всех TextBlock-ов
             this.SetValue(TextBlock.FontSizeProperty, _fontSize);
             // отдельно для некоторых TextBlock-ов
-            this.tbDishIndex.FontSize = 0.7 * _fontSize;
+            this.tbDishIndex.FontSize = 0.8 * _fontSize;
 
+            brdMain.Padding = new Thickness(0, 5, 0, 5);
 
             //IEnumerable<TextBlock> tbs = grdDishLine.Children.OfType<TextBlock>();
             //foreach (TextBlock tb in tbs)
@@ -44,15 +50,6 @@ namespace KDSWPFClient.View
             //}
         }
 
-        public DishPanel(int index, int filingNumber, string dishName, decimal quantity): this()
-        {
-            this.tbDishIndex.Text = index.ToString();
-            this.tbDishFilingNumber.Text = filingNumber.ToString();
-            this.tbDishName.Text = dishName;
-            this.tbDishQuantity.Text = quantity.ToString();
-
-            brdMain.Padding = new Thickness(0, 5, 0, 5);
-        }
 
     }  // class
 }
