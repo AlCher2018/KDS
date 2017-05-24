@@ -51,7 +51,7 @@ namespace KDSWPFClient.View
 
             if (setStatusCordElements() == false)
             {
-                rbCook.IsChecked = true;   // по умолчанию
+                rbSpecial.IsChecked = true;   // роль КДС по умолчанию
                 _cfgValKeeper.AddPreValueDirectly("KDSMode", "null");
             }
             else

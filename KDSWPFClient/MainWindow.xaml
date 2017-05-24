@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:KDSWPFClient"
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="KDS" Height="728" Width="1024">
+        Title="KDS" Height="720" Width="1024">
 
     <Window.Resources>
 

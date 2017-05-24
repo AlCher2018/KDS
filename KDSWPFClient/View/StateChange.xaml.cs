@@ -1,8 +1,10 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,6 +58,7 @@ namespace KDSWPFClient.View
         }
 
 
+        // размер шрифта зависит от высоты строки грида!!
         private void setWinLayout()
         {
             // размеры 
@@ -66,9 +69,8 @@ namespace KDSWPFClient.View
             Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
             this.Top = topLeftPoint.Y; this.Left = topLeftPoint.X;
 
-            mainGrid.MinWidth = Width / 2d;
+            mainGrid.Width = Width / 2d;
             mainGrid.Height = Height / 2d;
-            double titleFontSize = 0.05 * mainGrid.Height;
 
             // title
             #region title
@@ -89,10 +91,11 @@ namespace KDSWPFClient.View
 
             if (this.IsShowTitle)
             {
+                double titleFontSize = 0.5d * AppLib.GetRowHeightAbsValue(mainGrid, 0);
                 textTitle.Text = base.Title;
                 textTitle.FontSize = titleFontSize;
                 textTitle.FontStyle = FontStyles.Italic;
-                textTitle.Margin = new Thickness(titleFontSize, 0.3 * titleFontSize, titleFontSize, 0.3 * titleFontSize);
+                textTitle.Margin = new Thickness(titleFontSize, 0d, 0d, 0d);
             }
             else
             {
@@ -100,191 +103,152 @@ namespace KDSWPFClient.View
             }
             #endregion
 
+            double rowHeight;
             // message
-            double messageFontSize = 1.5 * titleFontSize;
+            rowHeight = AppLib.GetRowHeightAbsValue(mainGrid, 1);
+            double messageFontSize = 0.3d * rowHeight;
             tbMessage.FontSize = messageFontSize;
-            tbMessage.Margin = new Thickness(messageFontSize, 0.5*messageFontSize, messageFontSize, 0.5*messageFontSize);
+            tbMessage.Margin = new Thickness(messageFontSize, 0d, messageFontSize, 0d);
             runOrderNumber.Text = (Order == null) ? "---" : Order.Number.ToString();
             runDishText.Text = (Dish == null) ? "" : ", блюдо \"" + Dish.DishName + "\"";
-            runState.Text = (Dish == null) ? "---" : Dish.Status.ToString();
+            runState.Text = StateGraphHelper.GetStateDescription(_currentState, (Order != null));
+            AppLib.AssignFontSizeByMeasureHeight(tbMessage, new Size(mainGrid.Width, mainGrid.Height), rowHeight, true);
 
             // кнопки переходов
-            double pnlWidth = pnlStateButtons.ActualWidth;
-            double pnlHeight = pnlStateButtons.ActualHeight;
-            tbNoAllowedStates.FontSize = 1.5 * messageFontSize;
-
-            // если есть объект приложения (заказ / блюдо), то настроить кнопки переходов в другие состояния
-            if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish))
-            {
-                // из разрешенных переходов выбрать переходы для текущего состояния
-                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState = null;
-                if (_allowedStates != null) allowedStatesForCurrentState = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == _currentState));
-
-                if ((allowedStatesForCurrentState == null) || (allowedStatesForCurrentState.Count == 0))
-                {
-                    tbNoAllowedStates.Visibility = Visibility.Visible;
-                    pnlStateButtons.Visibility = Visibility.Hidden;
-                }
-                else
-                {
-                    tbNoAllowedStates.Visibility = Visibility.Hidden;
-                    pnlStateButtons.Visibility = Visibility.Visible;
-                }
-                // есть переходы для текущего состояния - настроить размеры кнопок переходов
-                if (pnlStateButtons.Visibility == Visibility.Visible)
-                {
-                    int statesCount = allowedStatesForCurrentState.Count;
-                    // количество кнопок смены состояния
-                    // 1 - одна, большая, 2 - две на стандартную ширину, 3 и более - расширение окна по горизонтали, добавление в StackPanel
-                    if (statesCount == 1)
-                    {
-                        Border btnState = getStateButton(0.7 * pnlWidth, 0.7 * pnlHeight, allowedStatesForCurrentState[0].Value);
-                        double horMargin = Math.Floor(0.15 * pnlWidth);
-                        btnState.Margin = new Thickness(horMargin, 0.15d * pnlHeight, horMargin, 0.15d * pnlHeight);
-                        pnlStateButtons.Children.Add(btnState);
-                    }
-                    else if (statesCount == 2)
-                    {
-                        Border btnState = null;
-                        foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in allowedStatesForCurrentState)
-                        {
-                            btnState = getStateButton(0.35 * pnlWidth, 0.7 * pnlHeight, item.Value);
-                            btnState.Margin = new Thickness(0.1d * pnlWidth, 0.15d * pnlHeight, 0.1d * pnlWidth, 0.15d * pnlHeight);
-                            pnlStateButtons.Children.Add(btnState);
-                        }
-                    }
-                    else
-                    {
-                        Border btnState = null;
-                        double wBtn = 0.35d * pnlWidth, mBtn = 0.1d * pnlWidth;
-                        this.Width = (wBtn + mBtn) * allowedStatesForCurrentState.Count + 0.1d * pnlWidth;
-                        foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in allowedStatesForCurrentState)
-                        {
-                            btnState = getStateButton(0.35 * pnlWidth, 0.7 * pnlHeight, item.Value);
-                            btnState.Margin = new Thickness(0.1d * pnlWidth, 0.15d * pnlHeight, 0.1d * pnlWidth, 0.15d * pnlHeight);
-                            pnlStateButtons.Children.Add(btnState);
-                        }
-                    }
-                }
-            }
-
+            if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish)) createChangeStateButtons();
 
             // кнопка Закрыть
-            double btnCloseFontSize = 0.8 * titleFontSize;
+            double btnCloseFontSize = 0.3 * AppLib.GetRowHeightAbsValue(mainGrid, 3);
             btnClose.FontSize = btnCloseFontSize;
-            btnClose.Margin = new Thickness(btnCloseFontSize);
-            btnClose.Padding = new Thickness(1.5*btnCloseFontSize, 0.5* btnCloseFontSize, 1.5* btnCloseFontSize, 0.5* btnCloseFontSize);
-
+            btnClose.Margin = new Thickness(btnCloseFontSize, 0, btnCloseFontSize, btnCloseFontSize);
+            btnClose.Padding = new Thickness(2d*btnCloseFontSize, 0d, 2d * btnCloseFontSize, 0);
         }
 
-        private Border getStateButton(double width, double height, OrderStatusEnum eState)
+        private void createChangeStateButtons()
         {
-            double cornerRadius = 0.1 * height;
+            double rowHeight = AppLib.GetRowHeightAbsValue(mainGrid, 2);
+            // сообщение об отсутствии переходов
+            tbNoAllowedStates.FontSize = Math.Floor(0.15d * rowHeight);
+
+            // из РАЗРЕШЕННЫХ переходов выбрать переходы, ДОСТУПНЫЕ для текущего состояния
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState = null;
+            if (_allowedStates != null) allowedStatesForCurrentState = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == _currentState));
+
+            if ((allowedStatesForCurrentState == null) || (allowedStatesForCurrentState.Count == 0))
+            {
+                // нет доступных переходов
+                tbNoAllowedStates.Visibility = Visibility.Visible;
+                return;
+            }
+            else
+            {
+                pnlStateButtons.Visibility = Visibility.Visible;
+            }
+
+            // есть переходы для текущего состояния - настроить размеры кнопок переходов
+            // количество кнопок смены состояния
+            int statesCount = allowedStatesForCurrentState.Count;
+            double pnlWidth = mainGrid.Width;
+            double pnlHeight = AppLib.GetRowHeightAbsValue(mainGrid, 2);
+            // высота кнопок всегда одинаковая, а ширина и расстояние по горизонтали зависит от их кол-ва
+            // контейнер для кнопок уже центрирован по верт.и гориз. в своем контейнере, поэтому верт.поля не нужны
+            double height = Math.Floor(0.75 * pnlHeight), width, horMargin;
+            // расчет ширины кнопки
+            double k = (statesCount == 1) ? 0.5 : 0.2;  // доля гор.поля между кнопками от ширины кнопки
+            // для случая [поле][кнопка][поле][кнопка]...[поле]     x = y / ((1 + k) * c + k), 
+            // для случая [кнопка][поле][кнопка][поле]...[кнопка]   x = y / (c + kc - k) = y / (c + k(c - 1))
+            // где x - ширина кнопки, y - ширина контейнера для кнопки, k - доля гор.поля между кнопками от ширины кнопки, c - количество кнопок
+            width = pnlWidth / ((1d + k) * statesCount + k);
+            horMargin = k * width;
+            Border btnState; int iBtn = 0;
+            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in allowedStatesForCurrentState)
+            {
+                // возврат из Готов в Приготовление
+                bool isReturnCooking = ((item.Key == OrderStatusEnum.Ready) && (item.Value == OrderStatusEnum.Cooking));
+
+                iBtn++;  // номер кнопки
+                btnState = getStateButton(width, height, ((iBtn==1)?0:horMargin), item.Value, isReturnCooking);
+                pnlStateButtons.Children.Add(btnState);
+            }
+        }
+
+        // buttonsCount - колво кнопок для настройки их ширины
+        private Border getStateButton(double width, double height, double horMargin, OrderStatusEnum eState, bool isReturnCooking)
+        {
+            // получить фон и цвет шрифта
+            SolidColorBrush backgroundBrush = null, foregroundBrush = null;
+            StateGraphHelper.SetStateButtonBrushes(eState, out backgroundBrush, out foregroundBrush);
+            // и надписи на кнопке
+            string btnText1, btnText2;
+            StateGraphHelper.SetStateButtonTexts(eState, out btnText1, out btnText2, (_modelType== AppViewModelEnum.Order), isReturnCooking);
 
             Border retBorder = new Border()
             {
                 Width = width, Height = height, BorderThickness = new Thickness(2d), BorderBrush = Brushes.DarkGray,
-                CornerRadius = new CornerRadius(cornerRadius)
+                CornerRadius = new CornerRadius(0.1 * height),
+                Margin = new Thickness(horMargin, 0d, 0d, 0d),
+                Background = backgroundBrush
             };
+            retBorder.SetValue(TextBlock.ForegroundProperty, foregroundBrush);
+            retBorder.Tag = eState;
+            retBorder.MouseUp += buttonState_MouseUp;
 
             Grid grd = new Grid();
-            double hRow = 0.4 * height;
-            grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(hRow, GridUnitType.Pixel) });
-            grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0.2*height, GridUnitType.Pixel) });
-            grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(hRow, GridUnitType.Pixel) });
+            grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1d, GridUnitType.Star) });
+            grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1d, GridUnitType.Star) });
 
             TextBlock tbStateName = new TextBlock()
             {
-                VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center,
-                Text = getStateButtonText(eState).ToUpper(), FontWeight = FontWeights.Bold, FontSize = 0.2d * height
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Text = btnText1,
+                FontWeight = FontWeights.Bold,
+                FontSize = Math.Floor(0.2d * height)
             };
             tbStateName.SetValue(Grid.RowProperty, 0);
             grd.Children.Add(tbStateName);
 
-            Viewbox vbDescr = new Viewbox()
+            double fontSize = Math.Floor(0.15d * height);
+            TextBlock tbStateDescr = new TextBlock()
             {
-                Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, Width = width, Height = hRow,
-                Margin = new Thickness(cornerRadius),
-                Child = new TextBlock()
-                {
-                    TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center,
-                    Text = getStateDescr(eState)
-                }
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Text = btnText2,
+                FontSize = fontSize,
+                Margin = new Thickness(FontSize, 0, FontSize, 0),
+                TextWrapping = TextWrapping.Wrap
             };
-            vbDescr.SetValue(Grid.RowProperty, 2);
-            grd.Children.Add(vbDescr);
+            AppLib.AssignFontSizeByMeasureHeight(tbStateDescr, new Size(width, height), height / 2d, true);
 
+            tbStateDescr.SetValue(Grid.RowProperty, 1);
+            grd.Children.Add(tbStateDescr);
 
             retBorder.Child = grd;
             return retBorder;
         }
 
-        private string getStateDescr(OrderStatusEnum eState)
+        private void buttonState_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            string retVal = null;
-            switch (eState)
-            {
-                case OrderStatusEnum.None:
-                    break;
-                case OrderStatusEnum.WaitingCook:
-                    break;
-                case OrderStatusEnum.Cooking:
-                    retVal = "Начать приготовление блюда/заказа";
-                    break;
-                case OrderStatusEnum.Ready:
-                    retVal = "Закончить приготовление блюда/заказа";
-                    break;
-                case OrderStatusEnum.Took:
-                    retVal = "Забрать блюдо/заказ и отнести его Клиенту";
-                    break;
-                case OrderStatusEnum.Cancelled:
-                    retVal = "Отменить приготовление блюда/заказа";
-                    break;
-                case OrderStatusEnum.Commit:
-                    retVal = "Зафиксировать, т.е. запретить изменять статус блюда/заказа";
-                    break;
-                case OrderStatusEnum.CancelConfirmed:
-                    retVal = "Подтвердить отмену блюда/заказа";
-                    break;
-                default:
-                    break;
-            }
+            OrderStatusEnum requiredState = (OrderStatusEnum)(sender as Border).Tag;
+            //            MessageBox.Show(requiredState.ToString());
 
-            return retVal;
-        }
-
-        private string getStateButtonText(OrderStatusEnum eState)
-        {
-            string retVal = null;
-            switch (eState)
+            try
             {
-                case OrderStatusEnum.None:
-                    break;
-                case OrderStatusEnum.WaitingCook:
-                    retVal = "Ожидание";
-                    break;
-                case OrderStatusEnum.Cooking:
-                    retVal = "Готовить";
-                    break;
-                case OrderStatusEnum.Ready:
-                    retVal = "Закончить";
-                    break;
-                case OrderStatusEnum.Took:
-                    retVal = "Забрать";
-                    break;
-                case OrderStatusEnum.Cancelled:
-                    retVal = "Отменить";
-                    break;
-                case OrderStatusEnum.Commit:
-                    retVal = "Зафиксировать";
-                    break;
-                case OrderStatusEnum.CancelConfirmed:
-                    retVal = "Подтвердить отмену";
-                    break;
-                default:
-                    break;
+                if (_modelType == AppViewModelEnum.Order)
+                {
+                    _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
+                }
+                else if (_modelType == AppViewModelEnum.Dish)
+                {
+                    _dataProvider.SetNewDishStatus(Order.Id, Dish.Id, requiredState);
+                }
             }
-            return retVal;
+            catch (Exception ex)
+            {
+                Debug.Print(ex.ToString());
+                MessageBox.Show(ex.Message);
+            }
+            Close();
         }
 
         private void setModelType()
@@ -313,6 +277,21 @@ namespace KDSWPFClient.View
             None, Order, Dish
         }
 
-
     }  // class
+
+
+    // добавить к кнопке DependencyProperty для стилевых триггеров, устанавливающих фон и цвет текста
+    public class StateButton : Border
+    {
+        public OrderStatusEnum Status
+        {
+            get { return (OrderStatusEnum)GetValue(StatusProperty); }
+            set { SetValue(StatusProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Status.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty StatusProperty =
+            DependencyProperty.Register("Status", typeof(OrderStatusEnum), typeof(StateButton), new PropertyMetadata(OrderStatusEnum.None));
+    }
+
 }

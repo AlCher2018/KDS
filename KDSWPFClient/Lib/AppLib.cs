@@ -324,8 +324,10 @@ namespace KDSWPFClient.Lib
 
         #region WPF UI interface
 
-        public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight)
+        public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight = 0d)
         {
+            if (totalHeight == 0d) totalHeight = grid.Height;
+
             double cntStars = grid.RowDefinitions.Sum(r => r.Height.Value);
             return grid.RowDefinitions[iRow].Height.Value / cntStars * totalHeight;
         }
@@ -371,6 +373,26 @@ namespace KDSWPFClient.Lib
             }
 
             return (parent == null) ? null : parent as FrameworkElement;
+        }
+
+        public static void AssignFontSizeByMeasureHeight(TextBlock tbAssigning, Size measuredSize, double requiredHeight, bool isSubtractSideMarginsAsFontSize)
+        {
+            double initWidth = measuredSize.Width;
+            if (isSubtractSideMarginsAsFontSize) measuredSize.Width = initWidth - 2d * tbAssigning.FontSize;
+
+            tbAssigning.Measure(measuredSize);
+            while (tbAssigning.DesiredSize.Height > requiredHeight)
+            {
+                tbAssigning.FontSize *= 0.9;
+                if (isSubtractSideMarginsAsFontSize) measuredSize.Width = initWidth - 2d * tbAssigning.FontSize;
+
+                tbAssigning.Measure(measuredSize);
+            }
+
+            if ((requiredHeight / tbAssigning.DesiredSize.Height) > 1.5)
+            {
+                tbAssigning.FontSize *= 1.1;
+            }
         }
 
         #endregion

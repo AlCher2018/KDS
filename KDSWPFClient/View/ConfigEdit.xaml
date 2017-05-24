@@ -139,6 +139,7 @@
                     <ListBox x:Name="lbxStateCords" BorderBrush="DarkGray" BorderThickness="1">
                         <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
                         <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
+                        <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку" Margin="5,7" IsThreeState="False"/>
                         <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту" Margin="5,7" IsThreeState="False"/>
                         <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа" Margin="5,7" IsThreeState="False"/>
                     </ListBox>

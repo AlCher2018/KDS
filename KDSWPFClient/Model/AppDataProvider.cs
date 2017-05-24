@@ -133,7 +133,7 @@ namespace KDSWPFClient
             return null;
         }
 
-        public  DepartmentViewModel GetDepartmentById(int depId)
+        public DepartmentViewModel GetDepartmentById(int depId)
         {
             if (_deps.ContainsKey(depId)) return _deps[depId];
             return null;
@@ -141,6 +141,33 @@ namespace KDSWPFClient
 
         #endregion
 
+        public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)
+        {
+            if (_setClient == null) return;
+
+            try
+            {
+                _setClient.ChangeOrderStatus(orderId, newStatus);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
+        {
+            if (_setClient == null) return;
+
+            try
+            {
+                _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
         public void Dispose()
         {

@@ -4,14 +4,18 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
+        xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
         mc:Ignorable="d"
         x:Name="mbWindow"
-        Height="720" Width="1280"
+        Height="720" Width="1024"
         WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="#88000000"
         DataContext="{Binding RelativeSource={RelativeSource Self}, Mode=OneWay}"
         Title="StateChange">
 
+    <Window.Resources>
+    </Window.Resources>
+    
     <Grid x:Name="mainGrid" Width="640" Height="360" VerticalAlignment="Center" HorizontalAlignment="Center" Background="White">
         <Grid.Effect>
             <DropShadowEffect ShadowDepth="30" BlurRadius="15" Opacity="0.5" />
@@ -19,33 +23,35 @@
 
         <Grid.RowDefinitions>
             <!-- title -->
-            <RowDefinition Height="Auto"/>
-            <!-- message -->
-            <RowDefinition Height="0.7*"/>
-            <!-- buttons -->
             <RowDefinition Height="*"/>
+            <!-- message -->
+            <RowDefinition Height="3*"/>
+            <!-- buttons -->
+            <RowDefinition Height="8*" />
             <!-- close button -->
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
         </Grid.RowDefinitions>
 
         <!-- title -->
         <Border x:Name="borderTitle" Grid.Row="0" Background="LightSteelBlue">
-            <TextBlock x:Name="textTitle" Text="{Binding Title, ElementName=mbWindow, Mode=OneWay}"/>
+            <TextBlock x:Name="textTitle" Text="{Binding Title, ElementName=mbWindow, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
         </Border>
 
         <Border Grid.Row="1" Background="AliceBlue">
-            <TextBlock x:Name="tbMessage" TextWrapping="Wrap" TextAlignment="Left" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="tbMessage" TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Run Text="Заказ "/>
             <Run x:Name="runOrderNumber" FontWeight="Bold"/>
-            <Underline><Run x:Name="runDishText"/></Underline>
-            <Run Text=" находится в состоянии "/>
-            <Run x:Name="runState" FontWeight="Bold"/>
+            <Run x:Name="runDishText"/>
+            <Run x:Name="runState"/>
             </TextBlock>
         </Border>
 
-        <TextBlock x:Name="tbNoAllowedStates" Grid.Row="2" Text="Нет доступных действий" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-        <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Stretch">
+       
+        <TextBlock x:Name="tbNoAllowedStates" Grid.Row="2" Text="Нет доступных действий" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Hidden" TextWrapping="Wrap"/>
+
+        <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden" Background="AliceBlue">
         </StackPanel>
+
 
         <Button x:Name="btnClose" Grid.Row="3" Content="Закрыть окно БЕЗ изменения состояния" HorizontalAlignment="Right" Click="btnClose_Click"/>
 

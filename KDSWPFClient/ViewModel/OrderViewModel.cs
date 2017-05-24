@@ -74,7 +74,7 @@ namespace KDSWPFClient.ViewModel
         {
             if (_createDate.Equals(DateTime.MinValue))
                 CreateDate = "no data";
-            else if ((DateTime.Now - _createDate).Days > 0)  // показать и дату создания заказа
+            else if (DateTime.Now.Day !=_createDate.Day)  // показать и дату создания заказа
             {
                 CreateDate = _createDate.ToString("dd.MM.yyyy HH:mm:ss");
             }
