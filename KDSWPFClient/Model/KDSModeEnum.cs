@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSWPFClient.ViewModel
+namespace KDSWPFClient.Model
 {
     public enum KDSModeEnum
     {

@@ -5,22 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="ConfigEdit" Height="652" Width="539">
+        Title="ConfigEdit" Height="737" Width="519">
 
     <Window.Resources>
-        <!-- шаблон для отображения строк словаря -->
+        <!-- шаблон для отображения строк словаря отделов -->
         <DataTemplate x:Key="depsDataTemplate">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="20" SharedSizeGroup="IsViewColumn"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="IdColumn"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
-                    <ColumnDefinition Width="Auto" SharedSizeGroup="UIDColumn"/>
                 </Grid.ColumnDefinitions>
-                <CheckBox Grid.Column="0" IsChecked="{Binding IsViewOnKDS}"/>
-                <TextBlock Grid.Column="1" Text="{Binding Id}" Margin="10,0,20,0"/>
-                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="10,0,20,0"/>
-                <TextBlock Grid.Column="3" Text="{Binding UID}" Margin="10,0,20,0"/>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsViewOnKDS}" FontSize="26"/>
+                <TextBlock Grid.Column="1" Text="{Binding Id}" Margin="10,0,20,0" FontSize="26"/>
+                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="10,0,20,0" FontSize="26"/>
             </Grid>
         </DataTemplate>
 
@@ -30,18 +28,17 @@
                 <ContentPresenter/>
             </Border>
         </ControlTemplate>
+
         <!-- контрол заголовка -->
         <Grid x:Key="ListHeader" Margin="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" SharedSizeGroup="IsViewColumn"/>
                 <ColumnDefinition Width="Auto" SharedSizeGroup="IdColumn"/>
                 <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
-                <ColumnDefinition Width="Auto" SharedSizeGroup="UIDColumn"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" Template="{StaticResource Header}">View</Button>
             <Button Grid.Column="1" Template="{StaticResource Header}">Id</Button>
             <Button Grid.Column="2" Template="{StaticResource Header}" >Name</Button>
-            <Button Grid.Column="3" Template="{StaticResource Header}">UID</Button>
         </Grid>
 
         <Style x:Key="HeaderedScrollViewer" TargetType="{x:Type ScrollViewer}">
@@ -86,7 +83,8 @@
                                     Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
 
                                 <ScrollBar Name="PART_VerticalScrollBar"
-                                    Grid.Column="1"
+                                    Orientation="Vertical"
+                                    Grid.Column="1" Width="16"
                                     Maximum="{TemplateBinding ScrollableHeight}"
                                     ViewportSize="{TemplateBinding ViewportHeight}"
                                     Value="{TemplateBinding VerticalOffset}"
@@ -96,6 +94,19 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="kdsModeRadioButtonStyle" TargetType="RadioButton">
+            <Setter Property="IsThreeState" Value="False"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="GroupName" Value="kdsMode"/>
+            <Setter Property="FontSize" Value="16"/>
+            <EventSetter Event="Checked" Handler="rbKDSMode_Checked"/>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="IsThreeState" Value="False"/>
+            <Setter Property="Margin" Value="5,8"/>
         </Style>
 
 
@@ -135,27 +146,53 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <ListBox x:Name="lbxStateCords" BorderBrush="DarkGray" BorderThickness="1">
-                        <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
-                        <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа" Margin="5,7" IsThreeState="False"/>
-                        <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку" Margin="5,7" IsThreeState="False"/>
-                        <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту" Margin="5,7" IsThreeState="False"/>
-                        <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа" Margin="5,7" IsThreeState="False"/>
-                    </ListBox>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+                    <TextBlock Text="Выберите режим работы КДС"/>
+                    <Border BorderBrush="DarkGray" BorderThickness="1">
+                        <WrapPanel x:Name="lbxKDSMode" Orientation="Horizontal">
+                            <RadioButton x:Name="rbCook" Content="ПОВАР" Tag="1" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                            <RadioButton x:Name="rbChef" Content="ШЕФ-ПОВАР" Tag="2" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                            <RadioButton x:Name="rbWaiter" Content="ОФИЦИАНТ" Tag="3" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                            <RadioButton x:Name="rbSpecial" Content="особый" Tag="4" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                        </WrapPanel>
+                    </Border>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Margin="20,0,0,0">
-                    <TextBlock Text="или выберите режим работы КДС:"/>
-                    <ListBox x:Name="lbxKDSMode">
-                        <RadioButton x:Name="rbCook" Content="ПОВАР" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="1" Checked="rbKDSMode_Checked"/>
-                        <RadioButton x:Name="rbChef" Content="ШЕФ-ПОВАР" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="2" Checked="rbKDSMode_Checked"/>
-                        <RadioButton x:Name="rbWaiter" Content="ОФИЦИАНТ" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="3" Checked="rbKDSMode_Checked"/>
-                        <RadioButton x:Name="rbSpecial" Content="особый" Margin="5" GroupName="kdsMode" IsThreeState="False" Tag="4" Checked="rbKDSMode_Checked"/>
-                    </ListBox>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,5,10,0">
+                    <TextBlock Text="Отображаемые состояния"/>
+                    <Border BorderBrush="DarkGray" BorderThickness="1">
+                        <StackPanel>
+                            <CheckBox x:Name="cbxState0" Tag="0" Content="Ожидание готовки"/>
+                            <CheckBox x:Name="cbxState1" Tag="1" Content="В процессе"/>
+                            <CheckBox x:Name="cbxState2" Tag="2" Content="Готово"/>
+                            <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
+                            <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
+                            <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
+                            <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,5,0,0">
+                    <TextBlock Text="Разрешенные действия"/>
+                    <Border BorderBrush="DarkGray" BorderThickness="1">
+                        <StackPanel>
+                            <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа"/>
+                            <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа"/>
+                            <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
+                            <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту"/>
+                            <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Grid>
         </Border>
-        <TextBlock DockPanel.Dock="Bottom" Text="Выберите действия, РАЗРЕШЕННЫЕ на данном КДСе" Margin="10,20,10,3"/>
+        <TextBlock DockPanel.Dock="Bottom" Text="Выберите роль данного КДСа (отображаемые состояния и разрешенные действия)" Margin="10,20,10,3"/>
 
         <ListBox x:Name="listBoxDepartments" DockPanel.Dock="Top" Margin="10,0" SelectionMode="Single" ItemTemplate="{StaticResource depsDataTemplate}">
             <ListBox.Template>

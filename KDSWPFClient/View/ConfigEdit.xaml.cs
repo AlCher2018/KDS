@@ -49,25 +49,38 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("AppFontScale", true, null);
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", true, tbxOrdersColumnsCount);
 
-            if (setStatusCordElements() == false)
+            
+            bool isDefault = true;
+            if (AppLib.GetAppGlobalValue("KDSMode") != null)
             {
-                rbSpecial.IsChecked = true;   // роль КДС по умолчанию
-                _cfgValKeeper.AddPreValueDirectly("KDSMode", "null");
-            }
-            else
-            {
-                _cfgValKeeper.AddPreValueDirectly("KDSMode", getKDSModeFromRadioButtons());
+                KDSModeEnum eMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
+                if (KDSModeHelper.DefinedKDSModes.ContainsKey(eMode))
+                {
+                    _cfgValKeeper.AddPreValueDirectly("KDSMode", eMode.ToString());
+                    if (eMode == KDSModeEnum.Special)
+                    {
+                        KDSModeStates modeStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
+                        _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", modeStates.AllowedStatesToString());
+                        _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", modeStates.AllowedActionsToString());
+                    }
+
+                    isDefault = false;
+                    lbxKDSMode.Children.OfType<RadioButton>().First(r => r.Tag.Equals((int)eMode)).IsChecked = true;
+                }
             }
 
-            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStates = getStatesCheckBoxes();
-            string sStates = StateGraphHelper.StatusCordsToString(allowedStates);
-            _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", sStates);
+            // роль КДС по умолчанию
+            if (isDefault)
+            {
+                _cfgValKeeper.AddPreValueDirectly("KDSMode", "null");
+                rbSpecial.IsChecked = true;
+            }
         }
 
         private string getKDSModeFromRadioButtons()
         {
             string retVal = null;
-            List<RadioButton> rbList = lbxKDSMode.Items.OfType<RadioButton>().ToList();
+            List<RadioButton> rbList = lbxKDSMode.Children.OfType<RadioButton>().ToList();
             foreach (RadioButton item in rbList)
             {
                 if (item.IsChecked ?? false)
@@ -90,7 +103,7 @@ namespace KDSWPFClient.View
                 if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode))
                 {
                     string sMode = ((int)mode).ToString();  // числовое значение режима в символьном виде
-                    List<RadioButton> rbList = lbxKDSMode.Items.OfType<RadioButton>().ToList();
+                    List<RadioButton> rbList = lbxKDSMode.Children.OfType<RadioButton>().ToList();
                     RadioButton rb = rbList.FirstOrDefault(e => e.Tag.ToString().Equals(sMode));
                     if (rb != null) rb.IsChecked = true;
 
@@ -401,7 +414,7 @@ namespace KDSWPFClient.View
             KDSModeEnum kdsMode;
             if (Enum.TryParse<KDSModeEnum>(rbChecked.Tag.ToString(), out kdsMode))
             {
-                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetAllowedStatesForKDSMode(kdsMode);
+                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetKDSModeAllowedActions(kdsMode);
                 setStatesCheckBoxes(tList);
                 setEnableStateCordsListBox(kdsMode);
             }

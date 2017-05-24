@@ -86,8 +86,8 @@ namespace KDSWPFClient
             // отделы на КДСе
             cfgValue = AppLib.GetAppSetting("depUIDs");
             AppLib.SetAppGlobalValue("depUIDs", cfgValue);
-            // заполнить словарь разрешенных переходов между состояниями
-            StateGraphHelper.SetStatesAllowedForMoveToAppProps();
+            // прочитать из config-а и сохранить в свойствах приложения режим КДС
+            KDSModeHelper.PutCfgKDSModeToAppProps();
 
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());

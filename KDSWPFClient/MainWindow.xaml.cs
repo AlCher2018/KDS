@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-
+using KDSWPFClient.Model;
 
 namespace KDSWPFClient
 {
@@ -114,6 +114,10 @@ namespace KDSWPFClient
             if (svcOrders == null) return;
 
             // удалить из svcOrders блюда, не входящие в условия фильтрации
+            // TODO добавить в чекер разрешенные состояния из текущей роли
+            // не здесь!!! где хранить чекер для внешних изменений
+//            List<OrderStatusEnum> allowedStates = KDSModeHelper.GetKDSModeAllowedStates((KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode"));
+
             _delOrderIds.Clear(); _delDishIds.Clear();
             foreach (OrderModel orderMode in svcOrders)
             {
