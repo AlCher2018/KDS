@@ -24,7 +24,11 @@ namespace KDSWPFClient.View
         Dictionary<int, DepartmentViewModel> _deps;
         public Dictionary<int, DepartmentViewModel> DepartmentsDict { get { return _deps; } set { _deps = value; } }
 
+        // для определения измененных значений
         private CfgValueKeeper _cfgValKeeper;
+        private Dictionary<string, string> _appNewSettings;
+        public Dictionary<string, string> AppNewSettings { get { return _appNewSettings; } }
+
 
         public ConfigEdit()
         {
@@ -33,6 +37,7 @@ namespace KDSWPFClient.View
             this.Loaded += ConfigEdit_Loaded;
 
             _cfgValKeeper = new CfgValueKeeper();
+            _appNewSettings = new Dictionary<string, string>();
         }
 
         private void ConfigEdit_Loaded(object sender, RoutedEventArgs e)
@@ -54,115 +59,164 @@ namespace KDSWPFClient.View
             if (AppLib.GetAppGlobalValue("KDSMode") != null)
             {
                 KDSModeEnum eMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
+                _cfgValKeeper.AddPreValueDirectly("KDSMode", eMode.ToString());  // прямое сохранение только в символьном виде
+
                 if (KDSModeHelper.DefinedKDSModes.ContainsKey(eMode))
                 {
-                    _cfgValKeeper.AddPreValueDirectly("KDSMode", eMode.ToString());
+                    string sStates, sActions;
                     if (eMode == KDSModeEnum.Special)
                     {
                         KDSModeStates modeStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
-                        _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", modeStates.AllowedStatesToString());
-                        _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", modeStates.AllowedActionsToString());
+                        sStates = modeStates.AllowedStatesToString();
+                        sActions = modeStates.AllowedActionsToString();
                     }
+                    else
+                    {
+                        sStates = ""; sActions = "";
+                    }
+                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", sStates);
+                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", sActions);
 
                     isDefault = false;
-                    lbxKDSMode.Children.OfType<RadioButton>().First(r => r.Tag.Equals((int)eMode)).IsChecked = true;
+
+                    // чекнуть нужную кнопку
+                    foreach (RadioButton item in lbxKDSMode.Children.OfType<RadioButton>())
+                    {
+                        if ((item.Tag != null) && (Convert.ToInt32(item.Tag) == (int)eMode))
+                            item.IsChecked = true;
+                        else
+                            item.IsChecked = false;
+                    }
+                }
+                else
+                {
+                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", "");
+                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", "");
                 }
             }
 
             // роль КДС по умолчанию
             if (isDefault)
             {
-                _cfgValKeeper.AddPreValueDirectly("KDSMode", "null");
+                _cfgValKeeper.AddPreValueDirectly("KDSMode", "");
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", "");
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", "");
+
                 rbSpecial.IsChecked = true;
             }
         }
 
-        private string getKDSModeFromRadioButtons()
+        // выбор роли КДСа
+        // для предопредл.роли отобразить флажки и дизаблить
+        private void rbKDSMode_Checked(object sender, RoutedEventArgs e)
         {
-            string retVal = null;
-            List<RadioButton> rbList = lbxKDSMode.Children.OfType<RadioButton>().ToList();
-            foreach (RadioButton item in rbList)
+            RadioButton rbChecked = (RadioButton)sender;
+            KDSModeEnum kdsMode;
+            if (Enum.TryParse<KDSModeEnum>(rbChecked.Tag.ToString(), out kdsMode))
             {
-                if (item.IsChecked ?? false)
+                KDSModeStates kdsStates = KDSModeHelper.DefinedKDSModes[kdsMode];
+                // установить флажки состояний
+                foreach (CheckBox item in pnlStates.Children.OfType<CheckBox>())
                 {
-                    KDSModeEnum mode;
-                    if (Enum.TryParse<KDSModeEnum>(item.Tag.ToString(), out mode)) retVal = mode.ToString();
+                    OrderStatusEnum eStatus = (OrderStatusEnum) Convert.ToInt32(item.Tag);
+                    item.IsChecked = (kdsStates.AllowedStates.Contains(eStatus));
+                }
+
+                // установить флажки действий
+                KeyValuePair<OrderStatusEnum, OrderStatusEnum> kvp;
+                foreach (CheckBox item in pnlActions.Children.OfType<CheckBox>())
+                {
+                    if (item.Tag != null)
+                    {
+                        kvp = KDSModeHelper.GetStatusPairFromIntPair(item.Tag.ToString());
+                        item.IsChecked = ((kvp.Key != OrderStatusEnum.None) && (kdsStates.AllowedActions.Contains(kvp)));
+                    }
+                }
+
+                if (kdsMode == KDSModeEnum.Special)
+                {
+                    pnlStates.IsEnabled = true; pnlActions.IsEnabled = true;
+                }
+                else
+                {
+                    pnlStates.IsEnabled = false; pnlActions.IsEnabled = false;
                 }
             }
-            return retVal;
-        }
-
-        private bool setStatusCordElements()
-        {
-            bool retVal = false;
-            // предопределенная роль - lbxKDSMode
-            string cfgValue = AppLib.GetAppSetting("KDSMode");
-            if (!cfgValue.IsNull())
-            {
-                KDSModeEnum mode;
-                if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode))
-                {
-                    string sMode = ((int)mode).ToString();  // числовое значение режима в символьном виде
-                    List<RadioButton> rbList = lbxKDSMode.Children.OfType<RadioButton>().ToList();
-                    RadioButton rb = rbList.FirstOrDefault(e => e.Tag.ToString().Equals(sMode));
-                    if (rb != null) rb.IsChecked = true;
-
-                    // флажки состояний
-                    List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetAllowedStatesFromConfigFile();
-                    setStatesCheckBoxes(tList);
-                    setEnableStateCordsListBox(mode);
-
-                    retVal = true;
-                }  // if
-            }  // if
-
-            return retVal;
         }  // method
 
 
-        //  запретить изменять состояния, если роль предопределенная
-        private void setEnableStateCordsListBox(KDSModeEnum mode)
+        private void btnSave_Click(object sender, RoutedEventArgs e)
         {
-            lbxStateCords.IsEnabled = !((mode == KDSModeEnum.Cook) || (mode == KDSModeEnum.Chef) || (mode == KDSModeEnum.Waiter));
-        }
+            // новые значения из списков
+            _cfgValKeeper.PutNewValueDirectly("depUIDs", getIsViewDepIds());
 
-
-        private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> getStatesCheckBoxes()
-        {
-            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
-
-            List<CheckBox> cbList = lbxStateCords.Items.OfType<CheckBox>().ToList();
-            foreach (CheckBox item in cbList)
+            // роль КДС из контролов
+            KDSModeEnum eMode = getKDSModeFromRadioButtons();
+            if (eMode != KDSModeEnum.None)
             {
-                if (item.IsChecked??false)
+                _cfgValKeeper.PutNewValueDirectly("KDSMode", eMode.ToString());
+                string sStates, sActions;
+                if (eMode == KDSModeEnum.Special)
                 {
-                    retVal.Add(StateGraphHelper.StringToStatusCord(item.Tag.ToString()));
+                    // получить новые объектные значения разрешений
+                    List<OrderStatusEnum> newAllowedStates = getStatesFromCheckBoxes(pnlStates);
+                    List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> newAllowedActions = getActionsFromCheckBoxes(pnlActions);
+                    sStates = KDSModeHelper.StatesListToString(newAllowedStates); if (sStates == null) sStates = "";
+                    sActions = KDSModeHelper.ActionsListToString(newAllowedActions); if (sActions == null) sActions = "";
+                }
+                else
+                {
+                    sStates = ""; sActions = "";
+                }
+                // записать их новые значения в кипер
+                _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialStates", sStates);
+                _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialActions", sActions);
+            }
+
+            // новые значения из контролов
+            _cfgValKeeper.PutNewValueFromControls();
+
+            // собрать словарь новых значений
+            _appNewSettings = _cfgValKeeper.GetNewValuesDict();
+            // сделаны ли какие-нибудь изменения?
+            if (_appNewSettings.Count > 0)
+            {
+                string errMsg = null;
+                string sBuf;
+                if (AppLib.SaveAppSettings(_appNewSettings, out errMsg))  // сохранить в config-файле (все в символьном виде)
+                {
+                    _cfgValKeeper.SaveToAppProps();
+                    // для некоторых значений может понадобиться преобразование типов для сохранения в App.Properties
+                    if (_appNewSettings.ContainsKey("KDSMode") && (_appNewSettings["KDSMode"].IsNull() == false))
+                    {
+                        if (Enum.TryParse<KDSModeEnum>(_appNewSettings["KDSMode"], out eMode)) AppLib.SetAppGlobalValue("KDSMode", eMode); 
+                    }
+                    // особые состояния и действия хранятся не в App.Properties, а в четвертом элементе KDSModeStates и в config-e !!
+                    if (_appNewSettings.ContainsKey("KDSModeSpecialStates"))
+                    {
+                        sBuf = _appNewSettings["KDSModeSpecialStates"];
+                        AppLib.SetAppGlobalValue("KDSModeSpecialStates", sBuf);
+                        KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special].StringToAllowedStates(sBuf);
+                    }
+                    if (_appNewSettings.ContainsKey("KDSModeSpecialActions"))
+                    {
+                        sBuf = _appNewSettings["KDSModeSpecialActions"];
+                        AppLib.SetAppGlobalValue("KDSModeSpecialActions", sBuf);
+                        KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special].StringToAllowedActions(sBuf);
+                    }
+
+                    MessageBox.Show("Настройки успешно сохранены в config-файле!", "Сохранение настроек в config-файле", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ошибка сохранения настроек приложения:" + Environment.NewLine + "\t" + errMsg, "Сохранение настроек в config-файле", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
 
-            return retVal;
+            this.DialogResult = true;
         }
 
-        private void setStatesCheckBoxes(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList)
-        {
-            List<CheckBox> cbList = lbxStateCords.Items.OfType<CheckBox>().ToList();
-            cbList.ForEach(e => e.IsChecked = false);  // снять все флажки
-
-            if (tList == null) return;
-
-            CheckBox cb;
-            string sBuf;
-            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in tList)
-            {
-                sBuf = (int)item.Key + "," + (int)item.Value;
-                if (cbList != null)
-                {
-                    cb = cbList.FirstOrDefault(e => e.Tag.Equals(sBuf));
-                    if (cb != null) cb.IsChecked = true;
-                }
-            }
-        }
-
+        // список выбранных отделов в строку
         private string getIsViewDepIds()
         {
             StringBuilder sb = new StringBuilder();
@@ -177,47 +231,175 @@ namespace KDSWPFClient.View
             return sb.ToString();
         }
 
+        #region информация о роли из контролов
+        private KDSModeEnum getKDSModeFromRadioButtons()
+        {
+            List<RadioButton> rbList = lbxKDSMode.Children.OfType<RadioButton>().ToList();
+            foreach (RadioButton item in rbList)
+            {
+                if (item.IsChecked ?? false)
+                {
+                    KDSModeEnum mode;
+                    if (Enum.TryParse<KDSModeEnum>(item.Tag.ToString(), out mode)) return mode;
+                }
+            }
+            return KDSModeEnum.None;
+        }
+        private List<OrderStatusEnum> getStatesFromCheckBoxes(Panel panel)
+        {
+            List<OrderStatusEnum> retVal = new List<OrderStatusEnum>();
+
+            List<CheckBox> cbList = panel.Children.OfType<CheckBox>().ToList();
+            foreach (CheckBox item in cbList)
+            {
+                if (item.IsChecked ?? false)
+                {
+                    OrderStatusEnum eState = (OrderStatusEnum)Convert.ToInt32(item.Tag);
+                    retVal.Add(eState);
+                }
+            }
+            return (retVal.Count == 0) ? null: retVal;
+        }
+        private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> getActionsFromCheckBoxes(Panel panel)
+        {
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+
+            List<CheckBox> cbList = panel.Children.OfType<CheckBox>().ToList();
+            foreach (CheckBox item in cbList)
+            {
+                if ((item.IsChecked ?? false) && (item.Tag != null))
+                {
+                    KeyValuePair<OrderStatusEnum, OrderStatusEnum> actionPair = KDSModeHelper.GetStatusPairFromIntPair(item.Tag.ToString());
+                    if (actionPair.Key != OrderStatusEnum.None) retVal.Add(actionPair);
+                }
+            }
+
+            return (retVal.Count == 0) ? null : retVal;
+        }
+        #endregion
+
         private void btnCancel_Click(object sender, RoutedEventArgs e)
         {
             //this.Close();
             DialogResult = false;
         }
 
-        private void btnSave_Click(object sender, RoutedEventArgs e)
-        {
-            // новые значения из списков
-            string sBuf = getIsViewDepIds();
-            _cfgValKeeper.PutNewValueDirectly("depUIDs", sBuf);
 
-            _cfgValKeeper.PutNewValueDirectly("KDSMode", getKDSModeFromRadioButtons());
-            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStates = getStatesCheckBoxes();
-            // сохранить в свойствах приложения
-            AppLib.SetAppGlobalValue("StatesAllowedForMove", allowedStates);
-            sBuf = StateGraphHelper.StatusCordsToString(allowedStates);
-            _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialStates", sBuf);
+        #region Department list behaviour
+        //private void lstDishes_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        //{
+        //    e.Handled = true;
+        //}
 
-            // новые значения из контролов
-            _cfgValKeeper.PutNewValueFromControls();
+        //private void scrollDishes_PreviewTouchDown(object sender, TouchEventArgs e)
+        //{
+        //    initDrag(e.GetTouchPoint(scrollDishes).Position);
+        //}
+        //private void scrollDishes_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        //{
+        //    //            if (e.StylusDevice != null) return;
 
-            // собрать словарь новых значений
-            Dictionary<string, string> appSettings = _cfgValKeeper.GetNewValuesDict();
-            // сделаны ли какие-нибудь изменения?
-            if (appSettings.Count > 0)
-            {
-                string errMsg = null;
-                if (AppLib.SaveAppSettings(appSettings, out errMsg))
-                {
-                    _cfgValKeeper.SaveToAppProps();
-                    MessageBox.Show("Настройки сохранены успешно!", "Сохранение настроек в config-файле", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ошибка сохранения настроек приложения:" + Environment.NewLine + "\t" + errMsg, "Сохранение настроек в config-файле", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+        //    initDrag(e.GetPosition(scrollDishes));
+        //}
 
-            this.DialogResult = true;
-        }
+        //private void scrollDishes_PreviewTouchUp(object sender, TouchEventArgs e)
+        //{
+        //    endDrag();
+        //}
+        //private void scrollDishes_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        //{
+        //    //            if (e.StylusDevice != null) return;
+
+        //    endDrag();
+        //}
+
+        //private void scrollDishes_PreviewTouchMove(object sender, TouchEventArgs e)
+        //{
+        //    if (lastDragPoint.HasValue)
+        //    {
+        //        doMove(e.GetTouchPoint((sender as IInputElement)).Position);
+        //    }
+        //}
+        //private void scrollDishes_PreviewMouseMove(object sender, MouseEventArgs e)
+        //{
+        //    //            if (e.StylusDevice != null) return;
+
+        //    if (lastDragPoint.HasValue && e.LeftButton == MouseButtonState.Pressed)
+        //    {
+        //        doMove(e.GetPosition(sender as IInputElement));
+        //    }
+        //}
+
+
+        //private void initDrag(Point mousePos)
+        //{
+        //    if (AppLib.IsEventsEnable == false) { AppLib.IsEventsEnable = true; }
+
+        //    //_dateTime = DateTime.Now;
+        //    //make sure we still can use the scrollbars
+        //    if (mousePos.X <= scrollDishes.ViewportWidth && mousePos.Y < scrollDishes.ViewportHeight)
+        //    {
+        //        //scrollDishes.Cursor = Cursors.SizeAll;
+        //        initDragPoint = mousePos;
+        //        lastDragPoint = initDragPoint;
+        //        //Mouse.Capture(scrollViewer);
+        //    }
+        //}
+
+        //private void scrollDishes_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        //{
+        //    // debug
+        //    //return;
+
+        //    Visibility visButtonTop, visButtonBottom;
+
+        //    if (e.VerticalOffset == 0)
+        //    {
+        //        visButtonTop = Visibility.Hidden;
+        //        visButtonBottom = (pnlDishes.ActualHeight == scrollDishes.ActualHeight) ? Visibility.Hidden : Visibility.Visible;
+        //    }
+        //    else if (e.VerticalOffset == (pnlDishes.ActualHeight - scrollDishes.ActualHeight))
+        //    {
+        //        visButtonTop = Visibility.Visible;
+        //        visButtonBottom = Visibility.Hidden;
+        //    }
+        //    else
+        //    {
+        //        visButtonTop = Visibility.Visible;
+        //        visButtonBottom = Visibility.Visible;
+        //    }
+
+        //    if (btnScrollDown.Visibility != visButtonBottom) btnScrollDown.Visibility = visButtonBottom;
+        //    if (btnScrollUp.Visibility != visButtonTop) btnScrollUp.Visibility = visButtonTop;
+        //}
+
+        //private void endDrag()
+        //{
+        //    if ((lastDragPoint == null) || (initDragPoint == null))
+        //    {
+        //        _isDrag = false;
+        //    }
+        //    else
+        //    {
+        //        _isDrag = (Math.Abs(lastDragPoint.Value.X - initDragPoint.Value.X) > 10) || (Math.Abs(lastDragPoint.Value.Y - initDragPoint.Value.Y) > 15);
+        //    }
+        //}
+        //private void doMove(Point posNow)
+        //{
+        //    if (AppLib.IsEventsEnable == false) { return; }
+
+        //    double dX = posNow.X - lastDragPoint.Value.X;
+        //    double dY = posNow.Y - lastDragPoint.Value.Y;
+
+        //    lastDragPoint = posNow;
+        //    //Debug.Print(posNow.ToString());
+        //    scrollDishes.ScrollToHorizontalOffset(scrollDishes.HorizontalOffset - dX);
+        //    scrollDishes.ScrollToVerticalOffset(scrollDishes.VerticalOffset - dY);
+        //}
+        #endregion
+
+
+        // ************** INNER CLASSES  ********************
 
         #region inner classes
         // внутренний класс для сохранения первоначальных значений настроек
@@ -356,8 +538,8 @@ namespace KDSWPFClient.View
             private void putValueToField(bool fromAppProps)
             {
                 _preValue = (fromAppProps)? AppLib.GetAppGlobalValue(_key): AppLib.GetAppSetting(_key);
-                 
                 _typeName = _preValue.GetType().Name;
+
                 switch (_typeName)
                 {
                     case "Int32":
@@ -408,18 +590,6 @@ namespace KDSWPFClient.View
         } // class CfgValue
         #endregion
 
-        private void rbKDSMode_Checked(object sender, RoutedEventArgs e)
-        {
-            RadioButton rbChecked = (RadioButton)sender;
-            KDSModeEnum kdsMode;
-            if (Enum.TryParse<KDSModeEnum>(rbChecked.Tag.ToString(), out kdsMode))
-            {
-                List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> tList = StateGraphHelper.GetKDSModeAllowedActions(kdsMode);
-                setStatesCheckBoxes(tList);
-                setEnableStateCordsListBox(kdsMode);
-            }
 
-        }
     }  // class ConfigEdit
-
 }

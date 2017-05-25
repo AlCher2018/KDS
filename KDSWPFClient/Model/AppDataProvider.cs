@@ -123,7 +123,23 @@ namespace KDSWPFClient
 
         public List<OrderModel> GetOrders()
         {
-            return _getClient.GetOrders();
+            if (_getClient.State == CommunicationState.Faulted)
+            {
+                _getClient.Close();
+                _getClient = new KDSServiceClient();
+            }
+
+            List<OrderModel> retVal = null;
+            try
+            {
+                retVal = _getClient.GetOrders();
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+            }
+
+            return retVal;
         }
 
         #region get app dict item
@@ -145,6 +161,12 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
+            if (_setClient.State == CommunicationState.Faulted)
+            {
+                _setClient.Close();
+                _setClient = new KDSCommandServiceClient();
+            }
+
             try
             {
                 _setClient.ChangeOrderStatus(orderId, newStatus);
@@ -158,6 +180,12 @@ namespace KDSWPFClient
         public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
             if (_setClient == null) return;
+
+            if (_setClient.State == CommunicationState.Faulted)
+            {
+                _setClient.Close();
+                _setClient = new KDSCommandServiceClient();
+            }
 
             try
             {

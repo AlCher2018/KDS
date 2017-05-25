@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,8 +20,12 @@ namespace CookingEmulator
 
         static void Main(string[] args)
         {
+            // сравнение с пустрой строкой
+            string sEmpty = "";
+            Debug.Print(sEmpty.Equals("1").ToString());  // false
+
             int? i1 = null;
-            int i2 = Convert.ToInt32(i1);
+            int i2 = Convert.ToInt32(i1);  // convert to 0
 
             DateTime dt1 = Convert.ToDateTime(null);
             bool b1 = dt1.Equals(DateTime.MinValue);

@@ -8,6 +8,7 @@ namespace KDSWPFClient.Model
 {
     public enum KDSModeEnum
     {
+        None = 0,       // пусто
         Cook = 1,       // ПОВАР
         Chef = 2,       // ШЕФ-ПОВАР
         Waiter = 3,     // ОФИЦИАНТ

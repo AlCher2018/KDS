@@ -19,9 +19,19 @@ namespace KDSWPFClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        private static Timer _timer;   // статический, чтобы не было повторяющихся чисел
+        private static Timer _timer;
 
         private AppDataProvider _dataProvider;
+
+        // текущая роль
+        private KDSModeEnum _currentKDSMode;
+        //  и текущие разрешения
+        private KDSModeStates _currentKDSStates;
+        private List<int> _userKDSStatesId;
+
+        // классы для циклического перебора клиентских условий отображения блюд
+        private ListLooper<OrderGroupEnum> _orderGroupLooper;
+        private ListLooper<> _userViewStates;
 
         // страницы заказов
         private OrdersPages _pages;
@@ -35,6 +45,9 @@ namespace KDSWPFClient
         private List<int> _delDishIds;  
         private bool _isUpdateLayout = false;
 
+        private DateTime _dtAdmin;
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -42,7 +55,12 @@ namespace KDSWPFClient
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
+            _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
+            _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+
+            // классы для циклического перебора клиентских условий отображения блюд
+            _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByTime, OrderGroupEnum.ByOrderNumber });
 
             double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
@@ -53,7 +71,7 @@ namespace KDSWPFClient
             //Button_Click(null,null);
             // условия отбора блюд
             _valueDishChecker = new ValueChecker<OrderDishModel>();
-            setDishCheckerForDepIds();
+            updateDishCheckers();
 
             _timer = new Timer(1000);
             _timer.Elapsed += _timer_Elapsed;
@@ -69,18 +87,31 @@ namespace KDSWPFClient
         }
 
 
-        private void setDishCheckerForDepIds()
-        {
-            // - отделы, разрешенные на данном КДС (из config-файла)
-            string sAllowDeps = (string)AppLib.GetAppGlobalValue("depUIDs");
-            if (sAllowDeps.IsNull() == false)
-            {
-                _valueDishChecker.Update("depId", (OrderDishModel dish) => sAllowDeps.Contains(dish.Department.UID));
-            }
-        }
-
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // настройки кнопок пользов.группировки и фильтрации
+            double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
+            double wRow = grdUserConfig.ActualWidth;
+            double rad = 0.2 * wRow;
+            CornerRadius crnRad = new CornerRadius(rad, 0d, 0d, rad);
+            Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
+            Thickness leftTbMargin = new Thickness(0.1d*wRow, 0d, -hRow, -wRow);
+
+            btnOrderGroup.Margin = leftBtnMargin;
+            btnOrderGroup.CornerRadius = crnRad;
+            tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
+            tbOrderGroup.FontSize = 0.35d * wRow;
+            tbOrderGroup.Margin = leftTbMargin;
+
+            btnDishStatusFilter.Margin = leftBtnMargin;
+            btnDishStatusFilter.CornerRadius = crnRad;
+            tbDishStatusFilter.Width = hRow; tbDishStatusFilter.Height = wRow;
+            tbDishStatusFilter.FontSize = 0.35d * wRow;
+            tbDishStatusFilter.Margin = leftTbMargin;
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -95,7 +126,14 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
-            this.Dispatcher.Invoke(new Action(updateOrders));
+            try
+            {
+                this.Dispatcher.Invoke(new Action(updateOrders));
+            }
+            catch (Exception)
+            {
+
+            }
 
             _timer.Start();
         }  // method
@@ -189,21 +227,6 @@ namespace KDSWPFClient
         }  // method
 
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            StateChange chWin = new StateChange();
-            //chWin.Order = _viewOrders[0];
-            
-
-            chWin.ShowDialog();
-
-            //_viewOrders = TestData.TestDataHelper.GetTestOrders(5, 30);
-
-            //updateViewOrders();
-        }
-
-
-
         private void setChangePageButtonsState()
         {
             btnSetPagePrevious.Visibility = Visibility.Hidden;
@@ -242,26 +265,116 @@ namespace KDSWPFClient
             }
         }
 
-        private void button1_Click(object sender, RoutedEventArgs e)
+
+        #region настройка приложения через ConfigEdit
+
+        private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(grdMain);
+            Debug.Print("-- down " + p.ToString());
+
+            if ((p.X <= 15d) && (p.Y <= 15d)) _dtAdmin = DateTime.Now;
+        }
+
+        private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(grdMain);
+            int iSec = (DateTime.Now - _dtAdmin).Seconds;
+            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+
+            // длинный тап (более 4 сек) - открываем конфиг
+            if ((p.X <= 15d) && (p.Y <= 15d) && (iSec >= 4)) openConfigPanel();
+        }
+
+        private void openConfigPanel()
         {
             _timer.Stop();
-            string sAllowDepsPre = (string)AppLib.GetAppGlobalValue("depUIDs");
 
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
-            // не поменялись ли разрешенные отделы?
-            string sAllowDepsNew = (string)AppLib.GetAppGlobalValue("depUIDs");
-            if (sAllowDepsNew.Equals(sAllowDepsPre) == false)
+            // обновить фильтр блюд
+            if (cfgEdit.AppNewSettings.Count > 0)
             {
-                // обновить фильтр блюд
-                setDishCheckerForDepIds();  
+                if (cfgEdit.AppNewSettings.ContainsKey("depUIDs")) updCheckerDepUIDs();
+                if (cfgEdit.AppNewSettings.ContainsKey("KDSMode"))
+                {
+                    _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
+                    _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
+                    updCheckerDishStateСfg();
+                }
+                if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates"))
+                {
+                    _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
+                    updCheckerDishStateСfg();
+                }
             }
-
+            cfgEdit = null;
 
             _timer.Start();
         }
 
+
+        private void updateDishCheckers()
+        {
+            _valueDishChecker.Clear();
+            updCheckerDepUIDs();
+            updCheckerDishStateСfg();
+        }
+
+        // отделы, разрешенные на данном КДС (из config-файла)
+        private void updCheckerDepUIDs()
+        {
+            string sAllowDeps = (string)AppLib.GetAppGlobalValue("depUIDs");
+            if (sAllowDeps.IsNull())
+            {
+                _valueDishChecker.Update("depId", (OrderDishModel dish) => false);
+            }
+            else
+            {
+                _valueDishChecker.Update("depId", (OrderDishModel dish) => sAllowDeps.Contains(dish.Department.UID));
+            }
+        }
+        // разрешенные состояния блюд из config-а
+        private void updCheckerDishStateСfg()
+        {
+            if ((_currentKDSStates.AllowedStates == null) || (_currentKDSStates.AllowedStates.Count == 0))
+            {
+                _valueDishChecker.Update("dishStatesCfg", (OrderDishModel dish) => false);
+            }
+            else
+            {
+                List<int> stateIds = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
+                _valueDishChecker.Update("dishStatesCfg", (OrderDishModel dish) => stateIds.Contains(dish.DishStatusId));
+            }
+        }
+        private void updCheckerDishStateUser()
+        {
+            if ((_userKDSStatesId == null) || (_userKDSStatesId.Count == 0))
+            {
+                _valueDishChecker.Remove("dishStatesUser");
+            }
+            else
+            {
+                _valueDishChecker.Update("dishStatesUser", (OrderDishModel dish) => _userKDSStatesId.Contains(dish.DishStatusId));
+            }
+        }
+        #endregion
+
+        #region Настройка приложения боковыми кнопками
+
+        private void set
+
+        private void tbOrderGroup_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
+        }
+        #endregion
 
         #region inner classes
         // тип TObj - тип объекта, для которого будет проверяться предикат
@@ -309,8 +422,38 @@ namespace KDSWPFClient
                 }
             }
 
+            public void Clear()
+            {
+                _predicatesList.Clear();
+            }
         }
         #endregion
+
+        // класс для циклического получения значений из списка
+        private class ListLooper<T>
+        {
+            private List<T> _list;
+            private int _currentIndex;
+
+            public int CurrentIndex { get { return _currentIndex; } }
+
+            public ListLooper(IEnumerable<T> collection)
+            {
+                _list = new List<T>(collection);
+                _currentIndex = 0;
+            }
+
+            public T Next()
+            {
+                _currentIndex++;
+                if (_currentIndex == _list.Count) _currentIndex = 0;
+
+                return _list[_currentIndex];
+            }
+
+        }
+
+        private enum OrderGroupEnum { ByTime, ByOrderNumber}
 
     }  // class MainWindow
 }

@@ -101,7 +101,7 @@ namespace KDSWPFClient.Model
 
                 case OrderStatusEnum.Cancelled:
                     btnText1 = "ОТМЕНИТЬ";
-                    btnText2 = "Отменить приготовление " + (isOrder ? "заказа" : "блюда");
+                    btnText2 = string.Format("Отменить приготовление {0}", (isOrder ? "заказа" : "блюда"));
                     break;
 
                 case OrderStatusEnum.Commit:

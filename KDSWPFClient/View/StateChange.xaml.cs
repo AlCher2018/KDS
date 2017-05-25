@@ -44,6 +44,8 @@ namespace KDSWPFClient.View
             this.Loaded += StateChange_Loaded;
 
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            KDSModeEnum eMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
+            _allowedStates = KDSModeHelper.DefinedKDSModes[eMode].AllowedActions;
         }
 
         private void StateChange_Loaded(object sender, RoutedEventArgs e)
@@ -52,7 +54,6 @@ namespace KDSWPFClient.View
             setModelType();
 
             _currentState = (OrderStatusEnum)((_modelType == AppViewModelEnum.Order) ? Order.OrderStatusId : Dish.DishStatusId);
-            _allowedStates = (List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>)AppLib.GetAppGlobalValue("StatesAllowedForMove");
 
             setWinLayout();
         }

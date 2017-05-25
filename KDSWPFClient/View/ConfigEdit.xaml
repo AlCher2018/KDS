@@ -5,20 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="ConfigEdit" Height="737" Width="519">
+        Title="ConfigEdit" Height="600" Width="900">
 
     <Window.Resources>
         <!-- шаблон для отображения строк словаря отделов -->
         <DataTemplate x:Key="depsDataTemplate">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="20" SharedSizeGroup="IsViewColumn"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="IsViewColumn"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="IdColumn"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
                 </Grid.ColumnDefinitions>
                 <CheckBox Grid.Column="0" IsChecked="{Binding IsViewOnKDS}" FontSize="26"/>
-                <TextBlock Grid.Column="1" Text="{Binding Id}" Margin="10,0,20,0" FontSize="26"/>
-                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="10,0,20,0" FontSize="26"/>
+                <TextBlock Grid.Column="1" Text="{Binding Id}" Margin="10,0,20,0" FontSize="18"/>
+                <TextBlock Grid.Column="2" Text="{Binding Name}" Margin="10,0,20,0" FontSize="18"/>
             </Grid>
         </DataTemplate>
 
@@ -84,7 +84,7 @@
 
                                 <ScrollBar Name="PART_VerticalScrollBar"
                                     Orientation="Vertical"
-                                    Grid.Column="1" Width="16"
+                                    Grid.Column="1"
                                     Maximum="{TemplateBinding ScrollableHeight}"
                                     ViewportSize="{TemplateBinding ViewportHeight}"
                                     Value="{TemplateBinding VerticalOffset}"
@@ -114,7 +114,6 @@
 
 
     <DockPanel LastChildFill="True">
-        <TextBlock x:Name="textBlock" DockPanel.Dock="Top" Margin="10,10,10,3" TextWrapping="Wrap" VerticalAlignment="Top"  Text="Выберите отделы, которые будут отображаться на данном КДС-е"/>
 
         <StackPanel DockPanel.Dock="Bottom" Margin="10,20" Grid.IsSharedSizeScope="True" HorizontalAlignment="Right">
             <Grid>
@@ -128,81 +127,97 @@
             </Grid>
         </StackPanel>
 
-        <!-- кол-во колонок -->
-        <StackPanel DockPanel.Dock="Bottom" Margin="10,10,10,0" Orientation="Horizontal">
-            <TextBlock Text="количество колонок на экране: "/>
-            <TextBox x:Name="tbxOrdersColumnsCount" Width="40"/>
+        <StackPanel DockPanel.Dock="Bottom" Margin="10,20,10,0">
+            <!-- логгирование -->
+            <StackPanel  Orientation="Vertical">
+                <CheckBox x:Name="chkIsWriteTraceMessages" Content="запись в лог отладочных сообщений"/>
+                <CheckBox x:Name="chkIsLogUserAction" Content="запись в лог действий пользователя (пока не работает)"/>
+            </StackPanel>
+            <!-- кол-во колонок -->
+            <StackPanel  Margin="10" Orientation="Horizontal">
+                <TextBlock Text="количество колонок на экране: "/>
+                <TextBox x:Name="tbxOrdersColumnsCount" Width="40"/>
+            </StackPanel>
         </StackPanel>
 
-        <!-- логгирование -->
-        <StackPanel DockPanel.Dock="Bottom" Margin="10,20,10,0" Orientation="Vertical">
-            <CheckBox x:Name="chkIsWriteTraceMessages" Content="запись в лог отладочных сообщений"/>
-            <CheckBox x:Name="chkIsLogUserAction" Content="запись в лог действий пользователя (пока не работает)" Margin="0,5"/>
-        </StackPanel>
+        <Grid DockPanel.Dock="Top" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="6*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <Border DockPanel.Dock="Bottom" Margin="10,0,10,0" BorderBrush="DarkBlue" BorderThickness="1" Padding="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
+            <TextBlock x:Name="textBlock" Grid.Row="0" Grid.Column="0" TextWrapping="Wrap" Text="Выберите отделы, которые будут отображаться на данном КДС-е"/>
 
-                <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
-                    <TextBlock Text="Выберите режим работы КДС"/>
-                    <Border BorderBrush="DarkGray" BorderThickness="1">
-                        <WrapPanel x:Name="lbxKDSMode" Orientation="Horizontal">
-                            <RadioButton x:Name="rbCook" Content="ПОВАР" Tag="1" Style="{StaticResource kdsModeRadioButtonStyle}"/>
-                            <RadioButton x:Name="rbChef" Content="ШЕФ-ПОВАР" Tag="2" Style="{StaticResource kdsModeRadioButtonStyle}"/>
-                            <RadioButton x:Name="rbWaiter" Content="ОФИЦИАНТ" Tag="3" Style="{StaticResource kdsModeRadioButtonStyle}"/>
-                            <RadioButton x:Name="rbSpecial" Content="особый" Tag="4" Style="{StaticResource kdsModeRadioButtonStyle}"/>
-                        </WrapPanel>
-                    </Border>
-                </StackPanel>
+            <ListBox x:Name="listBoxDepartments" Grid.Row="1" Grid.Column="0" SelectionMode="Single" ItemTemplate="{StaticResource depsDataTemplate}">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <ScrollViewer Style="{StaticResource HeaderedScrollViewer}" Grid.IsSharedSizeScope="True">
+                            <StackPanel IsItemsHost="true"/>
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ListBox.Template>
+            </ListBox>
 
-                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,5,10,0">
-                    <TextBlock Text="Отображаемые состояния"/>
-                    <Border BorderBrush="DarkGray" BorderThickness="1">
-                        <StackPanel>
-                            <CheckBox x:Name="cbxState0" Tag="0" Content="Ожидание готовки"/>
-                            <CheckBox x:Name="cbxState1" Tag="1" Content="В процессе"/>
-                            <CheckBox x:Name="cbxState2" Tag="2" Content="Готово"/>
-                            <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
-                            <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
-                            <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
-                            <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+            <TextBlock Grid.Row="0" Grid.Column="1" Margin="20,0,0,0" TextWrapping="Wrap" Text="Выберите роль данного КДСа (отображаемые состояния и разрешенные действия)" VerticalAlignment="Bottom"/>
 
-                <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,5,0,0">
-                    <TextBlock Text="Разрешенные действия"/>
-                    <Border BorderBrush="DarkGray" BorderThickness="1">
-                        <StackPanel>
-                            <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа"/>
-                            <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа"/>
-                            <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
-                            <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту"/>
-                            <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <TextBlock DockPanel.Dock="Bottom" Text="Выберите роль данного КДСа (отображаемые состояния и разрешенные действия)" Margin="10,20,10,3"/>
+            <Border Grid.Row="1" Grid.Column="1" Margin="20,0,0,0" BorderBrush="DarkBlue" BorderThickness="1" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
 
-        <ListBox x:Name="listBoxDepartments" DockPanel.Dock="Top" Margin="10,0" SelectionMode="Single" ItemTemplate="{StaticResource depsDataTemplate}">
-            <ListBox.Template>
-                <ControlTemplate>
-                    <ScrollViewer Style="{StaticResource HeaderedScrollViewer}" Grid.IsSharedSizeScope="True">
-                        <StackPanel IsItemsHost="true"/>
-                    </ScrollViewer>
-                </ControlTemplate>
-            </ListBox.Template>
-        </ListBox>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+                        <TextBlock Text="Выберите режим работы КДС"/>
+                        <Border BorderBrush="DarkGray" BorderThickness="1">
+                            <WrapPanel x:Name="lbxKDSMode" Orientation="Horizontal">
+                                <RadioButton x:Name="rbCook" Content="ПОВАР" Tag="1" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                                <RadioButton x:Name="rbChef" Content="ШЕФ-ПОВАР" Tag="2" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                                <RadioButton x:Name="rbWaiter" Content="ОФИЦИАНТ" Tag="3" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                                <RadioButton x:Name="rbSpecial" Content="особый" Tag="4" Style="{StaticResource kdsModeRadioButtonStyle}"/>
+                            </WrapPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,5,10,0">
+                        <TextBlock Text="Отображаемые состояния"/>
+                        <Border BorderBrush="DarkGray" BorderThickness="1">
+                            <StackPanel x:Name="pnlStates">
+                                <CheckBox x:Name="cbxState0" Tag="0" Content="Ожидание готовки"/>
+                                <CheckBox x:Name="cbxState1" Tag="1" Content="В процессе"/>
+                                <CheckBox x:Name="cbxState2" Tag="2" Content="Готово"/>
+                                <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
+                                <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
+                                <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
+                        <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,5,0,0">
+                        <TextBlock Text="Разрешенные действия"/>
+                        <Border BorderBrush="DarkGray" BorderThickness="1">
+                            <StackPanel x:Name="pnlActions">
+                                <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа"/>
+                                <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа"/>
+                                <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
+                                <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту"/>
+                                <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+        </Grid>
 
     </DockPanel>
 </Window>

@@ -90,11 +90,90 @@ namespace KDSWPFClient.Model
         }
         #endregion
 
+        public static List<OrderStatusEnum> GetStatusesListFromSring(string sList)
+        {
+            if (sList.IsNull()) return null;
+
+            List<OrderStatusEnum> retVal = new List<OrderStatusEnum>();
+            string[] aVal = sList.Split(',');
+            OrderStatusEnum eStatus;
+            foreach (string item in aVal)
+            {
+                if (Enum.TryParse<OrderStatusEnum>(item, out eStatus)) retVal.Add(eStatus);
+            }
+            return (retVal.Count == 0) ? null : retVal;
+        }
+
+        public static List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> GetActionsListFromSring(string sList)
+        {
+            if (sList.IsNull()) return null;
+
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> retVal = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+
+            string[] aVal = sList.Split(';');
+            foreach (string item in aVal)
+            {
+                if (item.IsNull() == false)
+                {
+                    string[] aStr = item.Split(',');
+                    if (aStr.Length == 2)
+                    {
+                        OrderStatusEnum eStatFrom, eStatTo;
+                        if (Enum.TryParse(aStr[0], out eStatFrom) && Enum.TryParse(aStr[1], out eStatTo))
+                            retVal.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo));
+                    }
+                }
+            }
+
+            return (retVal.Count == 0) ? null : retVal;
+        }
+
+
+        // вернуть действие (пара состояний ИЗ - В) из строки с числовыми/строковыми значениями перечисления OrderStatusEnum
+        // разделенными запятой
+        public static KeyValuePair<OrderStatusEnum, OrderStatusEnum> GetStatusPairFromIntPair(string intPair)
+        {
+            string[] aStr = intPair.Split(',');
+            if (aStr.Length == 2)
+            {
+                OrderStatusEnum eStatFrom, eStatTo;
+                if (Enum.TryParse(aStr[0], out eStatFrom) && Enum.TryParse(aStr[1], out eStatTo))
+                    return new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo);
+            }
+            return new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.None, OrderStatusEnum.None);
+        }
+
+        // получение строк состояний и действий (пара состояний ИЗ - В)
+        public static string StatesListToString(List<OrderStatusEnum> statusList)
+        {
+            if (statusList == null) return null;
+
+            string retVal = "";
+            foreach (OrderStatusEnum item in statusList)
+            {
+                if (retVal.Length > 0) retVal += ",";
+                retVal += item.ToString();
+            }
+            return retVal;
+        }
+        public static string ActionsListToString(List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> actionsList)
+        {
+            if (actionsList == null) return null;
+
+            string retVal = "";
+            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in actionsList)
+            {
+                if (retVal.Length > 0) retVal += ";";
+                retVal += item.Key.ToString() + "," + item.Value.ToString();
+            }
+            return retVal;
+
+        }
 
         public static void PutCfgKDSModeToAppProps()
         {
             string cfgValue = AppLib.GetAppSetting("KDSMode");
-            if (cfgValue.IsNull() == false) return;  // нет такого элемента
+            if (cfgValue.IsNull()) return;  // нет такого элемента
 
             KDSModeEnum mode;
             if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false) return;  // не смогли распарсить
@@ -129,6 +208,7 @@ namespace KDSWPFClient.Model
         // представлен структурой KeyValuePair, в которой Key - состояние ИЗ которого переходим, Value - состояние В которое переходим
         private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> _allowedActions;
         public List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> AllowedActions { get { return _allowedActions; } }
+
 
         public KDSModeStates()
         {
@@ -173,24 +253,12 @@ namespace KDSWPFClient.Model
 
         public string AllowedStatesToString()
         {
-            string retVal = "";
-            foreach (OrderStatusEnum item in _allowedStates)
-            {
-                if (retVal.Length > 0) retVal += ",";
-                retVal += item.ToString();
-            }
-            return retVal;
+            return KDSModeHelper.StatesListToString(_allowedStates);
         }
 
         public string AllowedActionsToString()
         {
-            string retVal = "";
-            foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in _allowedActions)
-            {
-                if (retVal.Length > 0) retVal += ";";
-                retVal += item.Key + "," + item.Value;
-            }
-            return retVal;
+            return KDSModeHelper.ActionsListToString(_allowedActions);
         }
 
 
