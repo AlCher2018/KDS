@@ -395,6 +395,22 @@ namespace KDSWPFClient.Lib
             }
         }
 
+        // вернуть кисть из ресурса приложения
+        // если ключа нет, то в зависимости от параметра isDefaultWhite возвращается белая (для фона) или черная (для текста) кисть
+        public static Brush GetAppResourcesBrush(string resKey, bool isDefaultWhite = true)
+        {
+            ResourceDictionary resDict = App.Current.Resources;
+            object resVal = resDict[resKey];
+
+            Brush retVal;
+            if (!(resVal is Brush) || (resVal == null))
+                retVal = new SolidColorBrush(isDefaultWhite ? Colors.White : Colors.Black);
+            else
+                retVal = (Brush)resVal;
+
+            return retVal;
+        }
+
         #endregion
 
 

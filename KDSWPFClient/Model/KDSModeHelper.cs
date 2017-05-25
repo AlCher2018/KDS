@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace KDSWPFClient.Model
 {
@@ -28,7 +29,7 @@ namespace KDSWPFClient.Model
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.Ready)
             });
-
+            modeCook.CreateUserStateSets();
 
             // шеф-повар
             KDSModeStates modeChef = new KDSModeStates() { KDSMode = KDSModeEnum.Chef };
@@ -43,14 +44,19 @@ namespace KDSWPFClient.Model
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Cooking),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled, OrderStatusEnum.CancelConfirmed)
             });
+            modeChef.CreateUserStateSets();
 
             // официант
             KDSModeStates modeWaiter = new KDSModeStates() { KDSMode = KDSModeEnum.Waiter };
-            modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[] { OrderStatusEnum.Ready });
+            modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[] 
+            {
+                OrderStatusEnum.Ready
+            });
             modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
             {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took)
             });
+            modeWaiter.CreateUserStateSets();
 
             // особая роль
             KDSModeStates modeSpecial = new KDSModeStates() { KDSMode = KDSModeEnum.Special };
@@ -69,6 +75,60 @@ namespace KDSWPFClient.Model
             get { return _definedKDSModes; }
         }
 
+
+        public static List<KDSUserStatesSet> CreateUserStatesList(List<OrderStatusEnum> statesList)
+        {
+            if ((statesList == null) || (statesList.Count < 2)) return null;
+
+            List<KDSUserStatesSet> retVal = new List<Model.KDSUserStatesSet>();
+
+            KDSUserStatesSet curSet;
+            int initIdx;  // начальный индекс
+            Brush bBrush, fBrush;
+
+            // отсортировать по значению перечисления
+            List<OrderStatusEnum> sortedStates = statesList.OrderBy(s => (int)s).ToList(); 
+
+            // если есть состояния Ожидание и Готовка, то объединить их в один набор "В процессе"
+            if ((sortedStates.Count >= 2) && (sortedStates[0] == OrderStatusEnum.WaitingCook) && (sortedStates[1] == OrderStatusEnum.Cooking))
+            {
+                StateGraphHelper.SetStateButtonBrushes(OrderStatusEnum.Cooking, out bBrush, out fBrush);
+                curSet = new KDSUserStatesSet() { Name = "В процессе", BackBrush = bBrush, FontBrush = fBrush };
+                curSet.States.AddRange(new[] { OrderStatusEnum.WaitingCook , OrderStatusEnum.Cooking });
+                initIdx = 2;
+            }
+            else initIdx = 0;
+
+            // добавить состояния по одному
+            string tabName;
+            for (int i = initIdx; i < sortedStates.Count; i++)
+            {
+                OrderStatusEnum curState = sortedStates[i];
+                StateGraphHelper.SetStateButtonBrushes(curState, out bBrush, out fBrush);
+                tabName = StateGraphHelper.GetStateTabName(curState);
+
+                curSet = new KDSUserStatesSet() { Name = tabName, BackBrush = bBrush, FontBrush = fBrush };
+
+                curSet.States.Add(curState);
+            }
+
+            // первый элемент - все состояния, если есть более одного состояния в списке
+            if (statesList.Count > 1)
+            {
+                curSet = new KDSUserStatesSet()
+                {
+                    Name = "Все блюда",
+                    BackBrush = new SolidColorBrush(Colors.MediumSeaGreen),
+                    FontBrush = new SolidColorBrush(Colors.Navy)
+                };
+                curSet.States.AddRange(statesList);
+
+                retVal.Insert(0, curSet);
+            }
+            
+            // список из менее 2-х элементов не рассматриваем
+            return (retVal.Count < 2) ? null : retVal;
+        }
 
         #region режим работы КДС из KDSModeEnum: повар, шеф-повар, официант
         // РАЗРЕШЕННЫЕ СОСТОЯНИЯ
@@ -190,13 +250,16 @@ namespace KDSWPFClient.Model
 
                 modeStates.StringToAllowedStates(AppLib.GetAppSetting("KDSSpecialModeStates"));
                 modeStates.StringToAllowedActions(AppLib.GetAppSetting("KDSSpecialModeActions"));
+                modeStates.CreateUserStateSets();
             }
         }  // method
 
 
     }  // class
 
+
     // класс, объединяющий разрешенные состояния и разрешенные действия (переходы между состояниями) для режима КДС
+    // а также пользовательские наборы состояний (пользовательские фильтры)
     public class KDSModeStates
     {
         public KDSModeEnum KDSMode { get; set; }
@@ -209,11 +272,15 @@ namespace KDSWPFClient.Model
         private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> _allowedActions;
         public List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> AllowedActions { get { return _allowedActions; } }
 
+        // каждый набор имеет имя, кисти для фона и текста и список состояний
+        private List<KDSUserStatesSet> _stateSets;
+        public List<KDSUserStatesSet> StateSets { get { return _stateSets; } }
 
         public KDSModeStates()
         {
             _allowedStates = new List<OrderStatusEnum>();
             _allowedActions = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>();
+            _stateSets = new List<KDSUserStatesSet>();
         }
 
 
@@ -251,6 +318,14 @@ namespace KDSWPFClient.Model
             }
         }
 
+        public void CreateUserStateSets()
+        {
+            _stateSets.Clear();
+            var result = KDSModeHelper.CreateUserStatesList(_allowedStates);
+
+            if (result != null) _stateSets.AddRange(result);
+        }
+
         public string AllowedStatesToString()
         {
             return KDSModeHelper.StatesListToString(_allowedStates);
@@ -262,7 +337,24 @@ namespace KDSWPFClient.Model
         }
 
 
-    }  // class
+    }  // class KDSModeStates
 
+
+    // пользовательский набор состояний - пользовательский фильтр
+    public class KDSUserStatesSet
+    {
+        public string Name { get; set; }
+        public Brush BackBrush { get; set; }
+        public Brush FontBrush { get; set; }
+
+        private List<OrderStatusEnum> _states;
+        public List<OrderStatusEnum> States { get; set; }
+
+        public KDSUserStatesSet()
+        {
+            _states = new List<OrderStatusEnum>();
+        }
+
+    }  // class KDSUserStatesSet
 
 }

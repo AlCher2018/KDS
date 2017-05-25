@@ -27,11 +27,10 @@ namespace KDSWPFClient
         private KDSModeEnum _currentKDSMode;
         //  и текущие разрешения
         private KDSModeStates _currentKDSStates;
-        private List<int> _userKDSStatesId;
 
         // классы для циклического перебора клиентских условий отображения блюд
         private ListLooper<OrderGroupEnum> _orderGroupLooper;
-        private ListLooper<> _userViewStates;
+        private ListLooper<KDSUserStatesSet> _userViewStates;  // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
 
         // страницы заказов
         private OrdersPages _pages;
@@ -61,6 +60,7 @@ namespace KDSWPFClient
 
             // классы для циклического перебора клиентских условий отображения блюд
             _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByTime, OrderGroupEnum.ByOrderNumber });
+            setUserStatesTab();
 
             double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
@@ -85,7 +85,6 @@ namespace KDSWPFClient
 
             _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
         }
-
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -152,10 +151,6 @@ namespace KDSWPFClient
             if (svcOrders == null) return;
 
             // удалить из svcOrders блюда, не входящие в условия фильтрации
-            // TODO добавить в чекер разрешенные состояния из текущей роли
-            // не здесь!!! где хранить чекер для внешних изменений
-//            List<OrderStatusEnum> allowedStates = KDSModeHelper.GetKDSModeAllowedStates((KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode"));
-
             _delOrderIds.Clear(); _delDishIds.Clear();
             foreach (OrderModel orderMode in svcOrders)
             {
@@ -172,6 +167,7 @@ namespace KDSWPFClient
 
             Debug.Print("orders {0}", svcOrders.Count);
             svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
+
 
             // *****
             //  В svcOrder<orderModel> НАХОДИТСЯ СПИСОК, КОТОРЫЙ НЕОБХОДИМО ОТОБРАЗИТЬ НА ЭКРАНЕ
@@ -206,6 +202,8 @@ namespace KDSWPFClient
                     if (orderView.IsDishesListUpdated && !isViewRepaint) isViewRepaint = true;
                 }
             }
+
+            // TODO нумерация и сортировка строк заказа после реорганизации списка блюд
 
             // перерисовать полностью
             if (isViewRepaint == true)
@@ -301,12 +299,12 @@ namespace KDSWPFClient
                 {
                     _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
-                    updCheckerDishStateСfg();
+                    updCheckerDishState();
                 }
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates"))
                 {
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
-                    updCheckerDishStateСfg();
+                    updCheckerDishState();
                 }
             }
             cfgEdit = null;
@@ -319,7 +317,7 @@ namespace KDSWPFClient
         {
             _valueDishChecker.Clear();
             updCheckerDepUIDs();
-            updCheckerDishStateСfg();
+            updCheckerDishState();
         }
 
         // отделы, разрешенные на данном КДС (из config-файла)
@@ -335,44 +333,78 @@ namespace KDSWPFClient
                 _valueDishChecker.Update("depId", (OrderDishModel dish) => sAllowDeps.Contains(dish.Department.UID));
             }
         }
-        // разрешенные состояния блюд из config-а
-        private void updCheckerDishStateСfg()
+
+        // фильтр состояний блюд
+        private void updCheckerDishState()
         {
-            if ((_currentKDSStates.AllowedStates == null) || (_currentKDSStates.AllowedStates.Count == 0))
+            List<int> ids;
+            // если нет пользовательского фильтра состояний, то взять фильтр роли
+            if ((_currentKDSStates.StateSets == null) || (_currentKDSStates.StateSets.Count == 0))
             {
-                _valueDishChecker.Update("dishStatesCfg", (OrderDishModel dish) => false);
+                // применить фильтр роли
+                if ((_currentKDSStates.AllowedStates == null) || (_currentKDSStates.AllowedStates.Count == 0))
+                {
+                    _valueDishChecker.Update("dishStates", (OrderDishModel dish) => false);
+                }
+                else
+                {
+                    ids = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
+                    _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
+                }
             }
+            // применить пользовательский фильтр состояний
             else
             {
-                List<int> stateIds = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
-                _valueDishChecker.Update("dishStatesCfg", (OrderDishModel dish) => stateIds.Contains(dish.DishStatusId));
+                KDSUserStatesSet statesSet = _userViewStates.Current;
+                // для фильтра берем список Ид состояний
+                ids = statesSet.States.Select(s => (int)s).ToList();
+                _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
             }
-        }
-        private void updCheckerDishStateUser()
-        {
-            if ((_userKDSStatesId == null) || (_userKDSStatesId.Count == 0))
-            {
-                _valueDishChecker.Remove("dishStatesUser");
-            }
-            else
-            {
-                _valueDishChecker.Update("dishStatesUser", (OrderDishModel dish) => _userKDSStatesId.Contains(dish.DishStatusId));
-            }
+
         }
         #endregion
 
         #region Настройка приложения боковыми кнопками
 
-        private void set
+        private void setUserStatesTab()
+        {
+            // установить пользовательский фильтр состояний
+            if ((_currentKDSStates.StateSets == null) || (_currentKDSStates.StateSets.Count == 0))
+            {
+                _userViewStates = new ListLooper<KDSUserStatesSet>(_currentKDSStates.StateSets);
+                updateUserStatesFilter();
+                btnDishStatusFilter.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                _userViewStates = null;
+                _valueDishChecker.Remove("dishStates");
+                btnDishStatusFilter.Visibility = Visibility.Hidden;
+            }
+        }
 
         private void tbOrderGroup_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-
+            // TODO реализовать сортировку заказов по времени или группировку по номеру
         }
 
         private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            updateUserStatesFilter();
+        }
 
+        private void updateUserStatesFilter()
+        {
+            // обновить пользовательский фильтр
+            updCheckerDishState();
+
+            // отобразить на вкладке следующий набор
+            KDSUserStatesSet statesSet = _userViewStates.Next();
+
+            btnDishStatusFilter.Background = statesSet.BackBrush;
+
+            tbDishStatusFilter.Text = statesSet.Name;
+            tbDishStatusFilter.Foreground = statesSet.FontBrush;
         }
         #endregion
 
@@ -435,7 +467,9 @@ namespace KDSWPFClient
             private List<T> _list;
             private int _currentIndex;
 
+            public List<T> InnerList { get { return _list; } }
             public int CurrentIndex { get { return _currentIndex; } }
+            public T Current { get { return _list[_currentIndex]; } }
 
             public ListLooper(IEnumerable<T> collection)
             {

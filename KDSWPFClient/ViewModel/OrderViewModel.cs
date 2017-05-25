@@ -135,10 +135,13 @@ namespace KDSWPFClient.ViewModel
             // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд
             // и необходимо перерисовать все панели
             _isDishesListUpdated = false;
+            
             // удалить блюда, которые не пришли от службы
             List<int> delIds = Dishes.Select(d => d.Id).Except(svcOrder.Dishes.Values.Select(d => d.Id)).ToList();
             if (delIds.Count > 0) _isDishesListUpdated = true;
             Dishes.RemoveAll(d => delIds.Contains(d.Id));
+
+            // TODO индекс блюда только для новвых строк
             OrderDishViewModel dishView;
             int dishIndex = 0;
             foreach (OrderDishModel dishModel in svcOrder.Dishes.Values)

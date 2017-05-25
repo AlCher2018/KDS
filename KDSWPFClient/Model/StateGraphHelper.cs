@@ -16,7 +16,7 @@ namespace KDSWPFClient.Model
 
         #region Визуальные элементы состояний и переходов
         // кисти фона и текста
-        public static void SetStateButtonBrushes(OrderStatusEnum eState, out SolidColorBrush backgroundBrush, out SolidColorBrush foregroundBrush)
+        public static void SetStateButtonBrushes(OrderStatusEnum eState, out Brush backgroundBrush, out Brush foregroundBrush)
         {
             ResourceDictionary resDict = App.Current.Resources;
 
@@ -28,28 +28,28 @@ namespace KDSWPFClient.Model
                     break;
 
                 case OrderStatusEnum.WaitingCook:
-                    backgroundBrush = (SolidColorBrush)resDict["orderHeaderBackBrushWaitingCook"];
-                    foregroundBrush = (SolidColorBrush)resDict["orderHeaderForeBrushWaitingCook"];
+                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushWaitingCook");
+                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushWaitingCook");
                     break;
 
                 case OrderStatusEnum.Cooking:
-                    backgroundBrush = (SolidColorBrush)resDict["orderHeaderBackBrushCooking"];
-                    foregroundBrush = (SolidColorBrush)resDict["orderHeaderForeBrushCooking"];
+                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushCooking");
+                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushCooking");
                     break;
 
                 case OrderStatusEnum.Ready:
-                    backgroundBrush = (SolidColorBrush)resDict["orderHeaderBackBrushReady"];
-                    foregroundBrush = (SolidColorBrush)resDict["orderHeaderForeBrushReady"];
+                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushReady");
+                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushReady");
                     break;
 
                 case OrderStatusEnum.Took:
-                    backgroundBrush = (SolidColorBrush)resDict["orderHeaderBackBrushTook"];
-                    foregroundBrush = (SolidColorBrush)resDict["orderHeaderForeBrushTook"];
+                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushTook");
+                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushTook");
                     break;
 
                 case OrderStatusEnum.Cancelled:
-                    backgroundBrush = (SolidColorBrush)resDict["orderHeaderBackBrushCancelled"];
-                    foregroundBrush = (SolidColorBrush)resDict["orderHeaderForeBrushCancelled"];
+                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushCancelled");
+                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushCancelled");
                     break;
 
                 case OrderStatusEnum.Commit:
@@ -154,6 +154,42 @@ namespace KDSWPFClient.Model
             return retVal;
         }
 
+
+        public static string GetStateTabName(OrderStatusEnum eState)
+        {
+            string retVal = null;
+
+            switch (eState)
+            {
+                case OrderStatusEnum.None:
+                    break;
+                case OrderStatusEnum.WaitingCook:
+                    retVal = "В ожидании";
+                    break;
+                case OrderStatusEnum.Cooking:
+                    retVal = "В процессе";
+                    break;
+                case OrderStatusEnum.Ready:
+                    retVal = "Готовые";
+                    break;
+                case OrderStatusEnum.Took:
+                    retVal = "Выданные";
+                    break;
+                case OrderStatusEnum.Cancelled:
+                    retVal = "Отмененные";
+                    break;
+                case OrderStatusEnum.Commit:
+                    retVal = "Зафиксированные";
+                    break;
+                case OrderStatusEnum.CancelConfirmed:
+                    retVal = "Отмена подтверждена";
+                    break;
+                default:
+                    break;
+            }
+
+            return retVal;
+        }
 
         #endregion
 

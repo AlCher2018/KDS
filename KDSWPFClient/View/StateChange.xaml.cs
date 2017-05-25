@@ -177,7 +177,7 @@ namespace KDSWPFClient.View
         private Border getStateButton(double width, double height, double horMargin, OrderStatusEnum eState, bool isReturnCooking)
         {
             // получить фон и цвет шрифта
-            SolidColorBrush backgroundBrush = null, foregroundBrush = null;
+            Brush backgroundBrush = null, foregroundBrush = null;
             StateGraphHelper.SetStateButtonBrushes(eState, out backgroundBrush, out foregroundBrush);
             // и надписи на кнопке
             string btnText1, btnText2;
