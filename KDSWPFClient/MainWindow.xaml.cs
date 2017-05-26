@@ -19,7 +19,8 @@ namespace KDSWPFClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        private static Timer _timer;
+        private Timer _timer;
+        private Timer _orderGroupTimer;
 
         private AppDataProvider _dataProvider;
 
@@ -30,7 +31,7 @@ namespace KDSWPFClient
 
         // классы для циклического перебора клиентских условий отображения блюд
         private ListLooper<OrderGroupEnum> _orderGroupLooper;
-        private ListLooper<KDSUserStatesSet> _userViewStates;  // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
+        private ListLooper<KDSUserStatesSet> _userStatesLooper;  // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
 
         // страницы заказов
         private OrdersPages _pages;
@@ -44,7 +45,10 @@ namespace KDSWPFClient
         private List<int> _delDishIds;  
         private bool _isUpdateLayout = false;
 
-        private DateTime _dtAdmin;
+        // переменные для опеределения условий отображения окна настройки
+        private DateTime _adminDate;
+        private int _adminBitMask;
+        private Timer _adminTimer;
 
 
         public MainWindow()
@@ -58,21 +62,33 @@ namespace KDSWPFClient
             _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
-            // классы для циклического перебора клиентских условий отображения блюд
+            // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
+            _orderGroupTimer = new Timer();
+            _orderGroupTimer.Elapsed += _orderGroupTimer_Elapsed;
+            setOrderGroupTimerInterval(); // интервал таймера взять из config-файла
+
+            // условия отбора блюд
+            _valueDishChecker = new ValueChecker<OrderDishModel>();
+            updCheckerDepUIDs();  // добавить в фильтр отделы
+            updCheckerDishState();  // и состояния
+
+            // класс для циклического перебора группировки заказов
+            // в коде используется ТЕКУЩИЙ объект, но на вкладках отображается СЛЕДУЮЩИЙ !!!
             _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByTime, OrderGroupEnum.ByOrderNumber });
-            setUserStatesTab();
+            setOrderGroupTab();
 
             double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
 
+            // отрисовка страниц заказов
             _pages = new OrdersPages();
+            _pages.OrdersColumnsCount = (int)AppLib.GetAppGlobalValue("OrdersColumnsCount");
+
             _viewOrders = new List<OrderViewModel>();
             // debug test data
             //Button_Click(null,null);
-            // условия отбора блюд
-            _valueDishChecker = new ValueChecker<OrderDishModel>();
-            updateDishCheckers();
 
+            // основной таймер опроса сервиса
             _timer = new Timer(1000);
             _timer.Elapsed += _timer_Elapsed;
             _timer.Start();
@@ -84,7 +100,57 @@ namespace KDSWPFClient
             btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
 
             _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
+
+            _adminTimer = new Timer() { Interval = 4000d };
+            _adminTimer.Elapsed += _adminTimer_Elapsed;
         }
+
+        private void _adminTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            _adminTimer.Stop();
+            _adminBitMask = 0;
+        }
+
+        // админ жест
+        private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(grdMain);
+            //            Debug.Print("-- down " + p.ToString());
+
+            if ((p.X <= brdAdmin.ActualWidth) && (p.Y <= 30d))  // верхний левый угол
+            {
+                _adminBitMask = 0;
+                _adminBitMask = _adminBitMask.SetBit(0);
+                _adminTimer.Start();
+            }
+            else if ((p.X <= brdAdmin.ActualWidth) && (p.Y >= (brdAdmin.ActualHeight - 30d))) // нижний левый угол
+                _adminBitMask = _adminBitMask.SetBit(2);
+            else
+                _adminBitMask = 0;
+                
+            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
+        }
+
+        private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(grdMain);
+            //            int iSec = (DateTime.Now - _adminDate).Seconds;
+            //            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+
+            if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 60))
+                _adminBitMask = _adminBitMask.SetBit(1); // верхний левый со смещением вниз
+            else if ((p.X <= brdAdmin.ActualWidth) && (p.Y >= (brdAdmin.ActualHeight-60d)) && (p.Y <= (brdAdmin.ActualHeight-30d)))  // нижний левый со смещением вверх
+            {
+                _adminBitMask = _adminBitMask.SetBit(3);
+                if (_adminBitMask == 15) openConfigPanel();
+            }
+            else
+                _adminBitMask = 0;
+            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
+        }
+
+
+
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -138,6 +204,9 @@ namespace KDSWPFClient
         }  // method
 
 
+        // 
+        // *********  ОСНОВНОЙ МЕТОД ПОЛУЧЕНИЯ ЗАКАЗОВ И ИХ ФИЛЬТРАЦИИ И ГРУППИРОВКИ НА КДСe  ************
+        //
         // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
@@ -165,8 +234,15 @@ namespace KDSWPFClient
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
-            Debug.Print("orders {0}", svcOrders.Count);
-            svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
+            // TODO группировка заказов по номерам
+            if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
+            {
+
+            }
+
+
+            //Debug.Print("orders {0}", svcOrders.Count);
+            //svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
 
 
             // *****
@@ -266,24 +342,10 @@ namespace KDSWPFClient
 
         #region настройка приложения через ConfigEdit
 
-        private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            Point p = e.GetPosition(grdMain);
-            Debug.Print("-- down " + p.ToString());
 
-            if ((p.X <= 15d) && (p.Y <= 15d)) _dtAdmin = DateTime.Now;
-        }
-
-        private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            Point p = e.GetPosition(grdMain);
-            int iSec = (DateTime.Now - _dtAdmin).Seconds;
-            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
-
-            // длинный тап (более 4 сек) - открываем конфиг
-            if ((p.X <= 15d) && (p.Y <= 15d) && (iSec >= 4)) openConfigPanel();
-        }
-
+        // ******
+        // ФОРМА НАСТРОЕК И ОБНОВЛЕНИЕ ПОЛЕЙ ПОСЛЕ НАСТРОЙКИ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
+        // ******
         private void openConfigPanel()
         {
             _timer.Stop();
@@ -291,10 +353,15 @@ namespace KDSWPFClient
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
-            // обновить фильтр блюд
+
+            //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
             if (cfgEdit.AppNewSettings.Count > 0)
             {
-                if (cfgEdit.AppNewSettings.ContainsKey("depUIDs")) updCheckerDepUIDs();
+                // обновить фильтр блюд
+                if (cfgEdit.AppNewSettings.ContainsKey("depUIDs"))
+                {
+                    updCheckerDepUIDs();
+                }
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSMode"))
                 {
                     _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
@@ -306,19 +373,32 @@ namespace KDSWPFClient
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
                     updCheckerDishState();
                 }
+
+                // кол-во колонок заказов
+                if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
+                {
+                    _pages.OrdersColumnsCount = (int)AppLib.GetAppGlobalValue("OrdersColumnsCount");
+                }
+
+                // интервал таймера сброса группировки заказов по номерам
+                if (cfgEdit.AppNewSettings.ContainsKey("AutoReturnOrdersGroupByTime"))
+                {
+                    setOrderGroupTimerInterval();
+                }
+
             }
             cfgEdit = null;
 
             _timer.Start();
         }
 
-
-        private void updateDishCheckers()
+        // получить из config-файла интервал таймера сброса группировки заказов по номерам
+        private void setOrderGroupTimerInterval()
         {
-            _valueDishChecker.Clear();
-            updCheckerDepUIDs();
-            updCheckerDishState();
+            string cfgStr = AppLib.GetAppSetting("AutoReturnOrdersGroupByTime");
+            _orderGroupTimer.Interval = 1000d * ((cfgStr.IsNull()) ? 30d : cfgStr.ToDouble());  // и перевести в мсек
         }
+
 
         // отделы, разрешенные на данном КДС (из config-файла)
         private void updCheckerDepUIDs()
@@ -334,7 +414,7 @@ namespace KDSWPFClient
             }
         }
 
-        // фильтр состояний блюд
+        // обновить фильтр состояний блюд
         private void updCheckerDishState()
         {
             List<int> ids;
@@ -351,61 +431,115 @@ namespace KDSWPFClient
                     ids = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
                     _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
                 }
+
+                // уничтожить объект перебора значений
+                if (_userStatesLooper != null) _userStatesLooper = null;
+                // скрыть вкладку перебора фильтра состояний
+                btnDishStatusFilter.Visibility = Visibility.Hidden;
             }
+
             // применить пользовательский фильтр состояний
             else
             {
-                KDSUserStatesSet statesSet = _userViewStates.Current;
+                // попытаться создать объект перебора значений
+                if (_userStatesLooper == null)
+                {
+                    _userStatesLooper = new ListLooper<KDSUserStatesSet>(_currentKDSStates.StateSets);
+
+                    // отобразить по умолчанию блюда в Процессе
+                    KDSUserStatesSet cookingSet = _userStatesLooper.InnerList.FirstOrDefault(s => s.Name == "В процессе");
+                    if (cookingSet != null) _userStatesLooper.Current = cookingSet;
+                }
+
+                if (_userStatesLooper == null)
+                {
+                    btnDishStatusFilter.Visibility = Visibility.Hidden;
+                    return;
+                }
+
+                // текущий набор состояний
+                KDSUserStatesSet statesSet = _userStatesLooper.Current;
                 // для фильтра берем список Ид состояний
                 ids = statesSet.States.Select(s => (int)s).ToList();
                 _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
+
+                // вкладка перебора фильтров состояний
+                if (btnDishStatusFilter.Visibility == Visibility.Hidden) btnDishStatusFilter.Visibility = Visibility.Visible;
+                setUserStatesTab();  // отобразить на вкладке текущий набор
             }
 
         }
         #endregion
 
         #region Настройка приложения боковыми кнопками
-
-        private void setUserStatesTab()
-        {
-            // установить пользовательский фильтр состояний
-            if ((_currentKDSStates.StateSets == null) || (_currentKDSStates.StateSets.Count == 0))
-            {
-                _userViewStates = new ListLooper<KDSUserStatesSet>(_currentKDSStates.StateSets);
-                updateUserStatesFilter();
-                btnDishStatusFilter.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                _userViewStates = null;
-                _valueDishChecker.Remove("dishStates");
-                btnDishStatusFilter.Visibility = Visibility.Hidden;
-            }
-        }
-
+        // *************************
+        // *** группировка заказов
         private void tbOrderGroup_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            // TODO реализовать сортировку заказов по времени или группировку по номеру
+            // сдвинуть текущий элемент
+            _orderGroupLooper.SetNextIndex();
+            // и отобразить следующий
+            setOrderGroupTab();
+        }
+        // таймер автом.возврата группировки заказов "По времени"
+        private void _orderGroupTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            _orderGroupTimer.Stop();
+
+            if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
+
+            this.Dispatcher.Invoke(new Action(setOrderGroupTab));
+
+            _orderGroupTimer.Stop();
         }
 
+        // отобразить на вкладке СЛЕДУЮЩИЙ элемент!!
+        private void setOrderGroupTab()
+        {
+            //OrderGroupEnum eOrderGroup = _orderGroupLooper.GetNextObject();
+            OrderGroupEnum eOrderGroup = _orderGroupLooper.Current; // отображать текущий объект!!
+
+            switch (eOrderGroup)
+            {
+                case OrderGroupEnum.ByTime:
+                    tbOrderGroup.Text = "По времени";
+                    if (_orderGroupTimer != null) _orderGroupTimer.Stop();
+                    break;
+
+                case OrderGroupEnum.ByOrderNumber:
+                    tbOrderGroup.Text = "По заказам";
+                    if (_orderGroupTimer != null) _orderGroupTimer.Start();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        // ****************************
+        // **  фильтр по состояниям
+        // перебор фильтров состояний по клику на вкладке
         private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            updateUserStatesFilter();
-        }
-
-        private void updateUserStatesFilter()
-        {
-            // обновить пользовательский фильтр
+            // сдвинуть фильтр
+            _userStatesLooper.SetNextIndex();
+            // обновить пользовательский фильтр текущим набором
             updCheckerDishState();
 
-            // отобразить на вкладке следующий набор
-            KDSUserStatesSet statesSet = _userViewStates.Next();
+        }
+
+        // отобразить следующий набор фильтров по состоянию на вкладке
+        private void setUserStatesTab()
+        {
+            //KDSUserStatesSet statesSet = _userStatesLooper.GetNextObject();
+            KDSUserStatesSet statesSet = _userStatesLooper.Current;
 
             btnDishStatusFilter.Background = statesSet.BackBrush;
 
             tbDishStatusFilter.Text = statesSet.Name;
             tbDishStatusFilter.Foreground = statesSet.FontBrush;
         }
+
         #endregion
 
         #region inner classes
@@ -468,26 +602,55 @@ namespace KDSWPFClient
             private int _currentIndex;
 
             public List<T> InnerList { get { return _list; } }
-            public int CurrentIndex { get { return _currentIndex; } }
-            public T Current { get { return _list[_currentIndex]; } }
+            public int CurrentIndex
+            {
+                get { return _currentIndex; }
+                set { _currentIndex = value; }
+            }
 
+            public T Current
+            {
+                get { return _list[_currentIndex]; }
+                set
+                {
+                    if (_list.Contains(value)) _currentIndex = _list.IndexOf(value);
+                }
+            }
+
+            // CONSTRUCTOR
+            //  объект инициализируется коллекцией для перебора
+            //  если ничего не передано или кол-во меньше 2, то объект не создаем
             public ListLooper(IEnumerable<T> collection)
             {
+                if ((collection == null) || (collection.Count() < 2)) return;
+
                 _list = new List<T>(collection);
                 _currentIndex = 0;
             }
 
-            public T Next()
+            // сдвинуть текущий индекс для получения следующего значения
+            public void SetNextIndex()
             {
                 _currentIndex++;
                 if (_currentIndex == _list.Count) _currentIndex = 0;
 
-                return _list[_currentIndex];
+            }
+
+            // получить следующий объект БЕЗ смещения текущего индекса
+            // нужен для отображения следующего элемента в UI
+            public T GetNextObject()
+            {
+                int i = _currentIndex + 1; if (i == _list.Count) i = 0;
+                return _list[i];
             }
 
         }
 
         private enum OrderGroupEnum { ByTime, ByOrderNumber}
 
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+            openConfigPanel();
+        }
     }  // class MainWindow
 }

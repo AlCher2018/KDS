@@ -22,11 +22,14 @@
             <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
 
+        <Button x:Name="button" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,60,0,0" VerticalAlignment="Top" Click="button_Click"/>
+
         <!-- панель заказов -->
-        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill"/>
+        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
+        </Viewbox>
 
         <!-- кнопка переключения состояний -->
-        <Border Grid.Column="0">
+        <Border x:Name="brdAdmin"  Grid.Column="0">
             <Border.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFB2B2B2"/>

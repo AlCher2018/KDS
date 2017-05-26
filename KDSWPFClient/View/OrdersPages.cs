@@ -18,12 +18,15 @@ namespace KDSWPFClient.View
 
         // для расчета размещения панелей заказов на канве
         private double _screenWidth, _screenHeight;
-        private int _pageColsCount;
         private double _colWidth, _colMargin;
         private int _curColIndex;
         private double _curTopValue;
         private double _hdrTopMargin;
         private int _currentPageIndex;  // 1-based value !!!!
+
+        // количество столбцов заказов, берется из config-файла и редактируется в окне Настройка
+        private int _pageColsCount;
+        public int OrdersColumnsCount { set { _pageColsCount = value; } }
 
         public int CurrentPageIndex { get { return _currentPageIndex; } }
         public int Count { get { return _pages.Count; } }
@@ -38,7 +41,6 @@ namespace KDSWPFClient.View
             _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
 
-            _pageColsCount = (int)AppLib.GetAppGlobalValue("OrdersColumnsCount");
             _colWidth = (double)AppLib.GetAppGlobalValue("OrdersColumnWidth");
             _colMargin = (double)AppLib.GetAppGlobalValue("OrdersColumnMargin");
             _hdrTopMargin = (double)AppLib.GetAppGlobalValue("ordPnlTopMargin");

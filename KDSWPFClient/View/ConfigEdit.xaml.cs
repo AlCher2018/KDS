@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using CAVControls;
+using KDSWPFClient.Lib;
 using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
@@ -53,6 +54,7 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
             _cfgValKeeper.AddPreValue("AppFontScale", true, null);
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", true, tbxOrdersColumnsCount);
+            _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
 
             
             bool isDefault = true;
@@ -509,11 +511,10 @@ namespace KDSWPFClient.View
                         case "Byte":
                         case "Float":
                         case "Decimal":
-                            if (_control is TextBox)
-                            {
-                                _newValue = (_control as TextBox).Text.ToInt();
-                            }
+                            if (_control is TextBox) _newValue = (_control as TextBox).Text.ToInt();
+                            else if (_control is NumericUpDown) _newValue = (_control as NumericUpDown).Value;
                             break;
+
                         case "Boolean":
                             if (_control is CheckBox)
                             {
@@ -540,7 +541,10 @@ namespace KDSWPFClient.View
 
             private void putValueToField(bool fromAppProps)
             {
+                // из AppLib.GetAppSetting(_key) возвращается СТРОКА 
                 _preValue = (fromAppProps)? AppLib.GetAppGlobalValue(_key): AppLib.GetAppSetting(_key);
+                if (_preValue == null) return;
+
                 _typeName = _preValue.GetType().Name;
 
                 switch (_typeName)
@@ -552,16 +556,22 @@ namespace KDSWPFClient.View
                     case "Byte":
                     case "Float":
                     case "Decimal":
-                        if ((_control != null) && (_control is TextBox))
-                            (_control as TextBox).Text = _preValue.ToString();
+                        if (_control != null)
+                        {
+                            if (_control is TextBox) (_control as TextBox).Text = _preValue.ToString();
+                            else if (_control is NumericUpDown) (_control as NumericUpDown).Value = Convert.ToDecimal(_preValue);
+                        }
                         break;
                     case "Boolean":
                         if ((_control != null) && (_control is CheckBox))
                             (_control as CheckBox).IsChecked = (bool)_preValue;
                         break;
                     case "String":
-                        if ((_control != null) && (_control is TextBox))
-                            (_control as TextBox).Text = _preValue.ToString();
+                        if (_control != null)
+                        {
+                            if (_control is TextBox) (_control as TextBox).Text = _preValue.ToString();
+                            else if (_control is NumericUpDown) (_control as NumericUpDown).Value = Convert.ToDecimal(_preValue);
+                        }
                         break;
                     case "DateTime":
                         if ((_control != null) && (_control is TextBox))

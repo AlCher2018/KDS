@@ -95,6 +95,8 @@ namespace KDSWPFClient.Model
                 StateGraphHelper.SetStateButtonBrushes(OrderStatusEnum.Cooking, out bBrush, out fBrush);
                 curSet = new KDSUserStatesSet() { Name = "В процессе", BackBrush = bBrush, FontBrush = fBrush };
                 curSet.States.AddRange(new[] { OrderStatusEnum.WaitingCook , OrderStatusEnum.Cooking });
+
+                retVal.Add(curSet);
                 initIdx = 2;
             }
             else initIdx = 0;
@@ -108,8 +110,9 @@ namespace KDSWPFClient.Model
                 tabName = StateGraphHelper.GetStateTabName(curState);
 
                 curSet = new KDSUserStatesSet() { Name = tabName, BackBrush = bBrush, FontBrush = fBrush };
-
                 curSet.States.Add(curState);
+
+                retVal.Add(curSet);
             }
 
             // первый элемент - все состояния, если есть более одного состояния в списке
@@ -348,7 +351,10 @@ namespace KDSWPFClient.Model
         public Brush FontBrush { get; set; }
 
         private List<OrderStatusEnum> _states;
-        public List<OrderStatusEnum> States { get; set; }
+        public List<OrderStatusEnum> States
+        {
+            get { return _states; }
+        }
 
         public KDSUserStatesSet()
         {
