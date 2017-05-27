@@ -52,8 +52,8 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("depUIDs", true, null);
             _cfgValKeeper.AddPreValue("IsWriteTraceMessages", true, chkIsWriteTraceMessages);
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
-            _cfgValKeeper.AddPreValue("AppFontScale", true, null);
-            _cfgValKeeper.AddPreValue("OrdersColumnsCount", true, tbxOrdersColumnsCount);
+            _cfgValKeeper.AddPreValue("AppFontScale", false, tbFontSizeScale);
+            _cfgValKeeper.AddPreValue("OrdersColumnsCount", false, tbxOrdersColumnsCount);
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
 
             
@@ -187,7 +187,9 @@ namespace KDSWPFClient.View
                 string sBuf;
                 if (AppLib.SaveAppSettings(_appNewSettings, out errMsg))  // сохранить в config-файле (все в символьном виде)
                 {
-                    _cfgValKeeper.SaveToAppProps();
+                    // для объектов, взятых из AppProps, сохранить туда
+                    _cfgValKeeper.SaveToAppProps();  
+                    
                     // для некоторых значений может понадобиться преобразование типов для сохранения в App.Properties
                     if (_appNewSettings.ContainsKey("KDSMode") && (_appNewSettings["KDSMode"].IsNull() == false))
                     {
@@ -507,32 +509,27 @@ namespace KDSWPFClient.View
                         case "Int32":
                         case "Int16":
                         case "Int64":
-                        case "Double":
-                        case "Byte":
-                        case "Float":
                         case "Decimal":
                             if (_control is TextBox) _newValue = (_control as TextBox).Text.ToInt();
                             else if (_control is NumericUpDown) _newValue = (_control as NumericUpDown).Value;
                             break;
 
                         case "Boolean":
-                            if (_control is CheckBox)
-                            {
-                                _newValue = (_control as CheckBox).IsChecked??false;
-                            }
+                            if (_control is CheckBox) _newValue = (_control as CheckBox).IsChecked??false;
                             break;
+
                         case "String":
-                            if (_control is TextBox)
-                            {
-                                _newValue = (_control as TextBox).Text;
-                            }
+                            if (_control is TextBox) _newValue = (_control as TextBox).Text;
+                            else if (_control is NumericUpDown) _newValue = (_control as NumericUpDown).Value.ToString(CultureInfo.InvariantCulture);
                             break;
+
                         case "DateTime":
                             if (_control is TextBox)
                             {
                                 _newValue = DateTime.Parse((_control as TextBox).Text, CultureInfo.InvariantCulture);
                             }
                             break;
+
                         default:
                             break;
                     }
@@ -552,9 +549,6 @@ namespace KDSWPFClient.View
                     case "Int32":
                     case "Int16":
                     case "Int64":
-                    case "Double":
-                    case "Byte":
-                    case "Float":
                     case "Decimal":
                         if (_control != null)
                         {
@@ -570,7 +564,7 @@ namespace KDSWPFClient.View
                         if (_control != null)
                         {
                             if (_control is TextBox) (_control as TextBox).Text = _preValue.ToString();
-                            else if (_control is NumericUpDown) (_control as NumericUpDown).Value = Convert.ToDecimal(_preValue);
+                            else if (_control is NumericUpDown) (_control as NumericUpDown).Value = (decimal)_preValue.ToString().ToDouble();
                         }
                         break;
                     case "DateTime":

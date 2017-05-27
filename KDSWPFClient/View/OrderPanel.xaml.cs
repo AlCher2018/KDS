@@ -41,7 +41,7 @@ namespace KDSWPFClient.View
                 this.grdHeader.Children.Add(hdrPnl);
             }
 
-            double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
+            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
             _fontSize = fontSize * fontScale;
 
@@ -57,6 +57,11 @@ namespace KDSWPFClient.View
         public void AddDish(DishPanel dishPanel)
         {
             this.stkDishes.Children.Add(dishPanel);
+        }
+
+        public void AddDelimiter(DishDelimeterPanel delimPanel)
+        {
+            this.stkDishes.Children.Add(delimPanel);
         }
 
 

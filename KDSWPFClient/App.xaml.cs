@@ -94,14 +94,18 @@ namespace KDSWPFClient
             cfgValue = AppLib.GetAppSetting("IsLogUserAction");
             AppLib.SetAppGlobalValue("IsLogUserAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
-            cfgValue = AppLib.GetAppSetting("AppFontScale");
-            AppLib.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1d : cfgValue.ToDouble());
-
             // размеры элементов панели заказа
-            //   кол-во столбцов заказов
+            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
+            int cntCols;
             cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
-            int cntCols = (cfgValue == null) ? 4 : cfgValue.ToInt();  // по умолчанию - 4
-            AppLib.SetAppGlobalValue("OrdersColumnsCount", cntCols);
+            if (cfgValue == null)
+            {
+                cntCols = 4;   // по умолчанию - 4
+                string errMsg;
+                AppLib.SaveAppSettings(new Dictionary<string, string>() { { "OrdersColumnsCount", cntCols.ToString() } }, out errMsg);
+            }
+            else cntCols = cfgValue.ToInt();
+            
             //   ширина столбцов заказов и расстояния между столбцами
             double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
@@ -131,6 +135,8 @@ namespace KDSWPFClient
             // минимальная высота строки блюда
             double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("screenHeight") / 20d;
             AppLib.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
+            // шрифт разделителя блюд (напр. Подача **)
+            AppLib.SetAppGlobalValue("ordPnlDishDelimiterFontSize", 16d);
 
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);

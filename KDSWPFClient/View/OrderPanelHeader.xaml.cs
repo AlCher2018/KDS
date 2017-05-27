@@ -78,7 +78,7 @@ namespace KDSWPFClient.View
             
             grdHeader.DataContext = order;
 
-            double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
+            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
 
             double fSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
             tbTableLabel1.FontSize = fSize;
@@ -97,8 +97,12 @@ namespace KDSWPFClient.View
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
             OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
-            MessageBox.Show(string.Format("order id {0}, number {1}, state {2}", orderView.Id, orderView.Number, orderView.Status));
 
+            StateChange win = new StateChange() { Order = orderView, Dish = null };
+
+            win.ShowDialog();
+
+            //MessageBox.Show(string.Format("order id {0}, number {1}, state {2}", orderView.Id, orderView.Number, orderView.Status));
         }
     }// class 
 }

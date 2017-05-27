@@ -16,7 +16,11 @@ namespace KDSWPFClient.ViewModel
 
         // порядковый номер блюда в списке заказа, начинается с 1
         private int _index;
-        public int Index { get { return _index; } }  
+        public int Index
+        {
+            get { return _index; }
+            set { _index = value; }
+        }
 
         public int DishStatusId { get; set; }
         private StatusEnum _status;

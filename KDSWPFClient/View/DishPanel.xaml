@@ -78,7 +78,7 @@
             <TextBlock x:Name="tbDishQuantity" Grid.Column="3" Text="{Binding Quantity}"/>
 
             <Border Grid.Column="4" Style="{StaticResource timerBackgroundStyle}" Margin="0,0,3,0">
-                <TextBlock x:Name="tbDishStatusTS" Text="{Binding WaitingTimerString}" HorizontalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock x:Name="tbDishStatusTS" Text="{Binding WaitingTimerString}" HorizontalAlignment="Center" FontWeight="Bold" TextWrapping="Wrap"/>
             </Border>
 
         </Grid>

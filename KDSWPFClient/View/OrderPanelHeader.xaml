@@ -91,19 +91,17 @@
                     <ColumnDefinition Width="5*"/>
                     <ColumnDefinition Width="5*"/>
                 </Grid.ColumnDefinitions>
-                <Grid Grid.Column="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition x:Name="createDateColumn"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Name="tbOrderDateLabel" Grid.Column="0" Text="Создан в: " VerticalAlignment="Center"/>
-                    <TextBlock x:Name="tbOrderDate" FontWeight="Bold" Grid.Column="1" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay}" TextWrapping="Wrap"/>
-                </Grid>
+
+                <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <TextBlock x:Name="tbOrderDateLabel" Text="Создан в: " VerticalAlignment="Center"/>
+                    <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay}" TextWrapping="Wrap"/>
+                </WrapPanel>
+                
                 <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="{StaticResource orderHeaderBackBrushTimer}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " VerticalAlignment="Center" Foreground="Black" FontWeight="Bold"/>
-                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource orderHeaderForeBrushTimer}" Text="{Binding WaitingTimerString}"/>
-                    </StackPanel>
+                    <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                        <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Foreground="Black" FontWeight="Bold"/>
+                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" Foreground="{StaticResource orderHeaderForeBrushTimer}" Text="{Binding WaitingTimerString}" TextWrapping="Wrap"/>
+                    </WrapPanel>
                 </Border>
             </Grid>
         </Border>

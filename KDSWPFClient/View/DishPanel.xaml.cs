@@ -32,7 +32,7 @@ namespace KDSWPFClient.View
 
             double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
             base.MinHeight = dishLineMinHeight;
-            double fontScale = (double)AppLib.GetAppGlobalValue("AppFontScale");
+            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
 
@@ -58,6 +58,8 @@ namespace KDSWPFClient.View
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
             OrderDishViewModel dishView = (OrderDishViewModel)grdDishLine.DataContext;
+            if (!dishView.ParentUID.IsNull()) return;  // это ингредиент !!
+
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;

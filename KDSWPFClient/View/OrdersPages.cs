@@ -100,9 +100,17 @@ namespace KDSWPFClient.View
 #endif
             }
 
+            int curFiling = 0;
+
             // блюда
             foreach (OrderDishViewModel dishModel in orderModel.Dishes)
             {
+                if (curFiling != dishModel.FilingNumber)
+                {
+                    curFiling = dishModel.FilingNumber;
+                    ordPnl.AddDelimiter(new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling });
+                }
+
                 dshPnl = new DishPanel(dishModel);
                 dshPnl.Width = _colWidth;
 

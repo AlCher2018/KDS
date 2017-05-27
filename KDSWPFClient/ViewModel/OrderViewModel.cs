@@ -132,33 +132,50 @@ namespace KDSWPFClient.ViewModel
             }
 
             // ОБНОВИТЬ БЛЮДА В ЗАКАЗЕ
-            // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд
+            // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд или изменен порядок блюд
             // и необходимо перерисовать все панели
             _isDishesListUpdated = false;
-            
-            // удалить блюда, которые не пришли от службы
-            List<int> delIds = Dishes.Select(d => d.Id).Except(svcOrder.Dishes.Values.Select(d => d.Id)).ToList();
-            if (delIds.Count > 0) _isDishesListUpdated = true;
-            Dishes.RemoveAll(d => delIds.Contains(d.Id));
 
-            // TODO индекс блюда только для новвых строк
-            OrderDishViewModel dishView;
             int dishIndex = 0;
+            OrderDishViewModel dishView;
             foreach (OrderDishModel dishModel in svcOrder.Dishes.Values)
             {
-                dishIndex++;
-                dishView = this.Dishes.FirstOrDefault(d => d.Id == dishModel.Id);
-                if (dishView == null)
+                if (dishIndex == Dishes.Count)
                 {
                     dishView = new OrderDishViewModel(dishModel, dishIndex);
                     Dishes.Add(dishView);
                     _isDishesListUpdated = true;
                 }
+                else if (Dishes[dishIndex].Id != dishModel.Id)
+                {
+                    // попытаться найти блюдо с таким Ид и переставить его в нужную позицию
+                    dishView = this.Dishes.FirstOrDefault(d => d.Id == dishModel.Id);
+                    if (dishView == null)  // не найдено - ВСТАВЛЯЕМ в нужную позицию
+                    {
+                        dishView = new OrderDishViewModel(dishModel, dishIndex+1);
+                        Dishes.Insert(dishIndex, dishView);
+                        _isDishesListUpdated = true;
+                    }
+                    else  // переставляем
+                    {
+                        Dishes.Remove(dishView);
+                        Dishes.Insert(dishIndex, dishView);
+                        dishView.Index = dishIndex + 1;
+                        dishView.UpdateFromSvc(dishModel);
+                    }
+                }
                 else
                 {
+                    dishView = Dishes[dishIndex];
+                    dishView.Index = dishIndex + 1;
                     dishView.UpdateFromSvc(dishModel);
                 }
+                dishIndex++;
             }
+
+            // удалить блюда, которые не пришли от службы
+            while (Dishes.Count > (dishIndex+1)) { Dishes.RemoveAt(Dishes.Count-1); _isDishesListUpdated = true; }
+
         }
 
 

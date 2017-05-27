@@ -91,7 +91,10 @@ namespace KDSWPFClient.Model
 
                 case OrderStatusEnum.Ready:
                     btnText1 = "ГОТОВО";
-                    btnText2 = string.Format("{0} готово и может быть выдано на раздаче", (isOrder ? "Заказ" : "Блюдо"));
+                    if (isOrder)
+                        btnText2 = "Заказ полностью готов и может быть весь выдан на раздаче";
+                    else
+                        btnText2 = "Блюдо готово и может быть выдано на раздаче";
                     break;
 
                 case OrderStatusEnum.Took:

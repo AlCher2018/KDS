@@ -82,7 +82,7 @@ namespace KDSWPFClient
 
             // отрисовка страниц заказов
             _pages = new OrdersPages();
-            _pages.OrdersColumnsCount = (int)AppLib.GetAppGlobalValue("OrdersColumnsCount");
+            _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
 
             _viewOrders = new List<OrderViewModel>();
             // debug test data
@@ -234,13 +234,48 @@ namespace KDSWPFClient
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
-            // TODO группировка заказов по номерам
+
+            // группировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
             {
-
+                int cntOrders = svcOrders.Count;
+                OrderModel curOrder, sameNumOrder;
+                for (int i = 0; i < cntOrders; i++)
+                {
+                    curOrder = svcOrders[i];
+                    if (curOrder.Dishes.Count > 0)
+                    {
+                        sameNumOrder = null;
+                        // найти еще заказы с таким же номером
+                        for (int j = i+1; j < cntOrders; j++)
+                        {
+                            if (curOrder.Number == svcOrders[j].Number) { sameNumOrder = svcOrders[j]; break; }
+                        }
+                        if (sameNumOrder != null)  // есть заказ с таким же номером - забрать из него блюда в текущий
+                        {
+                            foreach (OrderDishModel item in sameNumOrder.Dishes.Values) curOrder.Dishes.Add(item.Id, item);
+                            sameNumOrder.Dishes.Clear();
+                        }
+                    }
+                }
+                // пройтись еще раз по заказам и удалить пустые
+                svcOrders.RemoveAll(o => o.Dishes.Count==0);
             }
 
+            // после реорганизации списка блюд: группировка по подачам и сортировка по Ид блюда (порядок записи в БД)
+            bool isFilingGroup = true;  // группировка по подачам
+            Dictionary<int,OrderDishModel> sortedDishes;
+            // сортировка словарей блюд
+            foreach (OrderModel orderModel in svcOrders)
+            {
+                if (isFilingGroup)   // сортировка по подачам и Ид
+                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.FilingNumber, dish.Id select dish).ToDictionary(d => d.Id);
+                else  // сортировка толко по Ид
+                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.Id select dish).ToDictionary(d => d.Id);
+                orderModel.Dishes = sortedDishes;
+            }
 
+            
             //Debug.Print("orders {0}", svcOrders.Count);
             //svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
 
@@ -250,6 +285,7 @@ namespace KDSWPFClient
             // *****
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ svcOrders
             bool isViewRepaint = false;   // признак необходимости перерисовать панели заказов на экране
+
             // удаление заказов
             List<int> delIds = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id)).ToList();
             OrderViewModel orderView;
@@ -279,27 +315,26 @@ namespace KDSWPFClient
                 }
             }
 
-            // TODO нумерация и сортировка строк заказа после реорганизации списка блюд
-
             // перерисовать полностью
-            if (isViewRepaint == true)
-            {
-                DateTime dt = DateTime.Now;
-                _pages.ClearPages(); // очистить панели заказов
-                Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
-
-                // добавить заказы
-                dt = DateTime.Now;
-                _pages.AddOrdersPanels(_viewOrders);
-                Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
-
-                setChangePageButtonsState();
-
-                this.vbxOrders.Child = _pages.CurrentPage;
-            }
+            if (isViewRepaint == true) repaintOrders();
 
         }  // method
 
+        private void repaintOrders()
+        {
+            DateTime dt = DateTime.Now;
+            _pages.ClearPages(); // очистить панели заказов
+            Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
+
+            // добавить заказы
+            dt = DateTime.Now;
+            _pages.AddOrdersPanels(_viewOrders);
+            Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
+
+            setChangePageButtonsState();
+
+            this.vbxOrders.Child = _pages.CurrentPage;
+        }
 
         private void setChangePageButtonsState()
         {
@@ -374,10 +409,17 @@ namespace KDSWPFClient
                     updCheckerDishState();
                 }
 
+                // масштаб шрифта
+                if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
+                {
+                    repaintOrders();  // перерисовать полностью, т.к. по таймеру может все не обновиться
+                }
+
                 // кол-во колонок заказов
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
-                    _pages.OrdersColumnsCount = (int)AppLib.GetAppGlobalValue("OrdersColumnsCount");
+                    _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
+                    repaintOrders();  // перерисовать заказы
                 }
 
                 // интервал таймера сброса группировки заказов по номерам
@@ -396,7 +438,7 @@ namespace KDSWPFClient
         private void setOrderGroupTimerInterval()
         {
             string cfgStr = AppLib.GetAppSetting("AutoReturnOrdersGroupByTime");
-            _orderGroupTimer.Interval = 1000d * ((cfgStr.IsNull()) ? 30d : cfgStr.ToDouble());  // и перевести в мсек
+            _orderGroupTimer.Interval = 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
         }
 
 
