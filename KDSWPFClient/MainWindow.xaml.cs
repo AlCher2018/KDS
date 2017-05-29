@@ -283,7 +283,7 @@ namespace KDSWPFClient
                 orderModel.Dishes = sortedDishes;
             }
 
-            
+
             //Debug.Print("orders {0}", svcOrders.Count);
             //svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
 
@@ -292,36 +292,7 @@ namespace KDSWPFClient
             //  В svcOrder<orderModel> НАХОДИТСЯ СПИСОК, КОТОРЫЙ НЕОБХОДИМО ОТОБРАЗИТЬ НА ЭКРАНЕ
             // *****
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ svcOrders
-            bool isViewRepaint = false;   // признак необходимости перерисовать панели заказов на экране
-
-            // удаление заказов
-            List<int> delIds = _viewOrders.Select(vo => vo.Id).Except(svcOrders.Select(o => o.Id)).ToList();
-            OrderViewModel orderView;
-            foreach (int delId in delIds)
-            {
-                orderView = _viewOrders.Find(vo => vo.Id == delId);
-                if (orderView != null)
-                {
-                    //_pages.RemoveOrderPanel(orderView);  // удалить панель заказа со страницы
-                    _viewOrders.Remove(orderView);  // удалить заказ из внутр.коллекции
-                }
-                if (isViewRepaint == false) isViewRepaint = true;   // перерисовать
-            }
-            // обновление списка блюд в заказах
-            foreach (OrderModel svcOrder in svcOrders)
-            {
-                orderView = _viewOrders.FirstOrDefault(o => o.Id == svcOrder.Id);
-                if (orderView == null)   // из БД (от службы) пришел новый заказ! - добавить заказ в _viewOrders
-                {
-                    _viewOrders.Add(new OrderViewModel(svcOrder));
-                    if (isViewRepaint == false) isViewRepaint = true;   // перерисовать
-                }
-                else
-                {
-                    orderView.UpdateFromSvc(svcOrder);
-                    if (orderView.IsDishesListUpdated && !isViewRepaint) isViewRepaint = true;
-                }
-            }
+            bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
 
             // перерисовать полностью
             if (isViewRepaint == true) repaintOrders();

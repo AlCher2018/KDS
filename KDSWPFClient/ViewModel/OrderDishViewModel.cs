@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KDSWPFClient.ViewModel
 {
-    public class OrderDishViewModel : INotifyPropertyChanged
+    public class OrderDishViewModel : INotifyPropertyChanged, IJoinSortedCollection<OrderDishModel>, IContainIDField
     {
         public int Id { get; set; }
 
@@ -46,7 +46,17 @@ namespace KDSWPFClient.ViewModel
         public string WaitingTimerString { get; set; }
 
 
-        public OrderDishViewModel(OrderDishModel svcOrderDish, int index)
+        // CONSTRUCTORS
+        public OrderDishViewModel()
+        {
+
+        }
+        public OrderDishViewModel(OrderDishModel svcOrderDish, int index): this()
+        {
+            FillDataFromServiceObject(svcOrderDish, index);
+        }
+
+        public void FillDataFromServiceObject(OrderDishModel svcOrderDish, int index)
         {
             _index = index;
             Id = svcOrderDish.Id;

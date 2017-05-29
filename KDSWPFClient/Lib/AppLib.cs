@@ -16,14 +16,6 @@ using System.Windows.Media;
 namespace KDSWPFClient.Lib
 {
 
-    public interface IJoinSortedCollection
-    {
-        int Index { get; set; }
-
-        void JoinSortedCollection();
-    }
-
-
     public static class AppLib
     {
         // общий логгер
@@ -479,58 +471,88 @@ namespace KDSWPFClient.Lib
         }
 
 
-        // соединение двух ОТСОРТИРОВАННЫХ массивов
-        // what - что обновляем (цель/получатель обновления), напр. List<OrderDishViewModel>
-        // then - чем обновляем (источник/поставщик обновления), напр. List<OrderDishModel>
-        internal static bool JoinSortedLists<T1, T2>(List<T1> targetList, List<T2> sourceList): where I
+        /// <summary>
+        /// соединение двух ОТСОРТИРОВАННЫХ массивов
+        ///  target - что обновляем (цель/получатель обновления), напр. List<OrderDishViewModel>
+        ///  source - чем обновляем (источник/поставщик обновления), напр. List<OrderDishModel> 
+        /// </summary>
+        /// <typeparam name="T1">Получатель данных, напр. view-объект</typeparam>
+        /// <typeparam name="T2">Источник данных, напр. service-объект</typeparam>
+        /// <param name="targetList">Список объктов-получателей</param>
+        /// <param name="sourceList">Список объектов-источников</param>
+        /// <returns></returns>
+        internal static bool JoinSortedLists<T1, T2>(List<T1> targetList, List<T2> sourceList) 
+            where T1:IJoinSortedCollection<T2>, IContainIDField, new() where T2: IContainIDField
         {
             bool retVal = false;
             int index = 0;
             T1 trgObj;
+            // в цикле по объектам источника просматриваем целевой список в ТАКОМ ЖЕ ПОРЯДКЕ, сравнивая Ид
             foreach (T2 srcObj in sourceList)
             {
                 // в источнике больше элементов, поэтому добавляем в цель
                 if (index == targetList.Count)
                 {
-                    trgObj = new T1(T2, index + 1);
+                    trgObj = new T1();
+                    trgObj.FillDataFromServiceObject(srcObj, index + 1);
                     targetList.Add(trgObj);
                     retVal = true;
                 }
-                else if (Dishes[dishIndex].Id != dishModel.Id)
+                // если одинаковые идентификаторы, то просто обновляем целевой объект из источника
+                else if (targetList[index].Id == srcObj.Id)
                 {
-                    // попытаться найти блюдо с таким Ид и переставить его в нужную позицию
-                    dishView = this.Dishes.FirstOrDefault(d => d.Id == dishModel.Id);
-                    if (dishView == null)  // не найдено - ВСТАВЛЯЕМ в нужную позицию
-                    {
-                        dishView = new OrderDishViewModel(dishModel, dishIndex + 1);
-                        Dishes.Insert(dishIndex, dishView);
-                        _isDishesListUpdated = true;
-                    }
-                    else  // переставляем
-                    {
-                        Dishes.Remove(dishView);
-                        Dishes.Insert(dishIndex, dishView);
-                        dishView.Index = dishIndex + 1;
-                        dishView.UpdateFromSvc(dishModel);
-                    }
+                    trgObj = targetList[index];
+                    trgObj.Index = index + 1;
+                    trgObj.UpdateFromSvc(srcObj);
                 }
                 else
                 {
-                    dishView = Dishes[dishIndex];
-                    dishView.Index = dishIndex + 1;
-                    dishView.UpdateFromSvc(dishModel);
+                    // попытаться найти блюдо с таким Ид и переставить его в нужную позицию
+                    trgObj = targetList.FirstOrDefault(d => d.Id == srcObj.Id);
+                    if (trgObj == null)  // не найдено - ВСТАВЛЯЕМ в нужную позицию
+                    {
+                        trgObj = new T1();
+                        trgObj.FillDataFromServiceObject(srcObj, index + 1);
+                        targetList.Insert(index, trgObj);
+                        retVal = true;
+                    }
+                    else  // переставляем
+                    {
+                        targetList.Remove(trgObj);
+                        targetList.Insert(index, trgObj);
+                        trgObj.Index = index + 1;
+                        trgObj.UpdateFromSvc(srcObj);
+                    }
                 }
-                dishIndex++;
+                index++;
             }
 
             // удалить блюда, которые не пришли от службы
-            while (Dishes.Count >= (dishIndex + 1)) { Dishes.RemoveAt(Dishes.Count - 1); _isDishesListUpdated = true; }
+            while (targetList.Count >= (index + 1))
+            {
+                targetList.RemoveAt(targetList.Count - 1);
+                if (!retVal) retVal = true;
+            }
 
             return retVal;
         }
 
 
     }  // class
+
+    public interface IJoinSortedCollection<T>
+    {
+        int Index { get; set; }
+
+        void FillDataFromServiceObject(T sourceObject, int index = 1);
+
+        void UpdateFromSvc(T sourceObject);
+    }
+
+    public interface IContainIDField
+    {
+        int Id { get; set; }
+    }
 
 
 }

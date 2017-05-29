@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace KDSWPFClient.ViewModel
 {
-    public class OrderViewModel : INotifyPropertyChanged
+    public class OrderViewModel : INotifyPropertyChanged, IJoinSortedCollection<OrderModel>, IContainIDField
     {
         public int Id { get; set; }
 
@@ -54,9 +54,17 @@ namespace KDSWPFClient.ViewModel
         public bool IsDishesListUpdated { get { return _isDishesListUpdated; } }
 
 
+        // КОНСТРУКТОРЫ
         public OrderViewModel()
         {
         }
+
+        public OrderViewModel(OrderModel svcOrder, int index = 1) : this()
+        {
+            FillDataFromServiceObject(svcOrder, index);
+        }
+
+
         public void FillDataFromServiceObject(OrderModel svcOrder, int index = 1)
         {
             Id = svcOrder.Id;
@@ -83,12 +91,6 @@ namespace KDSWPFClient.ViewModel
             }
             _isDishesListUpdated = true;
         }
-
-        public OrderViewModel(OrderModel svcOrder, int index = 1)
-        {
-            FillDataFromServiceObject(svcOrder, index);
-        }
-
 
 
         private void setViewCreateDate()
@@ -155,47 +157,7 @@ namespace KDSWPFClient.ViewModel
             // ОБНОВИТЬ БЛЮДА В ЗАКАЗЕ
             // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд или изменен порядок блюд
             // и необходимо перерисовать все панели
-            _isDishesListUpdated = false;
-
-            int dishIndex = 0;
-            OrderDishViewModel dishView;
-            foreach (OrderDishModel dishModel in svcOrder.Dishes.Values)
-            {
-                if (dishIndex == Dishes.Count)
-                {
-                    dishView = new OrderDishViewModel(dishModel, dishIndex+1);
-                    Dishes.Add(dishView);
-                    _isDishesListUpdated = true;
-                }
-                else if (Dishes[dishIndex].Id != dishModel.Id)
-                {
-                    // попытаться найти блюдо с таким Ид и переставить его в нужную позицию
-                    dishView = this.Dishes.FirstOrDefault(d => d.Id == dishModel.Id);
-                    if (dishView == null)  // не найдено - ВСТАВЛЯЕМ в нужную позицию
-                    {
-                        dishView = new OrderDishViewModel(dishModel, dishIndex+1);
-                        Dishes.Insert(dishIndex, dishView);
-                        _isDishesListUpdated = true;
-                    }
-                    else  // переставляем
-                    {
-                        Dishes.Remove(dishView);
-                        Dishes.Insert(dishIndex, dishView);
-                        dishView.Index = dishIndex + 1;
-                        dishView.UpdateFromSvc(dishModel);
-                    }
-                }
-                else
-                {
-                    dishView = Dishes[dishIndex];
-                    dishView.Index = dishIndex + 1;
-                    dishView.UpdateFromSvc(dishModel);
-                }
-                dishIndex++;
-            }
-
-            // удалить блюда, которые не пришли от службы
-            while (Dishes.Count >= (dishIndex+1)) { Dishes.RemoveAt(Dishes.Count-1); _isDishesListUpdated = true; }
+            _isDishesListUpdated = AppLib.JoinSortedLists<OrderDishViewModel, OrderDishModel>(Dishes, svcOrder.Dishes.Values.ToList());
 
         }
 
@@ -206,7 +168,6 @@ namespace KDSWPFClient.ViewModel
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(prop));
         }
-
 
     }  // class 
 }
