@@ -8,6 +8,9 @@ using KDSWPFClient.Lib;
 using System.Windows;
 using System.Diagnostics;
 using KDSWPFClient.ViewModel;
+using System.Windows.Media;
+using System.Globalization;
+using System.Windows.Threading;
 
 namespace KDSWPFClient.View
 {
@@ -23,6 +26,8 @@ namespace KDSWPFClient.View
         private double _curTopValue;
         private double _hdrTopMargin;
         private int _currentPageIndex;  // 1-based value !!!!
+        double _pageContentHeight;  // высота страницы по вертикали для размещения панелей заказов
+        Size _availableSize;
 
         // количество столбцов заказов, берется из config-файла и редактируется в окне Настройка
         private int _pageColsCount;
@@ -38,6 +43,13 @@ namespace KDSWPFClient.View
             _pages.Add(new OrdersPage());
             CurrentPage = _pages[0];
 
+            ResetOrderPanelSize();
+
+            _curColIndex = 1; _curTopValue = 0d;
+        }
+
+        public void ResetOrderPanelSize()
+        {
             _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
 
@@ -45,7 +57,9 @@ namespace KDSWPFClient.View
             _colMargin = (double)AppLib.GetAppGlobalValue("OrdersColumnMargin");
             _hdrTopMargin = (double)AppLib.GetAppGlobalValue("ordPnlTopMargin");
 
-            _curColIndex = 1; _curTopValue = 0d;
+            _pageContentHeight = AppLib.GetOrdersPageContentHeight();
+
+            _availableSize = new Size(_colWidth, _pageContentHeight);
         }
 
         // добавить все заказы и определить кол-во страниц
@@ -57,102 +71,88 @@ namespace KDSWPFClient.View
 
             foreach (OrderViewModel ord in orders)
             {
-#if DEBUG_LAYOUT
-                Debug.Print("размещение заказа {0} (блюд {1})", ord.Number, ord.Dishes.Count);
-#endif
                 AddOrderPanel(ord);
             }
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
         }
 
+        //*******************************************
+        //   РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
+        //*******************************************
         public void AddOrderPanel(OrderViewModel orderModel)
         {
             OrderPanel ordPnl; DishPanel dshPnl;
             double ordTop;  // хранит TOP заказа
-
-            double dishesPanelHeight = CurrentPage.Height;
-            Size availableSize = new Size(_colWidth, dishesPanelHeight);
+            double curLineHeight;
 
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
-            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
+            // вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
             ordTop = _curTopValue; // отступ сверху панели заказа
-#if DEBUG_LAYOUT
-            Debug.Print("start order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
+            //if (_curColIndex == 1) CurrentPage.Children.Add(new System.Windows.Shapes.Line() { X1 = 0, Y1 = _curTopValue, X2 = 40, Y2 = _curTopValue, Stroke = System.Windows.Media.Brushes.Red });
 
-            // узнать размер заголовка
-            ordPnl.Measure(availableSize);
-            if ((_curTopValue + ordPnl.DesiredSize.Height) >= dishesPanelHeight)  // переход в новый столбец
+            curLineHeight = Math.Round(ordPnl.DesiredSize.Height); // получить размер заголовка
+
+            if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
             {
                 setNextColumn();
-                ordTop = 0d; _curTopValue = ordPnl.DesiredSize.Height;
-#if DEBUG_LAYOUT
-                Debug.Print("  - MOVE header {3} to next column: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
+                ordTop = 0d; _curTopValue = curLineHeight;
             }
             else
             {
-                _curTopValue += ordPnl.DesiredSize.Height;
-#if DEBUG_LAYOUT
-                Debug.Print("  - stay header {3} on current column: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
+                _curTopValue += curLineHeight;
             }
+            //if (_curColIndex == 1) CurrentPage.Children.Add(new System.Windows.Shapes.Line() { X1 = 0, Y1 = _curTopValue, X2 = 40, Y2 = _curTopValue, Stroke = System.Windows.Media.Brushes.Red });
 
             int curFiling = 0;
-
             // блюда
             foreach (OrderDishViewModel dishModel in orderModel.Dishes)
             {
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    ordPnl.AddDelimiter(new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling });
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling };
+                    ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек и измерить высоту
+                    //if (_curColIndex == 1) CurrentPage.Children.Add(new System.Windows.Shapes.Line() { X1 = 0, Y1 = _curTopValue, X2 = 40, Y2 = _curTopValue, Stroke = System.Windows.Media.Brushes.Red });
+                    curLineHeight = Math.Round(newDelimPanel.DesiredSize.Height);
+                    _curTopValue += curLineHeight; // сместить Top
                 }
 
                 dshPnl = new DishPanel(dishModel);
-                dshPnl.Width = _colWidth;
+                ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
 
-                // узнать размер панели
-                dshPnl.Measure(availableSize);
-                if ((_curTopValue + dshPnl.DesiredSize.Height) >= dishesPanelHeight)  // переход в новый столбец
+                curLineHeight = Math.Round(dshPnl.DesiredSize.Height); // получить высоту строки блюда
+                if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
                 {
                     if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount)) // разбиваем блюда заказа
                     {
-                        //  добавить в канву начало заказа
+                        // 1. удалить из ordPnl только что добавленное блюдо
+                        ordPnl.RemoveDish(dshPnl);
+                        // 2. добавить в канву начало заказа
                         ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
                         ordPnl.SetValue(Canvas.TopProperty, ordTop);
                         CurrentPage.Children.Add(ordPnl);
-#if DEBUG_LAYOUT
-                        Debug.Print("  - BREAK order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
-                        //  и создать новый OrderPanel для текущего блюда с заголовком таблицы
-                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
-                        ordPnl.Measure(availableSize);
+
+                        // 3. создать новый OrderPanel для текущего блюда с заголовком таблицы
+                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
+                        ordTop = 0d; _curTopValue = Math.Round(ordPnl.DesiredSize.Height);
+                        // 4. добавить только что удаленное блюдо
+                        ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
                         setNextColumn();
-                        ordTop = 0d; _curTopValue = ordPnl.DesiredSize.Height;
-#if DEBUG_LAYOUT
-                        Debug.Print("  - BREAKING order {3} on next col: _curColIndex {0}, ordTop {1}, _curTopValue {2}", (_curColIndex + 1), ordTop, _curTopValue, orderModel.Number);
-#endif
                     }
                     else   // не разбиваем заказ, а полностью переносим
                     {
                         setNextColumn();
                         _curTopValue = _curTopValue - ordTop;  // "высота" заказа в новом столбце
                         ordTop = 0d;
-#if DEBUG_LAYOUT
-                        Debug.Print("  - MOVE order {3} to next column: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
                     }
                 }
 
-                _curTopValue += dshPnl.DesiredSize.Height;
-#if DEBUG_LAYOUT
-                Debug.Print("    - stay dish {3} on current column: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, dishIndex);
-#endif
+                _curTopValue += curLineHeight;
+                //if (_curColIndex == 1) CurrentPage.Children.Add(new System.Windows.Shapes.Line() { X1 = 0, Y1 = _curTopValue, X2 = 40, Y2 = _curTopValue, Stroke = System.Windows.Media.Brushes.Red });
 
-                ordPnl.AddDish(dshPnl);
             }
 
             // смещение слева по номеру тек.колонки
@@ -160,13 +160,10 @@ namespace KDSWPFClient.View
             // смещение сверху
             ordPnl.SetValue(Canvas.TopProperty, ordTop);
 
-#if DEBUG_LAYOUT
-            Debug.Print(" ** finish order {3}: _curColIndex {0}, ordTop {1}, _curTopValue {2}", _curColIndex, ordTop, _curTopValue, orderModel.Number);
-#endif
-
             // добавить панель заказа на страницу
             CurrentPage.Children.Add(ordPnl);
         }
+
 
         internal void RemoveOrderPanel(OrderViewModel orderView)
         {
@@ -174,6 +171,19 @@ namespace KDSWPFClient.View
             int pageIndex = oPnl.PageIndex - 1;
 
             _pages[pageIndex].Children.Remove(oPnl);
+        }
+
+        private Size MeasureString(TextBlock textBlock, string candidate)
+        {
+            var formattedText = new FormattedText(
+                candidate,
+                CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight,
+                new Typeface(textBlock.FontFamily, textBlock.FontStyle, textBlock.FontWeight, textBlock.FontStretch),
+                textBlock.FontSize,
+                Brushes.Black);
+
+            return new Size(formattedText.Width, formattedText.Height);
         }
 
         private void setNextColumn()
@@ -242,11 +252,9 @@ namespace KDSWPFClient.View
             _ordPanels = new List<OrderPanel>();
 
             double _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            double _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            double contentHeight = AppLib.GetOrdersPageContentHeight();
 
-            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-
-            this.Width = _screenWidth; this.Height = _screenHeight - 2d * topBotMargin;
+            this.Width = _screenWidth; this.Height = contentHeight;
         }
 
         internal void ClearOrders()

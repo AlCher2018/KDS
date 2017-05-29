@@ -8,7 +8,7 @@
              d:DesignHeight="60" d:DesignWidth="300"
              >
 
-    <Border Background="LightGray" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
+    <Border Background="White" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
         <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center"/>
     </Border>
 

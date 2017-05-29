@@ -2,6 +2,7 @@
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,18 +31,33 @@ namespace KDSWPFClient.View
 
             grdDishLine.DataContext = dishView;
 
-            double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
-            base.MinHeight = dishLineMinHeight;
+            //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
+            //base.MinHeight = dishLineMinHeight;
+
             double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
 
-            // на уровне всего элемента для всех TextBlock-ов
-            this.SetValue(TextBlock.FontSizeProperty, _fontSize);
-            // отдельно для некоторых TextBlock-ов
-            this.tbDishIndex.FontSize = 0.8 * _fontSize;
+            //this.Measure(new Size(400d, 400d));
+            //Size _desSize = this.DesiredSize;
 
-            brdMain.Padding = new Thickness(0, 5, 0, 5);
+            // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
+            // this.SetValue(TextBlock.FontSizeProperty, _fontSize);   
+            this.tbDishIndex.FontSize = 0.8 * _fontSize;
+            this.tbDishFilingNumber.FontSize = _fontSize;
+            this.tbDishName.FontSize = _fontSize;
+            this.tbDishQuantity.FontSize = _fontSize;
+            this.tbDishStatusTS.FontSize = _fontSize;
+
+            //this.Measure(new Size(400d, 400d));
+            //_desSize = this.DesiredSize;
+
+            double padd = 0.5 * fontSize;  // от немасштабного фонта
+            brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
+            brdTimer.Padding = new Thickness(0, padd, 0, padd);
+
+            //this.Measure(new Size(400d, 400d));
+            //_desSize = this.DesiredSize;
 
             //IEnumerable<TextBlock> tbs = grdDishLine.Children.OfType<TextBlock>();
             //foreach (TextBlock tb in tbs)
@@ -49,6 +65,7 @@ namespace KDSWPFClient.View
             //    tb.FontSize = _fontSize;
             //}
         }
+
 
         private void root_MouseDown(object sender, MouseButtonEventArgs e)
         {

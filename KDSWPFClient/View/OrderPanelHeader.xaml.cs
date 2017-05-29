@@ -2,6 +2,7 @@
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,7 +76,7 @@ namespace KDSWPFClient.View
         public OrderPanelHeader(OrderViewModel order)
         {
             InitializeComponent();
-            
+
             grdHeader.DataContext = order;
 
             double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
@@ -93,6 +94,7 @@ namespace KDSWPFClient.View
 
             tbOrderCookingCounter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
         }
+
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {

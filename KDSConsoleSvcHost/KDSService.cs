@@ -143,8 +143,16 @@ namespace KDSService
         public void Dispose()
         {
             string msg = "**** Закрытие служебного класса KDSService ****";
-            Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
-            _ordersModel.Dispose();
+            try
+            {
+                Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
+                _ordersModel.Dispose();
+
+            }
+            catch (Exception ex)
+            {
+                AppEnv.WriteLogInfoMessage("Error: " + ex.ToString());
+            }
 
             // таймер остановить, отписаться от события и уничтожить
             if (_observeTimer != null)

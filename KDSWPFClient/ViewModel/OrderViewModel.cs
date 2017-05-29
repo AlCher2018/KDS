@@ -19,6 +19,15 @@ namespace KDSWPFClient.ViewModel
     {
         public int Id { get; set; }
 
+        // порядковый номер заказа, начинается с 1
+        // нужен для обобщенного стат.метода соединения двух списков (IJoinSortedCollection)
+        private int _index;
+        public int Index
+        {
+            get { return _index; }
+            set { _index = value; }
+        }
+
         public int OrderStatusId { get; set; }
 
         private StatusEnum _status;
@@ -44,9 +53,14 @@ namespace KDSWPFClient.ViewModel
         private bool _isDishesListUpdated;
         public bool IsDishesListUpdated { get { return _isDishesListUpdated; } }
 
-        public OrderViewModel(OrderModel svcOrder)
+
+        public OrderViewModel()
+        {
+        }
+        public void FillDataFromServiceObject(OrderModel svcOrder, int index = 1)
         {
             Id = svcOrder.Id;
+            _index = index;
             OrderStatusId = svcOrder.OrderStatusId;
             _status = (StatusEnum)OrderStatusId;
             UID = svcOrder.Uid;
@@ -69,6 +83,13 @@ namespace KDSWPFClient.ViewModel
             }
             _isDishesListUpdated = true;
         }
+
+        public OrderViewModel(OrderModel svcOrder, int index = 1)
+        {
+            FillDataFromServiceObject(svcOrder, index);
+        }
+
+
 
         private void setViewCreateDate()
         {
@@ -142,7 +163,7 @@ namespace KDSWPFClient.ViewModel
             {
                 if (dishIndex == Dishes.Count)
                 {
-                    dishView = new OrderDishViewModel(dishModel, dishIndex);
+                    dishView = new OrderDishViewModel(dishModel, dishIndex+1);
                     Dishes.Add(dishView);
                     _isDishesListUpdated = true;
                 }
@@ -174,7 +195,7 @@ namespace KDSWPFClient.ViewModel
             }
 
             // удалить блюда, которые не пришли от службы
-            while (Dishes.Count > (dishIndex+1)) { Dishes.RemoveAt(Dishes.Count-1); _isDishesListUpdated = true; }
+            while (Dishes.Count >= (dishIndex+1)) { Dishes.RemoveAt(Dishes.Count-1); _isDishesListUpdated = true; }
 
         }
 

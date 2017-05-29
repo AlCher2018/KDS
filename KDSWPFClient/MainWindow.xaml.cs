@@ -234,10 +234,12 @@ namespace KDSWPFClient
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
-
-            // группировка заказов по номерам
+            // *** СОРТИРОВКА ЗАКАЗОВ  ***
+            // группировка и сортировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
             {
+                svcOrders = svcOrders.OrderBy(o => o.Number).ToList();
+
                 int cntOrders = svcOrders.Count;
                 OrderModel curOrder, sameNumOrder;
                 for (int i = 0; i < cntOrders; i++)
@@ -249,17 +251,23 @@ namespace KDSWPFClient
                         // найти еще заказы с таким же номером
                         for (int j = i+1; j < cntOrders; j++)
                         {
-                            if (curOrder.Number == svcOrders[j].Number) { sameNumOrder = svcOrders[j]; break; }
-                        }
-                        if (sameNumOrder != null)  // есть заказ с таким же номером - забрать из него блюда в текущий
-                        {
-                            foreach (OrderDishModel item in sameNumOrder.Dishes.Values) curOrder.Dishes.Add(item.Id, item);
-                            sameNumOrder.Dishes.Clear();
+                            if (curOrder.Number == svcOrders[j].Number)
+                            {
+                                sameNumOrder = svcOrders[j];
+                                foreach (OrderDishModel item in sameNumOrder.Dishes.Values) curOrder.Dishes.Add(item.Id, item);
+                                sameNumOrder.Dishes.Clear();
+                                i++;
+                            }
                         }
                     }
                 }
                 // пройтись еще раз по заказам и удалить пустые
                 svcOrders.RemoveAll(o => o.Dishes.Count==0);
+            }
+            // сортировка по времени
+            else
+            {
+                svcOrders = svcOrders.OrderBy(o => o.CreateDate).ThenBy(o => o.Id).ToList();
             }
 
             // после реорганизации списка блюд: группировка по подачам и сортировка по Ид блюда (порядок записи в БД)
@@ -419,6 +427,8 @@ namespace KDSWPFClient
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
                     _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
+                    AppLib.RecalcOrderPanelsLayot();
+                    _pages.ResetOrderPanelSize();
                     repaintOrders();  // перерисовать заказы
                 }
 

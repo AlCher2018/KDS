@@ -15,6 +15,15 @@ using System.Windows.Media;
 
 namespace KDSWPFClient.Lib
 {
+
+    public interface IJoinSortedCollection
+    {
+        int Index { get; set; }
+
+        void JoinSortedCollection();
+    }
+
+
     public static class AppLib
     {
         // общий логгер
@@ -297,6 +306,14 @@ namespace KDSWPFClient.Lib
             }
         }
 
+        internal static double GetOrdersPageContentHeight()
+        {
+            double _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
+
+            return Math.Floor(_screenHeight - 2d * topBotMargin);
+        }
+
 
         // получить глобальное значение приложения из его свойств
         public static object GetAppGlobalValue(string key, object defaultValue = null)
@@ -429,5 +446,91 @@ namespace KDSWPFClient.Lib
         }
 
 
+        // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
+        internal static void RecalcOrderPanelsLayot()
+        {
+            string cfgValue;
+            int cntCols;
+            // размеры элементов панели заказа
+            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
+            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
+            if (cfgValue == null)
+            {
+                cntCols = 4;   // по умолчанию - 4
+                string errMsg;
+                AppLib.SaveAppSettings(new Dictionary<string, string>() { { "OrdersColumnsCount", cntCols.ToString() } }, out errMsg);
+            }
+            else cntCols = cfgValue.ToInt();
+
+            //   ширина столбцов заказов и расстояния между столбцами
+            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
+            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
+            // где, koef = доля поля от ширины колонки
+            double koef = 0.2;
+            double colWidth = Math.Floor(screenWidth / (cntCols + koef * (cntCols + 1)));
+            double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
+            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+
+            //   отступ сверху/снизу для панели заказов
+            AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
+            //   отступ между заказами по вертикали
+            AppLib.SetAppGlobalValue("ordPnlTopMargin", colMargin);
+        }
+
+
+        // соединение двух ОТСОРТИРОВАННЫХ массивов
+        // what - что обновляем (цель/получатель обновления), напр. List<OrderDishViewModel>
+        // then - чем обновляем (источник/поставщик обновления), напр. List<OrderDishModel>
+        internal static bool JoinSortedLists<T1, T2>(List<T1> targetList, List<T2> sourceList): where I
+        {
+            bool retVal = false;
+            int index = 0;
+            T1 trgObj;
+            foreach (T2 srcObj in sourceList)
+            {
+                // в источнике больше элементов, поэтому добавляем в цель
+                if (index == targetList.Count)
+                {
+                    trgObj = new T1(T2, index + 1);
+                    targetList.Add(trgObj);
+                    retVal = true;
+                }
+                else if (Dishes[dishIndex].Id != dishModel.Id)
+                {
+                    // попытаться найти блюдо с таким Ид и переставить его в нужную позицию
+                    dishView = this.Dishes.FirstOrDefault(d => d.Id == dishModel.Id);
+                    if (dishView == null)  // не найдено - ВСТАВЛЯЕМ в нужную позицию
+                    {
+                        dishView = new OrderDishViewModel(dishModel, dishIndex + 1);
+                        Dishes.Insert(dishIndex, dishView);
+                        _isDishesListUpdated = true;
+                    }
+                    else  // переставляем
+                    {
+                        Dishes.Remove(dishView);
+                        Dishes.Insert(dishIndex, dishView);
+                        dishView.Index = dishIndex + 1;
+                        dishView.UpdateFromSvc(dishModel);
+                    }
+                }
+                else
+                {
+                    dishView = Dishes[dishIndex];
+                    dishView.Index = dishIndex + 1;
+                    dishView.UpdateFromSvc(dishModel);
+                }
+                dishIndex++;
+            }
+
+            // удалить блюда, которые не пришли от службы
+            while (Dishes.Count >= (dishIndex + 1)) { Dishes.RemoveAt(Dishes.Count - 1); _isDishesListUpdated = true; }
+
+            return retVal;
+        }
+
+
     }  // class
+
+
 }

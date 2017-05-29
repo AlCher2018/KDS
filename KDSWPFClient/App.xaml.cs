@@ -94,32 +94,9 @@ namespace KDSWPFClient
             cfgValue = AppLib.GetAppSetting("IsLogUserAction");
             AppLib.SetAppGlobalValue("IsLogUserAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
-            // размеры элементов панели заказа
-            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
-            int cntCols;
-            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
-            if (cfgValue == null)
-            {
-                cntCols = 4;   // по умолчанию - 4
-                string errMsg;
-                AppLib.SaveAppSettings(new Dictionary<string, string>() { { "OrdersColumnsCount", cntCols.ToString() } }, out errMsg);
-            }
-            else cntCols = cfgValue.ToInt();
-            
-            //   ширина столбцов заказов и расстояния между столбцами
-            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
-            // где, koef = доля поля от ширины колонки
-            double koef = 0.2;
-            double colWidth = screenWidth / (cntCols + koef * (cntCols + 1));
-            double colMargin = koef * colWidth;
-            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);  // поле между заказами по горизонтали
+            // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
+            AppLib.RecalcOrderPanelsLayot();
 
-            //   отступ сверху/снизу для панели заказов
-            AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
-            //   отступ между заказами по вертикали
-            AppLib.SetAppGlobalValue("ordPnlTopMargin", 50d);
             // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
             AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);

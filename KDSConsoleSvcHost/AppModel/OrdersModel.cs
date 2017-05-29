@@ -109,11 +109,15 @@ namespace KDSService.AppModel
             return null;
         }  // method
 
-        // перегруженные процедуры проверки числ.значения статуса Заказа/Блюда (из БД) на обработку в КДС
+        // процедуры проверки числ.значения статуса Заказа/Блюда (из БД) на обработку в КДС
         // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
+        // дата создания: только текущая!
         private bool isProcessingOrderStatusId(Order order)
         {
-            return (order.OrderStatusId <= 2) || (order.OrderStatusId == 4);
+            return ( 
+                ((order.OrderStatusId <= 2) || (order.OrderStatusId == 4)) 
+                && (order.CreateDate.Date.Equals(DateTime.Now.Date))
+            );
         }
         // статус: null - не указан, ... см.выше
         private bool isProcessingDishStatusId(OrderDish dish)
