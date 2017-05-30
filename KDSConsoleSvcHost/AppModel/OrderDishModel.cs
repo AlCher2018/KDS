@@ -313,14 +313,14 @@ namespace KDSService.AppModel
                     // поменять статус и запустить таймеры для ингредиентов
                     if (this.ParentUid.IsNull())
                     {
-                        List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
-                        if ((dishes != null) && (dishes.Count > 0))
-                            dishes.ForEach(od => od.UpdateStatus(newStatus, false));
+                        List<OrderDishModel> ingredients = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
+                        if ((ingredients != null) && (ingredients.Count > 0))
+                            ingredients.ForEach(od => od.UpdateStatus(newStatus, false));
                     }
 
                     // попытка обновить статус Заказа проверкой состояний всех блюд
-                    if (isUpdateParentOrder)
-                        _modelOrder.UpdateStatusByVerificationDishes();
+                    if (isUpdateParentOrder) _modelOrder.UpdateStatusByVerificationDishes();
+
                     isUpdSuccess = true;
                 }
             }
