@@ -2,20 +2,23 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:KDSWPFClient"
-             xmlns:locLib="clr-namespace:KDSWPFClient.Lib"
+             xmlns:locLib="clr-namespace:KDSWPFClient.View"
              >
     
     <Application.Resources>
+        <!-- конвертеры -->
         <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
         <locLib:GetMargin x:Key="getMargin"/>
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
-        
+        <locLib:IsNullConverter x:Key="isNullConverter"/>
+
+
         <!-- background's brushes -->
         <!-- *** ЗАГОЛОВОК ЗАКАЗА *** -->
         <SolidColorBrush x:Key="orderHeaderBackBrushTimer" Color="YellowGreen"/>
         <SolidColorBrush x:Key="orderHeaderForeBrushTimer" Color="Black"/>
         <!--  фон заголовка -->
-        <SolidColorBrush x:Key="orderHeaderBackBrushWaitingCook" Color="White"/>
+        <SolidColorBrush x:Key="orderHeaderBackBrushWaitingCook" Color="Plum"/>
         <SolidColorBrush x:Key="orderHeaderBackBrushCooking" Color="Green"/>
         <SolidColorBrush x:Key="orderHeaderBackBrushReady" Color="Orange"/>
         <SolidColorBrush x:Key="orderHeaderBackBrushCancelled" Color="Salmon"/>

@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSService
+namespace WpfKDSOrdersEmulator
 {
     using System;
     using System.Collections.Generic;

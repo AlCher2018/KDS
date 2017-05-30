@@ -38,32 +38,22 @@ namespace KDSWPFClient.View
             double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
 
-            //this.Measure(new Size(400d, 400d));
-            //Size _desSize = this.DesiredSize;
-
             // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
             // this.SetValue(TextBlock.FontSizeProperty, _fontSize);   
             this.tbDishIndex.FontSize = 0.8 * _fontSize;
             this.tbDishFilingNumber.FontSize = _fontSize;
             this.tbDishName.FontSize = _fontSize;
+            if (dishView.Comment.IsNull() == false)
+            {
+                this.tbComment.FontSize = 0.9 * _fontSize;
+            }
             this.tbDishQuantity.FontSize = _fontSize;
             this.tbDishStatusTS.FontSize = _fontSize;
-
-            //this.Measure(new Size(400d, 400d));
-            //_desSize = this.DesiredSize;
 
             double padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
             brdTimer.Padding = new Thickness(0, padd, 0, padd);
 
-            //this.Measure(new Size(400d, 400d));
-            //_desSize = this.DesiredSize;
-
-            //IEnumerable<TextBlock> tbs = grdDishLine.Children.OfType<TextBlock>();
-            //foreach (TextBlock tb in tbs)
-            //{
-            //    tb.FontSize = _fontSize;
-            //}
         }
 
 

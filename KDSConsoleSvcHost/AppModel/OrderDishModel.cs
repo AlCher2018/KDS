@@ -221,12 +221,9 @@ namespace KDSService.AppModel
                 // статус блюда
                 if (DishStatusId != (dbDish.DishStatusId??0)) DishStatusId = (dbDish.DishStatusId??0);
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
-                
-                if (newStatus <= OrderStatusEnum.WaitingCook)
-                {
-                    // проверяем условие автоматического перехода в режим приготовления
-                    if (canAutoPassToCookingStatus()) newStatus = OrderStatusEnum.Cooking;
-                }
+
+                // проверяем условие автоматического перехода в режим приготовления
+                if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus()) newStatus = OrderStatusEnum.Cooking;
 
                 bool isNewStatus = (newStatus != Status);     // статус изменен
 
@@ -270,7 +267,7 @@ namespace KDSService.AppModel
                     _curTimer.Stop(); // остановить таймер состояния
                     // получить время нахождения в состоянии с момента последнего входа
                     secondsInPrevState = _curTimer.ValueTS;
-                    Debug.Print("secondsInPrevState {0}", secondsInPrevState);
+                   // Debug.Print("secondsInPrevState {0}", secondsInPrevState);
                 }
 
                 // сохранить новый статус в БД
@@ -290,7 +287,7 @@ namespace KDSService.AppModel
                             // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
                             setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
 
-                            Debug.Print("status from {0} ts {1}; status to {2}, dt {3}", this.Status, secondsInPrevState, newStatus, dtEnterToNewStatus);
+                            //Debug.Print("status from {0} ts {1}; status to {2}, dt {3}", this.Status, secondsInPrevState, newStatus, dtEnterToNewStatus);
                             saveRunTimeRecord();
                         }
                         // создать новую запись в Return table
@@ -396,6 +393,10 @@ namespace KDSService.AppModel
                     retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CommitDate);
                     break;
 
+                case OrderStatusEnum.CancelConfirmed:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CancelConfirmedDate);
+                    break;
+
                 default:
                     break;
             }
@@ -448,6 +449,10 @@ namespace KDSService.AppModel
 
                 case OrderStatusEnum.Commit:
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.CommitDate = dateEntered;
+                    break;
+
+                case OrderStatusEnum.CancelConfirmed:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CancelConfirmedDate = dateEntered;
                     break;
 
                 default:

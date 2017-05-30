@@ -116,7 +116,7 @@
     </Compile>
     <Compile Include="Model\AppDataProvider.cs" />
     <Compile Include="Lib\AppLib.cs" />
-    <Compile Include="Lib\Converters.cs" />
+    <Compile Include="View\Converters.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

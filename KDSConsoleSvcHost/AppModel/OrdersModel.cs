@@ -39,12 +39,11 @@ namespace KDSService.AppModel
                 {
                     // отобрать заказы, которые не были закрыты (статус < 5)
                     // в запрос включить блюда, отделы и группы отделов
-                    // отсортированные по порядке появления в таблице
+                    // группировка и сортировка осуществляется на клиенте
                     dbOrders = db.Order
                         .Include("OrderDish")
                         .Include("OrderDish.Department")
                         .Where(isProcessingOrderStatusId)
-                        .OrderBy(o => o.Id)
                         .ToList();
                 }
             }
@@ -87,22 +86,25 @@ namespace KDSService.AppModel
                         _orders.Remove(id);
                     }
 
-                    // обновить или добавить заказы во внутр.словаре
-                    foreach (Order dbOrder in dbOrders)
+                    if (_orders != null)
                     {
-                        if (_orders.ContainsKey(dbOrder.Id))
+                        // обновить или добавить заказы во внутр.словаре
+                        foreach (Order dbOrder in dbOrders)
                         {
-                            // обновить существующий заказ
-                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder, false);
-                        }
-                        else
-                        {
-                            // добавление заказа в словарь
-                            OrderModel newOrder = new OrderModel(dbOrder);
-                            _orders.Add(dbOrder.Id, newOrder);
-                        }
-                        //curOrder
-                    }
+                            if (_orders.ContainsKey(dbOrder.Id))
+                            {
+                                // обновить существующий заказ
+                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder, false);
+                            }
+                            else
+                            {
+                                // добавление заказа в словарь
+                                OrderModel newOrder = new OrderModel(dbOrder);
+                                _orders.Add(dbOrder.Id, newOrder);
+                            }  //curOrder
+                        }  // foreach
+                    }  // if
+
                 }  // lock
             }
 

@@ -125,7 +125,7 @@ namespace KDSWPFClient
         {
             if (_getClient.State == CommunicationState.Faulted)
             {
-                _getClient.Close();
+                //_getClient.Close();
                 _getClient = new KDSServiceClient();
             }
 

@@ -482,7 +482,7 @@ namespace KDSWPFClient.Lib
         /// <param name="sourceList">Список объектов-источников</param>
         /// <returns></returns>
         internal static bool JoinSortedLists<T1, T2>(List<T1> targetList, List<T2> sourceList) 
-            where T1:IJoinSortedCollection<T2>, IContainIDField, new() where T2: IContainIDField
+            where T1:IJoinSortedCollection<T2>, new() where T2: IContainIDField
         {
             bool retVal = false;
             int index = 0;
@@ -504,6 +504,7 @@ namespace KDSWPFClient.Lib
                     trgObj = targetList[index];
                     trgObj.Index = index + 1;
                     trgObj.UpdateFromSvc(srcObj);
+                    if ((trgObj is IContainInnerCollection) && ((trgObj as IContainInnerCollection).IsInnerListUpdated) && !retVal) retVal = true;
                 }
                 else
                 {
@@ -516,12 +517,13 @@ namespace KDSWPFClient.Lib
                         targetList.Insert(index, trgObj);
                         retVal = true;
                     }
-                    else  // переставляем
+                    else  // переставляем и обновляем из источника
                     {
                         targetList.Remove(trgObj);
                         targetList.Insert(index, trgObj);
                         trgObj.Index = index + 1;
                         trgObj.UpdateFromSvc(srcObj);
+                        if ((trgObj is IContainInnerCollection) && ((trgObj as IContainInnerCollection).IsInnerListUpdated) && !retVal) retVal = true;
                     }
                 }
                 index++;
@@ -540,7 +542,7 @@ namespace KDSWPFClient.Lib
 
     }  // class
 
-    public interface IJoinSortedCollection<T>
+    public interface IJoinSortedCollection<T>: IContainIDField
     {
         int Index { get; set; }
 
@@ -552,6 +554,11 @@ namespace KDSWPFClient.Lib
     public interface IContainIDField
     {
         int Id { get; set; }
+    }
+
+    public interface IContainInnerCollection
+    {
+        bool IsInnerListUpdated { get; }
     }
 
 

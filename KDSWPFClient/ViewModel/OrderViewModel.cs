@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace KDSWPFClient.ViewModel
 {
-    public class OrderViewModel : INotifyPropertyChanged, IJoinSortedCollection<OrderModel>, IContainIDField
+    public class OrderViewModel : INotifyPropertyChanged, IJoinSortedCollection<OrderModel>, IContainIDField, IContainInnerCollection
     {
         public int Id { get; set; }
 
@@ -51,7 +51,7 @@ namespace KDSWPFClient.ViewModel
         public OrderPanel ViewPanel { get; set; }
 
         private bool _isDishesListUpdated;
-        public bool IsDishesListUpdated { get { return _isDishesListUpdated; } }
+        public bool IsInnerListUpdated { get { return _isDishesListUpdated; } }
 
 
         // КОНСТРУКТОРЫ

@@ -95,14 +95,9 @@ namespace KDSService.AppModel
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
             _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(1000));
 
-            // для заказа статус по умолчанию - В ПРОЦЕССЕ ГОТОВКИ
-            if (this.OrderStatusId < 1)
-            {
-                this.OrderStatusId = 1;
-                this.Status = OrderStatusEnum.Cooking;
-            }
 
             UpdateFromDBEntity(dbOrder, true);
+
 
             #region условия запуска таймера текущего состояния
             // *** базовое значение таймера состояния 
@@ -163,6 +158,7 @@ namespace KDSService.AppModel
                     OrderStatusId = dbOrder.OrderStatusId;
                     Status = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
                 }
+
                 else
                 {
                     if (Uid.IsNull() || (Uid != dbOrder.UID)) Uid = dbOrder.UID;
@@ -174,6 +170,19 @@ namespace KDSService.AppModel
                     if (Waiter.IsNull() || (Waiter != dbOrder.Waiter)) Waiter = dbOrder.Waiter;
                 }
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
+
+                // для нового объекта статус по умолчанию - В ПРОЦЕССЕ ГОТОВКИ
+                // блюда - не трогать!
+                if (isNew && (this.OrderStatusId < 1))
+                {
+                    this.OrderStatusId = 1;
+                    this.Status = OrderStatusEnum.Cooking;
+
+                    // сразу сохраняем в БД
+                    setStatusRunTimeDTS(this.Status, this.CreateDate, -1);
+                    saveRunTimeRecord();  // в таблице OrderRunTime
+                    saveStatusToDB(this.Status);  // в таблице Order
+                }
 
 
                 // *** СЛОВАРЬ БЛЮД  ***
@@ -217,6 +226,7 @@ namespace KDSService.AppModel
             }  // lock
         }  // method UpdateFromDBEntity
 
+
         // внешнее обновление состояния заказа
         // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ, из БД/КДС
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
@@ -255,7 +265,7 @@ namespace KDSService.AppModel
                     if (isUpdateDishStatus) dishesUpdSuccess = updateDishesStatus(newStatus);
 
                     // сохранить новый статус в БД
-                    if (dishesUpdSuccess && saveStatusToDB(newStatus))
+                    if (saveStatusToDB(newStatus))
                     {
                         // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
                         _curTimer = null;
@@ -417,6 +427,10 @@ namespace KDSService.AppModel
                     retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CommitDate);
                     break;
 
+                case OrderStatusEnum.CancelConfirmed:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.CancelConfirmedDate);
+                    break;
+
                 default:
                     break;
             }
@@ -471,13 +485,18 @@ namespace KDSService.AppModel
                     if (dateEntered.IsZero() == false) _dbRunTimeRecord.CommitDate = dateEntered;
                     break;
 
+                case OrderStatusEnum.CancelConfirmed:
+                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.CancelConfirmedDate = dateEntered;
+                    break;
+
                 default:
                     break;
             }
         }
 
-        private void saveRunTimeRecord()
+        private bool saveRunTimeRecord()
         {
+            bool retVal = false;
             // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
             using (KDSEntities db = new KDSEntities())
             {
@@ -487,12 +506,14 @@ namespace KDSService.AppModel
                     // указать, что запись изменилась
                     db.Entry<OrderRunTime>(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
                     db.SaveChanges();
+                    retVal = true;
                 }
                 catch (Exception ex)
                 {
                     writeDBException(ex, "обновления");
                 }
             }
+            return retVal;
         }
 
         private bool saveStatusToDB(OrderStatusEnum status)

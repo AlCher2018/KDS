@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KDSWPFClient.Lib;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -8,8 +9,25 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
-namespace KDSWPFClient.Lib
+
+namespace KDSWPFClient.View
 {
+
+    [ValueConversion(typeof(string), typeof(bool))]
+    public class IsNullConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (value == null);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
     [ValueConversion(typeof(double), typeof(double))]
     public class MultiplyParamValueConverter : IValueConverter
     {

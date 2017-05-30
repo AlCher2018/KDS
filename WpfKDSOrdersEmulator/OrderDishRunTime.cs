@@ -7,15 +7,15 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSService
+namespace WpfKDSOrdersEmulator
 {
     using System;
     using System.Collections.Generic;
     
-    public partial class OrderRunTime
+    public partial class OrderDishRunTime
     {
         public int Id { get; set; }
-        public int OrderId { get; set; }
+        public int OrderDishId { get; set; }
         public Nullable<System.DateTime> InitDate { get; set; }
         public Nullable<int> WaitingCookTS { get; set; }
         public Nullable<System.DateTime> CookingStartDate { get; set; }
@@ -28,6 +28,6 @@ namespace KDSService
         public Nullable<System.DateTime> CancelDate { get; set; }
         public Nullable<System.DateTime> CancelConfirmedDate { get; set; }
     
-        public virtual Order Order { get; set; }
+        public virtual OrderDish OrderDish { get; set; }
     }
 }

@@ -26,6 +26,7 @@ namespace KDSService
         public Nullable<int> WaitingCommitTS { get; set; }
         public Nullable<System.DateTime> CommitDate { get; set; }
         public Nullable<System.DateTime> CancelDate { get; set; }
+        public Nullable<System.DateTime> CancelConfirmedDate { get; set; }
     
         public virtual OrderDish OrderDish { get; set; }
     }

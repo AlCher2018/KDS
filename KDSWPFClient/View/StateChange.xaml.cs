@@ -204,7 +204,8 @@ namespace KDSWPFClient.View
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Text = btnText1,
                 FontWeight = FontWeights.Bold,
-                FontSize = Math.Floor(0.2d * height)
+                FontSize = Math.Floor(0.2d * height),
+                TextWrapping = TextWrapping.Wrap
             };
             tbStateName.SetValue(Grid.RowProperty, 0);
             grd.Children.Add(tbStateName);

@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CookingEmulator", "CookingEmulator\CookingEmulator.csproj", "{70CB7228-189F-4E39-BDC7-0E349D31CF20}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFEmulator", "WPFEmulator\WPFEmulator.csproj", "{51C39A62-235B-4043-9737-BA9560B10675}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFQueueEmulator", "WPFEmulator\WPFQueueEmulator.csproj", "{51C39A62-235B-4043-9737-BA9560B10675}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientOrderQueue", "ClientOrderQueue\ClientOrderQueue.csproj", "{377CDA51-6DF8-42E8-871E-54B13D7C8525}"
 EndProject
@@ -30,6 +30,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSWinFormClient", "KDSWinFormClient\KDSWinFormClient.csproj", "{39CE6925-7C6D-42E2-B777-9B6470A06D1D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfTestMeasure", "WpfTestMeasure\WpfTestMeasure.csproj", "{E5462772-088B-41E5-81C5-5C4A036026F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfKDSOrdersEmulator", "WpfKDSOrdersEmulator\WpfKDSOrdersEmulator.csproj", "{A622657F-2A44-44B7-ABC0-2E24FE0501E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,6 +81,10 @@ Global
 		{E5462772-088B-41E5-81C5-5C4A036026F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5462772-088B-41E5-81C5-5C4A036026F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5462772-088B-41E5-81C5-5C4A036026F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A622657F-2A44-44B7-ABC0-2E24FE0501E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A622657F-2A44-44B7-ABC0-2E24FE0501E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A622657F-2A44-44B7-ABC0-2E24FE0501E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A622657F-2A44-44B7-ABC0-2E24FE0501E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
