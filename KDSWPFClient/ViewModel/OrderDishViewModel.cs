@@ -41,6 +41,10 @@ namespace KDSWPFClient.ViewModel
 
         public System.DateTime CreateDate { get; set; }
 
+        public int DelayedStartTime { get; set; }
+
+        public int EstimatedTime { get; set; }
+
         public string ServiceErrorMessage { get; set; }
 
         public string WaitingTimerString { get; set; }
@@ -69,6 +73,8 @@ namespace KDSWPFClient.ViewModel
             Quantity = svcOrderDish.Quantity;
             Comment = svcOrderDish.Comment;
             CreateDate = svcOrderDish.CreateDate;
+            DelayedStartTime = svcOrderDish.DelayedStartTime;
+            EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
             WaitingTimerString = svcOrderDish.WaitingTimerString;
         }
@@ -115,6 +121,19 @@ namespace KDSWPFClient.ViewModel
                 CreateDate = svcOrderDish.CreateDate;
                 OnPropertyChanged("CreateDate");
             }
+
+            if (DelayedStartTime != svcOrderDish.DelayedStartTime)
+            {
+                DelayedStartTime = svcOrderDish.DelayedStartTime;
+                OnPropertyChanged("DelayedStartTime");
+            }
+
+            if (EstimatedTime != svcOrderDish.EstimatedTime)
+            {
+                EstimatedTime = svcOrderDish.EstimatedTime;
+                OnPropertyChanged("EstimatedTime");
+            }
+
 
             if (ServiceErrorMessage != svcOrderDish.ServiceErrorMessage) ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
 

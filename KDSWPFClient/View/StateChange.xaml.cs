@@ -281,19 +281,4 @@ namespace KDSWPFClient.View
 
     }  // class
 
-
-    // добавить к кнопке DependencyProperty для стилевых триггеров, устанавливающих фон и цвет текста
-    public class StateButton : Border
-    {
-        public OrderStatusEnum Status
-        {
-            get { return (OrderStatusEnum)GetValue(StatusProperty); }
-            set { SetValue(StatusProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for Status.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty StatusProperty =
-            DependencyProperty.Register("Status", typeof(OrderStatusEnum), typeof(StateButton), new PropertyMetadata(OrderStatusEnum.None));
-    }
-
 }

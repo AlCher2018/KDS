@@ -88,8 +88,6 @@ namespace KDSWPFClient
             // отделы на КДСе
             cfgValue = AppLib.GetAppSetting("depUIDs");
             AppLib.SetAppGlobalValue("depUIDs", cfgValue);
-            // прочитать из config-а и сохранить в свойствах приложения режим КДС
-            KDSModeHelper.PutCfgKDSModeToAppProps();
 
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
@@ -124,13 +122,16 @@ namespace KDSWPFClient
             // для статусов заказов/блюд в качестве ключа используется стр.знач.перечисления OrderStatusEnum
             // в качестве значения используется класс BrushesPair, в котором содержится основная пара и словарь неосновных пар
             Dictionary<string, BrushesPair> appBrushes = new Dictionary<string, BrushesPair>()
-            { 
-                {OrderStatusEnum.None.ToString(), new View.BrushesPair() {Background = Brushes.YellowGreen, Foreground=Brushes.Black } },
+            {
+                { OrderStatusEnum.None.ToString(), new View.BrushesPair() {Background = Brushes.WhiteSmoke, Foreground=Brushes.Black } },
                 {OrderStatusEnum.WaitingCook.ToString(), new View.BrushesPair() {Background=Brushes.Plum, Foreground = Brushes.Black } },
                 {OrderStatusEnum.Cooking.ToString(), new View.BrushesPair() {Background=Brushes.Green, Foreground = Brushes.White } },
                 {OrderStatusEnum.Ready.ToString(), new View.BrushesPair() {Background=Brushes.Orange, Foreground = Brushes.Black } },
                 {OrderStatusEnum.Cancelled.ToString(), new View.BrushesPair() {Background=Brushes.Salmon, Foreground = Brushes.Black } },
                 {OrderStatusEnum.Took.ToString(), new View.BrushesPair() {Background=Brushes.Blue, Foreground = Brushes.White } },
+                {OrderStatusEnum.Commit.ToString(), new View.BrushesPair() {Background=Brushes.DarkBlue, Foreground = Brushes.Yellow } },
+                {OrderStatusEnum.CancelConfirmed.ToString(), new View.BrushesPair() {Background=Brushes.DarkBlue, Foreground = Brushes.Yellow } },
+                {"orderHeaderTimer", new View.BrushesPair() {Background=Brushes.YellowGreen, Foreground = Brushes.Black} },
                 {"dishLineBase", new View.BrushesPair() {Background=Brushes.White, Foreground = Brushes.Black} },
                 {"ingrLineBase", new View.BrushesPair() {Background=Brushes.White, Foreground = Brushes.DarkViolet } }
             };
@@ -138,11 +139,13 @@ namespace KDSWPFClient
             BrushesPair waitBrushes = appBrushes[OrderStatusEnum.WaitingCook.ToString()];
             waitBrushes.CreateEmptySubDict();
             // время до авт.начала приготовления
-            waitBrushes.SubDictionary.Add("estimateStart", new BrushesPair() { Background = Brushes.PaleVioletRed, Foreground = Brushes.Yellow});
+            waitBrushes.SubDictionary.Add("estimateStart", new BrushesPair() { Background = Brushes.Plum, Foreground = Brushes.Red});
             // время готовки блюда
-            waitBrushes.SubDictionary.Add("estimateCook", new BrushesPair() { Background = Brushes.LavenderBlush, Foreground = Brushes.Black});
+            waitBrushes.SubDictionary.Add("estimateCook", new BrushesPair() { Background = Brushes.Plum, Foreground = Brushes.Navy});
             AppLib.SetAppGlobalValue("appBrushes", appBrushes);
 
+            // прочитать из config-а и сохранить в свойствах приложения режим КДС
+            KDSModeHelper.PutCfgKDSModeToAppProps();
         }
 
 

@@ -28,7 +28,7 @@
                 <!-- 2. количество -->
                 <ColumnDefinition Width="0.3*"/>
                 <!-- 3. таймер состояния -->
-                <ColumnDefinition Width="0.6*"/>
+                <ColumnDefinition Width="0.7*"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index}"/>
@@ -54,11 +54,11 @@
                 <Run x:Name="tbComment" FontStyle="Italic" FontWeight="Normal"/>
             </TextBlock>
             
-            <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold"/>
+            <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center"/>
 
             <Border x:Name="brdTimer" Grid.Column="3" 
-                    Background="{Binding Status, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}" 
-                    TextBlock.Foreground="{Binding Status, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}" Margin="0,0,3,0"
+                    Background="{Binding ., ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}" 
+                    TextBlock.Foreground="{Binding ., ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}" Margin="0,0,3,0"
                     CornerRadius="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
                 <TextBlock x:Name="tbDishStatusTS" Text="{Binding WaitingTimerString}" HorizontalAlignment="Center" FontWeight="Bold" TextWrapping="Wrap"/>
             </Border>

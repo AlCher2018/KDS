@@ -104,7 +104,6 @@ namespace KDSWPFClient.View
 
             win.ShowDialog();
 
-            //MessageBox.Show(string.Format("order id {0}, number {1}, state {2}", orderView.Id, orderView.Number, orderView.Status));
         }
     }// class 
 }

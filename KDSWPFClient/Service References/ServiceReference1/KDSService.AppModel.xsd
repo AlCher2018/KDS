@@ -57,8 +57,10 @@
     <xs:sequence>
       <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="DelayedStartTime" type="xs:int" />
       <xs:element minOccurs="0" name="Department" nillable="true" type="tns:DepartmentModel" />
       <xs:element minOccurs="0" name="DishStatusId" type="xs:int" />
+      <xs:element minOccurs="0" name="EstimatedTime" type="xs:int" />
       <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />

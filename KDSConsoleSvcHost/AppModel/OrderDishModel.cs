@@ -50,6 +50,13 @@ namespace KDSService.AppModel
         public string Comment { get; set; }
 
         [DataMember]
+        public int EstimatedTime { get; set; }
+
+        // время (в сек) "Готовить позже"
+        [DataMember]
+        public int DelayedStartTime { get; set; }
+
+        [DataMember]
         public int DishStatusId { get; set; }
 
         private OrderStatusEnum Status { get; set; }
@@ -80,12 +87,11 @@ namespace KDSService.AppModel
                     if (Status == OrderStatusEnum.WaitingCook)
                     {
                         // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
-                        if (_dtCookingStartEstimated.IsZero())
+                        if (DelayedStartTime != 0)
                             tsTimerValue = TimeSpan.FromSeconds(Convert.ToInt32((_dtCookingStartEstimated - DateTime.Now).TotalSeconds));
                         // иначе, если есть время приготовления, то отобразить время приготовления
                         else if (EstimatedTime != 0)
                             tsTimerValue = _tsCookingEstimated;
-                        // иначе ничего не отображать
                         else
                             tsTimerValue = TimeSpan.Zero;
                     }
@@ -96,10 +102,19 @@ namespace KDSService.AppModel
                         tsTimerValue = _tsCookingEstimated - tsTimerValue;
                     }
 
-                    retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
-                    // отрицательное время
-                    if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
+                    // преобразование времени в строку
+                    if (tsTimerValue == TimeSpan.Zero)
+                    {
+                        retVal = "";
+                    }
+                    else
+                    {
+                        retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
+                        // отрицательное время
+                        if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
+                    }
                 }
+
                 return retVal;
             }
             set { }  // необходимо для DataMember
@@ -107,11 +122,6 @@ namespace KDSService.AppModel
 
         #endregion
 
-
-        public int EstimatedTime { get; set; }
-        // время (в сек) "Готовить позже"
-        // клентам нет смысла передавать
-        public int DelayedStartTime { get; set; }
 
         // словарь дат входа в состояние
         private Dictionary<OrderStatusEnum, DateTime> _dtEnterStatusDict;

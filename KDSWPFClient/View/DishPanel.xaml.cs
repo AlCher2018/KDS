@@ -31,6 +31,8 @@ namespace KDSWPFClient.View
 
             grdDishLine.DataContext = dishView;
 
+            dishView.PropertyChanged += DishView_PropertyChanged;
+
             //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
             //base.MinHeight = dishLineMinHeight;
 
@@ -50,7 +52,7 @@ namespace KDSWPFClient.View
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;
-            this.tbDishStatusTS.FontSize = _fontSize;
+            this.tbDishStatusTS.FontSize = 1.2 * _fontSize;
 
             double padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
@@ -58,6 +60,16 @@ namespace KDSWPFClient.View
 
         }
 
+        private void DishView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "Status")
+            {
+                BindingExpression bind = BindingOperations.GetBindingExpression(brdTimer, Border.BackgroundProperty);
+                if (bind != null) bind.UpdateTarget();
+                bind = BindingOperations.GetBindingExpression(brdTimer, TextBlock.ForegroundProperty);
+                if (bind != null) bind.UpdateTarget();
+            }
+        }
 
         private void root_MouseDown(object sender, MouseButtonEventArgs e)
         {

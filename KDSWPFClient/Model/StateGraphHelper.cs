@@ -1,5 +1,6 @@
 ﻿using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
+using KDSWPFClient.View;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -18,54 +19,19 @@ namespace KDSWPFClient.Model
         // кисти фона и текста
         public static void SetStateButtonBrushes(OrderStatusEnum eState, out Brush backgroundBrush, out Brush foregroundBrush)
         {
-            ResourceDictionary resDict = App.Current.Resources;
+            var v1 = AppLib.GetAppGlobalValue("appBrushes");
 
-            switch (eState)
+            if (v1 == null)
             {
-                case OrderStatusEnum.None:
-                    backgroundBrush = new SolidColorBrush(Colors.White);
-                    foregroundBrush = new SolidColorBrush(Colors.Black);
-                    break;
-
-                case OrderStatusEnum.WaitingCook:
-                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushWaitingCook");
-                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushWaitingCook");
-                    break;
-
-                case OrderStatusEnum.Cooking:
-                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushCooking");
-                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushCooking");
-                    break;
-
-                case OrderStatusEnum.Ready:
-                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushReady");
-                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushReady");
-                    break;
-
-                case OrderStatusEnum.Took:
-                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushTook");
-                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushTook");
-                    break;
-
-                case OrderStatusEnum.Cancelled:
-                    backgroundBrush = AppLib.GetAppResourcesBrush("orderHeaderBackBrushCancelled");
-                    foregroundBrush = AppLib.GetAppResourcesBrush("orderHeaderForeBrushCancelled");
-                    break;
-
-                case OrderStatusEnum.Commit:
-                    backgroundBrush = new SolidColorBrush(Colors.DarkBlue);
-                    foregroundBrush = new SolidColorBrush(Colors.Yellow); 
-                    break;
-
-                case OrderStatusEnum.CancelConfirmed:
-                    backgroundBrush = new SolidColorBrush(Colors.DarkBlue);
-                    foregroundBrush = new SolidColorBrush(Colors.Yellow);
-                    break;
-
-                default:
-                    backgroundBrush = new SolidColorBrush(Colors.White);
-                    foregroundBrush = new SolidColorBrush(Colors.Black);
-                    break;
+                backgroundBrush = new SolidColorBrush(Colors.White);
+                foregroundBrush = new SolidColorBrush(Colors.Black);
+            }
+            else
+            {
+                Dictionary<string, BrushesPair> appBrushes = (v1 as Dictionary<string, BrushesPair>);
+                BrushesPair bp = appBrushes[eState.ToString()];
+                backgroundBrush = bp.Background;
+                foregroundBrush = bp.Foreground;
             }
         }  // method
 

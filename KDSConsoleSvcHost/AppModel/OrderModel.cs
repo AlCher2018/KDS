@@ -223,8 +223,6 @@ namespace KDSService.AppModel
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
         public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus)
         {
-            lock (this)
-            {
                 // если статус не поменялся, то попытаться обновить только статус блюд
                 if (this.Status == newStatus)
                 {
@@ -283,7 +281,6 @@ namespace KDSService.AppModel
 
                 }  // if status changed
 
-            }  // lock
         }  // method
 
 

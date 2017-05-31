@@ -203,7 +203,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -392,7 +393,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -404,10 +406,16 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.DateTime CreateDateField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int DelayedStartTimeField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private KDSWPFClient.ServiceReference1.DepartmentModel DepartmentField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int DishStatusIdField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int EstimatedTimeField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int FilingNumberField;
@@ -470,6 +478,19 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
+        public int DelayedStartTime {
+            get {
+                return this.DelayedStartTimeField;
+            }
+            set {
+                if ((this.DelayedStartTimeField.Equals(value) != true)) {
+                    this.DelayedStartTimeField = value;
+                    this.RaisePropertyChanged("DelayedStartTime");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
         public KDSWPFClient.ServiceReference1.DepartmentModel Department {
             get {
                 return this.DepartmentField;
@@ -491,6 +512,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((this.DishStatusIdField.Equals(value) != true)) {
                     this.DishStatusIdField = value;
                     this.RaisePropertyChanged("DishStatusId");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EstimatedTime {
+            get {
+                return this.EstimatedTimeField;
+            }
+            set {
+                if ((this.EstimatedTimeField.Equals(value) != true)) {
+                    this.EstimatedTimeField = value;
+                    this.RaisePropertyChanged("EstimatedTime");
                 }
             }
         }

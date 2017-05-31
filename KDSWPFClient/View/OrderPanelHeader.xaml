@@ -10,39 +10,27 @@
              d:DesignHeight="100" d:DesignWidth="300">
 
     <UserControl.Resources>
+        <Style x:Key="rowBrushesStyle" TargetType="Border">
+            <Setter Property="Background" Value="{Binding Status, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
+            <Setter Property="TextBlock.Foreground" Value="{Binding Status, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
+        </Style>
+        
+        
         <Style x:Key="rowMarginStyle" TargetType="FrameworkElement">
             <Setter Property="Margin" Value="{Binding ActualWidth, ConverterParameter='0.02,0,0.02,0', Converter={StaticResource getMargin}, ElementName=root, Mode=OneWay}"/>
         </Style>
 
-        <!--<Style x:Key="mainBackgroundStyle" TargetType="Border">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.WaitingCook}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushWaitingCook}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushWaitingCook}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cooking}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCooking}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCooking}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Ready}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushReady}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushReady}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cancelled}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCancelled}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCancelled}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Took}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushTook}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushTook}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>-->
-        
-        <!-- стили закругленных углов в рамках -->
-        <Style x:Key="cornRadAllStyle" TargetType="Border">
+
+        <Style x:Key="timerStyle" TargetType="Border">
             <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter=0.025, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
+            <Setter Property="Background" Value="{Binding Source='orderHeaderTimer', ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
+            <Setter Property="TextBlock.Foreground" Value="{Binding Source='orderHeaderTimer', ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
         </Style>
+        
+        <Style x:Key="row1Style" TargetType="Border" BasedOn="{StaticResource rowBrushesStyle}">
+            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
+        </Style>
+        
         <Style x:Key="cornRadBottomStyle" TargetType="Border">
             <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0,0,0.03,0.03', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
         </Style>
@@ -60,8 +48,8 @@
         </Grid.RowDefinitions>
 
         <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
-        <Border x:Name="brdHrdTableRow"  BorderBrush="DarkBlue" BorderThickness="1,1,1,0" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
-            <Grid x:Name="grdHdrTableRow" Grid.Row="0" Style="{StaticResource rowMarginStyle}">
+        <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" Style="{StaticResource row1Style}">
+            <Grid x:Name="grdHdrTableRow" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition />
@@ -78,18 +66,18 @@
         </Border>
         
         <!-- официант -->
-        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" >
+        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" Style="{StaticResource rowBrushesStyle}">
             <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
-                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold"/>
+                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left"/>
             </Grid>
         </Border>
         
         <!-- время создания заказа и счетчик приготовления -->
-        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1">
+        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1" Style="{StaticResource rowBrushesStyle}">
             <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="4*"/>
-                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="4*"/>
                 </Grid.ColumnDefinitions>
 
                 <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -97,7 +85,7 @@
                     <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay}" TextWrapping="Wrap"/>
                 </WrapPanel>
                 
-                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}">
+                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource timerStyle}">
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Foreground="Black" FontStretch="Condensed"/>
                         <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" Text="{Binding WaitingTimerString}" TextWrapping="Wrap"/>
