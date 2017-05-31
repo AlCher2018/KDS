@@ -6,6 +6,8 @@ using System.Windows;
 using System.Collections.Generic;
 using KDSWPFClient.ViewModel;
 using KDSWPFClient.Model;
+using KDSWPFClient.View;
+using System.Windows.Media;
 
 namespace KDSWPFClient
 {
@@ -117,9 +119,31 @@ namespace KDSWPFClient
 
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
+
+            // словарь кистей (фон и шрифт) в appBrushes
+            // для статусов заказов/блюд в качестве ключа используется стр.знач.перечисления OrderStatusEnum
+            // в качестве значения используется класс BrushesPair, в котором содержится основная пара и словарь неосновных пар
+            Dictionary<string, BrushesPair> appBrushes = new Dictionary<string, BrushesPair>()
+            { 
+                {OrderStatusEnum.None.ToString(), new View.BrushesPair() {Background = Brushes.YellowGreen, Foreground=Brushes.Black } },
+                {OrderStatusEnum.WaitingCook.ToString(), new View.BrushesPair() {Background=Brushes.Plum, Foreground = Brushes.Black } },
+                {OrderStatusEnum.Cooking.ToString(), new View.BrushesPair() {Background=Brushes.Green, Foreground = Brushes.White } },
+                {OrderStatusEnum.Ready.ToString(), new View.BrushesPair() {Background=Brushes.Orange, Foreground = Brushes.Black } },
+                {OrderStatusEnum.Cancelled.ToString(), new View.BrushesPair() {Background=Brushes.Salmon, Foreground = Brushes.Black } },
+                {OrderStatusEnum.Took.ToString(), new View.BrushesPair() {Background=Brushes.Blue, Foreground = Brushes.White } },
+                {"dishLineBase", new View.BrushesPair() {Background=Brushes.White, Foreground = Brushes.Black} },
+                {"ingrLineBase", new View.BrushesPair() {Background=Brushes.White, Foreground = Brushes.DarkViolet } }
+            };
+            // дополнительные цвета для некоторых состояний
+            BrushesPair waitBrushes = appBrushes[OrderStatusEnum.WaitingCook.ToString()];
+            waitBrushes.CreateEmptySubDict();
+            // время до авт.начала приготовления
+            waitBrushes.SubDictionary.Add("estimateStart", new BrushesPair() { Background = Brushes.PaleVioletRed, Foreground = Brushes.Yellow});
+            // время готовки блюда
+            waitBrushes.SubDictionary.Add("estimateCook", new BrushesPair() { Background = Brushes.LavenderBlush, Foreground = Brushes.Black});
+            AppLib.SetAppGlobalValue("appBrushes", appBrushes);
+
         }
-
-
 
 
     }  // class App

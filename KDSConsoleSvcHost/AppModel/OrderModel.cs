@@ -201,22 +201,13 @@ namespace KDSService.AppModel
                 {
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
-                        // если это ингредиент, то он может быть уже обновлен предыдущим блюдом
-                        if (dbDish.ParentUid.IsNull() == false)
+                        // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
+                        if (dbDish.ParentUid.IsNull())  // это блюдо
                         {
-                            //OrderDish dbIngrDish;
-                            //KDSEntities db = new KDSEntities();
-                            //dbIngrDish = db.OrderDish.Find(dbDish.Id);
-                            //if (dbIngrDish != null) this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbIngrDish);
-                        }
-                        else
                             this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
-
-                        // если статус поменялся в БД у заказа, то поменять статус у всех блюд
-                        if ((_isUpdStatusFromDishes == false) && (this.Status != newStatus))
-                            this._dishesDict[dbDish.Id].UpdateStatus(newStatus, false);
+                        }
                     }
-                    // иначе - добавить 
+                    // иначе - добавить блюдо/ингр
                     else
                     {
                         OrderDishModel newDish = new OrderDishModel(dbDish, this);

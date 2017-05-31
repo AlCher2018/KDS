@@ -25,6 +25,8 @@ namespace ClientOrderQueue.Model
         private Image _imgStatusReady;
         private bool _isVisible;
 
+        private double _fontSize;
+
         public bool CellVisible { get { return _isVisible; } }
 
         public CellContainer(double width, double height, CellBrushes[] cellBrushes, string[] statusTitleLang, string[][] statusLang)
@@ -33,9 +35,13 @@ namespace ClientOrderQueue.Model
             _statusTitleLang = statusTitleLang;
             _statusLang = statusLang;
             _isVisible = false;
+
             base.Visibility = Visibility.Collapsed;
 
             double dMin = Math.Min(width, height);
+            _fontSize = (Application.Current as App).orderNumberFontSize;
+            if (_fontSize == 0) _fontSize = 0.3d * dMin;
+
             double d1, d2;
 
             base.CornerRadius = new System.Windows.CornerRadius(0.1 * dMin);
@@ -50,12 +56,10 @@ namespace ClientOrderQueue.Model
             TextBlock tbNum = new TextBlock() { VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0.06 * dMin, 0, 0, 0)
             };
-            tbNum.Inlines.Add(new Run() { Text = "№ ", FontSize = 0.2 * dMin });
-            double fontSize = (Application.Current as App).orderNumberFontSize;
-            if (fontSize == 0) fontSize = 0.3 * dMin;
+            tbNum.Inlines.Add(new Run() { Text = "№ ", FontSize = 0.5 * _fontSize });
             _tbNumber = new Run()
             {
-                FontSize = fontSize,
+                FontSize = _fontSize,
                 FontWeight = FontWeights.Normal,
                 FontFamily = new FontFamily("Impact")   // Arial Black, Impact
             };
@@ -128,6 +132,7 @@ namespace ClientOrderQueue.Model
             }
             
             _tbNumber.Text = number.ToString();
+            if (_tbNumber.FontSize != _fontSize) _tbNumber.FontSize = _fontSize;
 
             base.Background = _brushes[statusId].Background;
             _delimLine.Stroke = _brushes[statusId].DelimLine;

@@ -73,16 +73,27 @@ namespace KDSService.AppModel
                 string retVal = null;
                 if (_curTimer != null)
                 {
+                    // время из текущего таймера
                     TimeSpan tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
 
-                    // если для состояния приготовления есть время приготовления, то рассчитываем отображаемое значение
-                    if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
+                    // состояние "Ожидание готовки"
+                    if (Status == OrderStatusEnum.WaitingCook)
+                    {
+                        // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
+                        if (_dtCookingStartEstimated.IsZero())
+                            tsTimerValue = TimeSpan.FromSeconds(Convert.ToInt32((_dtCookingStartEstimated - DateTime.Now).TotalSeconds));
+                        // иначе, если есть время приготовления, то отобразить время приготовления
+                        else if (EstimatedTime != 0)
+                            tsTimerValue = _tsCookingEstimated;
+                        // иначе ничего не отображать
+                        else
+                            tsTimerValue = TimeSpan.Zero;
+                    }
+                    
+                    // состояние "В процессе" и есть время приготовления - отображаем время приготовления по убыванию
+                    else if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
                     {
                         tsTimerValue = _tsCookingEstimated - tsTimerValue;
-                    }
-                    else if ((Status == OrderStatusEnum.WaitingCook) && (_dtCookingStartEstimated.IsZero() == false))
-                    {
-                        tsTimerValue = TimeSpan.FromSeconds(Convert.ToInt32((_dtCookingStartEstimated - DateTime.Now).TotalSeconds));
                     }
 
                     retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
@@ -148,9 +159,10 @@ namespace KDSService.AppModel
             _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
             // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
-            //_dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
-            _dtCookingStartEstimated = DateTime.Now.AddSeconds(DelayedStartTime); // for debug
+            _dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
+            //_dtCookingStartEstimated = DateTime.Now.AddSeconds(DelayedStartTime); // for debug
 
+            // время приготовления
             _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
 
             // словарь дат входа в состояние
@@ -171,12 +183,12 @@ namespace KDSService.AppModel
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
 
+            // состояние в методе может поменяться
             UpdateFromDBEntity(dbDish);
 
-            #region условия запуска таймера текущего состояния
-            // *** базовое значение таймера состояния
-            _curTimer = null;
-            if (_tsTimersDict.ContainsKey(this.Status))
+            // и таймер состояния уже может быть запущен
+            // если пустой, то стартуем
+            if ((_curTimer == null) && (_tsTimersDict.ContainsKey(this.Status)))
             {
                 _curTimer = _tsTimersDict[this.Status];
 
@@ -199,7 +211,6 @@ namespace KDSService.AppModel
                 }
                 _curTimer.Start();    // стартуем таймер состояния
             }
-            #endregion
 
         }  // constructor
 
@@ -208,6 +219,7 @@ namespace KDSService.AppModel
         {
             lock (this)
             {
+                // и для блюда, и для ингредиента
                 if (Uid.IsNull() || (Uid != dbDish.UID)) Uid = dbDish.UID;
                 if (CreateDate != dbDish.CreateDate) CreateDate = dbDish.CreateDate;
                 if (Name.IsNull() || (Name != dbDish.DishName)) Name = dbDish.DishName;
@@ -218,25 +230,38 @@ namespace KDSService.AppModel
                 if (DelayedStartTime != dbDish.DelayedStartTime) DelayedStartTime = dbDish.DelayedStartTime;
                 if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
 
-                // статус блюда
-                if (DishStatusId != (dbDish.DishStatusId??0)) DishStatusId = (dbDish.DishStatusId??0);
-                OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+                OrderStatusEnum statusFromDBObj = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
-                // проверяем условие автоматического перехода в режим приготовления
-                if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus()) newStatus = OrderStatusEnum.Cooking;
-
-                bool isNewStatus = (newStatus != Status);     // статус изменен
-
-                // если поменялся отдел
-                if (_department.Id != dbDish.DepartmentId)
+                // обновление состояния ТОЛЬКО ДЛЯ БЛЮДА !!!
+                // т.к. состояние ингредиентов изменяется в самом блюде
+                if (ParentUid.IsNull())
                 {
-                    // необходимо обновить статус
-                    isNewStatus = true;
-                    // объект отдела взять из справочника
-                    _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-                }
+                    // проверяем условие автоматического перехода в режим приготовления
+                    if ((statusFromDBObj <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus()) statusFromDBObj = OrderStatusEnum.Cooking;
 
-                if (isNewStatus) UpdateStatus(newStatus, false);
+                    bool isNewStatus = (statusFromDBObj != Status);     // статус изменен
+
+                    // если поменялся отдел
+                    if (_department.Id != dbDish.DepartmentId)
+                    {
+                        // необходимо обновить статус
+                        isNewStatus = true;
+                        // объект отдела взять из справочника
+                        _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
+                    }
+
+                    if (isNewStatus) UpdateStatus(statusFromDBObj, false);
+
+                }  // только для БЛЮДА
+                
+                // проверить состояние для ингредиента
+                else
+                {
+                    // найти уже существующее блюдо для данного ингредиента
+                    OrderDishModel baseDish = _modelOrder.Dishes.Values.FirstOrDefault(d => d.ParentUid.IsNull() && (d.Uid == this.Uid));
+                    // для ингредиента состояние берем из родительского блюда
+                    if ((baseDish != null) && (this.DishStatusId != baseDish.DishStatusId)) UpdateStatus(baseDish.Status, false);
+                }
 
             }  // lock
 
@@ -310,15 +335,26 @@ namespace KDSService.AppModel
                     Status = newStatus;
                     DishStatusId = (int)newStatus;
 
-                    // поменять статус и запустить таймеры для ингредиентов
+                    // если это блюдо
                     if (this.ParentUid.IsNull())
                     {
-                        List<OrderDishModel> ingredients = this._modelOrder.Dishes.Values.Where(od => od.ParentUid == this.Uid).ToList();
-                        if ((ingredients != null) && (ingredients.Count > 0))
-                            ingredients.ForEach(od => od.UpdateStatus(newStatus, false));
+                        // то найти для него ингредиенты ДАЛЬШЕ ПО СПИСКУ блюд, 
+                        // чтобы не захватить ингредиенты у такого же блюда, перед или после данного в списке блюд!!!
+                        List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
+                        OrderDishModel probIngr;
+                        int idx = dishes.IndexOf(this);  // индекс блюда
+                        // поиск последующих ингредиентов
+                        for (int i = idx+1; i < dishes.Count; i++)
+                        {
+                            probIngr = dishes[i];
+                            // поменять статус и запустить таймеры для ингредиентов данного блюда
+                            if ((probIngr.Uid == this.Uid) && (probIngr.ParentUid == this.Uid)) probIngr.UpdateStatus(this.Status, false);
+                            // ингр.кончились - выйти из цикла
+                            else break;
+                        }
                     }
 
-                    // попытка обновить статус Заказа проверкой состояний всех блюд
+                    // попытка обновить статус Заказа проверкой состояний всех блюд/ингредиентов
                     if (isUpdateParentOrder) _modelOrder.UpdateStatusByVerificationDishes();
 
                     isUpdSuccess = true;

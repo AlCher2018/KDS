@@ -14,7 +14,7 @@
             <Setter Property="Margin" Value="{Binding ActualWidth, ConverterParameter='0.02,0,0.02,0', Converter={StaticResource getMargin}, ElementName=root, Mode=OneWay}"/>
         </Style>
 
-        <Style x:Key="mainBackgroundStyle" TargetType="Border">
+        <!--<Style x:Key="mainBackgroundStyle" TargetType="Border">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.WaitingCook}">
                     <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushWaitingCook}"/>
@@ -37,7 +37,7 @@
                     <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushTook}"/>
                 </DataTrigger>
             </Style.Triggers>
-        </Style>
+        </Style>-->
         
         <!-- стили закругленных углов в рамках -->
         <Style x:Key="cornRadAllStyle" TargetType="Border">
@@ -58,9 +58,9 @@
             <!-- 2. таймер состояния заказа -->
             <RowDefinition/>
         </Grid.RowDefinitions>
-        
-        <!-- строка с наимен.стола и номером заказа -->
-        <Border x:Name="brdHrdTableRow" Style="{StaticResource mainBackgroundStyle}" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
+
+        <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
+        <Border x:Name="brdHrdTableRow"  BorderBrush="DarkBlue" BorderThickness="1,1,1,0" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
             <Grid x:Name="grdHdrTableRow" Grid.Row="0" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -78,14 +78,14 @@
         </Border>
         
         <!-- официант -->
-        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" Style="{StaticResource mainBackgroundStyle}">
+        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" >
             <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
                 <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold"/>
             </Grid>
         </Border>
         
         <!-- время создания заказа и счетчик приготовления -->
-        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1" Style="{StaticResource mainBackgroundStyle}">
+        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1">
             <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="4*"/>
@@ -97,10 +97,10 @@
                     <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay}" TextWrapping="Wrap"/>
                 </WrapPanel>
                 
-                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}" Background="{StaticResource orderHeaderBackBrushTimer}">
+                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource cornRadAllStyle}">
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Foreground="Black" FontStretch="Condensed"/>
-                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" Foreground="{StaticResource orderHeaderForeBrushTimer}" Text="{Binding WaitingTimerString}" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" Text="{Binding WaitingTimerString}" TextWrapping="Wrap"/>
                     </WrapPanel>
                 </Border>
             </Grid>

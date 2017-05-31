@@ -55,7 +55,7 @@ namespace KDSService.AppModel
             // цикл по полученным из БД заказам
             if (dbOrders != null)
             {
-                lock (dbOrders)
+                lock (this)
                 {
                     int[] delIds;
                     // для последующех обработок удалить из заказов блюда с ненужными статусами
@@ -86,9 +86,9 @@ namespace KDSService.AppModel
                         _orders.Remove(id);
                     }
 
+                    // обновить или добавить заказы во внутр.словаре
                     if (_orders != null)
                     {
-                        // обновить или добавить заказы во внутр.словаре
                         foreach (Order dbOrder in dbOrders)
                         {
                             if (_orders.ContainsKey(dbOrder.Id))

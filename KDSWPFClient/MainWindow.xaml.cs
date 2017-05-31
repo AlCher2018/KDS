@@ -301,6 +301,8 @@ namespace KDSWPFClient
 
         private void repaintOrders()
         {
+            if (_pages == null) return;
+
             DateTime dt = DateTime.Now;
             _pages.ClearPages(); // очистить панели заказов
             Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
@@ -380,11 +382,13 @@ namespace KDSWPFClient
                 {
                     _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
+                    _userStatesLooper = null;  // обнулить, чтобы создать заново
                     updCheckerDishState();
                 }
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates"))
                 {
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
+                    _userStatesLooper = null;  // обнулить, чтобы создать заново
                     updCheckerDishState();
                 }
 
@@ -491,6 +495,8 @@ namespace KDSWPFClient
                 setUserStatesTab();  // отобразить на вкладке текущий набор
             }
 
+            // и перерисовать панели заказов
+            repaintOrders();
         }
         #endregion
 
@@ -674,6 +680,12 @@ namespace KDSWPFClient
         private void button_Click(object sender, RoutedEventArgs e)
         {
             openConfigPanel();
+        }
+
+        private void btnColorsLegend_Click(object sender, RoutedEventArgs e)
+        {
+            ColorLegend legend = new ColorLegend();
+            legend.ShowDialog();
         }
     }  // class MainWindow
 }

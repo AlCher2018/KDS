@@ -41,10 +41,12 @@ namespace KDSWPFClient.View
             // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
             // this.SetValue(TextBlock.FontSizeProperty, _fontSize);   
             this.tbDishIndex.FontSize = 0.8 * _fontSize;
-            this.tbDishFilingNumber.FontSize = _fontSize;
+            //this.tbDishFilingNumber.FontSize = _fontSize;
             this.tbDishName.FontSize = _fontSize;
+            // модификаторы
             if (dishView.Comment.IsNull() == false)
             {
+                this.tbComment.Text = string.Format("\n({0})", dishView.Comment);
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;

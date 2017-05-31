@@ -11,28 +11,8 @@
         <locLib:GetMargin x:Key="getMargin"/>
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
         <locLib:IsNullConverter x:Key="isNullConverter"/>
-
-
-        <!-- background's brushes -->
-        <!-- *** ЗАГОЛОВОК ЗАКАЗА *** -->
-        <SolidColorBrush x:Key="orderHeaderBackBrushTimer" Color="YellowGreen"/>
-        <SolidColorBrush x:Key="orderHeaderForeBrushTimer" Color="Black"/>
-        <!--  фон заголовка -->
-        <SolidColorBrush x:Key="orderHeaderBackBrushWaitingCook" Color="Plum"/>
-        <SolidColorBrush x:Key="orderHeaderBackBrushCooking" Color="Green"/>
-        <SolidColorBrush x:Key="orderHeaderBackBrushReady" Color="Orange"/>
-        <SolidColorBrush x:Key="orderHeaderBackBrushCancelled" Color="Salmon"/>
-        <SolidColorBrush x:Key="orderHeaderBackBrushTook" Color="Blue"/>
-        <!--  цвет текста в заголовке -->
-        <SolidColorBrush x:Key="orderHeaderForeBrushWaitingCook" Color="Black"/>
-        <SolidColorBrush x:Key="orderHeaderForeBrushCooking" Color="White"/>
-        <SolidColorBrush x:Key="orderHeaderForeBrushReady" Color="Black"/>
-        <SolidColorBrush x:Key="orderHeaderForeBrushCancelled" Color="Black"/>
-        <SolidColorBrush x:Key="orderHeaderForeBrushTook" Color="White"/>
-        <!-- *** СТРОКА БЛЮДА *** -->
-        <SolidColorBrush x:Key="dishLineBackBrushTimer" Color="Green"/>
-        <SolidColorBrush x:Key="dishLineForeBrushTimer" Color="White"/>
-
+        
+        <locLib:BrushConverter x:Key="brushConverter" />
 
     </Application.Resources>
     

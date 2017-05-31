@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local="clr-namespace:KDSWPFClient.View"
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" Name="root"
@@ -15,65 +16,24 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <Style x:Key="timerBackgroundStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
-
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.WaitingCook}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushWaitingCook}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushWaitingCook}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cooking}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCooking}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCooking}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Ready}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushReady}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushReady}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Cancelled}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushCancelled}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushCancelled}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static viewModel:StatusEnum.Took}">
-                    <Setter Property="Background" Value="{StaticResource orderHeaderBackBrushTook}"/>
-                    <Setter Property="TextBlock.Foreground" Value="{StaticResource orderHeaderForeBrushTook}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
     </UserControl.Resources>
 
-    <Border x:Name="brdMain" Background="White" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
+    <Border x:Name="brdMain" Background="{Binding Source=dishLineBase, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}" TextBlock.Foreground="{Binding Source=dishLineBase, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
         <Grid x:Name="grdDishLine">
             <Grid.ColumnDefinitions>
                 <!-- 0. № п/п -->
                 <ColumnDefinition Width="0.2*"/>
-                <!-- 1. номер подачи -->
-                <ColumnDefinition Width="0.15*"/>
-                <!-- 2. наименование блюда -->
+                <!-- 1. наименование блюда -->
                 <ColumnDefinition Width="*"/>
-                <!-- 3. количество -->
+                <!-- 2. количество -->
                 <ColumnDefinition Width="0.3*"/>
-                <!-- 4. таймер состояния -->
-                <ColumnDefinition Width="0.7*"/>
+                <!-- 3. таймер состояния -->
+                <ColumnDefinition Width="0.6*"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index}"/>
             
-            <TextBlock x:Name="tbDishFilingNumber" Grid.Column="1" Text="{Binding FilingNumber}" FontWeight="Bold" VerticalAlignment="Center">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding FilingNumber}" Value="1">
-                                <Setter Property="Foreground" Value="Red"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-
-            <TextBlock Grid.Column="2" TextWrapping="Wrap" Foreground="DarkBlue">
+            <TextBlock Grid.Column="1" TextWrapping="Wrap" Foreground="DarkBlue">
                 <Run x:Name="tbDishName" Text="{Binding DishName}">
                     <!-- стиль для блюда или ингредиента -->
                     <Run.Style>
@@ -84,18 +44,22 @@
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding ParentUID, Converter={StaticResource isNullConverter}}" Value="False">
                                     <!--<Setter Property="FontWeight" Value="Normal"/>-->
-                                    <Setter Property="Foreground" Value="DarkViolet"/>
+                                    <Setter Property="Background" Value="{Binding Source=ingrLineBase, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
+                                    <Setter Property="Foreground" Value="{Binding Source=ingrLineBase, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Run.Style>
                 </Run>
-                <Run x:Name="tbComment" Text="{Binding Comment, StringFormat={}&#x0a;({0}), TargetNullValue=''}" FontStyle="Italic" FontWeight="Normal"/>
+                <Run x:Name="tbComment" FontStyle="Italic" FontWeight="Normal"/>
             </TextBlock>
             
-            <TextBlock x:Name="tbDishQuantity" Grid.Column="3" Text="{Binding Quantity}"/>
+            <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold"/>
 
-            <Border x:Name="brdTimer" Grid.Column="4" Style="{StaticResource timerBackgroundStyle}" Margin="0,0,3,0">
+            <Border x:Name="brdTimer" Grid.Column="3" 
+                    Background="{Binding Status, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}" 
+                    TextBlock.Foreground="{Binding Status, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}" Margin="0,0,3,0"
+                    CornerRadius="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
                 <TextBlock x:Name="tbDishStatusTS" Text="{Binding WaitingTimerString}" HorizontalAlignment="Center" FontWeight="Bold" TextWrapping="Wrap"/>
             </Border>
 

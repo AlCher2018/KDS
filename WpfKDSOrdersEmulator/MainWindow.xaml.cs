@@ -138,7 +138,8 @@ namespace WpfKDSOrdersEmulator
                 {
                     OrderId = ord.Id, DishStatusId = 0, FilingNumber = _rnd.Next(1,3), Quantity = _rnd.Next(1,5), CreateDate = DateTime.Now,
                     UID = menuDish.UID, DishName = menuDish.Name, Comment = menuDish.Comment, DepartmentId = menuDish.DepartmentId,
-                    DelayedStartTime = (_rnd.NextDouble() > 0.5d) ? _delayStartTime[_rnd.Next(1, _delayStartTime.Count())-1] : 0
+                    DelayedStartTime = (_rnd.NextDouble() > 0.5d) ? _delayStartTime[_rnd.Next(1, _delayStartTime.Count())-1] : 0,
+                    EstimatedTime = menuDish.EstimatedTime
                 };
 
                 ord.OrderDish.Add(dish);
@@ -170,21 +171,21 @@ namespace WpfKDSOrdersEmulator
         {
             return new MenuDish[] 
             {
-                new MenuDish() { UID = "48CFD0E91", Name="Блюдо 1", Comment=null, DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "6508CC54A422", Name="Блюдо 2", Comment=null, DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "B2173F9B5809", Name="Блюдо 3", Comment="123214цу", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "0A9D482F", Name="Блюдо 4", Comment="ывпвып вапвыапуцкнкеор вапывап вапывап", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "6B0515068E49", Name="Блюдо 5", Comment="", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "410719194227", Name="Блюдо 6", Comment="dsgerghteh dfbsdb dtghrt dsgfbds sdthrth", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "784A74EDA939", Name="Блюдо 7", Comment="", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "BE29BA6D812A", Name="Блюдо 8", Comment="rtyt", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "8091", Name="Блюдо 9", Comment="cfggf dfghfghgfh", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "4D14815A", Name="Блюдо 10", Comment="", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "A2CE", Name="Блюдо 11", Comment=null, DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "9ED46082DC76", Name="Блюдо 12", Comment="fghtyhdsrt sdfg5ryher", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "1097495AA59B", Name="Блюдо 13", Comment="dfgdgdsfg ryutyu567 mjrtyuj", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "A516D80DC0", Name="Блюдо 14", Comment="", DepartmentId = getRndDepartment()},
-                new MenuDish() { UID = "788DE670B", Name="Блюдо 15", Comment="", DepartmentId = getRndDepartment()},
+                new MenuDish() { UID = "48CFD0E91", Name="Блюдо 1", Comment=null, DepartmentId = getRndDepartment(), EstimatedTime = 100},
+                new MenuDish() { UID = "6508CC54A422", Name="Блюдо 2", Comment=null, DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                new MenuDish() { UID = "B2173F9B5809", Name="Блюдо 3", Comment="123214цу", DepartmentId = getRndDepartment(), EstimatedTime = 120},
+                new MenuDish() { UID = "0A9D482F", Name="Блюдо 4", Comment="ывпвып вапвыапуцкнкеор вапывап вапывап", DepartmentId = getRndDepartment(), EstimatedTime = 100},
+                new MenuDish() { UID = "6B0515068E49", Name="Блюдо 5", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                new MenuDish() { UID = "410719194227", Name="Блюдо 6", Comment="dsgerghteh dfbsdb dtghrt dsgfbds sdthrth", DepartmentId = getRndDepartment(), EstimatedTime = 300},
+                new MenuDish() { UID = "784A74EDA939", Name="Блюдо 7", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                new MenuDish() { UID = "BE29BA6D812A", Name="Блюдо 8", Comment="rtyt", DepartmentId = getRndDepartment(), EstimatedTime = 300},
+                new MenuDish() { UID = "8091", Name="Блюдо 9", Comment="cfggf dfghfghgfh", DepartmentId = getRndDepartment(), EstimatedTime = 600},
+                new MenuDish() { UID = "4D14815A", Name="Блюдо 10", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 600},
+                new MenuDish() { UID = "A2CE", Name="Блюдо 11", Comment=null, DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                new MenuDish() { UID = "9ED46082DC76", Name="Блюдо 12", Comment="fghtyhdsrt sdfg5ryher", DepartmentId = getRndDepartment(), EstimatedTime = 100},
+                new MenuDish() { UID = "1097495AA59B", Name="Блюдо 13", Comment="dfgdgdsfg ryutyu567 mjrtyuj", DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                new MenuDish() { UID = "A516D80DC0", Name="Блюдо 14", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
+                new MenuDish() { UID = "788DE670B", Name="Блюдо 15", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
             };
         }
         private MenuDish getRndMenuDish()
@@ -321,6 +322,8 @@ namespace WpfKDSOrdersEmulator
         public string Name { get; set; }
         public string Comment { get; set; }
         public int DepartmentId { get; set; }
+
+        public int EstimatedTime { get; set; }
     }  // class
 
 }
