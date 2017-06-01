@@ -95,11 +95,19 @@ namespace KDSService.AppModel
                         else
                             tsTimerValue = TimeSpan.Zero;
                     }
-                    
                     // состояние "В процессе" и есть время приготовления - отображаем время приготовления по убыванию
                     else if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
                     {
                         tsTimerValue = _tsCookingEstimated - tsTimerValue;
+                    }
+                    // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
+                    else if (Status == OrderStatusEnum.Ready)
+                    {
+                        int expTake = (int)AppEnv.GetAppProperty("ExpectedTake");
+                        if (expTake > 0)
+                        {
+                            tsTimerValue = TimeSpan.FromSeconds(expTake) - tsTimerValue;
+                        }
                     }
 
                     // преобразование времени в строку

@@ -12,6 +12,7 @@ using System.Data.SqlClient;
 using KDSWPFClient.ServiceReference1;
 using System.Xml.Linq;
 using System.Windows.Media;
+using KDSWPFClient.ViewModel;
 
 namespace KDSWPFClient.Lib
 {
@@ -534,6 +535,31 @@ namespace KDSWPFClient.Lib
             {
                 targetList.RemoveAt(targetList.Count - 1);
                 if (!retVal) retVal = true;
+            }
+
+            return retVal;
+        }  // method
+
+        // узнать, в каком состоянии находятся все блюда заказа
+        public static OrderStatusEnum GetStatusAllDishes(List<OrderDishViewModel> dishes)
+        {
+            OrderStatusEnum retVal = OrderStatusEnum.None;
+
+            int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
+            int dishCount = dishes.Count;
+
+            int[] statArray = new int[iLen];
+
+            int iStatus;
+            foreach (OrderDishViewModel modelDish in dishes)
+            {
+                iStatus = modelDish.DishStatusId;
+                statArray[iStatus]++;
+            }
+
+            for (int i = 0; i < iLen; i++)
+            {
+                if (statArray[i] == dishCount) { retVal = (OrderStatusEnum)i;break; }
             }
 
             return retVal;

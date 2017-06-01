@@ -11,6 +11,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace KDSConsoleSvcHost
 {
@@ -83,6 +84,7 @@ namespace KDSConsoleSvcHost
 
             putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
             putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
+            putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
 
             return sb.ToString();
         }
@@ -101,7 +103,64 @@ namespace KDSConsoleSvcHost
                 _props.SetProperty("IsWriteTraceMessages", value.ToBool());
             if ((value = cfg["IsLogUserAction"]) != null)
                 _props.SetProperty("IsLogUserAction", value.ToBool());
+
+            // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
+            _props.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
         }
+
+        public static bool SaveAppSettings(string key, string value, out string errorMsg)
+        {
+            // Open App.Config of executable
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            try
+            {
+                errorMsg = null;
+                string filename = config.FilePath;
+
+                //Load the config file as an XDocument
+                XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
+                if (document.Root == null)
+                {
+                    errorMsg = "Document was null for XDocument load.";
+                    return false;
+                }
+
+                // получить раздел appSettings
+                XElement xAppSettings = document.Root.Element("appSettings");
+                if (xAppSettings == null)
+                {
+                    xAppSettings = new XElement("appSettings");
+                    document.Root.Add(xAppSettings);
+                }
+
+                XElement appSetting = xAppSettings.Elements("add").FirstOrDefault(x => x.Attribute("key").Value == key);
+                if (appSetting == null)
+                {
+                    //Create the new appSetting
+                    xAppSettings.Add(new XElement("add", new XAttribute("key", key), new XAttribute("value", value)));
+                }
+                else
+                {
+                    //Update the current appSetting
+                    appSetting.Attribute("value").Value = value;
+                }
+
+                //Save the changes to the config file.
+                document.Save(filename, SaveOptions.DisableFormatting);
+
+                // Force a reload of a changed section.
+                ConfigurationManager.RefreshSection("appSettings");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
+                return false;
+            }
+        }
+
         #endregion
 
 

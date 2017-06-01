@@ -55,7 +55,10 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("AppFontScale", false, tbFontSizeScale);
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", false, tbxOrdersColumnsCount);
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
-
+            // получить от службы
+            AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            int expTake = dataProvider.GetExpectedTakeValue();
+            _cfgValKeeper.AddPreValueDirectly("ExpectedTake", expTake.ToString(), tbTimerExpectedTake);
             
             bool isDefault = true;
             if (AppLib.GetAppGlobalValue("KDSMode") != null)
@@ -149,6 +152,7 @@ namespace KDSWPFClient.View
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
+            //  *** получить напрямую новые значения  ***
             // новые значения из списков
             _cfgValKeeper.PutNewValueDirectly("depUIDs", getIsViewDepIds());
 
@@ -175,7 +179,8 @@ namespace KDSWPFClient.View
                 _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialActions", sActions);
             }
 
-            // новые значения из контролов
+
+            // *** получить новые значения из контролов  ***
             _cfgValKeeper.PutNewValueFromControls();
 
             // собрать словарь новых значений
@@ -424,9 +429,9 @@ namespace KDSWPFClient.View
                 _values.Add(new CfgValue(key, fromAppProps, control));
             }
 
-            public void AddPreValueDirectly(string key, string value)
+            public void AddPreValueDirectly(string key, string value, Control control = null)
             {
-                _values.Add(new CfgValue(key, value));
+                _values.Add(new CfgValue(key, value, control));
             }
 
             public void PutNewValueDirectly(string key, string value)
@@ -486,62 +491,33 @@ namespace KDSWPFClient.View
             {
                 _key = key; _control = control; _fromAppProps = fromAppProps;
 
-                putValueToField(fromAppProps);
+                // из AppLib.GetAppSetting(_key) возвращается СТРОКА 
+                _preValue = (fromAppProps) ? AppLib.GetAppGlobalValue(_key) : AppLib.GetAppSetting(_key);
+                if (_preValue == null) return;
+
+                _typeName = _preValue.GetType().Name;
+
+                if (control != null) putValueToControl();
             }
 
-            public CfgValue(string key, string value)
+            public CfgValue(string key, string value, Control control = null)
             {
-                _key = key; _control = null; _fromAppProps = false;
+                _key = key; _control = control; _fromAppProps = false;
                 _preValue = value;
+
+                _typeName = _preValue.GetType().Name;
+
+                if (control != null) putValueToControl();
             }
-            
+
             public void PutNewStringValue(string value)
             {
                 _newValue = value;
             }
 
-            public void PutNewValueFromControl()
+
+            private void putValueToControl()
             {
-                if (_control != null)
-                {
-                    switch (_typeName)
-                    {
-                        case "Int32":
-                        case "Int16":
-                        case "Int64":
-                        case "Decimal":
-                            if (_control is TextBox) _newValue = (_control as TextBox).Text.ToInt();
-                            else if (_control is NumericUpDown) _newValue = (_control as NumericUpDown).Value;
-                            break;
-
-                        case "Boolean":
-                            if (_control is CheckBox) _newValue = (_control as CheckBox).IsChecked??false;
-                            break;
-
-                        case "String":
-                            if (_control is TextBox) _newValue = (_control as TextBox).Text;
-                            else if (_control is NumericUpDown) _newValue = (_control as NumericUpDown).Value.ToString(CultureInfo.InvariantCulture);
-                            break;
-
-                        case "DateTime":
-                            if (_control is TextBox)
-                            {
-                                _newValue = DateTime.Parse((_control as TextBox).Text, CultureInfo.InvariantCulture);
-                            }
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-            }
-
-            private void putValueToField(bool fromAppProps)
-            {
-                // из AppLib.GetAppSetting(_key) возвращается СТРОКА 
-                _preValue = (fromAppProps)? AppLib.GetAppGlobalValue(_key): AppLib.GetAppSetting(_key);
-                if (_preValue == null) return;
-
                 _typeName = _preValue.GetType().Name;
 
                 switch (_typeName)
@@ -576,6 +552,57 @@ namespace KDSWPFClient.View
                 }
             }
 
+
+            public void PutNewValueFromControl()
+            {
+                if (_control != null)
+                {
+                    switch (_typeName)
+                    {
+                        case "Int32":
+                        case "Int16":
+                        case "Int64":
+                        case "Decimal":
+                            if (_control is TextBox) _newValue = (_control as TextBox).Text.ToInt();
+                            else if (_control is NumericUpDown)
+                            {
+                                decimal decVal = (_control as NumericUpDown).Value;
+                                TypeCode tCode;
+                                if (Enum.TryParse(_typeName, out tCode)) _newValue = Convert.ChangeType(decVal, tCode);
+                                else _newValue = decVal;
+                            }
+                            break;
+
+                        case "Boolean":
+                            if (_control is CheckBox) _newValue = (_control as CheckBox).IsChecked ?? false;
+                            break;
+
+                        case "String":
+                            if (_control is TextBox) _newValue = (_control as TextBox).Text;
+                            else if (_control is NumericUpDown)
+                            {
+                                NumericUpDown nud = (_control as NumericUpDown);
+                                if (nud.ContentStringFormat != null)
+                                    _newValue = nud.Value.ToString(nud.ContentStringFormat, CultureInfo.InvariantCulture);
+                                else
+                                    _newValue = nud.Value.ToString(CultureInfo.InvariantCulture);
+                            }
+                            break;
+
+                        case "DateTime":
+                            if (_control is TextBox)
+                            {
+                                _newValue = DateTime.Parse((_control as TextBox).Text, CultureInfo.InvariantCulture);
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+
+
             internal bool IsChanged()
             {
                 if (_newValue == null)
@@ -588,10 +615,7 @@ namespace KDSWPFClient.View
 
             internal void SaveToAppProps()
             {
-                if (IsChanged())
-                {
-                    if (_fromAppProps) AppLib.SetAppGlobalValue(_key, _newValue);
-                }
+                if ((_fromAppProps) && IsChanged()) AppLib.SetAppGlobalValue(_key, _newValue);
             }
 
         } // class CfgValue

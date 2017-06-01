@@ -23,5 +23,13 @@ namespace KDSService
         // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
         [OperationContract]
         List<OrderModel> GetOrders();
+
+        // глобальный параметр ExpectedTake
+        [OperationContract]
+        int GetExpectedTakeValue();
+
+        [OperationContract]
+        void SetExpectedTakeValue(int value);
+
     }
 }

@@ -308,7 +308,7 @@ namespace KDSService.AppModel
         // установить сост.заказа в 1, если ХОТЬ одно блюдо наход.в сост. 1
         public void UpdateStatusByVerificationDishes()
         {
-            int iLen = 10;
+            int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
             int[] statArray = new int[iLen];
 
             int iStatus, iDishesCount = _dishesDict.Count;

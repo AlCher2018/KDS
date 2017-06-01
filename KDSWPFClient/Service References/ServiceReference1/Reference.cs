@@ -203,8 +203,7 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
-    {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -693,6 +692,18 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/GetExpectedTakeValueResponse")]
+        int GetExpectedTakeValue();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/GetExpectedTakeValueResponse")]
+        System.Threading.Tasks.Task<int> GetExpectedTakeValueAsync();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
+        void SetExpectedTakeValue(int value);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
+        System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -744,6 +755,22 @@ namespace KDSWPFClient.ServiceReference1 {
         
         public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
             return base.Channel.GetOrdersAsync();
+        }
+        
+        public int GetExpectedTakeValue() {
+            return base.Channel.GetExpectedTakeValue();
+        }
+        
+        public System.Threading.Tasks.Task<int> GetExpectedTakeValueAsync() {
+            return base.Channel.GetExpectedTakeValueAsync();
+        }
+        
+        public void SetExpectedTakeValue(int value) {
+            base.Channel.SetExpectedTakeValue(value);
+        }
+        
+        public System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value) {
+            return base.Channel.SetExpectedTakeValueAsync(value);
         }
     }
     

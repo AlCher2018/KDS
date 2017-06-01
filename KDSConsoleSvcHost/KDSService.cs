@@ -19,15 +19,13 @@ namespace KDSService
         InstanceContextMode = InstanceContextMode.Single)]
     public class KDSServiceClass : IDisposable, IKDSService, IKDSCommandService
     {
+        // таймер наблюдения за заказами в БД
+        private Timer _observeTimer;
         // периодичность опроса БД, в мсек
         private const double _ObserveTimerInterval = 500;
 
         // заказы на стороне службы (с таймерами)
-        private OrdersModel _ordersModel; 
-         
-        // таймер наблюдения за заказами в БД
-        private Timer _observeTimer;
-
+        private OrdersModel _ordersModel;
 
         public KDSServiceClass()
         {
@@ -114,6 +112,19 @@ namespace KDSService
             return _ordersModel.Orders.Values.ToList();
         }
 
+        public int GetExpectedTakeValue()
+        {
+            return (int)AppEnv.GetAppProperty("ExpectedTake");
+        }
+
+        public void SetExpectedTakeValue(int value)
+        {
+            AppEnv.SetAppProperty("ExpectedTake", value);
+
+            string errMsg;
+            AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
+        }
+
         #endregion
 
         #region IKDSCommandService implementation
@@ -164,6 +175,7 @@ namespace KDSService
                 _observeTimer.Dispose();
             }
         }
+
 
     }  // class
 }

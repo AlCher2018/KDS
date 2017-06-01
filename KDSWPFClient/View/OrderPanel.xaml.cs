@@ -64,18 +64,40 @@ namespace KDSWPFClient.View
         }
 
 
+        // добавить блюдо в панель заказа и измерить высоту строки блюда
         public void AddDish(DishPanel dishPanel)
         {
             this.stkDishes.Children.Add(dishPanel);
 
             //  update DesiredSize
             dishPanel.Measure(new Size(base.Width, double.PositiveInfinity));
-            grdHeader.UpdateLayout();
+            //grdHeader.UpdateLayout();
+            stkDishes.UpdateLayout();
         }
 
-        internal void RemoveDish(DishPanel dishPanel)
+        // добавить массив элементов в стек БЕЗ измерения высоты
+        internal void AddDish(UIElement[] delItems)
+        {
+            foreach (UIElement item in delItems)
+            {
+                this.stkDishes.Children.Add(item);
+            }
+        }
+
+        internal UIElement[] RemoveDish(DishPanel dishPanel)
         {
             this.stkDishes.Children.Remove(dishPanel);
+
+            if (stkDishes.Children[stkDishes.Children.Count - 1] is DishDelimeterPanel)
+            {
+                DishDelimeterPanel delim = (DishDelimeterPanel)stkDishes.Children[stkDishes.Children.Count - 1];
+                this.stkDishes.Children.Remove(delim);
+
+                return new UIElement[] { delim, dishPanel};
+            }
+                
+            else
+                return new UIElement[] { dishPanel };
         }
 
         public void AddDelimiter(DishDelimeterPanel delimPanel)
@@ -84,7 +106,8 @@ namespace KDSWPFClient.View
 
             //  update DesiredSize
             delimPanel.Measure(new Size(base.Width, double.PositiveInfinity));
-            grdHeader.UpdateLayout();
+            //grdHeader.UpdateLayout();
+            stkDishes.UpdateLayout();
         }
 
     }  // class

@@ -137,6 +137,7 @@ namespace KDSWPFClient.ViewModel
 
             if (ServiceErrorMessage != svcOrderDish.ServiceErrorMessage) ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
 
+
             if (WaitingTimerString != svcOrderDish.WaitingTimerString)
             {
                 WaitingTimerString = svcOrderDish.WaitingTimerString;

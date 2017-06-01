@@ -126,10 +126,12 @@ namespace KDSWPFClient.View
                 curLineHeight = Math.Round(dshPnl.DesiredSize.Height); // получить высоту строки блюда
                 if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
                 {
-                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount)) // разбиваем блюда заказа
+                    // разбиваем блюда заказа
+                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount)) 
                     {
                         // 1. удалить из ordPnl только что добавленное блюдо
-                        ordPnl.RemoveDish(dshPnl);
+                        //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
+                        UIElement[] delItems = ordPnl.RemoveDish(dshPnl);
                         // 2. добавить в канву начало заказа
                         ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
                         ordPnl.SetValue(Canvas.TopProperty, ordTop);
@@ -139,10 +141,13 @@ namespace KDSWPFClient.View
                         ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
                         ordTop = 0d; _curTopValue = Math.Round(ordPnl.DesiredSize.Height);
                         // 4. добавить только что удаленное блюдо
-                        ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
+                        ordPnl.AddDish(delItems);  // добавить в стек без измерения высоты
+                        // переопределить приращение, просуммировав высоту всех удаленных элементов
+                        curLineHeight = 0; foreach (UIElement item in delItems) curLineHeight += Math.Round(item.DesiredSize.Height);
                         setNextColumn();
                     }
-                    else   // не разбиваем заказ, а полностью переносим
+                    // не разбиваем заказ, а полностью переносим
+                    else
                     {
                         setNextColumn();
                         _curTopValue = _curTopValue - ordTop;  // "высота" заказа в новом столбце
@@ -207,6 +212,13 @@ namespace KDSWPFClient.View
             _pages.RemoveRange(1, _pages.Count-1);
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
+        }
+
+
+        public void SetFirstPage()
+        {
+            _currentPageIndex = 1;
+            CurrentPage = _pages[_currentPageIndex - 1];  // because _currentPageIndex is 1-based var
         }
 
         public bool SetNextPage()

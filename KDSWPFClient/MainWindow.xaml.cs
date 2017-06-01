@@ -20,7 +20,8 @@ namespace KDSWPFClient
     public partial class MainWindow : Window
     {
         private Timer _timer;
-        private Timer _orderGroupTimer;
+        private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
+        private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
 
         private AppDataProvider _dataProvider;
 
@@ -63,9 +64,14 @@ namespace KDSWPFClient
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
-            _orderGroupTimer = new Timer();
-            _orderGroupTimer.Elapsed += _orderGroupTimer_Elapsed;
-            setOrderGroupTimerInterval(); // интервал таймера взять из config-файла
+            _timerBackToOrderGroupByTime = new Timer();
+            _timerBackToOrderGroupByTime.Elapsed += _orderGroupTimer_Elapsed;
+            _timerBackToOrderGroupByTime.Interval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
+
+            // таймер возврата на первую страницу
+            _timerBackToFirstPage = new Timer();
+            _timerBackToFirstPage.Elapsed += _timerBackToFirstPage_Elapsed; ;
+            _timerBackToFirstPage.Interval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
 
             // условия отбора блюд
             _valueDishChecker = new ValueChecker<OrderDishModel>();
@@ -104,6 +110,7 @@ namespace KDSWPFClient
             _adminTimer = new Timer() { Interval = 4000d };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
         }
+
 
         private void _adminTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -337,12 +344,14 @@ namespace KDSWPFClient
             }
         }
 
+        // *** кнопки листания страниц ***
         private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (_pages.SetNextPage())
             {
                 this.vbxOrders.Child = _pages.CurrentPage;
                 setChangePageButtonsState();
+                // TODO  таймер возврата на первую страницу
             }
         }
 
@@ -353,6 +362,11 @@ namespace KDSWPFClient
                 this.vbxOrders.Child = _pages.CurrentPage;
                 setChangePageButtonsState();
             }
+        }
+
+        private void _timerBackToFirstPage_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            _pages.SetFirstPage();
         }
 
 
@@ -410,7 +424,16 @@ namespace KDSWPFClient
                 // интервал таймера сброса группировки заказов по номерам
                 if (cfgEdit.AppNewSettings.ContainsKey("AutoReturnOrdersGroupByTime"))
                 {
-                    setOrderGroupTimerInterval();
+                    double newInterval = cfgEdit.AppNewSettings["AutoReturnOrdersGroupByTime"].ToDouble();
+                    _timerBackToOrderGroupByTime.Interval = newInterval;
+                    _timerBackToFirstPage.Interval = newInterval;
+                }
+
+                // ExpectedTake
+                if (cfgEdit.AppNewSettings.ContainsKey("ExpectedTake"))
+                {
+                    string newValue = cfgEdit.AppNewSettings["ExpectedTake"];
+                    _dataProvider.SetExpectedTakeValue(newValue.ToInt());
                 }
 
             }
@@ -420,10 +443,10 @@ namespace KDSWPFClient
         }
 
         // получить из config-файла интервал таймера сброса группировки заказов по номерам
-        private void setOrderGroupTimerInterval()
+        private double getOrderGroupTimerInterval()
         {
             string cfgStr = AppLib.GetAppSetting("AutoReturnOrdersGroupByTime");
-            _orderGroupTimer.Interval = 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
+            return 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
         }
 
 
@@ -513,13 +536,13 @@ namespace KDSWPFClient
         // таймер автом.возврата группировки заказов "По времени"
         private void _orderGroupTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            _orderGroupTimer.Stop();
+            _timerBackToOrderGroupByTime.Stop();
 
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
 
             this.Dispatcher.Invoke(new Action(setOrderGroupTab));
 
-            _orderGroupTimer.Stop();
+            _timerBackToOrderGroupByTime.Stop();
         }
 
         // отобразить на вкладке СЛЕДУЮЩИЙ элемент!!
@@ -532,12 +555,12 @@ namespace KDSWPFClient
             {
                 case OrderGroupEnum.ByTime:
                     tbOrderGroup.Text = "По времени";
-                    if (_orderGroupTimer != null) _orderGroupTimer.Stop();
+                    if (_timerBackToOrderGroupByTime != null) _timerBackToOrderGroupByTime.Stop();
                     break;
 
                 case OrderGroupEnum.ByOrderNumber:
                     tbOrderGroup.Text = "По заказам";
-                    if (_orderGroupTimer != null) _orderGroupTimer.Start();
+                    if (_timerBackToOrderGroupByTime != null) _timerBackToOrderGroupByTime.Start();
                     break;
 
                 default:

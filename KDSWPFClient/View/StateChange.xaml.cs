@@ -32,6 +32,7 @@ namespace KDSWPFClient.View
         private AppDataProvider _dataProvider;
         private AppViewModelEnum _modelType;
         private OrderStatusEnum _currentState;
+        private bool _inOrderModeProcessDishes;  // в режиме заказа менять статус поблюдно
 
         // разрешенные переходы
         private List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> _allowedStates;
@@ -135,7 +136,27 @@ namespace KDSWPFClient.View
             List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState = null;
             if (_allowedStates != null) allowedStatesForCurrentState = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == _currentState));
 
-            if ((allowedStatesForCurrentState == null) || (allowedStatesForCurrentState.Count == 0))
+            _inOrderModeProcessDishes = false;
+            // если нет доступных переходов при клике по заказу
+            if ((allowedStatesForCurrentState.Count == 0) && (_modelType == AppViewModelEnum.Order))
+            {
+                // проверить статус блюд в данном заказе
+                OrderStatusEnum statAllDishes = AppLib.GetStatusAllDishes(Order.Dishes);
+                if (statAllDishes != OrderStatusEnum.None)
+                {
+                    // и, если в разрешенных переходах есть пара с таким ключем, т.е. ВСЕ блюда находятся в состоянии, которое есть в разрешенных переходах
+                    KeyValuePair<OrderStatusEnum, OrderStatusEnum> statAction = _allowedStates.FirstOrDefault(s => s.Key == statAllDishes);
+                    // то добавляем этот переход для отображения
+                    if (statAction.Key == statAllDishes)
+                    {
+                        allowedStatesForCurrentState.Add(statAction);
+                        _inOrderModeProcessDishes = true;   // и взводим флаг для поблюдного изменения статуса в режиме заказа
+                    }
+                }
+            }
+
+
+            if (allowedStatesForCurrentState.Count == 0)
             {
                 // нет доступных переходов
                 tbNoAllowedStates.Visibility = Visibility.Visible;
@@ -238,7 +259,17 @@ namespace KDSWPFClient.View
             {
                 if (_modelType == AppViewModelEnum.Order)
                 {
-                    _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
+                    if (_inOrderModeProcessDishes)  // поблюдная обработка
+                    {
+                        foreach (OrderDishViewModel item in Order.Dishes)
+                        {
+                            _dataProvider.SetNewDishStatus(Order.Id, item.Id, requiredState);
+                        }
+                    }
+                    else
+                    {
+                        _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
+                    }
                 }
                 else if (_modelType == AppViewModelEnum.Dish)
                 {

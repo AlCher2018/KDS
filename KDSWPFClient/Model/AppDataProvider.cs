@@ -155,6 +155,32 @@ namespace KDSWPFClient
             return null;
         }
 
+        public int GetExpectedTakeValue()
+        {
+            int retVal=0;
+
+            try
+            {
+                retVal = _getClient.GetExpectedTakeValue();
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+            }
+            return retVal;
+        }
+
+        public void SetExpectedTakeValue(int value)
+        {
+            try
+            {
+                _getClient.SetExpectedTakeValue(value);
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+            }
+        }
         #endregion
 
         public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)
