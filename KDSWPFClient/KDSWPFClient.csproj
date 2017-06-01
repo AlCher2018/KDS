@@ -85,7 +85,7 @@
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />
     <Compile Include="View\BrushConverter.cs" />
-    <Compile Include="View\BrushesPair.cs" />
+    <Compile Include="View\BrushHelper.cs" />
     <Compile Include="View\ColorLegend.xaml.cs">
       <DependentUpon>ColorLegend.xaml</DependentUpon>
     </Compile>

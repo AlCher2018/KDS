@@ -24,8 +24,6 @@
 
         <Button x:Name="button" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,60,0,0" VerticalAlignment="Top" Click="button_Click"/>
 
-        <Button x:Name="btnColorsLegend" Content="LGD" Height="20" Panel.ZIndex="10" Margin="0,120,0,0" VerticalAlignment="Top" Click="btnColorsLegend_Click"/>
-
         <!-- панель заказов -->
         <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
         </Viewbox>
@@ -46,6 +44,19 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
+
+                <Button x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top"  MouseDoubleClick ="btnColorsLegend_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="ButtonBase">
+                            <Border VerticalAlignment="Stretch" BorderBrush="LightGray" BorderThickness="1" Background="Transparent">
+                                <ContentPresenter RecognizesAccessKey="True" Content="{TemplateBinding ContentControl.Content}" ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}" SnapsToDevicePixels="True" Margin="3,10"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Button.Content>
+                        <TextBlock Text="Легенда" TextWrapping="Wrap" Foreground="LightGray" FontSize="14" VerticalAlignment="Center"/>
+                    </Button.Content>
+                </Button>
 
                 <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2">
                     <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110" MouseDown="tbOrderGroup_MouseDown">

@@ -5,8 +5,80 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="ColorLegend" Height="300" Width="300">
-    <Grid>
+        Title="Легенда цветов таймеров состояний" Height="400" Width="500"
+        PreviewMouseUp="Window_PreviewMouseUp" SnapsToDevicePixels="True" WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" Background="Linen" SizeToContent="Height">
+
+    <Window.Resources>
+        <!-- предотвращает появление голубой рамки вокруг пунктов меню -->
+        <Style x:Key="listBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="brdListItem" TargetType="Border">
+            <Setter Property="Width" Value="{Binding ElementName=lstLegend, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.98}"/>
+            <Setter Property="BorderBrush" Value="DarkGray"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
         
-    </Grid>
+        <Style x:Key="descrTextStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Text" Value="{Binding Name}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="7,0"/>
+        </Style>
+        
+        <Style x:Key="closeTextStyle" TargetType="TextBlock">
+            <Setter Property="Text" Value="Для закрытия окна, щелкните в любом его месте"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,5,10,5"/>
+            <Setter Property="FontStyle" Value="Italic"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="Red"/>
+        </Style>
+        
+    </Window.Resources>
+
+    <DockPanel LastChildFill="True">
+        <Border DockPanel.Dock="Top" Background="Teal" Padding="0,3">
+            <TextBlock Text="Легенда цветов состояний блюд/заказов" HorizontalAlignment="Center" Foreground="Yellow" FontSize="14"/>
+        </Border>
+        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource closeTextStyle}"/>
+
+        <ListBox x:Name="lstLegend" DockPanel.Dock="Top" ItemContainerStyle="{StaticResource listBoxItemStyle}" Background="Transparent" SnapsToDevicePixels="True" Focusable="False" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.CanContentScroll="False">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource brdListItem}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" CornerRadius="10" Background="{Binding Background}" BorderThickness="0" Height="50">
+                                <TextBlock Text="{Binding LegendText, TargetNullValue=''}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Background="Transparent" Foreground="{Binding Foreground}"/>
+                            </Border>
+
+                            <Border x:Name="brdText" Grid.Column="1">
+                                <TextBlock Style="{StaticResource descrTextStyle}"/>
+                            </Border>
+
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+           
+        </ListBox>
+    </DockPanel>
+
 </Window>
