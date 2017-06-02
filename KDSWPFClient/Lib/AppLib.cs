@@ -312,6 +312,8 @@ namespace KDSWPFClient.Lib
         public static object GetAppGlobalValue(string key, object defaultValue = null)
         {
             IDictionary dict = Application.Current.Properties;
+            if (dict == null) return null;
+
             if (dict.Contains(key) == false) return defaultValue;
             else return dict[key];
         }

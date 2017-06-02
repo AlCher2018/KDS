@@ -63,15 +63,24 @@ namespace KDSWPFClient
             _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
+            double timerInterval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
-            _timerBackToOrderGroupByTime = new Timer();
-            _timerBackToOrderGroupByTime.Elapsed += _orderGroupTimer_Elapsed;
-            _timerBackToOrderGroupByTime.Interval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
+            _timerBackToOrderGroupByTime = new Timer() { AutoReset = false, Interval = timerInterval };
+            Action _timerBackToOrderGroupByTimeDelegate = new Action(setOrderGroupTab);
+            _timerBackToOrderGroupByTime.Elapsed += (object sender, ElapsedEventArgs e) => 
+            {
+                if (_orderGroupLooper.Current != OrderGroupEnum.ByTime) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
+                this.Dispatcher.Invoke(_timerBackToOrderGroupByTimeDelegate);
+            };
 
             // таймер возврата на первую страницу
-            _timerBackToFirstPage = new Timer();
-            _timerBackToFirstPage.Elapsed += _timerBackToFirstPage_Elapsed; ;
-            _timerBackToFirstPage.Interval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
+            _timerBackToFirstPage = new Timer() { AutoReset = false, Interval = timerInterval };
+            Action _timerBackToFirstPageDelegate = new Action(() =>
+            {
+                _pages.SetFirstPage();
+                setCurrentPage();
+            });
+            _timerBackToFirstPage.Elapsed += (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_timerBackToFirstPageDelegate);
 
             // условия отбора блюд
             _valueDishChecker = new ValueChecker<OrderDishModel>();
@@ -95,7 +104,7 @@ namespace KDSWPFClient
             //Button_Click(null,null);
 
             // основной таймер опроса сервиса
-            _timer = new Timer(1000);
+            _timer = new Timer(1000) { AutoReset = false };
             _timer.Elapsed += _timer_Elapsed;
             _timer.Start();
 
@@ -107,7 +116,7 @@ namespace KDSWPFClient
 
             _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
 
-            _adminTimer = new Timer() { Interval = 4000d };
+            _adminTimer = new Timer() { Interval = 4000d, AutoReset = false };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
         }
 
@@ -319,13 +328,25 @@ namespace KDSWPFClient
             _pages.AddOrdersPanels(_viewOrders);
             Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
 
-            setChangePageButtonsState();
-
-            this.vbxOrders.Child = _pages.CurrentPage;
+            setCurrentPage();
         }
 
-        private void setChangePageButtonsState()
+        #region change page
+        // *** кнопки листания страниц ***
+        private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (_pages.SetNextPage()) setCurrentPage();
+        }
+
+        private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_pages.SetPreviousPage()) setCurrentPage();
+        }
+
+        private void setCurrentPage()
+        {
+            this.vbxOrders.Child = _pages.CurrentPage;
+
             btnSetPagePrevious.Visibility = Visibility.Hidden;
             btnSetPageNext.Visibility = Visibility.Hidden;
             if (_pages.Count == 0) return;
@@ -336,39 +357,20 @@ namespace KDSWPFClient
                 tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
                 btnSetPagePrevious.Visibility = Visibility.Visible;
             }
+
             // и на следующую страницу
-            else if (_pages.CurrentPageIndex < _pages.Count)
+            if (_pages.CurrentPageIndex < _pages.Count)
             {
                 tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
                 btnSetPageNext.Visibility = Visibility.Visible;
             }
+
+            // таймер возврата на первую страницу
+            if (_timerBackToFirstPage.Enabled) _timerBackToFirstPage.Stop();
+            if (_pages.CurrentPageIndex > 1) _timerBackToFirstPage.Start();
         }
 
-        // *** кнопки листания страниц ***
-        private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (_pages.SetNextPage())
-            {
-                this.vbxOrders.Child = _pages.CurrentPage;
-                setChangePageButtonsState();
-                // TODO  таймер возврата на первую страницу
-            }
-        }
-
-        private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (_pages.SetPreviousPage())
-            {
-                this.vbxOrders.Child = _pages.CurrentPage;
-                setChangePageButtonsState();
-            }
-        }
-
-        private void _timerBackToFirstPage_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _pages.SetFirstPage();
-        }
-
+        #endregion
 
         #region настройка приложения через ConfigEdit
 
@@ -424,7 +426,7 @@ namespace KDSWPFClient
                 // интервал таймера сброса группировки заказов по номерам
                 if (cfgEdit.AppNewSettings.ContainsKey("AutoReturnOrdersGroupByTime"))
                 {
-                    double newInterval = cfgEdit.AppNewSettings["AutoReturnOrdersGroupByTime"].ToDouble();
+                    double newInterval = getOrderGroupTimerInterval();
                     _timerBackToOrderGroupByTime.Interval = newInterval;
                     _timerBackToFirstPage.Interval = newInterval;
                 }
@@ -533,17 +535,6 @@ namespace KDSWPFClient
             // и отобразить следующий
             setOrderGroupTab();
         }
-        // таймер автом.возврата группировки заказов "По времени"
-        private void _orderGroupTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _timerBackToOrderGroupByTime.Stop();
-
-            if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
-
-            this.Dispatcher.Invoke(new Action(setOrderGroupTab));
-
-            _timerBackToOrderGroupByTime.Stop();
-        }
 
         // отобразить на вкладке СЛЕДУЮЩИЙ элемент!!
         private void setOrderGroupTab()
@@ -555,7 +546,6 @@ namespace KDSWPFClient
             {
                 case OrderGroupEnum.ByTime:
                     tbOrderGroup.Text = "По времени";
-                    if (_timerBackToOrderGroupByTime != null) _timerBackToOrderGroupByTime.Stop();
                     break;
 
                 case OrderGroupEnum.ByOrderNumber:

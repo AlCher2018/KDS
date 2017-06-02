@@ -104,6 +104,12 @@
   <wsdl:message name="IKDSService_SetExpectedTakeValue_OutputMessage">
     <wsdl:part name="parameters" element="tns:SetExpectedTakeValueResponse" />
   </wsdl:message>
+  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependent" />
+  </wsdl:message>
+  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependentResponse" />
+  </wsdl:message>
   <wsdl:message name="IKDSCommandService_ChangeOrderStatus_InputMessage">
     <wsdl:part name="parameters" element="tns:ChangeOrderStatus" />
   </wsdl:message>
@@ -136,6 +142,10 @@
     <wsdl:operation name="SetExpectedTakeValue">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/SetExpectedTakeValue" message="tns:IKDSService_SetExpectedTakeValue_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse" message="tns:IKDSService_SetExpectedTakeValue_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetIsIngredientsIndependent">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" message="tns:IKDSService_GetIsIngredientsIndependent_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse" message="tns:IKDSService_GetIsIngredientsIndependent_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:portType name="IKDSCommandService">
@@ -190,6 +200,15 @@
     </wsdl:operation>
     <wsdl:operation name="SetExpectedTakeValue">
       <soap12:operation soapAction="http://tempuri.org/IKDSService/SetExpectedTakeValue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIsIngredientsIndependent">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>

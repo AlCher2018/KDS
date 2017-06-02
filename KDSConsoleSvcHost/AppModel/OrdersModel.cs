@@ -106,6 +106,7 @@ namespace KDSService.AppModel
                     }  // if
 
                 }  // lock
+                dbOrders = null; GC.Collect(0, GCCollectionMode.Optimized);
             }
 
             return null;

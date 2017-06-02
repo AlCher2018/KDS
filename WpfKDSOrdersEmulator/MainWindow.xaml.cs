@@ -323,6 +323,7 @@ namespace WpfKDSOrdersEmulator
         public string Comment { get; set; }
         public int DepartmentId { get; set; }
 
+        // плановое время приготовления
         public int EstimatedTime { get; set; }
     }  // class
 

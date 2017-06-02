@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KDSService.Lib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,6 @@ namespace KDSService.AppModel
     /// В свойстве Value возвращает число миллисекунд. 
     /// Параметр конструктора interval используется и как интервал внутреннего таймера, и как величина приращения Value.
     /// </summary>
-    
     public class IncrementalTimer: IDisposable
     {
         // fields
@@ -25,27 +25,12 @@ namespace KDSService.AppModel
         private TimeSpan _tsValue;
         private TimeSpan _tsIncrement;
 
-        private DateTime _dtBase, _dtStart, _dtStop;
-
         private Timer _timer;
         
         // properties
         public int Interval { get { return _interval; } }
         public int Value { get { return _value; } }
         public int Increment { get { return _increment; } }
-
-        //public TimeSpan ValueTS { get { return _tsValue; } }
-        //public TimeSpan IncrementTS { get { return _tsIncrement; } }
-        public int ValueTS {
-            get {
-                return Convert.ToInt32((DateTime.Now - _dtBase).TotalSeconds);
-            }
-        }
-        public int IncrementTS {
-            get {
-                return Convert.ToInt32((DateTime.Now - _dtStop).TotalSeconds);
-            }
-        }
 
         public bool Enabled { get { return _timer.Enabled; } }
         
@@ -54,7 +39,7 @@ namespace KDSService.AppModel
         public IncrementalTimer(int interval)
         {
             _interval = interval;
-            _value = 0; _dtBase = DateTime.MinValue;
+            _value = 0;
 
             _tsInterval = TimeSpan.FromMilliseconds(interval);
             _tsValue = TimeSpan.Zero;
@@ -73,35 +58,20 @@ namespace KDSService.AppModel
             _tsValue += _tsInterval;
         }
 
-        public void InitDateTimeValue(DateTime value)
-        {
-            _dtBase = value;
-        }
 
         public void Start()
         {
+            if (_timer != null) _timer.Start();
+
             _increment = 0;
             _tsIncrement = TimeSpan.Zero;
-
-            _dtStart = DateTime.Now;
-            if (_dtBase.Equals(DateTime.MinValue)) _dtBase = _dtStart;
-
-            if (_timer != null) _timer.Start();
         }
 
-        public int Stop()
+        public void Stop()
         {
             if (_timer != null) _timer.Stop();
-            _dtStop = DateTime.Now;
-            return _increment;
         }
 
-        public void Reset()
-        {
-            _value = 0;
-            _tsValue = TimeSpan.Zero;
-            _dtBase = DateTime.MinValue;
-        }
 
         public void Dispose()
         {

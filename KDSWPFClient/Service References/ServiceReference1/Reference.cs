@@ -203,7 +203,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -704,6 +705,12 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
         System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
+        bool GetIsIngredientsIndependent();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
+        System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync();
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -771,6 +778,14 @@ namespace KDSWPFClient.ServiceReference1 {
         
         public System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value) {
             return base.Channel.SetExpectedTakeValueAsync(value);
+        }
+        
+        public bool GetIsIngredientsIndependent() {
+            return base.Channel.GetIsIngredientsIndependent();
+        }
+        
+        public System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync() {
+            return base.Channel.GetIsIngredientsIndependentAsync();
         }
     }
     

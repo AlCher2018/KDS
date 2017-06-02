@@ -85,6 +85,7 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
             putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
+            putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
 
             return sb.ToString();
         }
@@ -106,6 +107,9 @@ namespace KDSConsoleSvcHost
 
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
             _props.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
+
+            // IsIngredientsIndependent - режим ингредиента: зависимый от блюда или независимый
+            _props.SetProperty("IsIngredientsIndependent", cfg["IsIngredientsIndependent"].ToBool());
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)

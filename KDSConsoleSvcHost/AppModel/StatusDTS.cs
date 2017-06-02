@@ -8,7 +8,7 @@ namespace KDSService.AppModel
 {
     // внутренняя структура для хранения даты входа в состояние и времени нахождения в нем
     // DTS - DateTime and TimeSpan
-    internal struct StatusDTS
+    public struct StatusDTS
     {
         public DateTime DateEntered { get; set; }
         public int TimeStanding { get; set; }

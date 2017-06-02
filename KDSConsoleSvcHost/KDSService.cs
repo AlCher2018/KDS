@@ -47,7 +47,7 @@ namespace KDSService
             msg = "  получение словарей приложения из БД... Ok";
             Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
 
-            _observeTimer = new Timer(_ObserveTimerInterval);
+            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true};
             _observeTimer.Elapsed += _observeTimer_Elapsed;
 
             _ordersModel = new OrdersModel();
@@ -125,6 +125,11 @@ namespace KDSService
             AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
         }
 
+        public bool GetIsIngredientsIndependent()
+        {
+            return (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
+        }
+
         #endregion
 
         #region IKDSCommandService implementation
@@ -132,15 +137,19 @@ namespace KDSService
         // обновление статуса заказа с КДСа
         public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
         {
+            _observeTimer.Stop();
+
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
+                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true, false);
             }
+            _observeTimer.Start();
         }
-        
+
         // обновление статуса блюда с КДСа
         public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
+            _observeTimer.Stop();
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 OrderModel modelOrder = _ordersModel.Orders[orderId];
@@ -150,6 +159,7 @@ namespace KDSService
                     modelDish.UpdateStatus(orderDishStatus, true);
                 }
             }
+            _observeTimer.Start();
         }
         #endregion
 

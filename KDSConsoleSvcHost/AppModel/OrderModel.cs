@@ -68,8 +68,8 @@ namespace KDSService.AppModel
         #region Fields
         // FIELDS
         // накопительные счетчики нахождения в конкретном состоянии
-        private Dictionary<OrderStatusEnum, IncrementalTimer> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
-        private IncrementalTimer _curTimer;  // текущий таймер для выдачи клиенту значения таймера
+        private Dictionary<OrderStatusEnum, TimeCounter> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
+        private TimeCounter _curTimer;  // текущий таймер для выдачи клиенту значения таймера
 
         // записи БД для сохранения блюда
         private OrderRunTime _dbRunTimeRecord = null;   // запись дат/времени прямого пути 
@@ -87,44 +87,15 @@ namespace KDSService.AppModel
             _dbRunTimeRecord = getDBRunTimeRecord(dbOrder.Id);
 
             // создать словарь накопительных счетчиков
-            _tsTimersDict = new Dictionary<OrderStatusEnum, IncrementalTimer>();
+            _tsTimersDict = new Dictionary<OrderStatusEnum, TimeCounter>();
             // таймер времени приготовления
-            _tsTimersDict.Add(OrderStatusEnum.Cooking, new IncrementalTimer(1000));
+            _tsTimersDict.Add(OrderStatusEnum.Cooking, new TimeCounter() { Name = OrderStatusEnum.Cooking.ToString() });
             // таймер времени ожидания выдачи, нахождение в состоянии Готов
-            _tsTimersDict.Add(OrderStatusEnum.Ready, new IncrementalTimer(1000));
+            _tsTimersDict.Add(OrderStatusEnum.Ready, new TimeCounter() { Name = OrderStatusEnum.Ready.ToString() });
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
-            _tsTimersDict.Add(OrderStatusEnum.Took, new IncrementalTimer(1000));
-
+            _tsTimersDict.Add(OrderStatusEnum.Took, new TimeCounter() { Name = OrderStatusEnum.Took.ToString() });
 
             UpdateFromDBEntity(dbOrder, true);
-
-
-            #region условия запуска таймера текущего состояния
-            // *** базовое значение таймера состояния 
-            _curTimer = null;
-            if (_tsTimersDict.ContainsKey(this.Status))
-            {
-                _curTimer = _tsTimersDict[this.Status];
-                // для сохраненного статуса берем дату и время в секундах из БД
-                StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
-                // для текущего статуса НЕТ сохраненной даты входа - стартуем с текущей даты (или с даты на TimeStanding секунд раньше) и сохраняем ее как дату входа в состояние
-                if (statusDTS.DateEntered.IsZero())
-                {
-                    int tsSeconds = statusDTS.TimeStanding;
-                    DateTime initDT = (tsSeconds == 0) ? DateTime.Now : DateTime.Now.AddSeconds(-tsSeconds);
-
-                    _curTimer.InitDateTimeValue(initDT);
-
-                    setStatusRunTimeDTS(this.Status, initDT, -1);
-                    saveRunTimeRecord();
-                }
-                else
-                {
-                    _curTimer.InitDateTimeValue(statusDTS.DateEntered);
-                }
-                _curTimer.Start();    // стартуем таймер состояния
-            }
-            #endregion
 
         }  // ctor
 
@@ -143,7 +114,7 @@ namespace KDSService.AppModel
             return retVal;
         }
 
-        // translate Order to OrderSvcModel
+        // ПОЛНОЕ ОБНОВЛЕНИЕ заказа из БД-сущности (вместе с блюдами)
         public void UpdateFromDBEntity(Order dbOrder, bool isNew)
         {
             lock (this)
@@ -172,17 +143,9 @@ namespace KDSService.AppModel
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
                 // для нового объекта статус по умолчанию - В ПРОЦЕССЕ ГОТОВКИ
-                // блюда - не трогать!
-                if (isNew && (this.OrderStatusId < 1))
-                {
-                    this.OrderStatusId = 1;
-                    this.Status = OrderStatusEnum.Cooking;
+                if (isNew && (this.OrderStatusId < 1)) newStatus = OrderStatusEnum.Cooking;
 
-                    // сразу сохраняем в БД
-                    setStatusRunTimeDTS(this.Status, this.CreateDate, -1);
-                    saveRunTimeRecord();  // в таблице OrderRunTime
-                    saveStatusToDB(this.Status);  // в таблице Order
-                }
+                UpdateStatus(newStatus, false, isNew);
 
 
                 // *** СЛОВАРЬ БЛЮД  ***
@@ -204,7 +167,7 @@ namespace KDSService.AppModel
                         // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
                         if (dbDish.ParentUid.IsNull())  // это блюдо
                         {
-                            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
+                            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish, false);
                         }
                     }
                     // иначе - добавить блюдо/ингр
@@ -214,85 +177,91 @@ namespace KDSService.AppModel
                         this._dishesDict.Add(newDish.Id, newDish);
                     }
                 }
+
             }  // lock
         }  // method UpdateFromDBEntity
 
 
-        // внешнее обновление состояния заказа
-        // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ, из БД/КДС
+        // внешнее обновление СОСТОЯНИЯ заказа
+        // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ (из БД/КДС), то в этом случае дату входа в новое состояние для блюд берем из заказа
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
-        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus)
+        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus, bool isNew)
         {
-                // если статус не поменялся, то попытаться обновить только статус блюд
-                if (this.Status == newStatus)
+            // если статус не поменялся, то попытаться обновить только статус блюд
+            if ((this.Status == newStatus) && !isNew)
+            {
+                if (isUpdateDishStatus) updateDishesStatus(newStatus);
+                return;
+            }
+
+            // время нахождения в ПРЕДЫДУЩЕМ состоянии, в секундах
+            int secondsInPrevState = 0;
+            if (_curTimer != null)   // если есть таймер предыдущего состояния
+            {
+                _curTimer.Stop(); // остановить таймер состояния
+                // получить время нахождения в состоянии с момента последнего входа
+                secondsInPrevState = _curTimer.IncrementTS;
+            }
+            // дата входа в новое состояние
+            DateTime dtEnterToNewStatus = DateTime.Now;
+            // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд
+            if (!isNew && (isUpdateDishStatus == false)) dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
+
+
+            // сохранить новый статус ОБЪЕКТА в БД
+            if (saveStatusToDB(newStatus))
+            {
+                // изменить статус в ОБЪЕКТЕ
+                OrderStatusEnum preStatus = this.Status;
+                Status = newStatus;
+                OrderStatusId = (int)Status;
+
+                // **** запись или в RunTimeRecord
+                if (_dbRunTimeRecord != null)
                 {
-                    if (isUpdateDishStatus) updateDishesStatus(newStatus);
+                    // сохраняем в записи RunTimeRecord дату входа в новое состояние
+                    setStatusRunTimeDTS(this.Status, dtEnterToNewStatus, -1);
+                    //  и время нахождения в предыдущем состоянии
+                    setStatusRunTimeDTS(preStatus, DateTime.MinValue, secondsInPrevState);
+
+                    saveRunTimeRecord();
                 }
-                else
+
+                // запуск таймера для нового состояния с даты 
+                if (_tsTimersDict.ContainsKey(newStatus))
                 {
-                    DateTime dtEnterToNewStatus = DateTime.MinValue;
-                    int secondsInPrevState = 0;
+                    _curTimer = _tsTimersDict[this.Status];
 
-                    // если есть таймер предыдущего состояния, то остановить его
-                    if (_curTimer != null)
+                    if (!isNew && ((this.Status == OrderStatusEnum.WaitingCook) || (this.Status == OrderStatusEnum.Cooking)))
                     {
-                        _curTimer.Stop();
-                        secondsInPrevState = _curTimer.ValueTS;
+                        // из runTime-записи получить период нахождения в этом состоянии и использовать его как инкремент
+                        StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+                        int tsSeconds = statusDTS.TimeStanding;
+                        _curTimer.Start(dtEnterToNewStatus, tsSeconds);  // с инкрементом
                     }
+                    else
+                        _curTimer.Start(dtEnterToNewStatus);          // с текущего времени
+                }
 
-                    // дата входа в НОВОЕ состояние
-                    if (isUpdateDishStatus)  // обновление заказа извне
-                    {
-                        dtEnterToNewStatus = DateTime.Now;
-                    }
-                    else  // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд
-                    {
-                        dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
-                    }
+                // внешнее обновление заказа - обновить блюда
+                if (isUpdateDishStatus) updateDishesStatus(newStatus);
 
-                    bool dishesUpdSuccess = true;
-                    if (isUpdateDishStatus) dishesUpdSuccess = updateDishesStatus(newStatus);
-
-                    // сохранить новый статус в БД
-                    if (saveStatusToDB(newStatus))
-                    {
-                        // запуск таймера для нового состояния, чтобы клиент мог получить значение таймера
-                        _curTimer = null;
-                        if (_tsTimersDict.ContainsKey(newStatus))
-                        {
-                            _curTimer = _tsTimersDict[newStatus];
-                            _curTimer.Start();
-                        }
-
-                        // запись в RunTimeRecord
-                        if (_dbRunTimeRecord != null)
-                        {
-                            // сохраняем в записи RunTimeRecord дату входа в новое состояние
-                            setStatusRunTimeDTS(newStatus, dtEnterToNewStatus, -1);
-                            //  и время нахождения в предыдущем состоянии
-                            setStatusRunTimeDTS(this.Status, DateTime.MinValue, secondsInPrevState);
-
-                            saveRunTimeRecord();
-                        }
-                        // сохранить новый статус в объекте
-                        Status = newStatus;
-                        OrderStatusId = (int)Status;
-                    }  // save order status
-
-                }  // if status changed
-
+            }
         }  // method
 
 
-        // попытаться обновить статус блюд
+        // попытаться обновить статус блюд (уже существующих)
         private bool updateDishesStatus(OrderStatusEnum newStatus)
         {
+            // дату входа в состояние берем из заказа
+            StatusDTS dtsOrder = this.getStatusRunTimeDTS(newStatus);
+
             bool dishUpdSuccess = true;
             try
             {
                 foreach (OrderDishModel modelDish in _dishesDict.Values)
                 {
-                    dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false);
+                    dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, false, dtsOrder.DateEntered);
                 }
             }
             catch (Exception ex)
@@ -322,13 +291,13 @@ namespace KDSService.AppModel
             for(int i=1; i < iLen; i++)
             {
                 if ((i == 1) && (statArray[i] > 0))
-                    UpdateStatus(OrderStatusEnum.Cooking, false);
+                    UpdateStatus(OrderStatusEnum.Cooking, false, false);
                 else if (statArray[i] == iDishesCount)
                 {
                     OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
                     if (this.Status != statDishes)
                     {
-                        UpdateStatus(statDishes, false);
+                        UpdateStatus(statDishes, false, false);
                         _isUpdStatusFromDishes = true;
                     }
                     break;
@@ -339,7 +308,7 @@ namespace KDSService.AppModel
         // получить последнюю дату входа в состояние из блюд
         private DateTime getMaxDishEnterStateDate(OrderStatusEnum newStatus)
         {
-            DateTime retVal = DateTime.MinValue, dt;
+            DateTime retVal = default(DateTime), dt;
 
             foreach (OrderDishModel modelDish in _dishesDict.Values)
             {
@@ -552,11 +521,7 @@ namespace KDSService.AppModel
             }
 
             // уничтожить таймеры
-            if (_tsTimersDict != null)
-            {
-                foreach (var statTimer in _tsTimersDict.Values) statTimer.Dispose();
-                _tsTimersDict.Clear();
-            }
+            if (_tsTimersDict != null) _tsTimersDict.Clear();
 
             // задиспозить блюда
             if (_dishesDict != null)

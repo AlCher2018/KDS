@@ -47,7 +47,7 @@ namespace KDSWPFClient
         }
 
 
-        #region set dictionaries from service
+        #region get dictionaries from service
         public bool SetDictDataFromService()
         {
             bool retVal = false;
@@ -70,10 +70,16 @@ namespace KDSWPFClient
                     }
                 }
 
+                // прочие настройки от службы
+                bool isIngrIndepend = _getClient.GetIsIngredientsIndependent();
+                AppLib.SetAppGlobalValue("IsIngredientsIndependent", isIngrIndepend);
+
                 retVal = true;
             }
-            catch (Exception)
-            { }
+            catch (Exception ex)
+            {
+                ErrorMessage = string.Format("{0}{1}", ex.Message, ((ex.InnerException == null) ? "" : ex.InnerException.Message));
+            }
 
             return retVal;
         }
@@ -87,9 +93,8 @@ namespace KDSWPFClient
                     new OrderStatusViewModel() { Id = o.Id, Name = o.Name, UID = o.UID }
                     ));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                ErrorMessage = string.Format("{0}{1}", ex.Message, (ex.InnerException==null) ? "" : ex.InnerException.Message);
                 throw;
             }
         }

@@ -31,5 +31,7 @@ namespace KDSService
         [OperationContract]
         void SetExpectedTakeValue(int value);
 
+        [OperationContract]
+        bool GetIsIngredientsIndependent();
     }
 }
