@@ -118,9 +118,6 @@ namespace KDSWPFClient
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
 
-            // словарь кистей (фон и шрифт) в appBrushes
-            Dictionary<string, BrushesPair> appBrushes = BrushHelper.GetAppBrushes();
-            AppLib.SetAppGlobalValue("appBrushes", appBrushes);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             KDSModeHelper.PutCfgKDSModeToAppProps();
@@ -132,7 +129,7 @@ namespace KDSWPFClient
             //         иметь собственные таймеры, переходить из состояния в состояние), кроме перехода в состояние ВЫДАНО, 
             //         в это состояние незав.ингредиент может быть переведен только вместе с блюдом, т.е. как зависимый ингредиент
             // Режим находится в службе, а клиентом только читается оттуда: AppDataProvider.SetDictDataFromService()
-            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false); // for Copy/Paste
 
         }
 

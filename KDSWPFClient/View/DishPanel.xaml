@@ -34,31 +34,13 @@
             <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index}"/>
             
             <TextBlock Grid.Column="1" TextWrapping="Wrap" Foreground="DarkBlue">
-                <Run x:Name="tbDishName" Text="{Binding DishName}">
-                    <!-- стиль для блюда или ингредиента -->
-                    <Run.Style>
-                        <Style TargetType="Run">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding ParentUID, Converter={StaticResource isNullConverter}}" Value="True">
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding ParentUID, Converter={StaticResource isNullConverter}}" Value="False">
-                                    <!--<Setter Property="FontWeight" Value="Normal"/>-->
-                                    <Setter Property="Background" Value="{Binding Source=ingrLineBase, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
-                                    <Setter Property="Foreground" Value="{Binding Source=ingrLineBase, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Run.Style>
-                </Run>
+                <Run x:Name="tbDishName" Text="{Binding DishName}"/>
                 <Run x:Name="tbComment" FontStyle="Italic" FontWeight="Normal"/>
             </TextBlock>
             
             <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center"/>
 
             <Border x:Name="brdTimer" Grid.Column="3" 
-                    Background="{Binding ., ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}" 
-                    TextBlock.Foreground="{Binding ., ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}" Margin="0,0,3,0"
                     CornerRadius="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
                 <TextBlock x:Name="tbDishStatusTS" Text="{Binding WaitingTimerString}" HorizontalAlignment="Center" FontWeight="Bold" TextWrapping="Wrap"/>
             </Border>

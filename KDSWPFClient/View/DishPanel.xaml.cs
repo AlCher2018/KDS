@@ -23,13 +23,15 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class DishPanel : UserControl
     {
+        private OrderDishViewModel _dishView;
         private double _fontSize;
 
         public DishPanel(OrderDishViewModel dishView)
         {
             InitializeComponent();
 
-            grdDishLine.DataContext = dishView;
+            _dishView = dishView;
+            grdDishLine.DataContext = _dishView;
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
@@ -58,6 +60,19 @@ namespace KDSWPFClient.View
             brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
             brdTimer.Padding = new Thickness(0, padd, 0, padd);
 
+            // кисти и прочее
+            //    блюдо
+            if (dishView.ParentUID.IsNull())
+            {
+                tbDishName.FontWeight = FontWeights.Bold;
+            }
+            //    ингредиент
+            else
+            {
+                BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
+                tbDishName.Background = brPair.Background;
+                tbDishName.Foreground = brPair.Foreground;
+            }
         }
 
         private void DishView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -78,14 +93,19 @@ namespace KDSWPFClient.View
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            OrderDishViewModel dishView = (OrderDishViewModel)grdDishLine.DataContext;
-            if (!dishView.ParentUID.IsNull()) return;  // это ингредиент !!
+            // это ингредиент !!
+            if (!_dishView.ParentUID.IsNull())
+            {
+                // зависимый или независимый ингредиент?
+                bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+                if (isIngrIndepend == false) return;
+            }
 
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
-            StateChange win = new StateChange() { Order = orderView, Dish = dishView };
+            StateChange win = new StateChange() { Order = orderView, Dish = _dishView };
 
             win.ShowDialog();
 

@@ -1,4 +1,5 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.View;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,27 +28,16 @@ namespace KDSWPFClient.View
 
 
             // источник данных
-            var v1 = AppLib.GetAppGlobalValue("appBrushes");
-            if (v1 is Dictionary<string, BrushesPair>)
+            Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
+
+            // собрать кисти в список для легенды
+            List<BrushesPair> context = new List<BrushesPair>();
+            foreach (BrushesPair item in appBrushes.Values)
             {
-                Dictionary<string, BrushesPair> appBrushes = (Dictionary<string, BrushesPair>)v1;
-
-                // собрать кисти в список для легенды
-                List<BrushesPair> context = new List<BrushesPair>();
-                foreach (BrushesPair item in appBrushes.Values)
-                {
-                    if (!item.Name.StartsWith("~")) context.Add(item);
-                    if (item.SubDictionary != null)
-                    {
-                        foreach (BrushesPair subItem in item.SubDictionary.Values)
-                        {
-                            if (!item.Name.StartsWith("~")) context.Add(subItem);
-                        }
-                    }
-                }
-
-                lstLegend.ItemsSource = context;
+                if (!item.Name.StartsWith("~")) context.Add(item);
             }
+
+            lstLegend.ItemsSource = context;
         }
 
         private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)

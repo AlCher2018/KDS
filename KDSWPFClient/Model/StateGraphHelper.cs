@@ -19,20 +19,11 @@ namespace KDSWPFClient.Model
         // кисти фона и текста
         public static void SetStateButtonBrushes(OrderStatusEnum eState, out Brush backgroundBrush, out Brush foregroundBrush)
         {
-            var v1 = AppLib.GetAppGlobalValue("appBrushes");
+            Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
 
-            if (v1 == null)
-            {
-                backgroundBrush = new SolidColorBrush(Colors.White);
-                foregroundBrush = new SolidColorBrush(Colors.Black);
-            }
-            else
-            {
-                Dictionary<string, BrushesPair> appBrushes = (v1 as Dictionary<string, BrushesPair>);
-                BrushesPair bp = appBrushes[eState.ToString()];
-                backgroundBrush = bp.Background;
-                foregroundBrush = bp.Foreground;
-            }
+            BrushesPair bp = appBrushes[eState.ToString()];
+            backgroundBrush = bp.Background;
+            foregroundBrush = bp.Foreground;
         }  // method
 
         public static void SetStateButtonTexts(OrderStatusEnum eState, out string btnText1, out string btnText2, bool isOrder, bool isReturnCooking)
