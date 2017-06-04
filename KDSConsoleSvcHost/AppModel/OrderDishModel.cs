@@ -92,6 +92,9 @@ namespace KDSService.AppModel
                         // иначе, если есть время приготовления, то отобразить время приготовления
                         else if (EstimatedTime != 0)
                             tsTimerValue = _tsCookingEstimated;
+                        else if (_parentDish != null)
+                            // для зависимого ингредиента взять значение из родительского блюда
+                            tsTimerValue = _parentDish._timerValue;
                         else
                             tsTimerValue = TimeSpan.Zero;
                     }
@@ -109,6 +112,8 @@ namespace KDSService.AppModel
                             tsTimerValue = TimeSpan.FromSeconds(expTake) - tsTimerValue;
                         }
                     }
+
+                    if (_parentDish == null) _timerValue = tsTimerValue;  // для блюда сохраним значение текущего таймера
 
                     // преобразование времени в строку
                     if (tsTimerValue == TimeSpan.Zero)
@@ -152,6 +157,12 @@ namespace KDSService.AppModel
 
         // ссылка на родительский заказ для обратных вызовов
         private OrderModel _modelOrder;
+
+        private bool _isDish;
+        private bool _isInrgIndepend;
+        private OrderDishModel _parentDish;
+        private TimeSpan _timerValue;
+
         #endregion
 
 
@@ -173,13 +184,15 @@ namespace KDSService.AppModel
             DishStatusId = dbDish.DishStatusId??0;
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
+            _isDish = ParentUid.IsNull();
+            _isInrgIndepend = (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
+            _parentDish = null;
+
             // объект отдела взять из справочника
             _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
             // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
             _dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
-            //_dtCookingStartEstimated = DateTime.Now.AddSeconds(DelayedStartTime); // for debug
-
             // время приготовления
             _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
 
@@ -201,32 +214,62 @@ namespace KDSService.AppModel
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
 
-            UpdateFromDBEntity(dbDish, true);
-            
+            // стартануть таймер для блюда или независимого ингредиента
+            if (_isDish || (!_isDish && _isInrgIndepend))
+            {
+                UpdateFromDBEntity(dbDish);  // для новой записи DTS не сохранен
+
+                StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+                DateTime dtEnterState = statusDTS.DateEntered;
+                if (dtEnterState.IsZero())
+                {
+                    dtEnterState = DateTime.Now;
+                    setStatusRunTimeDTS(this.Status, dtEnterState, -1);
+                    saveRunTimeRecord();
+                }
+                startStatusTimer(statusDTS);
+            }
+
+            // а для ЗАВИСИМОГО ингредиента - по родительскому блюду
+            else
+            {
+                // найти уже существующее блюдо для данного ингредиента от текущей позиции и выше
+                List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
+                int idx = dishes.Count;  // индекс ингредиента
+                for (int i = idx - 1; i >= 0; i--)
+                {
+                    // нашли родительское блюдо
+                    if ((dishes[i].ParentUid.IsNull()) && (dishes[i].Uid == this.Uid))
+                    {
+                        _parentDish = dishes[i]; break;
+                    }
+                }
+                updateIngredientByParentDish();
+            }
+
         }  // constructor
 
 
         // обновить из БД
-        internal void UpdateFromDBEntity(OrderDish dbDish, bool isNew)
+        internal void UpdateFromDBEntity(OrderDish dbDish)
         {
             lock (this)
             {
                 // и для блюда, и для ингредиента
-                if (Uid.IsNull() || (Uid != dbDish.UID)) Uid = dbDish.UID;
+                if (Uid != dbDish.UID) Uid = dbDish.UID;
                 if (CreateDate != dbDish.CreateDate) CreateDate = dbDish.CreateDate;
-                if (Name.IsNull() || (Name != dbDish.DishName)) Name = dbDish.DishName;
+                if (Name != dbDish.DishName) Name = dbDish.DishName;
                 if (FilingNumber != dbDish.FilingNumber) FilingNumber = dbDish.FilingNumber;
-                if (ParentUid.IsNull() || (ParentUid != dbDish.ParentUid)) ParentUid = dbDish.ParentUid;
-                if (Comment.IsNull() || (Comment != dbDish.Comment)) Comment = dbDish.Comment;
+                if (ParentUid != dbDish.ParentUid) ParentUid = dbDish.ParentUid;
+                if (Comment != dbDish.Comment) Comment = dbDish.Comment;
                 if (Quantity != dbDish.Quantity) Quantity = dbDish.Quantity;
                 if (DelayedStartTime != dbDish.DelayedStartTime) DelayedStartTime = dbDish.DelayedStartTime;
                 if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
 
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
-                // обновление состояния для блюда
-                // т.к. состояние ингредиентов изменяется в самом блюде
-                if (ParentUid.IsNull())
+                // обновление состояния для блюда или независимого ингредиента
+                if (_isDish || (!_isDish && _isInrgIndepend))
                 {
                     // проверяем условие автоматического перехода в режим приготовления
                     if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus()) newStatus = OrderStatusEnum.Cooking;
@@ -238,17 +281,8 @@ namespace KDSService.AppModel
                         _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
                     }
 
-                    UpdateStatus(newStatus, false, isNew);
-
+                    UpdateStatus(newStatus, false);
                 }  // для БЛЮДА
-
-                // обновить состояние ингредиента по родительскому блюду, только если ингредиент был добавлен к списку блюд, а не обновлен
-                else if (isNew)
-                {
-                    // и ингредиент ЗАВИСИМ от блюда
-                    bool isInrgIndepend = (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
-                    if (isInrgIndepend) updateIngredientByParentDish();
-                }
 
             }  // lock
 
@@ -257,16 +291,15 @@ namespace KDSService.AppModel
 
         // ******************************************
         //    ОСНОВНАЯ ПРОЦЕДУРА БИЗНЕС-ЛОГИКИ
-        //    ПРИ ИЗМЕНЕНИИ СТАТУСА БЛЮДА.
-        //   Блюдо. Самостоятельное или ингредиент (подчиненное блюдо)
+        //    ПРИ ИЗМЕНЕНИИ СТАТУСА БЛЮДА или НЕЗАВИСИМОГО ИНГРЕДИЕНТА
         // ******************************************
         // команды на изменение статуса блюда могут приходить как от КДС, так и из FrontOffice (при чтении из БД)
         // состояния и даты сохраняются в БД при каждом изменении
-        public bool UpdateStatus(OrderStatusEnum newStatus, bool isUpdateParentOrder, bool isNew=false, 
+        public bool UpdateStatus(OrderStatusEnum newStatus, bool isUpdateParentOrder,  
             DateTime dtEnterState = default(DateTime), int preStateTS = 0)
         {
             // если статус не поменялся для существующей записи, то ничего не делать
-            if ((this.Status == newStatus) && !isNew) return false; 
+            if (this.Status == newStatus) return false; 
 
             bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
@@ -293,53 +326,34 @@ namespace KDSService.AppModel
                 {
                     // изменить статус в ОБЪЕКТЕ
                     OrderStatusEnum preStatus = this.Status;
-                    Status = newStatus;
-                    DishStatusId = (int)newStatus;
+                    this.Status = newStatus;
+                    this.DishStatusId = (int)newStatus;
 
                     // **** запись или в RunTimeRecord или в ReturnTable
-                    // сохранить дату входа в состояние во внутреннем словаре
-                    _dtEnterStatusDict[newStatus] = dtEnterToNewStatus;
-                    // и в БД
-                    if (_dbRunTimeRecord != null)
+                    StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+                    if (statusDTS.DateEntered.IsZero())  // возв. true, если поле == null
                     {
-                        // пустое ли поле в RunTimeRecord для даты входа текущего статуса?
-                        if (getStatusRunTimeDTS(newStatus).DateEntered.IsZero())  // возв. true, если поле == null
-                        {
-                            // сохраняем дату входа в новое состояние
-                            setStatusRunTimeDTS(this.Status, dtEnterToNewStatus, -1);
-                            // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
-                            setStatusRunTimeDTS(preStatus, DateTime.MinValue, secondsInPrevState);
+                        // сохраняем дату входа в новое состояние
+                        setStatusRunTimeDTS(this.Status, dtEnterToNewStatus, -1);
+                        // сохраняем в записи RunTimeRecord время нахождения в предыдущем состоянии
+                        setStatusRunTimeDTS(preStatus, DateTime.MinValue, secondsInPrevState);
 
-                            saveRunTimeRecord();
-                        }
-                        // создать новую запись в Return table
-                        else
-                        {
-                            saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
-                        }
+                        saveRunTimeRecord();
+                    }
+                    // создать новую запись в Return table
+                    else
+                    {
+                        saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
                     }
 
                     // запуск таймера для нового состояния
-                    if (_tsTimersDict.ContainsKey(this.Status))
-                    {
-                        _curTimer = _tsTimersDict[this.Status];
-
-                        if ((this.Status == OrderStatusEnum.WaitingCook) || (this.Status == OrderStatusEnum.Cooking))
-                        {
-                            // из runTime-записи получить период нахождения в этом состоянии и использовать его как инкремент
-                            StatusDTS preStatusDTS = getStatusRunTimeDTS(this.Status);
-                            int tsSeconds = preStatusDTS.TimeStanding;
-                            _curTimer.Start(dtEnterToNewStatus, tsSeconds);  // с инкрементом
-                        }
-                        else
-                            _curTimer.Start(dtEnterToNewStatus);          // с текущего времени
-                    }
+                    statusDTS = getStatusRunTimeDTS(this.Status);
+                    startStatusTimer(statusDTS);
 
                     // если это блюдо
-                    if (this.ParentUid.IsNull())
+                    if (_isDish)
                     {
-                        bool isInrgIndepend = (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
-                        if (isInrgIndepend) updateChildIngredients(dtEnterToNewStatus, secondsInPrevState);
+                        if (!_isInrgIndepend) updateChildIngredients(dtEnterToNewStatus, secondsInPrevState);
                     }
 
                     // попытка обновить статус Заказа проверкой состояний всех блюд/ингредиентов
@@ -352,31 +366,53 @@ namespace KDSService.AppModel
             return isUpdSuccess;
         }  // method UpdateStatus
 
+
+        // запуск таймера для текущего состояния
+        private void startStatusTimer(StatusDTS statusDTS)
+        {
+            DateTime dtEnterToStatus = statusDTS.DateEntered;
+            // сохранить дату входа в состояние во внутреннем словаре
+            _dtEnterStatusDict[this.Status] = dtEnterToStatus;
+
+            if (_tsTimersDict.ContainsKey(this.Status))
+            {
+                _curTimer = _tsTimersDict[this.Status];
+
+                // для некоторых состояний таймер с инкрементом!
+                //if ((this.Status == OrderStatusEnum.WaitingCook) || (this.Status == OrderStatusEnum.Cooking))
+                //{
+                //    int tsSeconds = statusDTS.TimeStanding;
+                //    _curTimer.Start(dtEnterToStatus, tsSeconds);  // с инкрементом
+                //}
+                //else
+                    _curTimer.Start(dtEnterToStatus);          // с текущего времени
+            }
+        }
+
+
         #region обновление ЗАВИСИМЫХ ингредиентов
-        // обновить добавленный к списку ингредиент по родительскому блюду
+        // обновить добавленный к списку зависимый ингредиент по родительскому блюду
+        // т.е. для нового объекта в заказе
+        // возвращает признак того, что состояние ингр.было обновлено из DTS был сохранен в БД
         private void updateIngredientByParentDish()
         {
-            // найти уже существующее блюдо для данного ингредиента от текущей позиции и выше
-            OrderDishModel baseDish = null;
-            List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
-            int idx = dishes.Count;  // индекс ингредиента
-            for (int i = idx - 1; i >= 0; i--)
-            {
-                // нашли родительское блюдо
-                if ((dishes[i].ParentUid.IsNull()) && (dishes[i].Uid == this.Uid))
-                {
-                    baseDish = dishes[i]; break;
-                }
-            }
-
             // для ингредиента состояние берем из родительского блюда
-            // и если оно поменялось
-            if ((baseDish != null) && (this.DishStatusId != baseDish.DishStatusId))
+            if (_parentDish != null) 
             {
-                // то обновляем в ингредиенте также дату входа в текущее и время нахождения в предыдущем состоянии
-                StatusDTS dtsBase = baseDish.getStatusRunTimeDTS(baseDish.Status);
-                StatusDTS preDtsBase = baseDish.getStatusRunTimeDTS(this.Status);
-                UpdateStatus(baseDish.Status, false, true, dtsBase.DateEntered, preDtsBase.TimeStanding);
+                StatusDTS dtsBase = _parentDish.getStatusRunTimeDTS(_parentDish.Status);
+                // и если оно поменялось, то обновляем статус ингредиента
+                if (this.DishStatusId != _parentDish.DishStatusId)
+                {
+                    StatusDTS preDtsBase = _parentDish.getStatusRunTimeDTS(this.Status);
+                    UpdateStatus(_parentDish.Status, false, dtsBase.DateEntered, preDtsBase.TimeStanding);
+                }
+                else
+                {
+                    setStatusRunTimeDTS(this.Status, dtsBase.DateEntered, -1);
+                    saveRunTimeRecord();
+
+                    startStatusTimer(dtsBase);
+                }
             }
         }
 
@@ -394,7 +430,7 @@ namespace KDSService.AppModel
                 // поменять статус и запустить таймеры для ингредиентов данного блюда
                 if ((probIngr.Uid == this.Uid) && (probIngr.ParentUid == this.Uid))
                 {
-                    probIngr.UpdateStatus(this.Status, false, false, dtEnterToNewStatus, secondsInPrevState);
+                    probIngr.UpdateStatus(this.Status, false, dtEnterToNewStatus, secondsInPrevState);
                 }
                 // ингр.кончились - выйти из цикла
                 else break;

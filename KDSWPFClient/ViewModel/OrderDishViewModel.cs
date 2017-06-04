@@ -12,6 +12,9 @@ namespace KDSWPFClient.ViewModel
 {
     public class OrderDishViewModel : INotifyPropertyChanged, IJoinSortedCollection<OrderDishModel>, IContainIDField
     {
+        private bool _negativeState;
+
+
         public int Id { get; set; }
 
         // порядковый номер блюда в списке заказа, начинается с 1
@@ -77,6 +80,8 @@ namespace KDSWPFClient.ViewModel
             EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
             WaitingTimerString = svcOrderDish.WaitingTimerString;
+
+            _negativeState = (WaitingTimerString.IsNull()) ? false : WaitingTimerString.StartsWith("-");
         }
 
         public void UpdateFromSvc(OrderDishModel svcOrderDish)
@@ -142,6 +147,14 @@ namespace KDSWPFClient.ViewModel
             {
                 WaitingTimerString = svcOrderDish.WaitingTimerString;
                 OnPropertyChanged("WaitingTimerString");
+
+                bool curNegative = WaitingTimerString.StartsWith("-");
+                if (curNegative != _negativeState)
+                {
+                    OnPropertyChanged("NegativeState");
+                    _negativeState = curNegative;
+                }
+
             }
         }
 

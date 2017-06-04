@@ -278,7 +278,8 @@ namespace KDSWPFClient.View
             }
             catch (Exception ex)
             {
-                Debug.Print(ex.ToString());
+                AppLib.WriteLogErrorMessage(ex.ToString());
+//                Debug.Print(ex.ToString());
                 MessageBox.Show(ex.Message);
             }
             Close();

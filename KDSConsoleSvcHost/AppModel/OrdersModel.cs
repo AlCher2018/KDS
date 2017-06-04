@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
-
+using System.Diagnostics;
 
 namespace KDSService.AppModel
 {
@@ -57,6 +57,12 @@ namespace KDSService.AppModel
             {
                 lock (this)
                 {
+                    //foreach (Order item in dbOrders)
+                    //{
+                    //    Debug.Print("order Id - {0}, status - {1}", item.Id, item.OrderStatusId);
+                    //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
+                    //}
+
                     int[] delIds;
                     // для последующех обработок удалить из заказов блюда с ненужными статусами
                     foreach (Order dbOrder in dbOrders)
@@ -94,7 +100,7 @@ namespace KDSService.AppModel
                             if (_orders.ContainsKey(dbOrder.Id))
                             {
                                 // обновить существующий заказ
-                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder, false);
+                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
                             }
                             else
                             {

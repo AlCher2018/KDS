@@ -141,7 +141,7 @@ namespace KDSService
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true, false);
+                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
             }
             _observeTimer.Start();
         }

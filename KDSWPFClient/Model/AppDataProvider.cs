@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ServiceModel;
-
+using System.Diagnostics;
 
 namespace KDSWPFClient
 {
@@ -128,11 +128,7 @@ namespace KDSWPFClient
 
         public List<OrderModel> GetOrders()
         {
-            if (_getClient.State == CommunicationState.Faulted)
-            {
-                //_getClient.Close();
-                _getClient = new KDSServiceClient();
-            }
+            //if (_getClient.State == CommunicationState.Faulted) _getClient = new KDSServiceClient();
 
             List<OrderModel> retVal = null;
             try
@@ -212,11 +208,11 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
-            if (_setClient.State == CommunicationState.Faulted)
-            {
-                _setClient.Close();
-                _setClient = new KDSCommandServiceClient();
-            }
+            //if (_setClient.State == CommunicationState.Faulted)
+            //{
+            //    _setClient.Close();
+            //    _setClient = new KDSCommandServiceClient();
+            //}
 
             try
             {

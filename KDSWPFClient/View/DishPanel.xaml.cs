@@ -1,4 +1,5 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace KDSWPFClient.View
     public partial class DishPanel : UserControl
     {
         private OrderDishViewModel _dishView;
+        private bool _isDish, _isIngrIndepend, _isTimerBrushesChanging;
         private double _fontSize;
 
         public DishPanel(OrderDishViewModel dishView)
@@ -32,6 +34,11 @@ namespace KDSWPFClient.View
 
             _dishView = dishView;
             grdDishLine.DataContext = _dishView;
+
+            _isDish = _dishView.ParentUID.IsNull();  // признак блюда
+            _isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+            // признак изменения рамки таймера
+            _isTimerBrushesChanging = (_isDish || (!_isDish && _isIngrIndepend));
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
@@ -54,15 +61,30 @@ namespace KDSWPFClient.View
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;
-            this.tbDishStatusTS.FontSize = 1.2 * _fontSize;
 
             double padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
-            brdTimer.Padding = new Thickness(0, padd, 0, padd);
+
+            // Таймер: для блюда и НЕзависимого ингр. сделать рамку вокруг текста
+            if (_isTimerBrushesChanging)
+            {
+                brdTimer.Padding = new Thickness(0, padd, 0, padd);
+                tbDishStatusTS.FontSize = 1.2 * _fontSize;
+                tbDishStatusTS.FontWeight = FontWeights.Bold;
+                setTimerBrushes();
+            }
+            else
+            {
+                // для зависимого ингредиента рамки нет
+                BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
+                brdTimer.Background = brPair.Background;
+                tbDishStatusTS.FontSize = _fontSize;
+                tbDishStatusTS.Foreground = brPair.Foreground;
+            }
 
             // кисти и прочее
             //    блюдо
-            if (dishView.ParentUID.IsNull())
+            if (_isDish)
             {
                 tbDishName.FontWeight = FontWeights.Bold;
             }
@@ -75,30 +97,59 @@ namespace KDSWPFClient.View
             }
         }
 
+
+        // изменение свойств блюда - обновить кисти
         private void DishView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "Status")
+            if (_isTimerBrushesChanging && (e.PropertyName == "Status") && (e.PropertyName == "NegativeState"))
             {
-                BindingExpression bind = BindingOperations.GetBindingExpression(brdTimer, Border.BackgroundProperty);
-                if (bind != null) bind.UpdateTarget();
-                bind = BindingOperations.GetBindingExpression(brdTimer, TextBlock.ForegroundProperty);
-                if (bind != null) bind.UpdateTarget();
+                setTimerBrushes();
             }
         }
 
-        private void root_MouseDown(object sender, MouseButtonEventArgs e)
+        // установка кистей при изменении состоянию блюда
+        private void setTimerBrushes()
         {
+            Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
+            StatusEnum status = _dishView.Status;
+            BrushesPair brPair = null;
+
+            if (status == StatusEnum.WaitingCook)
+            {
+                if (_dishView.EstimatedTime > 0) brPair = appBrushes["estimateCook"];
+                else if (_dishView.DelayedStartTime > 0) brPair = appBrushes["estimateStart"];
+                else brPair = appBrushes[OrderStatusEnum.WaitingCook.ToString()];
+            }
+            else
+            {
+                // проверить на наличие кистей для отрицательных значений
+                if (!_dishView.WaitingTimerString.IsNull() && _dishView.WaitingTimerString.StartsWith("-"))
+                {
+                    string keyNegative = status.ToString() + "minus";
+                    if (appBrushes.ContainsKey(keyNegative)) brPair = appBrushes[keyNegative];
+                }
+                if (brPair == null)
+                {
+                    string key = status.ToString();
+                    if (appBrushes.ContainsKey(key)) brPair = appBrushes[key];
+                }
+            }
+
+            if (brPair != null)
+            {
+                brdTimer.Background = brPair.Background;
+                tbDishStatusTS.Foreground = brPair.Foreground;
+            }
 
         }
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
             // это ингредиент !!
-            if (!_dishView.ParentUID.IsNull())
+            if (!_isDish)
             {
                 // зависимый или независимый ингредиент?
-                bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-                if (isIngrIndepend == false) return;
+                if (_isIngrIndepend == false) return;
             }
 
             OrderViewModel orderView = null;

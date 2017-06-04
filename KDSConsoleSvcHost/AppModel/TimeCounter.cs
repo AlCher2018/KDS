@@ -39,7 +39,7 @@ namespace KDSService.AppModel
         }
 
         // активность счетчика
-        public bool Enabled { get { return _dtStop.IsZero(); } }
+        public bool Enabled { get { return (!_dtStart.IsZero() && _dtStop.IsZero()); } }
 
         public string Name { get; set; }
 
