@@ -440,6 +440,20 @@ namespace KDSWPFClient.Lib
             return (OrderStatusEnum)statusId;
         }
 
+        public static string GetAppStringTS(TimeSpan tsTimerValue)
+        {
+            string retVal = "";
+
+            if (tsTimerValue != TimeSpan.Zero)
+            {
+                retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
+                // отрицательное время
+                if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
+            }
+
+            return retVal;
+        }
+
 
         // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
         internal static void RecalcOrderPanelsLayot()

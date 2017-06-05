@@ -157,7 +157,8 @@ namespace WpfKDSOrdersEmulator
                             FilingNumber = dish.FilingNumber, Quantity = dish.Quantity,
                             CreateDate = dish.CreateDate,
                             UID = dish.UID, ParentUid = dish.UID,
-                            DishName = menuIngr.Name, Comment = menuIngr.Comment
+                            DishName = menuIngr.Name, Comment = menuIngr.Comment,
+                            EstimatedTime = menuIngr.EstimatedTime
                         };
 
                         ord.OrderDish.Add(ingr);
@@ -197,21 +198,21 @@ namespace WpfKDSOrdersEmulator
         {
             return new MenuDish[]
             {
-                new MenuDish() { Name="Ингредиент 1", Comment="sdgfaregtehb dgfhj7"},
-                new MenuDish() { Name="Ингредиент 2", Comment=""},
-                new MenuDish() { Name="Ингредиент 3", Comment="fghtrh54h rfthy"},
-                new MenuDish() { Name="Ингредиент 4", Comment=null},
-                new MenuDish() { Name="Ингредиент 5", Comment=""},
-                new MenuDish() { Name="Ингредиент 6", Comment="dfgh rthert6y45yh fghj"},
-                new MenuDish() { Name="Ингредиент 7", Comment=null},
-                new MenuDish() { Name="Ингредиент 8", Comment="fdghe"},
-                new MenuDish() { Name="Ингредиент 9", Comment=""},
-                new MenuDish() { Name="Ингредиент 10", Comment="ttthdrth"},
-                new MenuDish() { Name="Ингредиент 11", Comment=""},
-                new MenuDish() { Name="Ингредиент 12", Comment="ryhr dfsghrt drther6 sretwe rd"},
-                new MenuDish() { Name="Ингредиент 13", Comment=""},
-                new MenuDish() { Name="Ингредиент 14", Comment="fghf rthert34e rtyyrj"},
-                new MenuDish() { Name="Ингредиент 15", Comment=""},
+                new MenuDish() { Name="Ингредиент 1", Comment="sdgfaregtehb dgfhj7", EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 2", Comment="", EstimatedTime=120},
+                new MenuDish() { Name="Ингредиент 3", Comment="fghtrh54h rfthy", EstimatedTime=300},
+                new MenuDish() { Name="Ингредиент 4", Comment=null, EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 5", Comment="", EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 6", Comment="dfgh rthert6y45yh fghj", EstimatedTime=600},
+                new MenuDish() { Name="Ингредиент 7", Comment=null, EstimatedTime=180},
+                new MenuDish() { Name="Ингредиент 8", Comment="fdghe", EstimatedTime=120},
+                new MenuDish() { Name="Ингредиент 9", Comment="", EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 10", Comment="ttthdrth", EstimatedTime=300},
+                new MenuDish() { Name="Ингредиент 11", Comment="", EstimatedTime=300},
+                new MenuDish() { Name="Ингредиент 12", Comment="ryhr dfsghrt drther6 sretwe rd", EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 13", Comment="", EstimatedTime=0},
+                new MenuDish() { Name="Ингредиент 14", Comment="fghf rthert34e rtyyrj", EstimatedTime=180},
+                new MenuDish() { Name="Ингредиент 15", Comment="", EstimatedTime=0},
             };
         }
         private MenuDish getRndMenuIngr()

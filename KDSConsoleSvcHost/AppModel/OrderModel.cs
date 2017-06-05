@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
-
+using System.ServiceModel;
 
 namespace KDSService.AppModel
 {
@@ -51,10 +51,18 @@ namespace KDSService.AppModel
         {
             get
             {
-                string retVal = null;
-                if (_curTimer != null)
+                string retVal = "***";
+                if ((_curTimer != null) && _curTimer.Enabled)
                 {
-                    TimeSpan tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
+                    TimeSpan tsTimerValue = TimeSpan.Zero;
+                    try
+                    {
+                          tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new FaultException("Ошибка получения периода времени от таймера: " + ex.Message, new FaultCode("TimeCounter class"));
+                    }
 
                     retVal = (tsTimerValue.Days > 0) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
                     // отрицательное время
@@ -115,11 +123,11 @@ namespace KDSService.AppModel
             startStatusTimer(statusDTS);
 
             // добавить блюда к заказу
-            //foreach (OrderDish dbDish in dbOrder.OrderDish)
-            //{
-            //    OrderDishModel newDish = new OrderDishModel(dbDish, this);
-            //    this._dishesDict.Add(newDish.Id, newDish);
-            //}
+            foreach (OrderDish dbDish in dbOrder.OrderDish)
+            {
+                OrderDishModel newDish = new OrderDishModel(dbDish, this);
+                this._dishesDict.Add(newDish.Id, newDish);
+            }
 
         }  // ctor
 
@@ -163,33 +171,33 @@ namespace KDSService.AppModel
 
                 // *** СЛОВАРЬ БЛЮД  ***
                 // удалить блюда из внутр.модели заказа, которых уже нет в БД
-                //List<int> idDishList = dbOrder.OrderDish.Select(d => d.Id).ToList();  // все Id блюд из БД
-                //List<int> idForRemove = _dishesDict.Keys.Except(idDishList).ToList();  // Id блюд для удаления
-                //foreach (int idDish in idForRemove)
-                //{
-                //    _dishesDict[idDish].Dispose(); _dishesDict.Remove(idDish);
+                List<int> idDishList = dbOrder.OrderDish.Select(d => d.Id).ToList();  // все Id блюд из БД
+                List<int> idForRemove = _dishesDict.Keys.Except(idDishList).ToList();  // Id блюд для удаления
+                foreach (int idDish in idForRemove)
+                {
+                    _dishesDict[idDish].Dispose(); _dishesDict.Remove(idDish);
 
-                //}
+                }
 
-                //_isUpdStatusFromDishes = false;
-                //// обновить состояние или добавить блюда
-                //foreach (OrderDish dbDish in dbOrder.OrderDish)
-                //{
-                //    if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
-                //    {
-                //        // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
-                //        if (dbDish.ParentUid.IsNull())  // это блюдо
-                //        {
-                //            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
-                //        }
-                //    }
-                //    // иначе - добавить блюдо/ингр
-                //    else
-                //    {
-                //        OrderDishModel newDish = new OrderDishModel(dbDish, this);
-                //        this._dishesDict.Add(newDish.Id, newDish);
-                //    }
-                //}
+                _isUpdStatusFromDishes = false;
+                // обновить состояние или добавить блюда
+                foreach (OrderDish dbDish in dbOrder.OrderDish)
+                {
+                    if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
+                    {
+                        // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
+                        if (dbDish.ParentUid.IsNull())  // это блюдо
+                        {
+                            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
+                        }
+                    }
+                    // иначе - добавить блюдо/ингр
+                    else
+                    {
+                        OrderDishModel newDish = new OrderDishModel(dbDish, this);
+                        this._dishesDict.Add(newDish.Id, newDish);
+                    }
+                }
 
             }  // lock
         }  // method UpdateFromDBEntity
@@ -237,30 +245,28 @@ namespace KDSService.AppModel
                 StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
                 startStatusTimer(statusDTS);
 
-                // обновить уже существующие блюда
-                //if (isUpdateDishStatus)
-                //{
-                //    bool dishUpdSuccess = true;  // для получения результата обновления через AND
-                //    try
-                //    {
-                //        foreach (OrderDishModel modelDish in _dishesDict.Values)
-                //        {
-                //            if (modelDish.ParentUid.IsNull())  // только для блюд
-                //            {
-                //                // дату входа в состояние берем из заказа
-                //                StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
-                //                StatusDTS preStatusDTS = getStatusRunTimeDTS(preStatus);
-                //                dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, statusDTS.DateEntered, preStatusDTS.TimeStanding);
-                //            }
-                                
-                //        }
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.Message);
-                //        dishUpdSuccess = false;
-                //    }
-                //}
+                // обновить уже существующие блюда при внешнем изменении статуса заказа
+                if (isUpdateDishStatus)
+                {
+                    bool dishUpdSuccess = true;  // для получения результата обновления через AND
+                    try
+                    {
+                        foreach (OrderDishModel modelDish in _dishesDict.Values)
+                        {
+                            if (modelDish.ParentUid.IsNull())  // только для блюд
+                            {
+                                // дату входа в состояние берем из заказа, а время нахожд.в предыд.состоянии из самого блюда
+                                dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, statusDTS.DateEntered);
+                            }
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.Message);
+                        dishUpdSuccess = false;
+                    }
+                }
 
             }
         }  // method

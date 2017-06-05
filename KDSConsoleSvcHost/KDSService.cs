@@ -8,6 +8,7 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Text;
 using System.Timers;
+using System.Windows;
 
 namespace KDSService
 {
@@ -104,12 +105,10 @@ namespace KDSService
         // все заказы
         public List<OrderModel> GetOrders()
         {
-            //List<OrderModel> retVal = new List<OrderModel>();
-            //retVal.AddRange(_ordersModel.Orders.Values);
+            List<OrderModel> retVal = null;
+            retVal = _ordersModel.Orders.Values.ToList();
 
-            //return retVal;
-
-            return _ordersModel.Orders.Values.ToList();
+            return retVal;
         }
 
         public int GetExpectedTakeValue()

@@ -8,6 +8,7 @@ using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
 using System.Diagnostics;
+using System.ServiceModel;
 
 namespace KDSService.AppModel
 {
@@ -77,43 +78,52 @@ namespace KDSService.AppModel
         {
             get
             {
-                string retVal = null;
-                if (_curTimer != null)
+                string retVal = "***";
+                if ((_curTimer != null) && _curTimer.Enabled)
                 {
                     // время из текущего таймера
-                    TimeSpan tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
+                    TimeSpan tsTimerValue = TimeSpan.Zero;
+                    try
+                    {
+                        tsTimerValue = TimeSpan.FromSeconds(_curTimer.ValueTS);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new FaultException("Ошибка получения периода времени от таймера: " + ex.Message, new FaultCode("TimeCounter class"));
+                    }
 
-                    // состояние "Ожидание готовки"
-                    if (Status == OrderStatusEnum.WaitingCook)
+                    // для блюда сохраним значение текущего таймера
+                    if (_parentDish == null)
                     {
-                        // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
-                        if (DelayedStartTime != 0)
-                            tsTimerValue = TimeSpan.FromSeconds(Convert.ToInt32((_dtCookingStartEstimated - DateTime.Now).TotalSeconds));
-                        // иначе, если есть время приготовления, то отобразить время приготовления
-                        else if (EstimatedTime != 0)
-                            tsTimerValue = _tsCookingEstimated;
-                        else if (_parentDish != null)
-                            // для зависимого ингредиента взять значение из родительского блюда
-                            tsTimerValue = _parentDish._timerValue;
-                        else
-                            tsTimerValue = TimeSpan.Zero;
-                    }
-                    // состояние "В процессе" и есть время приготовления - отображаем время приготовления по убыванию
-                    else if ((Status == OrderStatusEnum.Cooking) && (EstimatedTime != 0))
-                    {
-                        tsTimerValue = _tsCookingEstimated - tsTimerValue;
-                    }
-                    // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
-                    else if (Status == OrderStatusEnum.Ready)
-                    {
-                        int expTake = (int)AppEnv.GetAppProperty("ExpectedTake");
-                        if (expTake > 0)
+                        // состояние "Ожидание готовки" - на клиенте, т.к. в этот состоянии все равно таймер не используется
+
+                        // состояние "В процессе" и есть время приготовления - отображаем время приготовления по убыванию
+                        if (Status == OrderStatusEnum.Cooking)
                         {
-                            tsTimerValue = TimeSpan.FromSeconds(expTake) - tsTimerValue;
+                            tsTimerValue = _tsCookingEstimated - tsTimerValue;
                         }
-                    }
 
-                    if (_parentDish == null) _timerValue = tsTimerValue;  // для блюда сохраним значение текущего таймера
+                        // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
+                        else if (Status == OrderStatusEnum.Ready)
+                        {
+                            int expTake = (int)AppEnv.GetAppProperty("ExpectedTake");
+                            if (expTake > 0)
+                            {
+                                tsTimerValue = TimeSpan.FromSeconds(expTake) - tsTimerValue;
+                            }
+                        }
+
+                        _timerValue = tsTimerValue;
+                    }
+                    // для зависимого ингредиента взять значение из родительского блюда
+                    else
+                    {
+                        if (Status == OrderStatusEnum.WaitingCook)
+                            tsTimerValue = TimeSpan.Zero;
+                        else
+                            tsTimerValue = _parentDish._timerValue;
+                    }
+                        
 
                     // преобразование времени в строку
                     if (tsTimerValue == TimeSpan.Zero)
@@ -143,10 +153,8 @@ namespace KDSService.AppModel
 
         #region Fields
         private DepartmentModel _department;
-
-        // поля дат состояний и временных промежутков
-        private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
         private TimeSpan _tsCookingEstimated;   // время приготовления
+
         // накопительные счетчики нахождения в конкретном состоянии
         private Dictionary<OrderStatusEnum, TimeCounter> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
         private TimeCounter _curTimer;  // текущий таймер для выдачи клиенту значения таймера
@@ -190,11 +198,7 @@ namespace KDSService.AppModel
 
             // объект отдела взять из справочника
             _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-
-            // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
-            _dtCookingStartEstimated = CreateDate.AddSeconds(DelayedStartTime);
-            // время приготовления
-            _tsCookingEstimated = (EstimatedTime == 0) ? TimeSpan.Zero : TimeSpan.FromSeconds(EstimatedTime);
+            _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
             // словарь дат входа в состояние
             _dtEnterStatusDict = new Dictionary<OrderStatusEnum, DateTime>();
@@ -226,6 +230,7 @@ namespace KDSService.AppModel
                     dtEnterState = DateTime.Now;
                     setStatusRunTimeDTS(this.Status, dtEnterState, -1);
                     saveRunTimeRecord();
+                    statusDTS = getStatusRunTimeDTS(this.Status);
                 }
                 startStatusTimer(statusDTS);
             }
@@ -263,8 +268,15 @@ namespace KDSService.AppModel
                 if (ParentUid != dbDish.ParentUid) ParentUid = dbDish.ParentUid;
                 if (Comment != dbDish.Comment) Comment = dbDish.Comment;
                 if (Quantity != dbDish.Quantity) Quantity = dbDish.Quantity;
+
+                // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
                 if (DelayedStartTime != dbDish.DelayedStartTime) DelayedStartTime = dbDish.DelayedStartTime;
-                if (EstimatedTime != dbDish.EstimatedTime) EstimatedTime = dbDish.EstimatedTime;
+                // время приготовления
+                if (EstimatedTime != dbDish.EstimatedTime)
+                {
+                    EstimatedTime = dbDish.EstimatedTime;
+                    _tsCookingEstimated = TimeSpan.FromSeconds(EstimatedTime);
+                }
 
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
@@ -272,7 +284,8 @@ namespace KDSService.AppModel
                 if (_isDish || (!_isDish && _isInrgIndepend))
                 {
                     // проверяем условие автоматического перехода в режим приготовления
-                    if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus()) newStatus = OrderStatusEnum.Cooking;
+                    if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
+                        newStatus = OrderStatusEnum.Cooking;
 
                     // если поменялся отдел
                     if (_department.Id != dbDish.DepartmentId)
@@ -331,7 +344,7 @@ namespace KDSService.AppModel
 
                     // **** запись или в RunTimeRecord или в ReturnTable
                     StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
-                    if (statusDTS.DateEntered.IsZero())  // возв. true, если поле == null
+                    if (statusDTS.DateEntered.IsZero())
                     {
                         // сохраняем дату входа в новое состояние
                         setStatusRunTimeDTS(this.Status, dtEnterToNewStatus, -1);
@@ -340,10 +353,16 @@ namespace KDSService.AppModel
 
                         saveRunTimeRecord();
                     }
-                    // создать новую запись в Return table
+                    // возврат в предыдущие состояния, создать новую запись в Return table
                     else
                     {
-                        saveReturnTimeRecord(this.Status, newStatus, dtEnterToNewStatus, secondsInPrevState);
+                        saveReturnTimeRecord(preStatus, newStatus, dtEnterToNewStatus, secondsInPrevState);
+                        // при возврате из Ready в Cooking обнулять в RunTime-record дату входа в состояние Ready
+                        // чтобы при следующем входе в Ready таймер ожидания выноса начал считаться с периода ExpectedTake
+                        if ((preStatus == OrderStatusEnum.Ready) && (newStatus == OrderStatusEnum.Cooking))
+                        {
+                            _dbRunTimeRecord.ReadyDate = DateTime.MinValue;
+                        }
                     }
 
                     // запуск таймера для нового состояния
@@ -351,6 +370,7 @@ namespace KDSService.AppModel
                     startStatusTimer(statusDTS);
 
                     // если это блюдо
+
                     if (_isDish)
                     {
                         if (!_isInrgIndepend) updateChildIngredients(dtEnterToNewStatus, secondsInPrevState);
@@ -653,7 +673,9 @@ namespace KDSService.AppModel
         private bool canAutoPassToCookingStatus()
         {
             // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
-            bool retVal = (this.Department.IsAutoStart && (DateTime.Now >= _dtCookingStartEstimated));
+            bool retVal = (this.Department.IsAutoStart 
+                && (this.DelayedStartTime > 0) 
+                && (DateTime.Now >= this.CreateDate.AddSeconds(this.DelayedStartTime)));
 
             // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
             if (retVal == true)

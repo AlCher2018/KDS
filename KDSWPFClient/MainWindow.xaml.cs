@@ -245,7 +245,7 @@ namespace KDSWPFClient
 
                 _delDishIds.ForEach(key => orderMode.Dishes.Remove(key)); // удалить неразрешенные блюда
 
-                //if (orderMode.Dishes.Count == 0) _delOrderIds.Add(orderMode);
+                if (orderMode.Dishes.Count == 0) _delOrderIds.Add(orderMode);
             }
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));

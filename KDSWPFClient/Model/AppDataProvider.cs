@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ServiceModel;
 using System.Diagnostics;
+using System.Windows;
 
 namespace KDSWPFClient
 {
@@ -128,7 +129,11 @@ namespace KDSWPFClient
 
         public List<OrderModel> GetOrders()
         {
-            //if (_getClient.State == CommunicationState.Faulted) _getClient = new KDSServiceClient();
+            if (_getClient.State == CommunicationState.Faulted)
+            {
+                _getClient = new KDSServiceClient();
+                bool isIngrIndepend = _getClient.GetIsIngredientsIndependent();
+            }
 
             List<OrderModel> retVal = null;
             try
@@ -137,6 +142,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
+                MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", ex.Message), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
             }
 

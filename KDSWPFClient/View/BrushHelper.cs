@@ -34,16 +34,16 @@ namespace KDSWPFClient.View
                     new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", Background=Brushes.Plum, Foreground = Brushes.Navy, LegendText = "00:00:00"} },
 
                 { OrderStatusEnum.Cooking.ToString(),
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления", Background=Brushes.Green, Foreground = Brushes.White, LegendText="00:00:00" } },
+                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", Background=Brushes.Green, Foreground = Brushes.Yellow, LegendText="00:00:00" } },
 
                 { OrderStatusEnum.Cooking.ToString()+"minus",
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", Background=Brushes.Green, Foreground = Brushes.Red, LegendText="-00:00:00" } },
+                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", Background=Brushes.Green, Foreground = Brushes.LightSalmon, LegendText="-00:00:00" } },
 
                 { OrderStatusEnum.Ready.ToString(),
                     new View.BrushesPair() {Name="Отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Black, LegendText="00:00:00" } },
 
                 { OrderStatusEnum.Ready.ToString()+"minus",
-                    new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Black, LegendText="-00:00:00" } },
+                    new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Red, LegendText="-00:00:00" } },
 
                 { OrderStatusEnum.Cancelled.ToString(),
                     new View.BrushesPair() {Name="Блюдо/заказ ОТМЕНЕНО", Background=Brushes.Salmon, Foreground = Brushes.Black} },

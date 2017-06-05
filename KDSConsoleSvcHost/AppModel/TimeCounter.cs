@@ -22,8 +22,22 @@ namespace KDSService.AppModel
         {
             get
             {
-                int retVal = Convert.ToInt32((DateTime.Now - _dtStart).TotalSeconds);
-                if (_increment != 0) retVal += _increment;
+                int retVal = 0;
+                if (!_dtStart.IsZero())
+                {
+                    try
+                    {
+                        retVal = Convert.ToInt32((DateTime.Now - _dtStart).TotalSeconds);
+                        if (_increment != 0) retVal += _increment;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new NotFiniteNumberException(string.Format("Класс TimeCounter: Не могу преобразовать период времени в секунды ({0})", ex.Message));
+                    }
+                }
+                else
+                    throw new NotFiniteNumberException("Класс TimeCounter: Не задана начальная дата для получения периода времени");
+
                 return  retVal;
             }
         }
@@ -45,11 +59,13 @@ namespace KDSService.AppModel
 
         public void Start(int increment = 0)
         {
+            _dtStop = DateTime.MinValue;
             _dtStart = DateTime.Now;
             _increment = increment;
         }
         public void Start(DateTime initDate, int increment = 0)
         {
+            _dtStop = DateTime.MinValue;
             _dtStart = initDate;
             _increment = increment;
         }
