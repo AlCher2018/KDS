@@ -18,7 +18,10 @@ namespace KDSWPFClient.Model
 
         static KDSModeHelper()
         {
+            bool useReadyConfirmedState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+
             // повар
+            #region Повар
             KDSModeStates modeCook = new KDSModeStates() { KDSMode = KDSModeEnum.Cook };
             modeCook.AllowedStates.AddRange(new OrderStatusEnum[] 
             {
@@ -30,34 +33,70 @@ namespace KDSWPFClient.Model
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.Ready)
             });
             modeCook.CreateUserStateSets();
+            #endregion
 
             // шеф-повар
+            #region Шеф-повар
             KDSModeStates modeChef = new KDSModeStates() { KDSMode = KDSModeEnum.Chef };
             modeChef.AllowedStates.AddRange(new[]
             {
                 OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking, OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
             });
-            modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
+            if (useReadyConfirmedState)
             {
+                modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
+                {
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.ReadyConfirmed),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Cooking),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.ReadyConfirmed),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Cooking),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled, OrderStatusEnum.CancelConfirmed),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Took)
+                });
+            }
+            else
+            {
+                modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
+                {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.Ready),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Cooking),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled, OrderStatusEnum.CancelConfirmed),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took)
-            });
+                });
+            }
             modeChef.CreateUserStateSets();
+            #endregion
 
             // официант
+            #region Официант
             KDSModeStates modeWaiter = new KDSModeStates() { KDSMode = KDSModeEnum.Waiter };
-            modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[] 
+            if (useReadyConfirmedState)
             {
+                modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
+                {
+                OrderStatusEnum.ReadyConfirmed
+                });
+                modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
+                {
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Took)
+                });
+            }
+            else
+            {
+                modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
+                {
                 OrderStatusEnum.Ready
-            });
-            modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
-            {
+                });
+                modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
+                {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took)
-            });
+                });
+            }
             modeWaiter.CreateUserStateSets();
+            #endregion
 
             // особая роль
             KDSModeStates modeSpecial = new KDSModeStates() { KDSMode = KDSModeEnum.Special };

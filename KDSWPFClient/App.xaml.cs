@@ -53,8 +53,9 @@ namespace KDSWPFClient
                 Environment.Exit(1);
             }
             AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService... Ok");
-            // и получить словари
-            AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService...");
+            
+            // и получить словари и настройки от службы
+            AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService...");
             if (dataProvider.SetDictDataFromService() == false)
             {
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
@@ -62,8 +63,12 @@ namespace KDSWPFClient
                 MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 Environment.Exit(2);
             }
-            AppLib.WriteLogTraceMessage("Получаю словари от службы KDSService... Ok");
+            AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService... Ok");
             AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
+
+            // прочитать из config-а и сохранить в свойствах приложения режим КДС
+            // после открытия канала к сервису, т.к. здесь используются значения, полученные от службы и сохраненные в св-вах приложения
+            KDSModeHelper.PutCfgKDSModeToAppProps();
 
             // основное окно приложения
             MainWindow mainWindow = new MainWindow();
@@ -118,9 +123,6 @@ namespace KDSWPFClient
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
 
-
-            // прочитать из config-а и сохранить в свойствах приложения режим КДС
-            KDSModeHelper.PutCfgKDSModeToAppProps();
 
             // режим ингредиента: 
             // - подчиненный блюду, т.е. переходит из состояния в состояние только вместе с блюдом, отображается только вместе с блюдом, 

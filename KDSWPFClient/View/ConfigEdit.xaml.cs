@@ -56,9 +56,9 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", false, tbxOrdersColumnsCount);
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
             // получить от службы
-            AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
-            int expTake = dataProvider.GetExpectedTakeValue();
-            _cfgValKeeper.AddPreValueDirectly("ExpectedTake", expTake.ToString(), tbTimerExpectedTake);
+            //AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            //int expTake = dataProvider.GetExpectedTakeValue();
+            //_cfgValKeeper.AddPreValueDirectly("ExpectedTake", expTake.ToString(), tbTimerExpectedTake);
             
             bool isDefault = true;
             if (AppLib.GetAppGlobalValue("KDSMode") != null)

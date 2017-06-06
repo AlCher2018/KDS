@@ -92,6 +92,12 @@
   <wsdl:message name="IKDSService_GetOrders_OutputMessage">
     <wsdl:part name="parameters" element="tns:GetOrdersResponse" />
   </wsdl:message>
+  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependent" />
+  </wsdl:message>
+  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependentResponse" />
+  </wsdl:message>
   <wsdl:message name="IKDSService_GetExpectedTakeValue_InputMessage">
     <wsdl:part name="parameters" element="tns:GetExpectedTakeValue" />
   </wsdl:message>
@@ -104,11 +110,11 @@
   <wsdl:message name="IKDSService_SetExpectedTakeValue_OutputMessage">
     <wsdl:part name="parameters" element="tns:SetExpectedTakeValueResponse" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_InputMessage">
-    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependent" />
+  <wsdl:message name="IKDSService_GetUseReadyConfirmedState_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetUseReadyConfirmedState" />
   </wsdl:message>
-  <wsdl:message name="IKDSService_GetIsIngredientsIndependent_OutputMessage">
-    <wsdl:part name="parameters" element="tns:GetIsIngredientsIndependentResponse" />
+  <wsdl:message name="IKDSService_GetUseReadyConfirmedState_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetUseReadyConfirmedStateResponse" />
   </wsdl:message>
   <wsdl:message name="IKDSCommandService_ChangeOrderStatus_InputMessage">
     <wsdl:part name="parameters" element="tns:ChangeOrderStatus" />
@@ -135,6 +141,10 @@
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrders" message="tns:IKDSService_GetOrders_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetOrdersResponse" message="tns:IKDSService_GetOrders_OutputMessage" />
     </wsdl:operation>
+    <wsdl:operation name="GetIsIngredientsIndependent">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" message="tns:IKDSService_GetIsIngredientsIndependent_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse" message="tns:IKDSService_GetIsIngredientsIndependent_OutputMessage" />
+    </wsdl:operation>
     <wsdl:operation name="GetExpectedTakeValue">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetExpectedTakeValue" message="tns:IKDSService_GetExpectedTakeValue_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetExpectedTakeValueResponse" message="tns:IKDSService_GetExpectedTakeValue_OutputMessage" />
@@ -143,9 +153,9 @@
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/SetExpectedTakeValue" message="tns:IKDSService_SetExpectedTakeValue_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse" message="tns:IKDSService_SetExpectedTakeValue_OutputMessage" />
     </wsdl:operation>
-    <wsdl:operation name="GetIsIngredientsIndependent">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" message="tns:IKDSService_GetIsIngredientsIndependent_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse" message="tns:IKDSService_GetIsIngredientsIndependent_OutputMessage" />
+    <wsdl:operation name="GetUseReadyConfirmedState">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetUseReadyConfirmedState" message="tns:IKDSService_GetUseReadyConfirmedState_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSService/GetUseReadyConfirmedStateResponse" message="tns:IKDSService_GetUseReadyConfirmedState_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:portType name="IKDSCommandService">
@@ -189,6 +199,15 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
+    <wsdl:operation name="GetIsIngredientsIndependent">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="GetExpectedTakeValue">
       <soap12:operation soapAction="http://tempuri.org/IKDSService/GetExpectedTakeValue" style="document" />
       <wsdl:input>
@@ -207,8 +226,8 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="GetIsIngredientsIndependent">
-      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependent" style="document" />
+    <wsdl:operation name="GetUseReadyConfirmedState">
+      <soap12:operation soapAction="http://tempuri.org/IKDSService/GetUseReadyConfirmedState" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>

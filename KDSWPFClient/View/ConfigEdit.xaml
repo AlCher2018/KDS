@@ -159,11 +159,11 @@
             </StackPanel>
 
             <!-- время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах -->
-            <StackPanel  Margin="0" Orientation="Horizontal">
+            <!--<StackPanel  Margin="0" Orientation="Horizontal">
                 <TextBlock Text="время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо):  "/>
                 <cavCtl:NumericUpDown x:Name="tbTimerExpectedTake" Minimum="10" Maximum="300" Value="10" Increment="5" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
                 <TextBlock Text="сек"/>
-            </StackPanel>
+            </StackPanel>-->
 
             <!-- масштаб шрифта -->
             <StackPanel Margin="0,5" Orientation="Horizontal">

@@ -12,6 +12,7 @@ namespace KDSWPFClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
     using Lib;
+    using View;
 
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
@@ -203,8 +204,7 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
-    {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -393,8 +393,7 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
-    {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -670,6 +669,9 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
         CancelConfirmed = 6,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ReadyConfirmed = 7,
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -694,6 +696,12 @@ namespace KDSWPFClient.ServiceReference1 {
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync();
         
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
+        bool GetIsIngredientsIndependent();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
+        System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync();
+        
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/GetExpectedTakeValueResponse")]
         int GetExpectedTakeValue();
         
@@ -706,11 +714,11 @@ namespace KDSWPFClient.ServiceReference1 {
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
         System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
-        bool GetIsIngredientsIndependent();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetUseReadyConfirmedState", ReplyAction="http://tempuri.org/IKDSService/GetUseReadyConfirmedStateResponse")]
+        bool GetUseReadyConfirmedState();
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetIsIngredientsIndependent", ReplyAction="http://tempuri.org/IKDSService/GetIsIngredientsIndependentResponse")]
-        System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetUseReadyConfirmedState", ReplyAction="http://tempuri.org/IKDSService/GetUseReadyConfirmedStateResponse")]
+        System.Threading.Tasks.Task<bool> GetUseReadyConfirmedStateAsync();
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -764,6 +772,14 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.GetOrdersAsync();
         }
         
+        public bool GetIsIngredientsIndependent() {
+            return base.Channel.GetIsIngredientsIndependent();
+        }
+        
+        public System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync() {
+            return base.Channel.GetIsIngredientsIndependentAsync();
+        }
+        
         public int GetExpectedTakeValue() {
             return base.Channel.GetExpectedTakeValue();
         }
@@ -780,12 +796,12 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.SetExpectedTakeValueAsync(value);
         }
         
-        public bool GetIsIngredientsIndependent() {
-            return base.Channel.GetIsIngredientsIndependent();
+        public bool GetUseReadyConfirmedState() {
+            return base.Channel.GetUseReadyConfirmedState();
         }
         
-        public System.Threading.Tasks.Task<bool> GetIsIngredientsIndependentAsync() {
-            return base.Channel.GetIsIngredientsIndependentAsync();
+        public System.Threading.Tasks.Task<bool> GetUseReadyConfirmedStateAsync() {
+            return base.Channel.GetUseReadyConfirmedStateAsync();
         }
     }
     

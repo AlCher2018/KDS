@@ -82,7 +82,7 @@ namespace KDSWPFClient.View
         //*******************************************
         public void AddOrderPanel(OrderViewModel orderModel)
         {
-            OrderPanel ordPnl; DishPanel dshPnl;
+            OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
             double ordTop;  // хранит TOP заказа
             double curLineHeight;
 
@@ -121,6 +121,8 @@ namespace KDSWPFClient.View
                 }
 
                 dshPnl = new DishPanel(dishModel);
+                if (dshPnl.IsDish) curDshPnl = dshPnl;
+                else dshPnl.ParentPanel = curDshPnl;
                 ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
 
                 curLineHeight = Math.Round(dshPnl.DesiredSize.Height); // получить высоту строки блюда

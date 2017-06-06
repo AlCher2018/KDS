@@ -118,6 +118,7 @@ namespace KDSWPFClient
 
             _adminTimer = new Timer() { Interval = 4000d, AutoReset = false };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
+
         }
 
 
@@ -250,6 +251,7 @@ namespace KDSWPFClient
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
+
             // *** СОРТИРОВКА ЗАКАЗОВ  ***
             // группировка и сортировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
@@ -286,6 +288,7 @@ namespace KDSWPFClient
                 svcOrders = svcOrders.OrderBy(o => o.CreateDate).ThenBy(o => o.Id).ToList();
             }
 
+
             // после реорганизации списка блюд: группировка по подачам и сортировка по Ид блюда (порядок записи в БД)
             bool isFilingGroup = true;  // группировка по подачам
             Dictionary<int,OrderDishModel> sortedDishes;
@@ -298,10 +301,6 @@ namespace KDSWPFClient
                     sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.Id select dish).ToDictionary(d => d.Id);
                 orderModel.Dishes = sortedDishes;
             }
-
-
-            //Debug.Print("orders {0}", svcOrders.Count);
-            //svcOrders.ForEach(o => Debug.Print("   order id {0}, dishes {1}", o.Id, o.Dishes.Count));
 
 
             // *****
@@ -319,14 +318,10 @@ namespace KDSWPFClient
         {
             if (_pages == null) return;
 
-            DateTime dt = DateTime.Now;
             _pages.ClearPages(); // очистить панели заказов
-            Debug.Print("CLEAR orders - {0}", DateTime.Now - dt);
 
             // добавить заказы
-            dt = DateTime.Now;
             _pages.AddOrdersPanels(_viewOrders);
-            Debug.Print("CREATE orders - {0}", DateTime.Now - dt);
 
             setCurrentPage();
         }
@@ -695,10 +690,20 @@ namespace KDSWPFClient
             openConfigPanel();
         }
 
-        private void btnColorsLegend_Click(object sender, RoutedEventArgs e)
+
+        private void btnColorsLegend_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            ColorLegend legend = new ColorLegend();
-            legend.ShowDialog();
+            bool isLegendOpen = false;
+            foreach (Window win in App.Current.Windows)
+            {
+                if (win is ColorLegend) { win.Close(); isLegendOpen = true; break; }
+            }
+            if (!isLegendOpen)
+            {
+                ColorLegend legend = new ColorLegend();
+                legend.ShowDialog();
+            }
         }
+
     }  // class MainWindow
 }

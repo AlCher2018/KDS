@@ -38,7 +38,7 @@
                     <!-- 2. количество -->
                     <ColumnDefinition Width="0.3*"/>
                     <!-- 3. таймер состояния -->
-                    <ColumnDefinition Width="0.7*"/>
+                    <ColumnDefinition Width="0.8*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="№" Grid.Column="0"/>
                 <TextBlock Text="Блюдо" Grid.Column="1"/>

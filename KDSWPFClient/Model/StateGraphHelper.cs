@@ -73,6 +73,12 @@ namespace KDSWPFClient.Model
                     btnText1 = "ПОДТВЕРДИТЬ ОТМЕНУ";
                     btnText2 = string.Format("Подтвердить отмену приготовления {0}", (isOrder ? "заказа" : "блюда"));
                     break;
+
+                case OrderStatusEnum.ReadyConfirmed:
+                    btnText1 = "ПОДТВЕРДИТЬ ГОТОВНОСТЬ";
+                    btnText2 = string.Format("Подтвердить готовность {0}", (isOrder ? "заказа" : "блюда"));
+                    break;
+
                 default:
                     break;
             }
@@ -87,25 +93,28 @@ namespace KDSWPFClient.Model
                 case OrderStatusEnum.None:
                     break;
                 case OrderStatusEnum.WaitingCook:
-                    retVal = "ожидает начала приготовления";
+                    retVal = "ОЖИДАЕТ начала приготовления";
                     break;
                 case OrderStatusEnum.Cooking:
-                    retVal = "находится в процессе приготовления";
+                    retVal = "находится В ПРОЦЕССЕ приготовления";
                     break;
                 case OrderStatusEnum.Ready:
-                    retVal = (isOrder) ? "готов к выдаче" : "готово к выдаче";
+                    retVal = (isOrder) ? "ГОТОВ к выдаче" : "ГОТОВО к выдаче";
                     break;
                 case OrderStatusEnum.Took:
-                    retVal = (isOrder) ? "выдан клиенту" : "выдано клиенту";
+                    retVal = (isOrder) ? "ВЫДАН клиенту" : "ВЫДАНО клиенту";
                     break;
                 case OrderStatusEnum.Cancelled:
-                    retVal = (isOrder) ? "отменен" : "отменено";
+                    retVal = (isOrder) ? "ОТМЕНЕН" : "ОТМЕНЕНО";
                     break;
                 case OrderStatusEnum.Commit:
-                    retVal = (isOrder) ? "зафиксирован" : "зафиксировано";
+                    retVal = (isOrder) ? "ЗАФИКСИРОВАН" : "ЗАФИКСИРОВАНО";
                     break;
                 case OrderStatusEnum.CancelConfirmed:
-                    retVal = "ожидает подтверждения отмены";
+                    retVal = "ожидает подтверждения ОТМЕНЫ";
+                    break;
+                case OrderStatusEnum.ReadyConfirmed:
+                    retVal = "ожидает подтверждения ГОТОВНОСТИ";
                     break;
                 default:
                     break;
@@ -143,6 +152,9 @@ namespace KDSWPFClient.Model
                     break;
                 case OrderStatusEnum.CancelConfirmed:
                     retVal = "Отмена подтверждена";
+                    break;
+                case OrderStatusEnum.ReadyConfirmed:
+                    retVal = "Готовность подтверждена";
                     break;
                 default:
                     break;

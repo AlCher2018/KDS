@@ -45,7 +45,7 @@
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
 
-                <Button x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top"  MouseDoubleClick ="btnColorsLegend_Click">
+                <Button x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top" PreviewMouseDown ="btnColorsLegend_Click" MouseDoubleClick="btnColorsLegend_Click">
                     <Button.Template>
                         <ControlTemplate TargetType="ButtonBase">
                             <Border VerticalAlignment="Stretch" BorderBrush="LightGray" BorderThickness="1" Background="Transparent">

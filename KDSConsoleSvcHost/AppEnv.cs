@@ -34,8 +34,10 @@ namespace KDSConsoleSvcHost
 
             WriteLogInfoMessage("**** Инициализация приложения ****");
 
+            // 
+            putAppConfigParamsToAppProperties();
+
             // вывести в лог настройки из config-файла
-            getAppPropertiesFromConfigFile();
             string cfgValuesString = getConfigString();
             WriteLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
 
@@ -86,6 +88,7 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
             putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
+            putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
 
             return sb.ToString();
         }
@@ -95,7 +98,8 @@ namespace KDSConsoleSvcHost
             if ((value = cfg[key]) != null) sb.Append(string.Format("{0}{1}: {2}", (sb.Length == 0 ? "" : "; "), key, value));
         }
 
-        private static void getAppPropertiesFromConfigFile()
+        // сложить настройки из config-файла в словарь настроек приложения
+        private static void putAppConfigParamsToAppProperties()
         {
             NameValueCollection cfg = ConfigurationManager.AppSettings;
             string value;
@@ -105,11 +109,15 @@ namespace KDSConsoleSvcHost
             if ((value = cfg["IsLogUserAction"]) != null)
                 _props.SetProperty("IsLogUserAction", value.ToBool());
 
+            // IsIngredientsIndependent - режим ингредиента: зависимый от блюда или независимый
+            _props.SetProperty("IsIngredientsIndependent", cfg["IsIngredientsIndependent"].ToBool());
+
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
             _props.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
 
-            // IsIngredientsIndependent - режим ингредиента: зависимый от блюда или независимый
-            _props.SetProperty("IsIngredientsIndependent", cfg["IsIngredientsIndependent"].ToBool());
+            // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
+            _props.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
+
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)

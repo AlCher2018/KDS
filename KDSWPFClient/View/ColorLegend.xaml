@@ -25,7 +25,7 @@
             <Setter Property="Width" Value="{Binding ElementName=lstLegend, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.98}"/>
             <Setter Property="BorderBrush" Value="DarkGray"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Padding" Value="10,5"/>
         </Style>
         
         <Style x:Key="descrTextStyle" TargetType="TextBlock">

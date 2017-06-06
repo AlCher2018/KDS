@@ -24,14 +24,20 @@ namespace KDSService
         [OperationContract]
         List<OrderModel> GetOrders();
 
-        // глобальный параметр ExpectedTake
+        // *** ПОЛУЧИТЬ НАСТРОЙКИ ИЗ CONFIG-ФАЙЛА ХОСТА ***
+        // - являются ли ингредиенты независимыми?
+        [OperationContract]
+        bool GetIsIngredientsIndependent();
+
+        // - планируемое время выноса блюда (ExpectedTake)
         [OperationContract]
         int GetExpectedTakeValue();
-
         [OperationContract]
         void SetExpectedTakeValue(int value);
 
+        // - надо ли подтверждать состояние ГОТОВ (состояние ReadyConfirmed)
         [OperationContract]
-        bool GetIsIngredientsIndependent();
-    }
+        bool GetUseReadyConfirmedState();
+
+    }  // class
 }

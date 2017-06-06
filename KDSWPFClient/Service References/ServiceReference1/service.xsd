@@ -37,6 +37,18 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+  <xs:element name="GetIsIngredientsIndependent">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetIsIngredientsIndependentResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetIsIngredientsIndependentResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
   <xs:element name="GetExpectedTakeValue">
     <xs:complexType>
       <xs:sequence />
@@ -61,15 +73,15 @@
       <xs:sequence />
     </xs:complexType>
   </xs:element>
-  <xs:element name="GetIsIngredientsIndependent">
+  <xs:element name="GetUseReadyConfirmedState">
     <xs:complexType>
       <xs:sequence />
     </xs:complexType>
   </xs:element>
-  <xs:element name="GetIsIngredientsIndependentResponse">
+  <xs:element name="GetUseReadyConfirmedStateResponse">
     <xs:complexType>
       <xs:sequence>
-        <xs:element minOccurs="0" name="GetIsIngredientsIndependentResult" type="xs:boolean" />
+        <xs:element minOccurs="0" name="GetUseReadyConfirmedStateResult" type="xs:boolean" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>

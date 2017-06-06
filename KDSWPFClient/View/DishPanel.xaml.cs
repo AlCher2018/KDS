@@ -39,8 +39,16 @@ namespace KDSWPFClient.View
         private bool _negativeTimer;
         private string _waitCookBrushesName;
 
-        public 
+        public bool IsDish { get { return _isDish; } }
 
+        private DishPanel _parentPanel;
+        public DishPanel ParentPanel
+        { get { return _parentPanel; }
+          set {
+                _parentPanel = value;
+                _waitCookBrushesName = getWaitCookBrushesName();
+            }
+        }
 
         public DishPanel(OrderDishViewModel dishView)
         {
@@ -124,12 +132,18 @@ namespace KDSWPFClient.View
             return !_dishView.WaitingTimerString.IsNull() && _dishView.WaitingTimerString.StartsWith("-");
         }
 
-        // кисти для режима ожидания
+        // кисти для РЕЖИМА ОЖИДАНИЯ, а также значение таймера
         private string getWaitCookBrushesName()
         {
             string retVal = StatusEnum.WaitingCook.ToString();
 
-            if (!_isDish) { _timerString = _parentDishPanel.TimerString; return retVal; }
+            // для ингредиент берем значение таймера от родителя
+            if (!_isTimerBrushesChanging && (_parentPanel != null))
+            {
+                _timerString = _parentPanel.TimerString;
+                _dishView.WaitingTimerString = _timerString;
+                return retVal;
+            }
 
             // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
             if (_dishView.DelayedStartTime != 0)
@@ -137,10 +151,16 @@ namespace KDSWPFClient.View
                 TimeSpan ts = _dtCookingStartEstimated - DateTime.Now;
                 retVal = "estimateStart";
                 _timerString = AppLib.GetAppStringTS(ts);
-                if ((ts.Ticks < 0) && (_dishView.EstimatedTime != 0))
+                if (ts.Ticks < 0)
                 {
-                    retVal = "estimateCook";
-                    _timerString = _strCookingEstimated;
+                    if (_dishView.EstimatedTime > 0)
+                    {
+                        retVal = "estimateCook"; _timerString = _strCookingEstimated;
+                    }
+                    else
+                    {
+                        retVal = StatusEnum.WaitingCook.ToString(); _timerString = "";
+                    }
                 }
             }
             // если есть время приготовления, то отобразить время приготовления
@@ -161,7 +181,8 @@ namespace KDSWPFClient.View
         // изменение свойств блюда - обновить кисти
         private void DishView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (!_isTimerBrushesChanging) return;
+            if ((e.PropertyName == "CreateDate") || (e.PropertyName == "DelayedStartTime"))
+                _dtCookingStartEstimated = _dishView.CreateDate.AddSeconds(_dishView.DelayedStartTime);
 
             // поменялся статус - однозначно меняем кисти
             if (e.PropertyName == "Status") setTimerBrushes();
@@ -189,6 +210,8 @@ namespace KDSWPFClient.View
         // установка кистей при изменении состоянию блюда
         private void setTimerBrushes()
         {
+            if (!_isTimerBrushesChanging) return;
+
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
             StatusEnum status = _dishView.Status;
             BrushesPair brPair = null;

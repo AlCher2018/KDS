@@ -278,15 +278,7 @@ namespace KDSService.AppModel
             if (_tsTimersDict.ContainsKey(this.Status))
             {
                 _curTimer = _tsTimersDict[this.Status];
-
-                // для некоторых состояний таймер с инкрементом!
-                //if ((this.Status == OrderStatusEnum.WaitingCook) || (this.Status == OrderStatusEnum.Cooking))
-                //{
-                //    int tsSeconds = statusDTS.TimeStanding;
-                //    _curTimer.Start(dtEnterToStatus, tsSeconds);  // с инкрементом
-                //}
-                //else
-                    _curTimer.Start(dtEnterToStatus);          // с текущего времени
+                _curTimer.Start(dtEnterToStatus);
             }
         }
 

@@ -15,6 +15,7 @@ namespace KDSWPFClient.ViewModel
         Took = 3,
         Cancelled = 4,
         Commit = 5,
-        CancelConfirmed = 6
+        CancelConfirmed = 6,
+        ReadyConfirmed = 7
     }
 }

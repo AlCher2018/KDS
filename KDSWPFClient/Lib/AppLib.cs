@@ -13,6 +13,7 @@ using KDSWPFClient.ServiceReference1;
 using System.Xml.Linq;
 using System.Windows.Media;
 using KDSWPFClient.ViewModel;
+using KDSWPFClient.View;
 
 namespace KDSWPFClient.Lib
 {
@@ -423,6 +424,21 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        public static bool IsOpenWindow(string typeName, string objName = null)
+        {
+            bool retVal = false;
+            foreach (Window win in App.Current.Windows)
+            {
+                if ((win.GetType().Name.Equals(typeName)) && (string.IsNullOrEmpty(objName) ? true : win.Name.Equals(objName)))
+                {
+                    retVal = (win.Visibility == Visibility.Visible);
+                    break;
+                }
+            }
+
+            return retVal;
+        }
+
         #endregion
 
 
@@ -475,7 +491,7 @@ namespace KDSWPFClient.Lib
             double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
             // где, koef = доля поля от ширины колонки
-            double koef = 0.2;
+            double koef = 0.15d;
             double colWidth = Math.Floor(screenWidth / (cntCols + koef * (cntCols + 1)));
             double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
             AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
@@ -484,7 +500,7 @@ namespace KDSWPFClient.Lib
             //   отступ сверху/снизу для панели заказов
             AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
             //   отступ между заказами по вертикали
-            AppLib.SetAppGlobalValue("ordPnlTopMargin", colMargin);
+            AppLib.SetAppGlobalValue("ordPnlTopMargin", 1.5d * colMargin);
         }
 
 
@@ -583,25 +599,4 @@ namespace KDSWPFClient.Lib
 
 
     }  // class
-
-    public interface IJoinSortedCollection<T>: IContainIDField
-    {
-        int Index { get; set; }
-
-        void FillDataFromServiceObject(T sourceObject, int index = 1);
-
-        void UpdateFromSvc(T sourceObject);
-    }
-
-    public interface IContainIDField
-    {
-        int Id { get; set; }
-    }
-
-    public interface IContainInnerCollection
-    {
-        bool IsInnerListUpdated { get; }
-    }
-
-
 }

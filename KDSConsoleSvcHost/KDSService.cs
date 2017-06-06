@@ -111,9 +111,17 @@ namespace KDSService
             return retVal;
         }
 
+        // **** настройки из config-файла хоста
+        public bool GetIsIngredientsIndependent()
+        {
+            var v1 = AppEnv.GetAppProperty("IsIngredientsIndependent");
+            return (v1 == null)? false : (bool)v1;
+        }
+
         public int GetExpectedTakeValue()
         {
-            return (int)AppEnv.GetAppProperty("ExpectedTake");
+            var v1 = AppEnv.GetAppProperty("ExpectedTake");
+            return (v1 == null) ? 0 : (int)v1;
         }
 
         public void SetExpectedTakeValue(int value)
@@ -124,9 +132,10 @@ namespace KDSService
             AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
         }
 
-        public bool GetIsIngredientsIndependent()
+        public bool GetUseReadyConfirmedState()
         {
-            return (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
+            var v1 = AppEnv.GetAppProperty("UseReadyConfirmedState");
+            return (v1 == null) ? false : (bool)v1;
         }
 
         #endregion

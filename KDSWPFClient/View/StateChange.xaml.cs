@@ -71,8 +71,8 @@ namespace KDSWPFClient.View
             Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
             this.Top = topLeftPoint.Y; this.Left = topLeftPoint.X;
 
-            mainGrid.Width = Width / 2d;
-            mainGrid.Height = Height / 2d;
+            mainGrid.Width = 0.5d * Width;
+            mainGrid.Height = 0.5d * Height;
 
             // title
             #region title

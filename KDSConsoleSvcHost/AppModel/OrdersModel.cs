@@ -73,10 +73,8 @@ namespace KDSService.AppModel
                         foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
                     }
 
-                    // сохранить в свойствах приложения словарь блюд с их количеством, 
-                    // которые ожидают готовки или уже готовятся
-                    Dictionary<int, decimal> dishesQty = getDishesQuantity(dbOrders);
-                    AppEnv.SetAppProperty("dishesQty", dishesQty);
+                    // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
+                    updateDishesQuantityDict(dbOrders);
 
                     // удалить из внутр.словаря заказы, которых уже нет в БД
                     // причины две: или запись была удалена из БД, или запись получила статут, не входящий в условия отбора
@@ -136,24 +134,35 @@ namespace KDSService.AppModel
 
 
         // блюда, которые ожидают готовки или уже готовятся, с их кол-вом в заказах
-        private Dictionary<int, decimal> getDishesQuantity(List<Order> dbOrders)
+        // словарь хранится в свойствах приложения
+        private void updateDishesQuantityDict(List<Order> dbOrders)
         {
-            Dictionary<int, decimal> retVal = new Dictionary<int, decimal>();
+            // получить или создать словарь
+            Dictionary<string, decimal> dishesQty = null;
+            var v1 = AppEnv.GetAppProperty("dishesQty");
+            if (v1 == null) dishesQty = new Dictionary<string, decimal>();
+            else dishesQty = (Dictionary<string, decimal>)v1;
+
+            // очистить кол-во
+            List<string> keys = dishesQty.Keys.ToList();
+            foreach (string key in keys) dishesQty[key] = 0m;
+
             foreach (Order order in dbOrders)   // orders loop
             {
                 foreach (OrderDish dish in order.OrderDish)  //  dishes loop
                 {
-                    if ((dish.DishStatusId == null) || (dish.DishStatusId <= 2))
+                    // только для блюд в состоянии приготовления 
+                    if (dish.ParentUid.IsNull() && ((dish.DishStatusId??0) == 1))
                     {
-                        if (retVal.ContainsKey(dish.Id))
-                            retVal[dish.Id] += dish.Quantity;
+                        if (dishesQty.ContainsKey(dish.UID))
+                            dishesQty[dish.UID] += dish.Quantity;
                         else
-                            retVal.Add(dish.Id, dish.Quantity);
+                            dishesQty.Add(dish.UID, dish.Quantity);
                     }
                 }  // loop
             }  // loop
 
-            return (retVal.Count == 0) ? null : retVal;
+            AppEnv.SetAppProperty("dishesQty", dishesQty);
         }  // method
 
 

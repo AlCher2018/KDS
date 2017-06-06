@@ -71,9 +71,13 @@ namespace KDSWPFClient
                     }
                 }
 
-                // прочие настройки от службы
-                bool isIngrIndepend = _getClient.GetIsIngredientsIndependent();
+                // *** ПРОЧИЕ НАСТРОЙКИ ОТ СЛУЖБЫ
+                bool isIngrIndepend = GetIsIngredientsIndependent();
                 AppLib.SetAppGlobalValue("IsIngredientsIndependent", isIngrIndepend);
+                int expTake = GetExpectedTakeValue();  // плановое время выноса
+                AppLib.SetAppGlobalValue("ExpectedTakeValue", expTake);
+                bool isReadyConfirm = GetUseReadyConfirmedState();
+                AppLib.SetAppGlobalValue("UseReadyConfirmedState", isReadyConfirm);
 
                 retVal = true;
             }
@@ -162,6 +166,21 @@ namespace KDSWPFClient
             return null;
         }
 
+        // *** communication object methods WRAPPERs
+        public bool GetIsIngredientsIndependent()
+        {
+            bool retVal = false;
+            try
+            {
+                retVal = _getClient.GetIsIngredientsIndependent();
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+            }
+            return retVal;
+        }
+
         public int GetExpectedTakeValue()
         {
             int retVal=0;
@@ -182,12 +201,28 @@ namespace KDSWPFClient
             try
             {
                 _getClient.SetExpectedTakeValue(value);
+                AppLib.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
             {
                 AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
             }
         }
+
+        public bool GetUseReadyConfirmedState()
+        {
+            bool retVal = false;
+            try
+            {
+                retVal = _getClient.GetUseReadyConfirmedState();
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+            }
+            return retVal;
+        }
+
         #endregion
 
         public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)

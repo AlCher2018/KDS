@@ -397,15 +397,7 @@ namespace KDSService.AppModel
             if (_tsTimersDict.ContainsKey(this.Status))
             {
                 _curTimer = _tsTimersDict[this.Status];
-
-                // для некоторых состояний таймер с инкрементом!
-                //if ((this.Status == OrderStatusEnum.WaitingCook) || (this.Status == OrderStatusEnum.Cooking))
-                //{
-                //    int tsSeconds = statusDTS.TimeStanding;
-                //    _curTimer.Start(dtEnterToStatus, tsSeconds);  // с инкрементом
-                //}
-                //else
-                    _curTimer.Start(dtEnterToStatus);          // с текущего времени
+                _curTimer.Start(dtEnterToStatus);
             }
         }
 
@@ -674,17 +666,18 @@ namespace KDSService.AppModel
         {
             // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
             bool retVal = (this.Department.IsAutoStart 
-                && (this.DelayedStartTime > 0) 
                 && (DateTime.Now >= this.CreateDate.AddSeconds(this.DelayedStartTime)));
 
             // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
             if (retVal == true)
             {
-                Dictionary<int, decimal> dishesQtyDict = (Dictionary<int, decimal>)AppEnv.GetAppProperty("dishesQty");
-                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(this.Id)))
-                    retVal = (dishesQtyDict[this.Id] < _department.DishQuantity);
-                else
-                    retVal = false;
+                Dictionary<string, decimal> dishesQtyDict = (Dictionary<string, decimal>)AppEnv.GetAppProperty("dishesQty");
+                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(this.Uid)))
+                {
+                    retVal = ((dishesQtyDict[this.Uid] + this.Quantity) <= _department.DishQuantity);
+                    // обновить кол-во в словаре, пока он не обновился из БД
+                    if (retVal) dishesQtyDict[this.Uid] += this.Quantity;
+                }
             }
 
             return retVal;

@@ -81,6 +81,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />
@@ -92,6 +93,9 @@
     <Compile Include="View\DishDelimeterPanel.xaml.cs">
       <DependentUpon>DishDelimeterPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\IContainIdField.cs" />
+    <Compile Include="View\IContainInnerCollection.cs" />
+    <Compile Include="View\IJoinSortedCollection.cs" />
     <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
       <DependentUpon>ConfigEdit.xaml</DependentUpon>

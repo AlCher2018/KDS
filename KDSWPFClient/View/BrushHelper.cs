@@ -25,25 +25,31 @@ namespace KDSWPFClient.View
                     new View.BrushesPair() {Name="~Состояние неопределено", Background = Brushes.WhiteSmoke, Foreground=Brushes.Black} },
 
                 { OrderStatusEnum.WaitingCook.ToString(),
-                    new View.BrushesPair() {Name="ОЖИДАНИЕ начала готовки: не задано плановое время приготовления.", Background=Brushes.Plum, Foreground = Brushes.Black} },
-
-                { "estimateStart",
-                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", Background = Brushes.Plum, Foreground = Brushes.Red, LegendText = "00:00:00" } },
+                    new View.BrushesPair() {Name="ОЖИДАНИЕ начала готовки: Ручной запуск начала приготовления.", Background=Brushes.Plum, Foreground = Brushes.Black} },
 
                 { "estimateCook",
                     new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", Background=Brushes.Plum, Foreground = Brushes.Navy, LegendText = "00:00:00"} },
+
+                { "estimateStart",
+                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", Background = Brushes.Olive, Foreground = Brushes.Yellow, LegendText = "00:00:00" } },
 
                 { OrderStatusEnum.Cooking.ToString(),
                     new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", Background=Brushes.Green, Foreground = Brushes.Yellow, LegendText="00:00:00" } },
 
                 { OrderStatusEnum.Cooking.ToString()+"minus",
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", Background=Brushes.Green, Foreground = Brushes.LightSalmon, LegendText="-00:00:00" } },
+                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", Background=Brushes.DarkGreen, Foreground = Brushes.Red, LegendText="-00:00:00" } },
 
                 { OrderStatusEnum.Ready.ToString(),
                     new View.BrushesPair() {Name="Отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Black, LegendText="00:00:00" } },
 
                 { OrderStatusEnum.Ready.ToString()+"minus",
                     new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Red, LegendText="-00:00:00" } },
+
+                { OrderStatusEnum.ReadyConfirmed.ToString(),
+                    new View.BrushesPair() {Name="Подтверждение готовности: отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Gold, Foreground = Brushes.Black, LegendText="00:00:00" } },
+
+                { OrderStatusEnum.ReadyConfirmed.ToString()+"minus",
+                    new View.BrushesPair() {Name="Подтверждение готовности: отображается таймер просроченного времени выноса блюда", Background=Brushes.Gold, Foreground = Brushes.Red, LegendText="-00:00:00" } },
 
                 { OrderStatusEnum.Cancelled.ToString(),
                     new View.BrushesPair() {Name="Блюдо/заказ ОТМЕНЕНО", Background=Brushes.Salmon, Foreground = Brushes.Black} },
