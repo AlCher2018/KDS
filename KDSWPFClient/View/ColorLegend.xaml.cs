@@ -1,4 +1,5 @@
 ﻿using KDSWPFClient.Lib;
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using System;
 using System.Collections.Generic;
@@ -31,10 +32,19 @@ namespace KDSWPFClient.View
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
 
             // собрать кисти в список для легенды
+            bool isUseReadyConfirm = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
             List<BrushesPair> context = new List<BrushesPair>();
-            foreach (BrushesPair item in appBrushes.Values)
+            foreach (KeyValuePair<string, BrushesPair> item in appBrushes)
             {
-                if (!item.Name.StartsWith("~")) context.Add(item);
+                if (!item.Value.Name.StartsWith("~"))
+                {
+                    if (item.Key.StartsWith(OrderStatusEnum.ReadyConfirmed.ToString()))
+                    {
+                        if (isUseReadyConfirm) context.Add(item.Value);
+                    }
+                    else
+                        context.Add(item.Value);
+                }
             }
 
             lstLegend.ItemsSource = context;

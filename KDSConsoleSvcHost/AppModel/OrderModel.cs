@@ -84,6 +84,7 @@ namespace KDSService.AppModel
         private string _serviceErrorMessage;
 
         private bool _isUpdStatusFromDishes;
+        private bool _isUseReadyConfirmed;
         #endregion
 
 
@@ -99,6 +100,7 @@ namespace KDSService.AppModel
             OrderStatusId = dbOrder.OrderStatusId;
             Status = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
+            _isUseReadyConfirmed = (bool)AppEnv.GetAppProperty("UseReadyConfirmedState");
 
             _dishesDict = new Dictionary<int, OrderDishModel>();
             // получить отсоединенную RunTime запись из таблицы состояний
@@ -110,6 +112,8 @@ namespace KDSService.AppModel
             _tsTimersDict.Add(OrderStatusEnum.Cooking, new TimeCounter() { Name = OrderStatusEnum.Cooking.ToString() });
             // таймер времени ожидания выдачи, нахождение в состоянии Готов
             _tsTimersDict.Add(OrderStatusEnum.Ready, new TimeCounter() { Name = OrderStatusEnum.Ready.ToString() });
+            if (_isUseReadyConfirmed)
+                _tsTimersDict.Add(OrderStatusEnum.ReadyConfirmed, new TimeCounter() { Name = OrderStatusEnum.ReadyConfirmed.ToString() });
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
             _tsTimersDict.Add(OrderStatusEnum.Took, new TimeCounter() { Name = OrderStatusEnum.Took.ToString() });
 
@@ -379,6 +383,14 @@ namespace KDSService.AppModel
 
                 case OrderStatusEnum.Ready:
                     retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.ReadyDate);
+                    if (_isUseReadyConfirmed)
+                        retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.ReadyTS);
+                    else
+                        retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.WaitingTakeTS);
+                    break;
+
+                case OrderStatusEnum.ReadyConfirmed:
+                    retVal.DateEntered = Convert.ToDateTime(_dbRunTimeRecord.ReadyConfirmedDate);
                     retVal.TimeStanding = Convert.ToInt32(_dbRunTimeRecord.WaitingTakeTS);
                     break;
 
@@ -436,6 +448,24 @@ namespace KDSService.AppModel
                         // если предыдущие DTS пустые, то заполнить начальными значениями
                         if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
                         if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                    }
+                    if (timeStanding >= 0)
+                    {
+                        if (_isUseReadyConfirmed)
+                            _dbRunTimeRecord.ReadyTS = timeStanding;
+                        else
+                            _dbRunTimeRecord.WaitingTakeTS = timeStanding;
+                    }
+                    break;
+
+                case OrderStatusEnum.ReadyConfirmed:
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.ReadyConfirmedDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                        if (_dbRunTimeRecord.ReadyDate == null) setStatusRunTimeDTS(OrderStatusEnum.Ready, dateEntered, 0);
                     }
                     if (timeStanding >= 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
                     break;

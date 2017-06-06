@@ -23,7 +23,7 @@ namespace KDSService
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
         // периодичность опроса БД, в мсек
-        private const double _ObserveTimerInterval = 500;
+        private const double _ObserveTimerInterval = 1000;
 
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;

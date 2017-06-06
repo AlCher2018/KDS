@@ -38,12 +38,14 @@ namespace KDSWPFClient.Model
             // шеф-повар
             #region Шеф-повар
             KDSModeStates modeChef = new KDSModeStates() { KDSMode = KDSModeEnum.Chef };
-            modeChef.AllowedStates.AddRange(new[]
-            {
-                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking, OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
-            });
             if (useReadyConfirmedState)
             {
+                modeChef.AllowedStates.AddRange(new[]
+                {
+                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
+                OrderStatusEnum.Ready, OrderStatusEnum.ReadyConfirmed,
+                OrderStatusEnum.Cancelled
+                });
                 modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
@@ -58,6 +60,11 @@ namespace KDSWPFClient.Model
             }
             else
             {
+                modeChef.AllowedStates.AddRange(new[]
+                {
+                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
+                OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
+                });
                 modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
@@ -127,10 +134,10 @@ namespace KDSWPFClient.Model
             Brush bBrush, fBrush;
 
             // отсортировать по значению перечисления
-            List<OrderStatusEnum> sortedStates = statesList.OrderBy(s => (int)s).ToList(); 
+            //List<OrderStatusEnum> sortedStates = statesList.OrderBy(s => (int)s).ToList(); 
 
             // если есть состояния Ожидание и Готовка, то объединить их в один набор "В процессе"
-            if ((sortedStates.Count >= 2) && (sortedStates[0] == OrderStatusEnum.WaitingCook) && (sortedStates[1] == OrderStatusEnum.Cooking))
+            if ((statesList.Count >= 2) && (statesList[0] == OrderStatusEnum.WaitingCook) && (statesList[1] == OrderStatusEnum.Cooking))
             {
                 StateGraphHelper.SetStateButtonBrushes(OrderStatusEnum.Cooking, out bBrush, out fBrush);
                 curSet = new KDSUserStatesSet() { Name = "В процессе", BackBrush = bBrush, FontBrush = fBrush };
@@ -143,9 +150,9 @@ namespace KDSWPFClient.Model
 
             // добавить состояния по одному
             string tabName;
-            for (int i = initIdx; i < sortedStates.Count; i++)
+            for (int i = initIdx; i < statesList.Count; i++)
             {
-                OrderStatusEnum curState = sortedStates[i];
+                OrderStatusEnum curState = statesList[i];
                 StateGraphHelper.SetStateButtonBrushes(curState, out bBrush, out fBrush);
                 tabName = StateGraphHelper.GetStateTabName(curState);
 

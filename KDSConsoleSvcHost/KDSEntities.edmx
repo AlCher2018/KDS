@@ -85,6 +85,8 @@
           <Property Name="CommitDate" Type="datetime" />
           <Property Name="CancelDate" Type="datetime" />
           <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderRunTime">
           <Key>
@@ -103,6 +105,8 @@
           <Property Name="CommitDate" Type="datetime" />
           <Property Name="CancelDate" Type="datetime" />
           <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderStatus">
           <Key>
@@ -149,7 +153,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrderDishReturnTime_OrderDish">
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderDishReturnTime" Type="Self.OrderDishReturnTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="OrderDish">
@@ -161,7 +167,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrderRunTime_Order">
-          <End Role="Order" Type="Self.Order" Multiplicity="1" />
+          <End Role="Order" Type="Self.Order" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderRunTime" Type="Self.OrderRunTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Order">
@@ -173,7 +181,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrdrerDishRunTime_OrderDish">
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderDishRunTime" Type="Self.OrderDishRunTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="OrderDish">
@@ -401,6 +411,8 @@
           <Property Name="CancelDate" Type="DateTime" Precision="3" />
           <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDishRunTime" ToRole="OrderDish" />
           <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
         </EntityType>
         <EntityType Name="OrderRunTime">
           <Key>
@@ -420,6 +432,8 @@
           <Property Name="CancelDate" Type="DateTime" Precision="3" />
           <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="OrderRunTime" ToRole="Order" />
           <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
         </EntityType>
         <Association Name="FK_OrderRunTime_Order">
           <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="1" />
@@ -530,6 +544,8 @@
           <EntitySetMapping Name="OrderDishRunTime">
             <EntityTypeMapping TypeName="KDSServiceModel.OrderDishRunTime">
               <MappingFragment StoreEntitySet="OrderDishRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
                 <ScalarProperty Name="CancelConfirmedDate" ColumnName="CancelConfirmedDate" />
                 <ScalarProperty Name="CancelDate" ColumnName="CancelDate" />
                 <ScalarProperty Name="CommitDate" ColumnName="CommitDate" />
@@ -549,6 +565,8 @@
           <EntitySetMapping Name="OrderRunTime">
             <EntityTypeMapping TypeName="KDSServiceModel.OrderRunTime">
               <MappingFragment StoreEntitySet="OrderRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
                 <ScalarProperty Name="CancelConfirmedDate" ColumnName="CancelConfirmedDate" />
                 <ScalarProperty Name="CancelDate" ColumnName="CancelDate" />
                 <ScalarProperty Name="CommitDate" ColumnName="CommitDate" />

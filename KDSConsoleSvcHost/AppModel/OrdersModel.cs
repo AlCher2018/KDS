@@ -122,14 +122,14 @@ namespace KDSService.AppModel
         private bool isProcessingOrderStatusId(Order order)
         {
             return ( 
-                ((order.OrderStatusId <= 2) || (order.OrderStatusId == 4)) 
+                ((order.OrderStatusId <= 2) || (order.OrderStatusId == 4) || (order.OrderStatusId == 7)) 
                 && (order.CreateDate.Date.Equals(DateTime.Now.Date))
             );
         }
         // статус: null - не указан, ... см.выше
         private bool isProcessingDishStatusId(OrderDish dish)
         {
-            return (dish.DishStatusId == null) || (dish.DishStatusId <= 2) || (dish.DishStatusId == 4);
+            return (dish.DishStatusId == null) || (dish.DishStatusId <= 2) || (dish.DishStatusId == 4) || (dish.DishStatusId == 7);
         }
 
 

@@ -137,7 +137,7 @@ namespace KDSWPFClient.View
             if (_allowedStates != null) allowedStatesForCurrentState = new List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>>(_allowedStates.Where(states => states.Key == _currentState));
 
             _inOrderModeProcessDishes = false;
-            // если нет доступных переходов при клике по заказу
+            // если нет доступных переходов при клике по ЗАКАЗУ
             if ((allowedStatesForCurrentState.Count == 0) && (_modelType == AppViewModelEnum.Order))
             {
                 // проверить статус блюд в данном заказе
@@ -155,10 +155,9 @@ namespace KDSWPFClient.View
                 }
             }
 
-
+            // нет доступных переходов
             if (allowedStatesForCurrentState.Count == 0)
             {
-                // нет доступных переходов
                 tbNoAllowedStates.Visibility = Visibility.Visible;
                 return;
             }
@@ -180,13 +179,14 @@ namespace KDSWPFClient.View
             // для случая [поле][кнопка][поле][кнопка]...[поле]     x = y / ((1 + k) * c + k), 
             // для случая [кнопка][поле][кнопка][поле]...[кнопка]   x = y / (c + kc - k) = y / (c + k(c - 1))
             // где x - ширина кнопки, y - ширина контейнера для кнопки, k - доля гор.поля между кнопками от ширины кнопки, c - количество кнопок
-            width = pnlWidth / ((1d + k) * statesCount + k);
-            horMargin = k * width;
+            width = Math.Floor(pnlWidth / ((1d + k) * statesCount + k));
+            horMargin = Math.Floor(k * width);
             Border btnState; int iBtn = 0;
             foreach (KeyValuePair<OrderStatusEnum, OrderStatusEnum> item in allowedStatesForCurrentState)
             {
                 // возврат из Готов в Приготовление
-                bool isReturnCooking = ((item.Key == OrderStatusEnum.Ready) && (item.Value == OrderStatusEnum.Cooking));
+                bool isReturnCooking = (((item.Key == OrderStatusEnum.Ready) && (item.Value == OrderStatusEnum.Cooking))
+                    || ((item.Key == OrderStatusEnum.ReadyConfirmed) && (item.Value == OrderStatusEnum.Cooking)));
 
                 iBtn++;  // номер кнопки
                 btnState = getStateButton(width, height, ((iBtn==1)?0:horMargin), item.Value, isReturnCooking);
@@ -219,30 +219,30 @@ namespace KDSWPFClient.View
             grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1d, GridUnitType.Star) });
             grd.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1d, GridUnitType.Star) });
 
+            double fontSize = Math.Floor(0.2d * Math.Min(height, width));
             TextBlock tbStateName = new TextBlock()
             {
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Text = btnText1,
                 FontWeight = FontWeights.Bold,
-                FontSize = Math.Floor(0.2d * height),
+                FontSize = fontSize,
                 TextWrapping = TextWrapping.Wrap
             };
+            AppLib.AssignFontSizeByMeasureHeight(tbStateName, new Size(width, height), height / 2d, true);
             tbStateName.SetValue(Grid.RowProperty, 0);
             grd.Children.Add(tbStateName);
 
-            double fontSize = Math.Floor(0.15d * height);
             TextBlock tbStateDescr = new TextBlock()
             {
                 VerticalAlignment = VerticalAlignment.Top,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Text = btnText2,
-                FontSize = fontSize,
+                FontSize = 0.8d * fontSize,
                 Margin = new Thickness(FontSize, 0, FontSize, 0),
                 TextWrapping = TextWrapping.Wrap
             };
             AppLib.AssignFontSizeByMeasureHeight(tbStateDescr, new Size(width, height), height / 2d, true);
-
             tbStateDescr.SetValue(Grid.RowProperty, 1);
             grd.Children.Add(tbStateDescr);
 
