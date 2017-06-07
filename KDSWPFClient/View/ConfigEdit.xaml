@@ -7,7 +7,7 @@
         xmlns:cavCtl="clr-namespace:CAVControls;assembly=NumericUpDown"
         xmlns:KDSWPFClient="clr-namespace:KDSWPFClient" 
         mc:Ignorable="d" Name="appConfig" Background="FloralWhite"
-        Title="ConfigEdit" Height="757" Width="1159">
+        Title="ConfigEdit" Height="777" Width="1159">
 
     <Window.Resources>
         <!-- шаблон для отображения строк словаря отделов -->

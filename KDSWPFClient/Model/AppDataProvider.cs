@@ -27,26 +27,47 @@ namespace KDSWPFClient
         private Dictionary<int, DepartmentViewModel> _deps;
         public Dictionary<int, DepartmentViewModel> Departments { get { return _deps; } }
 
-        public string ErrorMessage { get; set; }
+        private string _errMsg;
+        public string ErrorMessage { get { return _errMsg; } }
+
+        public bool EnableChannels { get
+            { return (_getClient != null) && (_setClient != null) 
+                    && ((_getClient.State == CommunicationState.Created) || (_getClient.State== CommunicationState.Opened))
+                    && ((_setClient.State == CommunicationState.Created) || (_setClient.State == CommunicationState.Opened));
+            }
+        }
 
         public AppDataProvider()
         {
-            ErrorMessage = null;
-            try
-            {
-                _getClient = new KDSServiceClient();
-                _setClient = new KDSCommandServiceClient();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = ex.Message;
-                return;
-            }
-            
+            CreateChannels();
+
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
         }
 
+        public bool CreateChannels()
+        {
+            bool retVal = false;
+
+            _errMsg = null;
+            try
+            {
+                if (_getClient != null) _getClient.Close();
+                _getClient = new KDSServiceClient();
+                // попытаться получить какую-нибудь информацию от службы
+                _getClient.GetExpectedTakeValue();
+
+                if (_setClient != null) _setClient.Close();
+                _setClient = new KDSCommandServiceClient();
+                retVal = true;
+            }
+            catch (Exception ex)
+            {
+                _errMsg = ex.Message;
+            }
+
+            return retVal;
+        }
 
         #region get dictionaries from service
         public bool SetDictDataFromService()
@@ -83,7 +104,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                ErrorMessage = string.Format("{0}{1}", ex.Message, ((ex.InnerException == null) ? "" : ex.InnerException.Message));
+                _errMsg = string.Format("{0}{1}", ex.Message, ((ex.InnerException == null) ? "" : ex.InnerException.Message));
             }
 
             return retVal;
@@ -126,7 +147,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                ErrorMessage = string.Format("{0}: {1}", ex.Message, (ex.InnerException == null) ? "" : ex.InnerException.Message);
+                _errMsg = string.Format("{0}: {1}", ex.Message, (ex.InnerException == null) ? "" : ex.InnerException.Message);
             }
         }
         #endregion

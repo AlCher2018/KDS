@@ -57,7 +57,7 @@ namespace KDSWPFClient.View
                 cbx17.Visibility = Visibility.Visible;
                 cbx27.Visibility = Visibility.Visible;
                 cbx73.Visibility = Visibility.Visible;
-                this.Height = 760;
+                this.Height = 770;
             }
             else
             {

@@ -52,6 +52,8 @@ namespace KDSWPFClient
         private int _adminBitMask;
         private Timer _adminTimer;
 
+        private bool _mayGetData;
+
         // звуки
         System.Media.SoundPlayer _wavPlayer;
 
@@ -143,14 +145,24 @@ namespace KDSWPFClient
             {
                 _timer.Stop();
                 _canInvokeUpdateOrders = seconds;
+                _mayGetData = false;
                 try
                 {
+                    if (_dataProvider.EnableChannels == false)
+                        _mayGetData = _dataProvider.CreateChannels();
+                    else
+                        _mayGetData = true;
+
                     this.Dispatcher.Invoke(new Action(updateOrders));
+
                 }
-                catch (Exception) {}
+                catch (Exception ex)
+                {
+                }
             }
             _timer.Start();
         }  // method
+
 
         private void _adminTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -242,6 +254,19 @@ namespace KDSWPFClient
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
         {
+            if (_mayGetData)
+            {
+                if (tblChannelErrorMessage.Visibility == Visibility.Visible)
+                    tblChannelErrorMessage.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                if (tblChannelErrorMessage.Visibility != Visibility.Visible)
+                    tblChannelErrorMessage.Visibility = Visibility.Visible;
+                if (_pages != null) _pages.ClearPages();
+                return;
+            }
+
             //OrderModel om = orders[0];
             //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
             //Debug.Print(s);

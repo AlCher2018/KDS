@@ -42,7 +42,7 @@ namespace WpfKDSOrdersEmulator
 
             _delegateAutoNewOrder =  new Action(() => createNewOrder(0));
 
-            clearDB();
+            //clearDB();
         }
 
         private void clearDB()
@@ -101,7 +101,7 @@ namespace WpfKDSOrdersEmulator
                 TableNumber = (baseOrder == null) ? getRndTable() : baseOrder.TableNumber,
                 Waiter = (baseOrder == null) ? getRndWaiter() : baseOrder.Waiter,
                 CreateDate = DateTime.Now,
-                OrderStatusId = 0,
+                OrderStatusId = 1
             };
             createRndDishes(retVal);
 

@@ -123,7 +123,16 @@ namespace KDSService.AppModel
                 OrderStatusEnum newStatus = OrderStatusEnum.Cooking;
                 UpdateStatus(newStatus, false);
             }
+
             StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+            DateTime dtEnterState = statusDTS.DateEntered;
+            if (dtEnterState.IsZero())
+            {
+                dtEnterState = DateTime.Now;
+                setStatusRunTimeDTS(this.Status, dtEnterState, -1);
+                saveRunTimeRecord();
+                statusDTS = getStatusRunTimeDTS(this.Status);
+            }
             startStatusTimer(statusDTS);
 
             // добавить блюда к заказу

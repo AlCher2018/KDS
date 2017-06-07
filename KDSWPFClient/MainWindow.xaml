@@ -28,6 +28,9 @@
         <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
         </Viewbox>
 
+        <!-- сообщение об ошибке связи со службой -->
+        <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
+
         <!-- кнопка переключения состояний -->
         <Border x:Name="brdAdmin"  Grid.Column="0">
             <Border.Background>

@@ -47,23 +47,28 @@ namespace KDSWPFClient
             AppDataProvider dataProvider = new AppDataProvider();
             if (dataProvider.ErrorMessage != null)
             {
+                // КДСы могут быть уже запущены, а служба еще нет!
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-                if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
-                MessageBox.Show("Ошибка создания каналов к службе KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-                Environment.Exit(1);
+                //if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
+                //MessageBox.Show("Ошибка создания каналов к службе KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+                //Environment.Exit(1);
             }
-            AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService... Ok");
+            else
+                AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService... Ok");
             
             // и получить словари и настройки от службы
             AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService...");
             if (dataProvider.SetDictDataFromService() == false)
             {
+                // КДСы могут быть уже запущены, а служба еще нет!
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-                if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
-                MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-                Environment.Exit(2);
+                //if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
+                //MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+                //Environment.Exit(2);
             }
-            AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService... Ok");
+            else
+                AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService... Ok");
+
             AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС

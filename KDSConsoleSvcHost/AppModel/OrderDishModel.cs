@@ -219,6 +219,8 @@ namespace KDSService.AppModel
                 _tsTimersDict.Add(OrderStatusEnum.ReadyConfirmed, new TimeCounter() { Name = OrderStatusEnum.ReadyConfirmed.ToString() });
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
             _tsTimersDict.Add(OrderStatusEnum.Took, new TimeCounter() { Name= OrderStatusEnum.Took.ToString()});
+            // таймер нахождения в состоянии отмены
+            _tsTimersDict.Add(OrderStatusEnum.Cancelled, new TimeCounter() { Name= OrderStatusEnum.Cancelled.ToString()});
 
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);

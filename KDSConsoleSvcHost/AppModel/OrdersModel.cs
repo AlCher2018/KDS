@@ -91,23 +91,20 @@ namespace KDSService.AppModel
                     }
 
                     // обновить или добавить заказы во внутр.словаре
-                    if (_orders != null)
+                    foreach (Order dbOrder in dbOrders)
                     {
-                        foreach (Order dbOrder in dbOrders)
+                        if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            if (_orders.ContainsKey(dbOrder.Id))
-                            {
-                                // обновить существующий заказ
-                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
-                            }
-                            else
-                            {
-                                // добавление заказа в словарь
-                                OrderModel newOrder = new OrderModel(dbOrder);
-                                _orders.Add(dbOrder.Id, newOrder);
-                            }  //curOrder
-                        }  // foreach
-                    }  // if
+                            // обновить существующий заказ
+                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                        }
+                        else
+                        {
+                            // добавление заказа в словарь
+                            OrderModel newOrder = new OrderModel(dbOrder);
+                            _orders.Add(dbOrder.Id, newOrder);
+                        }  //curOrder
+                    }  // foreach
 
                 }  // lock
                 dbOrders = null; GC.Collect(0, GCCollectionMode.Optimized);
@@ -127,9 +124,14 @@ namespace KDSService.AppModel
             );
         }
         // статус: null - не указан, ... см.выше
+        // и количество != 0 (положительные - готовятся, отрицательные - отмененные)
         private bool isProcessingDishStatusId(OrderDish dish)
         {
-            return (dish.DishStatusId == null) || (dish.DishStatusId <= 2) || (dish.DishStatusId == 4) || (dish.DishStatusId == 7);
+            return ((dish.DishStatusId == null) 
+                || (dish.DishStatusId <= 2) 
+                || (dish.DishStatusId == 4) 
+                || (dish.DishStatusId == 7))
+                && (dish.Quantity != 0m);
         }
 
 
