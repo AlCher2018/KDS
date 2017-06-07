@@ -27,6 +27,8 @@ namespace WpfKDSOrdersEmulator
         public Nullable<System.DateTime> CommitDate { get; set; }
         public Nullable<System.DateTime> CancelDate { get; set; }
         public Nullable<System.DateTime> CancelConfirmedDate { get; set; }
+        public Nullable<int> ReadyTS { get; set; }
+        public Nullable<System.DateTime> ReadyConfirmedDate { get; set; }
     
         public virtual Order Order { get; set; }
     }

@@ -359,7 +359,7 @@ namespace KDSWPFClient
 
             if (newOrders) _wavPlayer.Play();
             // перерисовать полностью
-            if (isViewRepaint == true) repaintOrders();
+            if ((isViewRepaint == true) || (_pages.CurrentPage.Children.Count == 0)) repaintOrders();
 
         }  // method
 

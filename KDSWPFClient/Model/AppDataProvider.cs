@@ -56,6 +56,7 @@ namespace KDSWPFClient
                 _getClient = new KDSServiceClient();
                 // попытаться получить какую-нибудь информацию от службы
                 _getClient.GetExpectedTakeValue();
+                if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
 
                 if (_setClient != null) _setClient.Close();
                 _setClient = new KDSCommandServiceClient();

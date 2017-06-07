@@ -66,7 +66,7 @@ namespace KDSWPFClient.View
                 cbx17.Visibility = Visibility.Collapsed;
                 cbx27.Visibility = Visibility.Collapsed;
                 cbx73.Visibility = Visibility.Collapsed;
-                this.Height = 650;
+                this.Height = 670;
             }
 
             // заполнить комбобокс звуковых файлов

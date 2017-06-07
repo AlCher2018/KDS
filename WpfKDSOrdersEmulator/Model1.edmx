@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="BoardChefTestModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="BoardChefTestModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Department">
           <Key>
             <PropertyRef Name="Id" />
@@ -32,6 +32,8 @@
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
           <Property Name="InPreporationSpentTime" Type="int" Nullable="false" />
           <Property Name="ReadySpentTime" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+          <Property Name="QueueStatusId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -85,6 +87,8 @@
           <Property Name="CommitDate" Type="datetime" />
           <Property Name="CancelDate" Type="datetime" />
           <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderRunTime">
           <Key>
@@ -103,6 +107,8 @@
           <Property Name="CommitDate" Type="datetime" />
           <Property Name="CancelDate" Type="datetime" />
           <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
         </EntityType>
         <EntityType Name="OrderStatus">
           <Key>
@@ -149,7 +155,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrderDishReturnTime_OrderDish">
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderDishReturnTime" Type="Self.OrderDishReturnTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="OrderDish">
@@ -161,7 +169,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrderRunTime_Order">
-          <End Role="Order" Type="Self.Order" Multiplicity="1" />
+          <End Role="Order" Type="Self.Order" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderRunTime" Type="Self.OrderRunTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="Order">
@@ -173,7 +183,9 @@
           </ReferentialConstraint>
         </Association>
         <Association Name="FK_OrdrerDishRunTime_OrderDish">
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
           <End Role="OrderDishRunTime" Type="Self.OrderDishRunTime" Multiplicity="*" />
           <ReferentialConstraint>
             <Principal Role="OrderDish">
@@ -217,8 +229,7 @@
             <End Role="OrderDishRunTime" EntitySet="OrderDishRunTime" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="BoardChefTestModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -253,6 +264,8 @@
           <NavigationProperty Name="OrderStatus" Relationship="Self.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
           <NavigationProperty Name="OrderRunTime" Relationship="Self.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
+          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -312,6 +325,8 @@
           <Property Name="CancelDate" Type="DateTime" Precision="3" />
           <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDishRunTime" ToRole="OrderDish" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
         </EntityType>
         <EntityType Name="OrderRunTime">
           <Key>
@@ -331,6 +346,8 @@
           <Property Name="CancelDate" Type="DateTime" Precision="3" />
           <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
           <NavigationProperty Name="Order" Relationship="Self.FK_OrderRunTime_Order" FromRole="OrderRunTime" ToRole="Order" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
         </EntityType>
         <EntityType Name="OrderStatus">
           <Key>
@@ -466,6 +483,8 @@
           <EntitySetMapping Name="Order">
             <EntityTypeMapping TypeName="BoardChefTestModel.Order">
               <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
+                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
                 <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
@@ -522,6 +541,8 @@
           <EntitySetMapping Name="OrderDishRunTime">
             <EntityTypeMapping TypeName="BoardChefTestModel.OrderDishRunTime">
               <MappingFragment StoreEntitySet="OrderDishRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderDishId" ColumnName="OrderDishId" />
                 <ScalarProperty Name="InitDate" ColumnName="InitDate" />
@@ -541,6 +562,8 @@
           <EntitySetMapping Name="OrderRunTime">
             <EntityTypeMapping TypeName="BoardChefTestModel.OrderRunTime">
               <MappingFragment StoreEntitySet="OrderRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderId" ColumnName="OrderId" />
                 <ScalarProperty Name="InitDate" ColumnName="InitDate" />

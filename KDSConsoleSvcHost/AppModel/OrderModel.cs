@@ -534,6 +534,20 @@ namespace KDSService.AppModel
                     if (dbOrder != null)
                     {
                         dbOrder.OrderStatusId = (int)status;
+
+                        // записать в поле QueueStatusId значение для очереди заказов
+                        if (status == OrderStatusEnum.Cooking)
+                        {
+                            if (dbOrder.QueueStatusId != 0) dbOrder.QueueStatusId = 0;
+                        }
+                        else if ((!_isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
+                            || (_isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
+                            dbOrder.QueueStatusId = 1;
+                        else if (status == OrderStatusEnum.Took)
+                            dbOrder.QueueStatusId = 2;
+                        else
+                            dbOrder.QueueStatusId = dbOrder.OrderStatusId-1;
+
                         db.SaveChanges();
                         retVal = true;
                     }

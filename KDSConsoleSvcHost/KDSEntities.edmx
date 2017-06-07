@@ -32,6 +32,8 @@
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
           <Property Name="InPreporationSpentTime" Type="int" Nullable="false" />
           <Property Name="ReadySpentTime" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+          <Property Name="QueueStatusId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -262,6 +264,8 @@
           <NavigationProperty Name="OrderStatus" Relationship="Self.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
           <NavigationProperty Name="OrderRunTime" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
+          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -479,6 +483,8 @@
           <EntitySetMapping Name="Order">
             <EntityTypeMapping TypeName="KDSServiceModel.Order">
               <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
+                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
                 <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
