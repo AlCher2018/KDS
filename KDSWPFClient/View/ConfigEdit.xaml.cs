@@ -4,9 +4,11 @@ using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,15 +32,64 @@ namespace KDSWPFClient.View
         private Dictionary<string, string> _appNewSettings;
         public Dictionary<string, string> AppNewSettings { get { return _appNewSettings; } }
 
+        private bool _useReadyConfirmedState;
+
+        // звуки
+        string _audioPath;
+        System.Media.SoundPlayer _wavPlayer;
+
 
         public ConfigEdit()
         {
             InitializeComponent();
-
+            
             this.Loaded += ConfigEdit_Loaded;
 
             _cfgValKeeper = new CfgValueKeeper();
             _appNewSettings = new Dictionary<string, string>();
+
+            _useReadyConfirmedState =  (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+
+            if (_useReadyConfirmedState)
+            {
+                cbxState7.Visibility = Visibility.Visible;
+
+                cbx17.Visibility = Visibility.Visible;
+                cbx27.Visibility = Visibility.Visible;
+                cbx73.Visibility = Visibility.Visible;
+                this.Height = 760;
+            }
+            else
+            {
+                cbxState7.Visibility = Visibility.Collapsed;
+
+                cbx17.Visibility = Visibility.Collapsed;
+                cbx27.Visibility = Visibility.Collapsed;
+                cbx73.Visibility = Visibility.Collapsed;
+                this.Height = 650;
+            }
+
+            // заполнить комбобокс звуковых файлов
+            _audioPath = AppLib.GetAppDirectory("Audio");
+            _wavPlayer = new System.Media.SoundPlayer();
+            if (Directory.Exists(_audioPath))
+            {
+                DirectoryInfo dirInfo = new DirectoryInfo(_audioPath);
+                List<string> files = new List<string>();
+
+                foreach (FileInfo fileInfo in dirInfo.GetFiles("*.wav", SearchOption.TopDirectoryOnly)) files.Add(fileInfo.Name);
+                cbxSelectAudio.ItemsSource = files;
+
+                var defFile = AppLib.GetAppGlobalValue("NewOrderAudioAttention");
+                if ((defFile != null) && (files.Contains(defFile)))
+                {
+                    cbxSelectAudio.SelectedValue = defFile;
+                    _wavPlayer.SoundLocation = _audioPath + defFile;
+                    _wavPlayer.LoadAsync();
+                }
+            }
+            cbxSelectAudio.SelectionChanged += CbxSelectAudio_SelectionChanged;
+
         }
 
         private void ConfigEdit_Loaded(object sender, RoutedEventArgs e)
@@ -55,11 +106,12 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("AppFontScale", false, tbFontSizeScale);
             _cfgValKeeper.AddPreValue("OrdersColumnsCount", false, tbxOrdersColumnsCount);
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
+            _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             // получить от службы
             //AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
             //int expTake = dataProvider.GetExpectedTakeValue();
             //_cfgValKeeper.AddPreValueDirectly("ExpectedTake", expTake.ToString(), tbTimerExpectedTake);
-            
+
             bool isDefault = true;
             if (AppLib.GetAppGlobalValue("KDSMode") != null)
             {
@@ -179,6 +231,7 @@ namespace KDSWPFClient.View
                 _cfgValKeeper.PutNewValueDirectly("KDSModeSpecialActions", sActions);
             }
 
+            _cfgValKeeper.PutNewValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
 
             // *** получить новые значения из контролов  ***
             _cfgValKeeper.PutNewValueFromControls();
@@ -410,6 +463,58 @@ namespace KDSWPFClient.View
         //}
         #endregion
 
+        #region audio subsystem
+        private void CbxSelectAudio_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string fullFileName = _audioPath + cbxSelectAudio.SelectedItem;
+            _wavPlayer.SoundLocation = fullFileName;
+            _wavPlayer.Load();
+            _wavPlayer.Play();
+        }
+
+        // MouseDown event handler
+        private void btnBrowseAudioFile_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+        }
+
+        // Click event handler
+        private void btnBrowseAudioFile_Click(object sender, RoutedEventArgs e)
+        {
+            browseAudioFile();
+        }
+
+        private string browseAudioFile()
+        {
+            string retVal="";
+
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.InitialDirectory = Environment.CurrentDirectory;
+            openFileDialog.Filter = "wav files (*.wav)|*.wav";
+            openFileDialog.CheckFileExists = true;
+
+            if (openFileDialog.ShowDialog() ?? false)
+            {
+                try
+                {
+                    string file = openFileDialog.FileName;
+                    FileInfo fileInfo = new FileInfo(file);
+                    string destFile = _audioPath + fileInfo.Name;
+                    FileInfo destFileInfo = (File.Exists(destFile)) ? new FileInfo(destFile) : fileInfo.CopyTo(destFile);
+
+                    List<string> filesList = (List<string>)cbxSelectAudio.ItemsSource;
+                    if (!filesList.Contains(fileInfo.Name)) filesList.Add(fileInfo.Name);
+                    // отобразить в списке и проиграть
+                    cbxSelectAudio.SelectedValue = fileInfo.Name;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
+                }
+            }
+
+            return retVal;
+        }
+        #endregion
 
         // ************** INNER CLASSES  ********************
 
@@ -455,7 +560,7 @@ namespace KDSWPFClient.View
                 bool retVal = false;
                 foreach (CfgValue item in _values)
                 {
-                    if (item.IsChanged()) { retVal = true;  break; }
+                    if (item.IsChanged()) { retVal = true; break; }
                 }
                 return retVal;
             }
@@ -541,6 +646,7 @@ namespace KDSWPFClient.View
                         {
                             if (_control is TextBox) (_control as TextBox).Text = _preValue.ToString();
                             else if (_control is NumericUpDown) (_control as NumericUpDown).Value = (decimal)_preValue.ToString().ToDouble();
+                            else if (_control is ComboBox) (_control as ComboBox).SelectedValue = (string)_preValue;
                         }
                         break;
                     case "DateTime":
@@ -587,6 +693,7 @@ namespace KDSWPFClient.View
                                 else
                                     _newValue = nud.Value.ToString(CultureInfo.InvariantCulture);
                             }
+                            else if (_control is ComboBox) _newValue = (string)((_control as ComboBox).SelectedValue);
                             break;
 
                         case "DateTime":
@@ -620,7 +727,6 @@ namespace KDSWPFClient.View
 
         } // class CfgValue
         #endregion
-
 
     }  // class ConfigEdit
 }

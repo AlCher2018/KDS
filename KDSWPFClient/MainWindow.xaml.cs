@@ -20,6 +20,7 @@ namespace KDSWPFClient
     public partial class MainWindow : Window
     {
         private Timer _timer;
+        private short _canInvokeUpdateOrders;
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
 
@@ -50,6 +51,9 @@ namespace KDSWPFClient
         private DateTime _adminDate;
         private int _adminBitMask;
         private Timer _adminTimer;
+
+        // звуки
+        System.Media.SoundPlayer _wavPlayer;
 
 
         public MainWindow()
@@ -104,9 +108,9 @@ namespace KDSWPFClient
             //Button_Click(null,null);
 
             // основной таймер опроса сервиса
-            _timer = new Timer(1000) { AutoReset = false };
+            _timer = new Timer(100) { AutoReset = false };
             _timer.Elapsed += _timer_Elapsed;
-            _timer.Start();
+            _timer.Start(); _canInvokeUpdateOrders = -1;
 
             // кнопки переключения страниц
             btnSetPagePrevious.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
@@ -119,8 +123,34 @@ namespace KDSWPFClient
             _adminTimer = new Timer() { Interval = 4000d, AutoReset = false };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
 
+            // звук предупреждения о появлении нового заказа
+            _wavPlayer = new System.Media.SoundPlayer();
+            var wavFile = AppLib.GetAppGlobalValue("NewOrderAudioAttention");
+            if (wavFile != null)
+            {
+                _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                _wavPlayer.LoadAsync();
+            }
+
         }
 
+        // основной таймер отображения панелей заказов
+        private void _timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            short seconds = (short)dt.Second;
+            if ((dt.Millisecond <= 200) && (_canInvokeUpdateOrders != seconds))
+            {
+                _timer.Stop();
+                _canInvokeUpdateOrders = seconds;
+                try
+                {
+                    this.Dispatcher.Invoke(new Action(updateOrders));
+                }
+                catch (Exception) {}
+            }
+            _timer.Start();
+        }  // method
 
         private void _adminTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
@@ -204,22 +234,6 @@ namespace KDSWPFClient
             }
         }
 
-        private void _timer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _timer.Stop();
-
-            try
-            {
-                this.Dispatcher.Invoke(new Action(updateOrders));
-            }
-            catch (Exception)
-            {
-
-            }
-
-            _timer.Start();
-        }  // method
-
 
         // 
         // *********  ОСНОВНОЙ МЕТОД ПОЛУЧЕНИЯ ЗАКАЗОВ И ИХ ФИЛЬТРАЦИИ И ГРУППИРОВКИ НА КДСe  ************
@@ -250,6 +264,7 @@ namespace KDSWPFClient
             }
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
+
 
 
             // *** СОРТИРОВКА ЗАКАЗОВ  ***
@@ -302,6 +317,14 @@ namespace KDSWPFClient
                 orderModel.Dishes = sortedDishes;
             }
 
+            // появились ли в svcOrders заказы, которых нет в _viewOrders, т.е. новые?
+            // поиск по Id
+            bool newOrders = false;
+            List<int> idsList = _viewOrders.Select(o => o.Id).ToList();
+            foreach (OrderModel dbOrder in svcOrders)
+            {
+                if (!idsList.Contains(dbOrder.Id)) { newOrders = true; break; }
+            }
 
             // *****
             //  В svcOrder<orderModel> НАХОДИТСЯ СПИСОК, КОТОРЫЙ НЕОБХОДИМО ОТОБРАЗИТЬ НА ЭКРАНЕ
@@ -309,6 +332,7 @@ namespace KDSWPFClient
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ svcOrders
             bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
 
+            if (newOrders) _wavPlayer.Play();
             // перерисовать полностью
             if (isViewRepaint == true) repaintOrders();
 
@@ -426,11 +450,25 @@ namespace KDSWPFClient
                     _timerBackToFirstPage.Interval = newInterval;
                 }
 
-                // ExpectedTake
+                // плановое время выноса блюда (ExpectedTake)
                 if (cfgEdit.AppNewSettings.ContainsKey("ExpectedTake"))
                 {
                     string newValue = cfgEdit.AppNewSettings["ExpectedTake"];
+                    // сохраняем в config-файле сервиса
                     _dataProvider.SetExpectedTakeValue(newValue.ToInt());
+                }
+
+                // звуковой файл предупреждения о появлении нового заказа
+                if (cfgEdit.AppNewSettings.ContainsKey("NewOrderAudioAttention"))
+                {
+                    string wavFile = cfgEdit.AppNewSettings["NewOrderAudioAttention"];
+                    // сохранить в свойствах приложения 
+                    AppLib.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
+                    // в config-файле
+                    AppLib.SaveAppSettings("NewOrderAudioAttention", wavFile);
+                    // и загрузить в проигрыватель
+                    _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                    _wavPlayer.LoadAsync();
                 }
 
             }

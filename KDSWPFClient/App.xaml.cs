@@ -123,6 +123,8 @@ namespace KDSWPFClient
             // кнопки прокрутки страниц
             AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
 
+            cfgValue = AppLib.GetAppSetting("NewOrderAudioAttention");
+            if (cfgValue != null) AppLib.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
 
             // режим ингредиента: 
             // - подчиненный блюду, т.е. переходит из состояния в состояние только вместе с блюдом, отображается только вместе с блюдом, 

@@ -151,6 +151,11 @@ namespace KDSWPFClient.Lib
             return AppDomain.CurrentDomain.BaseDirectory;
         }
 
+        public static string GetAppDirectory(string subDir)
+        {
+            return GetAppDirectory() + subDir + ((subDir.EndsWith("\\")) ? "" : "\\");
+        }
+
         public static string GetFullFileName(string relPath, string fileName)
         {
             return getFullPath(relPath) + fileName;
@@ -228,18 +233,18 @@ namespace KDSWPFClient.Lib
 
         // запись значения в config-файл
         // ConfigurationManager НЕ СОХРАНЯЕТ КОММЕНТАРИИ!!!!
-        public static void SaveValueToConfig(string key, string value)
-        {
-            // Open App.Config of executable
-            System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            // Add an Application Setting.
-            config.AppSettings.Settings.Remove(key);
-            config.AppSettings.Settings.Add(key, value);
-            // Save the configuration file.
-            config.Save(ConfigurationSaveMode.Modified);
-            // Force a reload of a changed section.
-            ConfigurationManager.RefreshSection("appSettings");
-        }
+        //public static void SaveValueToConfig(string key, string value)
+        //{
+        //    // Open App.Config of executable
+        //    System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+        //    // Add an Application Setting.
+        //    config.AppSettings.Settings.Remove(key);
+        //    config.AppSettings.Settings.Add(key, value);
+        //    // Save the configuration file.
+        //    config.Save(ConfigurationSaveMode.Modified);
+        //    // Force a reload of a changed section.
+        //    ConfigurationManager.RefreshSection("appSettings");
+        //}
 
         // работа с config-файлом как с XML-документом - сохраняем комментарии
         // параметр appSettingsDict - словарь из ключа и значения (string), которые необх.сохранить в разделе appSettings
@@ -298,6 +303,19 @@ namespace KDSWPFClient.Lib
                 errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
                 return false;
             }
+        }
+
+        public static bool SaveAppSettings(string key, string value)
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>() { { key, value } };
+            string errMsg = null;
+
+            bool retVal = SaveAppSettings(dict, out errMsg);
+            if (retVal == false)
+            {
+                AppLib.WriteLogErrorMessage("An error occurred while saving the value ({0}: {1}) to config file: {2}",key, value, errMsg);
+            }
+            return retVal;
         }
 
         internal static double GetOrdersPageContentHeight()

@@ -7,7 +7,7 @@
         xmlns:cavCtl="clr-namespace:CAVControls;assembly=NumericUpDown"
         xmlns:KDSWPFClient="clr-namespace:KDSWPFClient" 
         mc:Ignorable="d" Name="appConfig" Background="FloralWhite"
-        Title="ConfigEdit" Height="672" Width="1034">
+        Title="ConfigEdit" Height="757" Width="1159">
 
     <Window.Resources>
         <!-- шаблон для отображения строк словаря отделов -->
@@ -170,11 +170,19 @@
                 <TextBlock Text="Коэффициент размера шрифтов:  "/>
                 <cavCtl:NumericUpDown x:Name="tbFontSizeScale" Minimum="0.5" Maximum="2.0" Value="1.0" Width="100" Increment="0.1" IsVisibleRange="Visible" ContentStringFormat="#0.0" FontSize="18" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
+
+            <!-- выбор звукового файла -->
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Выберите звуковой файл:  "/>
+                <ComboBox x:Name="cbxSelectAudio" Width="300"/>
+                <Button x:Name="btnBrowseAudioFile" Margin="20,0,0,0" Content="Обзор..." Click="btnBrowseAudioFile_Click" Padding="10,0"/>
+            </StackPanel>
+
         </StackPanel>
 
         <Grid DockPanel.Dock="Top" Margin="10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="6*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -229,6 +237,7 @@
                                 <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
                         <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
                                 <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
+                                <CheckBox x:Name="cbxState7" Tag="7" Content="Готовность подтверждена"/>
                                 <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
                             </StackPanel>
                         </Border>
@@ -240,8 +249,11 @@
                             <StackPanel x:Name="pnlActions">
                                 <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа"/>
                                 <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа"/>
+                                <CheckBox x:Name="cbx27" Tag="2,7" Content="Подтвердить приготовление"/>
+                                <CheckBox x:Name="cbx17" Tag="1,7" Content="Закончить приготовление с подтверждением"/>
                                 <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
-                                <CheckBox x:Name="cbx23" Tag="2,3" Content="Забрать блюдо и отнести клиенту"/>
+                                <CheckBox x:Name="cbx23" Tag="2,3" Content="Выдать готовое блюдо/заказ"/>
+                                <CheckBox x:Name="cbx73" Tag="7,3" Content="Выдать подтвержденное шеф-поваром"/>
                                 <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
                             </StackPanel>
                         </Border>
