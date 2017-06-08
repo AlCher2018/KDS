@@ -416,7 +416,8 @@ namespace KDSWPFClient
 
             if (newOrders) _wavPlayer.Play();
             // перерисовать полностью
-            if ((isViewRepaint == true) || (_pages.CurrentPage.Children.Count == 0)) repaintOrders();
+            if ((isViewRepaint == true) 
+                || ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0))) repaintOrders();
 
         }  // method
 
@@ -466,13 +467,21 @@ namespace KDSWPFClient
             foreach (OrderDishModel dm in dishesForCopy)
             {
                 retVal.Dishes.Add(dm.Id, dm);
+                dishes.Remove(dm);
                 // и собрать все ингредиенты, у некоторых CreateDate может отличаться от блюда!
                 ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid)).ToList();
                 foreach (OrderDishModel dmIngr in ingrsForCopy)
                 {
-                    if (!retVal.Dishes.ContainsKey(dmIngr.Id)) retVal.Dishes.Add(dmIngr.Id, dmIngr);
+                    if (!retVal.Dishes.ContainsKey(dmIngr.Id))
+                    {
+                        retVal.Dishes.Add(dmIngr.Id, dmIngr);
+                        dishes.Remove(dmIngr);
+                    }
                 }
             }
+            // оставшиеся блюда/ингредиенты на дату dtDish
+            List<OrderDishModel> rest = dishes.Where(d => d.CreateDate == dtDish).ToList();
+            foreach (OrderDishModel dm in rest) retVal.Dishes.Add(dm.Id, dm);
 
             return retVal;
         }

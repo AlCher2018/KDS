@@ -60,7 +60,8 @@ namespace KDSWPFClient.View
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
             // признак изменения рамки таймера
-            _isTimerBrushesChanging = (_isDish || (!_isDish && _isIngrIndepend));
+            _isTimerBrushesChanging = (_isDish || (!_isDish && _isIngrIndepend) 
+                || (dishView.Quantity < 0));
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
@@ -246,7 +247,7 @@ namespace KDSWPFClient.View
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
             // это ингредиент !!
-            if (!_isDish)
+            if ((!_isDish) && (_dishView.Quantity > 0))
             {
                 // зависимый или независимый ингредиент?
                 if (_isIngrIndepend == false) return;
