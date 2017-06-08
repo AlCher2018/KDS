@@ -65,6 +65,9 @@ namespace KDSWPFClient
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
+            // админ-кнопка для открытия окна конфигурации
+            btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
+
             _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
             _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -322,10 +325,22 @@ namespace KDSWPFClient
                 // пройтись еще раз по заказам и удалить пустые
                 svcOrders.RemoveAll(o => o.Dishes.Count==0);
             }
-            // сортировка по времени
+
+            // группировка и сортировка по времени БЛЮДА
             else
             {
-                svcOrders = svcOrders.OrderBy(o => o.CreateDate).ThenBy(o => o.Id).ToList();
+                // сортировка по CreateDate заказа
+                //svcOrders = svcOrders.OrderBy(o => o.CreateDate).ThenBy(o => o.Id).ToList();
+
+                // сортировка по CreateDate блюд
+                SortedList<DateTime, OrderModel> sortOrders = new SortedList<DateTime, OrderModel>();
+                foreach (OrderModel om in svcOrders)
+                {
+                    foreach (DateTime dt in (om.Dishes.Values.Select(d => d.CreateDate).Distinct()))
+                        sortOrders.Add(dt, getCopyOrderModel(om, dt));
+                }
+
+                svcOrders = sortOrders.Values.ToList();
             }
 
 
@@ -345,7 +360,7 @@ namespace KDSWPFClient
             // появились ли в svcOrders заказы, которых нет в _viewOrders, т.е. новые?
             // поиск по Id
             bool newOrders = false;
-            List<int> idsList = _viewOrders.Select(o => o.Id).ToList();
+            List<int> idsList = _viewOrders.Select(o => o.Id).Distinct().ToList();  // собрать уникальные Id
             foreach (OrderModel dbOrder in svcOrders)
             {
                 if (!idsList.Contains(dbOrder.Id)) { newOrders = true; break; }
@@ -355,13 +370,112 @@ namespace KDSWPFClient
             //  В svcOrder<orderModel> НАХОДИТСЯ СПИСОК, КОТОРЫЙ НЕОБХОДИМО ОТОБРАЗИТЬ НА ЭКРАНЕ
             // *****
             // *** ОБНОВИТЬ _viewOrdes ДАННЫМИ ИЗ svcOrders
-            bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
+            // в случае с группировкой по времени и разбивкой заказов на несколько панелей, работает НЕПРАВИЛЬНО!!!
+            //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
+            bool isViewRepaint = false;
+            OrderViewModel curViewOrder;
+            int index = -1;  // порядковый номер
+            if (_viewOrders.Count > svcOrders.Count)
+            {
+                int delIndexFrom = (svcOrders.Count == 0) ? 0 : svcOrders.Count - 1;
+                _viewOrders.RemoveRange(delIndexFrom, _viewOrders.Count - svcOrders.Count);
+                isViewRepaint = true;
+            }
+            foreach (OrderModel om in svcOrders)
+            {
+                index++;
+                // добавить
+                if (index == _viewOrders.Count)
+                {
+                    OrderViewModel newOM = new OrderViewModel(om, index + 1);
+                    _viewOrders.Add(newOM);
+                    isViewRepaint = true;
+                }
+                else 
+                {
+                    curViewOrder = _viewOrders[index];
+                    if ((curViewOrder.Number == om.Number) && (curViewOrder.CreateDate == om.CreateDate) 
+                        && compareOrderDishes(om, curViewOrder))
+                    {
+                        curViewOrder.UpdateFromSvc(om);
+                        if ((curViewOrder is IContainInnerCollection) 
+                            && ((curViewOrder as IContainInnerCollection).IsInnerListUpdated) 
+                            && !isViewRepaint) isViewRepaint = true;
+                    }
+                    else
+                    {
+                        // удалить в целевом списке все от текущей позиции включительно и до конца
+                        _viewOrders.RemoveRange(index, _viewOrders.Count-index);
+                        // и вставить новый объект
+                        OrderViewModel newOM = new OrderViewModel(om, index + 1);
+                        _viewOrders.Add(newOM);
+                        isViewRepaint = true;
+                    }
+                }
+            }
 
             if (newOrders) _wavPlayer.Play();
             // перерисовать полностью
             if ((isViewRepaint == true) || (_pages.CurrentPage.Children.Count == 0)) repaintOrders();
 
         }  // method
+
+
+        // возвращает true, если количество элементов в коллекциях блюд одинаково и элементы упорядочены по Id
+        private bool compareOrderDishes(OrderModel srcOrder, OrderViewModel tgtOrder)
+        {
+            if (srcOrder.Dishes.Count != tgtOrder.Dishes.Count) return false;
+
+            OrderDishModel[] srcDishes = new OrderDishModel[srcOrder.Dishes.Count];
+            srcOrder.Dishes.Values.CopyTo(srcDishes, 0);
+
+            bool retVal = true;
+            for (int i=0; i < srcDishes.Length; i++)
+            {
+                if (srcDishes[i].Id != tgtOrder.Dishes[i].Id) { retVal = false; break; }
+            }
+
+            return retVal;
+        }
+
+
+        // создать копию OrderMode с блюдами, у которых дата равна параметру
+        private OrderModel getCopyOrderModel(OrderModel om, DateTime dtDish)
+        {
+            OrderModel retVal = new OrderModel()
+            {
+                CreateDate = dtDish,
+                Dishes = new Dictionary<int, OrderDishModel>(),
+                HallName = om.HallName,
+                Id = om.Id,
+                Number = om.Number,
+                OrderStatusId = om.OrderStatusId,
+                TableName = om.TableName,
+                Uid = om.Uid,
+                Waiter = om.Waiter,
+                WaitingTimerString = om.WaitingTimerString
+            };
+            // скопировать ссылки на блюда
+            // ингредиенты копируются вместе с блюдом, независимо от флажка IsIngredientsIndependent
+            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+            // все блюда
+            List<OrderDishModel> dishes = om.Dishes.Values.ToList();
+            // блюда для копирования
+            List<OrderDishModel> dishesForCopy = dishes.Where(d => d.ParentUid.IsNull() && d.CreateDate == dtDish).ToList();
+            List<OrderDishModel> ingrsForCopy;
+            foreach (OrderDishModel dm in dishesForCopy)
+            {
+                retVal.Dishes.Add(dm.Id, dm);
+                // и собрать все ингредиенты, у некоторых CreateDate может отличаться от блюда!
+                ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid)).ToList();
+                foreach (OrderDishModel dmIngr in ingrsForCopy)
+                {
+                    if (!retVal.Dishes.ContainsKey(dmIngr.Id)) retVal.Dishes.Add(dmIngr.Id, dmIngr);
+                }
+            }
+
+            return retVal;
+        }
 
         private void repaintOrders()
         {
@@ -767,6 +881,7 @@ namespace KDSWPFClient
                 legend.ShowDialog();
             }
         }
+
 
     }  // class MainWindow
 }

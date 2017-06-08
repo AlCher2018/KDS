@@ -56,34 +56,44 @@ namespace WpfKDSOrdersEmulator
         private void createNewOrder(int newNumber = 0)
         {
             string viewText;
-            bool isSubOrder = (newNumber != 0);
             using (BoardChefTestEntities db = new BoardChefTestEntities())
             {
                 Order ord;
+                // создать новый заказ
                 if (newNumber == 0)
                 {
                     newNumber = (db.Order.Count() == 0) ? 500 : db.Order.OrderByDescending(o => o.Number).FirstOrDefault().Number + 1;
+
                     ord = getNewOrder(newNumber);
+                    // добавить в БД блюда и ингредиенты, если есть
+                    foreach (OrderDish dish in ord.OrderDish) db.OrderDish.Add(dish);
+                    db.Order.Add(ord);
                 }
-                // дозаказ
+
+                // сделать ДОЗАКАЗ
                 else
                 {
-                    Order ordMain = db.Order.FirstOrDefault(o => o.Number == newNumber);
-                    ord = getNewOrder(newNumber, ordMain);
+                    ord = db.Order.FirstOrDefault(o => o.Number == newNumber);
+                    if (ord != null)
+                    {
+                        int cnt = ord.OrderDish.Count;
+                        createRndDishes(ord);
+                        for (int i = cnt; i < ord.OrderDish.Count; i++)
+                        {
+                            db.OrderDish.Add(ord.OrderDish.ElementAt(i));
+                        }
+                    }
                 }
-                db.Order.Add(ord);
 
-                // добавить в БД блюда и ингредиенты, если есть
-                foreach (OrderDish dish in ord.OrderDish) db.OrderDish.Add(dish);
 
                 try
                 {
                     db.SaveChanges();
-                    viewText = string.Format("{3}заказ {0} создан успешно: Id {1}, блюд {2}", ord.Number, ord.Id, ord.OrderDish.Count, (isSubOrder ? "ДО" : ""));
+                    viewText = string.Format("{3}заказ {0} создан успешно: Id {1}, блюд {2}", ord.Number, ord.Id, ord.OrderDish.Count, (newNumber!=0 ? "ДО" : ""));
                 }
                 catch (Exception ex)
                 {
-                    viewText = string.Format("{0}заказ {1} НЕ создан: {2}", (isSubOrder ? "ДО" : ""), ord.Number, ex.ToString());
+                    viewText = string.Format("{0}заказ {1} НЕ создан: {2}", (newNumber!=0 ? "ДО" : ""), ord.Number, ex.ToString());
                 }
             }
 
@@ -137,8 +147,15 @@ namespace WpfKDSOrdersEmulator
                 MenuDish menuDish = getRndMenuDish();
                 OrderDish dish = new OrderDish()
                 {
-                    OrderId = ord.Id, DishStatusId = 0, FilingNumber = _rnd.Next(1,3), Quantity = _rnd.Next(1,5), CreateDate = DateTime.Now,
-                    UID = menuDish.UID, DishName = menuDish.Name, Comment = menuDish.Comment, DepartmentId = menuDish.DepartmentId,
+                    OrderId = ord.Id,
+                    DishStatusId = 0,
+                    FilingNumber = _rnd.Next(1, 3),
+                    Quantity = _rnd.Next(1, 5),
+                    CreateDate = DateTime.Now,
+                    UID = Guid.NewGuid().ToString().Substring(0, 15),
+                    DishName = menuDish.Name,
+                    Comment = menuDish.Comment,
+                    DepartmentId = menuDish.DepartmentId,
                     DelayedStartTime = (_rnd.NextDouble() > 0.5d) ? _delayStartTime[_rnd.Next(1, _delayStartTime.Count()) - 1] : 0,
                     EstimatedTime = menuDish.EstimatedTime
                 };
@@ -173,21 +190,21 @@ namespace WpfKDSOrdersEmulator
         {
             return new MenuDish[] 
             {
-                new MenuDish() { UID = "48CFD0E91", Name="Блюдо 1", Comment=null, DepartmentId = 1, EstimatedTime = 60},
-                new MenuDish() { UID = "6508CC54A422", Name="Блюдо 2", Comment=null, DepartmentId = 2, EstimatedTime = 0},
-                new MenuDish() { UID = "B2173F9B5809", Name="Блюдо 3", Comment="123214цу", DepartmentId = 1, EstimatedTime = 20},
-                new MenuDish() { UID = "0A9D482F", Name="Блюдо 4", Comment="ывпвып вапвыапуцкнкеор вапывап вапывап", DepartmentId = 1, EstimatedTime = 30}
-                //new MenuDish() { UID = "6B0515068E49", Name="Блюдо 5", Comment="", DepartmentId = 1, EstimatedTime = 0},
-                //new MenuDish() { UID = "410719194227", Name="Блюдо 6", Comment="dsgerghteh dfbsdb dtghrt dsgfbds sdthrth", DepartmentId = getRndDepartment(), EstimatedTime = 300},
-                //new MenuDish() { UID = "784A74EDA939", Name="Блюдо 7", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 0},
-                //new MenuDish() { UID = "BE29BA6D812A", Name="Блюдо 8", Comment="rtyt", DepartmentId = getRndDepartment(), EstimatedTime = 300},
-                //new MenuDish() { UID = "8091", Name="Блюдо 9", Comment="cfggf dfghfghgfh", DepartmentId = getRndDepartment(), EstimatedTime = 600},
-                //new MenuDish() { UID = "4D14815A", Name="Блюдо 10", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 600},
-                //new MenuDish() { UID = "A2CE", Name="Блюдо 11", Comment=null, DepartmentId = getRndDepartment(), EstimatedTime = 0},
-                //new MenuDish() { UID = "9ED46082DC76", Name="Блюдо 12", Comment="fghtyhdsrt sdfg5ryher", DepartmentId = getRndDepartment(), EstimatedTime = 100},
-                //new MenuDish() { UID = "1097495AA59B", Name="Блюдо 13", Comment="dfgdgdsfg ryutyu567 mjrtyuj", DepartmentId = getRndDepartment(), EstimatedTime = 0},
-                //new MenuDish() { UID = "A516D80DC0", Name="Блюдо 14", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
-                //new MenuDish() { UID = "788DE670B", Name="Блюдо 15", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
+                new MenuDish() { Name="Блюдо 1", Comment=null, DepartmentId = 1, EstimatedTime = 60},
+                new MenuDish() { Name="Блюдо 2", Comment=null, DepartmentId = 2, EstimatedTime = 0},
+                new MenuDish() { Name="Блюдо 3", Comment="123214цу", DepartmentId = 1, EstimatedTime = 20},
+                new MenuDish() { Name="Блюдо 4", Comment="ывпвып вапвыапуцкнкеор вапывап вапывап", DepartmentId = 1, EstimatedTime = 30}
+                //new MenuDish() { Name="Блюдо 5", Comment="", DepartmentId = 1, EstimatedTime = 0},
+                //new MenuDish() { Name="Блюдо 6", Comment="dsgerghteh dfbsdb dtghrt dsgfbds sdthrth", DepartmentId = getRndDepartment(), EstimatedTime = 300},
+                //new MenuDish() { Name="Блюдо 7", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                //new MenuDish() { Name="Блюдо 8", Comment="rtyt", DepartmentId = getRndDepartment(), EstimatedTime = 300},
+                //new MenuDish() { Name="Блюдо 9", Comment="cfggf dfghfghgfh", DepartmentId = getRndDepartment(), EstimatedTime = 600},
+                //new MenuDish() { Name="Блюдо 10", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 600},
+                //new MenuDish() { Name="Блюдо 11", Comment=null, DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                //new MenuDish() { Name="Блюдо 12", Comment="fghtyhdsrt sdfg5ryher", DepartmentId = getRndDepartment(), EstimatedTime = 100},
+                //new MenuDish() { Name="Блюдо 13", Comment="dfgdgdsfg ryutyu567 mjrtyuj", DepartmentId = getRndDepartment(), EstimatedTime = 0},
+                //new MenuDish() { Name="Блюдо 14", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
+                //new MenuDish() { Name="Блюдо 15", Comment="", DepartmentId = getRndDepartment(), EstimatedTime = 180},
             };
         }
         private MenuDish getRndMenuDish()
@@ -320,7 +337,6 @@ namespace WpfKDSOrdersEmulator
 
     internal class MenuDish
     {
-        public string UID { get; set; }
         public string Name { get; set; }
         public string Comment { get; set; }
         public int DepartmentId { get; set; }

@@ -36,8 +36,7 @@ namespace KDSWPFClient.ViewModel
         public string UID { get; set; }
         public int Number { get; set; }
 
-        private DateTime _createDate;
-        public string CreateDate { get; set; }
+        public DateTime CreateDate { get; set; }
 
         public string WaitingTimerString { get; set; }
 
@@ -73,9 +72,7 @@ namespace KDSWPFClient.ViewModel
             _status = (StatusEnum)OrderStatusId;
             UID = svcOrder.Uid;
             Number = svcOrder.Number;
-
-            _createDate = svcOrder.CreateDate;
-            setViewCreateDate();
+            CreateDate = svcOrder.CreateDate;
 
             WaitingTimerString = svcOrder.WaitingTimerString;
             Waiter = svcOrder.Waiter;
@@ -93,20 +90,6 @@ namespace KDSWPFClient.ViewModel
         }
 
 
-        private void setViewCreateDate()
-        {
-            if (_createDate.Equals(DateTime.MinValue))
-                CreateDate = "no data";
-            else if (DateTime.Now.Day !=_createDate.Day)  // показать и дату создания заказа
-            {
-                CreateDate = _createDate.ToString("dd.MM.yyyy HH:mm:ss");
-            }
-            else  // показать только время создания заказа
-            {
-                CreateDate = _createDate.ToString("HH:mm:ss");
-            }
-        }
-
         public void UpdateFromSvc(OrderModel svcOrder)
         {
             if (OrderStatusId != svcOrder.OrderStatusId)
@@ -123,10 +106,9 @@ namespace KDSWPFClient.ViewModel
                 OnPropertyChanged("Number");
             }
 
-            if (_createDate != svcOrder.CreateDate)
+            if (CreateDate != svcOrder.CreateDate)
             {
-                _createDate = svcOrder.CreateDate;
-                setViewCreateDate();
+                CreateDate = svcOrder.CreateDate;
                 OnPropertyChanged("CreateDate");
             }
 

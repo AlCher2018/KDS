@@ -42,10 +42,10 @@ namespace KDSService
         public int DelayedStartTime { get; set; }
     
         public virtual Department Department { get; set; }
-        public virtual Order Order { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDishReturnTime> OrderDishReturnTime { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDishRunTime> OrderDishRunTime { get; set; }
+        public virtual Order Order { get; set; }
     }
 }

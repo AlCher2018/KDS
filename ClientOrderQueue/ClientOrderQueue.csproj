@@ -116,9 +116,6 @@
     <Compile Include="Model\CellContainer.cs" />
     <Compile Include="Lib\Converters.cs" />
     <Compile Include="Model\CellBrushes.cs" />
-    <Compile Include="QueueStatus.cs">
-      <DependentUpon>DataModel.tt</DependentUpon>
-    </Compile>
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -126,9 +123,6 @@
     <Compile Include="DataModel.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>DataModel.tt</DependentUpon>
-    </Compile>
-    <Compile Include="LanguageType.cs">
       <DependentUpon>DataModel.tt</DependentUpon>
     </Compile>
     <Compile Include="Lib\AppLib.cs" />

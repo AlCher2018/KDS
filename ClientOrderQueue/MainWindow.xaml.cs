@@ -164,8 +164,9 @@ namespace ClientOrderQueue
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
+                        var dbOrders = db.Order.ToList();
                         //retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
-                        retVal = (from o in db.Order where o.QueueStatusId < 2 orderby o.Number select o).ToList();
+                        retVal = (from o in dbOrders where o.QueueStatusId < 2 orderby o.Number select o).ToList();
                     }
                 }
             }

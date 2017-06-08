@@ -11,7 +11,10 @@
         <locLib:GetMargin x:Key="getMargin"/>
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
         <locLib:IsNullConverter x:Key="isNullConverter"/>
+        <locLib:ViewDateConverter x:Key="viewDateConverter"/>
+
         
+
         <locLib:BrushConverter x:Key="brushConverter" />
 
     </Application.Resources>

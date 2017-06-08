@@ -96,7 +96,6 @@ namespace KDSWPFClient.Lib
         }
     }  // class UIElementExtensions
 
-
     //public static class CollectionExtension
     //{
     //}

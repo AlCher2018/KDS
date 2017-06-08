@@ -25,8 +25,6 @@ namespace ClientOrderQueue
             throw new UnintentionalCodeFirstException();
         }
     
-        public virtual DbSet<LanguageType> LanguageType { get; set; }
         public virtual DbSet<Order> Order { get; set; }
-        public virtual DbSet<QueueStatus> QueueStatus { get; set; }
     }
 }

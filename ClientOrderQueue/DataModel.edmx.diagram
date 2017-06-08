@@ -5,11 +5,7 @@
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
       <Diagram DiagramId="60782382396542e68337ba063e2f71e3" Name="Diagram1">
-        <EntityTypeShape EntityType="KDSModel.LanguageType" Width="1.5" PointX="0.75" PointY="2.125" IsExpanded="true" />
-        <EntityTypeShape EntityType="KDSModel.Order" Width="1.5" PointX="3" PointY="1" IsExpanded="true" />
-        <EntityTypeShape EntityType="KDSModel.QueueStatus" Width="1.5" PointX="0.75" PointY="6.125" IsExpanded="true" />
-        <AssociationConnector Association="KDSModel.FK_Order_LanguageType" ManuallyRouted="false" />
-        <AssociationConnector Association="KDSModel.FK_Order_QStatus" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="KDSModel.Order" Width="1.5" PointX="0.75" PointY="0.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

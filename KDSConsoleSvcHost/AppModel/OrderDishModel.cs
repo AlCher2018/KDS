@@ -191,8 +191,12 @@ namespace KDSService.AppModel
             Quantity = dbDish.Quantity;
             DelayedStartTime = dbDish.DelayedStartTime;
             EstimatedTime = dbDish.EstimatedTime;
+
             DishStatusId = dbDish.DishStatusId??0;
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+
+            // получить запись из таблицы состояний
+            _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
 
             _isDish = ParentUid.IsNull();
             _isInrgIndepend = (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
@@ -222,41 +226,49 @@ namespace KDSService.AppModel
             // таймер нахождения в состоянии отмены
             _tsTimersDict.Add(OrderStatusEnum.Cancelled, new TimeCounter() { Name= OrderStatusEnum.Cancelled.ToString()});
 
-            // получить запись из таблицы состояний
-            _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
 
-            // стартануть таймер для блюда или независимого ингредиента
-            if (_isDish || (!_isDish && _isInrgIndepend))
+            // отмененное блюдо/ингредиент
+            // для новой записи сразу сохраняем в БД
+            if ((Quantity < 0) && (Status != OrderStatusEnum.Cancelled))
             {
-                UpdateFromDBEntity(dbDish);  // для новой записи DTS не сохранен
-
-                StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
-                DateTime dtEnterState = statusDTS.DateEntered;
-                if (dtEnterState.IsZero())
-                {
-                    dtEnterState = DateTime.Now;
-                    setStatusRunTimeDTS(this.Status, dtEnterState, -1);
-                    saveRunTimeRecord();
-                    statusDTS = getStatusRunTimeDTS(this.Status);
-                }
-                startStatusTimer(statusDTS);
+                UpdateStatus(OrderStatusEnum.Cancelled, false);
             }
-
-            // а для ЗАВИСИМОГО ингредиента - по родительскому блюду
             else
             {
-                // найти уже существующее блюдо для данного ингредиента от текущей позиции и выше
-                List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
-                int idx = dishes.Count;  // индекс ингредиента
-                for (int i = idx - 1; i >= 0; i--)
+                // стартануть таймер для блюда или независимого ингредиента
+                if (_isDish || (!_isDish && _isInrgIndepend))
                 {
-                    // нашли родительское блюдо
-                    if ((dishes[i].ParentUid.IsNull()) && (dishes[i].Uid == this.Uid))
+                    UpdateFromDBEntity(dbDish);  // для новой записи DTS не сохранен
+
+                    StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+                    DateTime dtEnterState = statusDTS.DateEntered;
+                    if (dtEnterState.IsZero())
                     {
-                        _parentDish = dishes[i]; break;
+                        dtEnterState = DateTime.Now;
+                        setStatusRunTimeDTS(this.Status, dtEnterState, -1);
+                        saveRunTimeRecord();
+                        statusDTS = getStatusRunTimeDTS(this.Status);
                     }
+                    startStatusTimer(statusDTS);
                 }
-                updateIngredientByParentDish();
+
+                // а для ЗАВИСИМОГО ингредиента - по родительскому блюду
+                else
+                {
+                    // найти уже существующее блюдо для данного ингредиента от текущей позиции и выше
+                    List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
+                    int idx = dishes.Count;  // индекс ингредиента
+                    for (int i = idx - 1; i >= 0; i--)
+                    {
+                        // нашли родительское блюдо
+                        if ((dishes[i].ParentUid.IsNull()) && (dishes[i].Uid == this.Uid))
+                        {
+                            _parentDish = dishes[i]; break;
+                        }
+                    }
+
+                    updateIngredientByParentDish();
+                }
             }
 
         }  // constructor
@@ -286,6 +298,8 @@ namespace KDSService.AppModel
                 }
 
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+                // отмененное блюдо/ингредиент
+                if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
 
                 // обновление состояния для блюда или независимого ингредиента
                 if (_isDish || (!_isDish && _isInrgIndepend))

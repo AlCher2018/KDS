@@ -22,13 +22,10 @@ namespace ClientOrderQueue
         public string TableNumber { get; set; }
         public System.DateTime CreateDate { get; set; }
         public string RoomNumber { get; set; }
-        public System.DateTime StartDate { get; set; }
+        public Nullable<System.DateTime> StartDate { get; set; }
         public int SpentTime { get; set; }
         public string Waiter { get; set; }
-        public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
-    
-        public virtual LanguageType LanguageType { get; set; }
-        public virtual QueueStatus QueueStatu { get; set; }
+        public int QueueStatusId { get; set; }
     }
 }

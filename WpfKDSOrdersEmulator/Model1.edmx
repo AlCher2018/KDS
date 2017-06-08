@@ -30,8 +30,6 @@
           <Property Name="StartDate" Type="datetime" />
           <Property Name="SpentTime" Type="int" Nullable="false" />
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
-          <Property Name="InPreporationSpentTime" Type="int" Nullable="false" />
-          <Property Name="ReadySpentTime" Type="int" Nullable="false" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
         </EntityType>
@@ -259,8 +257,6 @@
           <Property Name="StartDate" Type="DateTime" Precision="3" />
           <Property Name="SpentTime" Type="Int32" Nullable="false" />
           <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="InPreporationSpentTime" Type="Int32" Nullable="false" />
-          <Property Name="ReadySpentTime" Type="Int32" Nullable="false" />
           <NavigationProperty Name="OrderStatus" Relationship="Self.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
           <NavigationProperty Name="OrderRunTime" Relationship="Self.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
@@ -496,8 +492,6 @@
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
                 <ScalarProperty Name="Waiter" ColumnName="Waiter" />
-                <ScalarProperty Name="InPreporationSpentTime" ColumnName="InPreporationSpentTime" />
-                <ScalarProperty Name="ReadySpentTime" ColumnName="ReadySpentTime" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

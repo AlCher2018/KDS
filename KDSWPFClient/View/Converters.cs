@@ -115,4 +115,33 @@ namespace KDSWPFClient.View
     }
 
 
+    // преобразование даты
+    [ValueConversion(typeof(DateTime), typeof(string))]
+    public class ViewDateConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is DateTime)) return "no DateTime type";
+
+            DateTime dt = (DateTime)value;
+
+            if (dt.Equals(DateTime.MinValue))
+                return "no data";
+            else if (DateTime.Now.Day != dt.Day)  // показать и дату создания заказа
+            {
+                return dt.ToString("dd.MM.yyyy HH:mm:ss");
+            }
+            else  // показать только время создания заказа
+            {
+                return dt.ToString("HH:mm:ss");
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
 }
