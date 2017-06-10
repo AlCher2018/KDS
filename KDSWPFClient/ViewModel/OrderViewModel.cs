@@ -45,6 +45,8 @@ namespace KDSWPFClient.ViewModel
 
         public string Waiter { get; set; }
 
+        public string DivisionColorRGB { get; set; }
+
         public virtual List<OrderDishViewModel> Dishes { get; set; }
 
         public OrderPanel ViewPanel { get; set; }
@@ -73,11 +75,11 @@ namespace KDSWPFClient.ViewModel
             UID = svcOrder.Uid;
             Number = svcOrder.Number;
             CreateDate = svcOrder.CreateDate;
-
-            WaitingTimerString = svcOrder.WaitingTimerString;
             Waiter = svcOrder.Waiter;
             HallName = svcOrder.HallName;
             TableName = svcOrder.TableName;
+            WaitingTimerString = svcOrder.WaitingTimerString;
+            DivisionColorRGB = svcOrder.DivisionColorRGB;
 
             this.Dishes = new List<OrderDishViewModel>();
             int dishIndex = 0;
@@ -134,6 +136,12 @@ namespace KDSWPFClient.ViewModel
             {
                 TableName = svcOrder.TableName;
                 OnPropertyChanged("TableName");
+            }
+            
+            if (DivisionColorRGB != svcOrder.DivisionColorRGB)
+            {
+                DivisionColorRGB = svcOrder.DivisionColorRGB;
+                OnPropertyChanged("DivisionColorRGB");
             }
 
             // ОБНОВИТЬ БЛЮДА В ЗАКАЗЕ

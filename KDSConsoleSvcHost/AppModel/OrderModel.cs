@@ -33,6 +33,9 @@ namespace KDSService.AppModel
         public string Waiter { get; set; }
 
         [DataMember]
+        public string DivisionColorRGB { get; set; }
+
+        [DataMember]
         public int OrderStatusId { get; set; }
 
         private OrderStatusEnum Status;
@@ -96,6 +99,7 @@ namespace KDSService.AppModel
             CreateDate = dbOrder.CreateDate;
             HallName = dbOrder.RoomNumber;
             Waiter = dbOrder.Waiter;
+            DivisionColorRGB = dbOrder.DivisionColorRGB;
 
             OrderStatusId = dbOrder.OrderStatusId;
             Status = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
@@ -170,6 +174,7 @@ namespace KDSService.AppModel
                 if (CreateDate != dbOrder.CreateDate) CreateDate = dbOrder.CreateDate;
                 if (HallName != dbOrder.RoomNumber) HallName = dbOrder.RoomNumber;
                 if (Waiter != dbOrder.Waiter) Waiter = dbOrder.Waiter;
+                if (DivisionColorRGB != dbOrder.DivisionColorRGB) DivisionColorRGB = dbOrder.DivisionColorRGB;
 
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
@@ -288,7 +293,10 @@ namespace KDSService.AppModel
         {
             DateTime dtEnterToStatus = statusDTS.DateEntered;
 
-            if (_tsTimersDict.ContainsKey(this.Status))
+            if (_tsTimersDict.ContainsKey(this.Status) 
+                && ((_curTimer == null) || (_curTimer.Enabled == false) || (_curTimer != _tsTimersDict[this.Status]) 
+                    || (_curTimer.StartDT != _tsTimersDict[this.Status].StartDT))
+                )
             {
                 _curTimer = _tsTimersDict[this.Status];
                 _curTimer.Start(dtEnterToStatus);

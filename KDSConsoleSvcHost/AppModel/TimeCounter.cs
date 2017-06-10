@@ -17,6 +17,8 @@ namespace KDSService.AppModel
         // постоянная величина в секундах, которая прибавляется к возвращаемому значению в ValueTS
         private int _increment;
 
+        public DateTime StartDT { get { return _dtStart; } }
+
         // возвращает кол-во секунд между текущим временем и _dtStart
         public int ValueTS
         {

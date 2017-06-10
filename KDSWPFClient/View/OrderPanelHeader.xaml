@@ -47,6 +47,8 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
+        <Border x:Name="brdDivisionMark" Grid.Row="0" Panel.ZIndex="5" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}" BorderThickness="5" Height="10" VerticalAlignment="Top"/>
+        
         <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
         <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" Style="{StaticResource row1Style}">
             <Grid x:Name="grdHdrTableRow" Style="{StaticResource rowMarginStyle}">
@@ -58,10 +60,12 @@
                     <Run x:Name="tbTableLabel1" Text="Стол №: "/>
                     <Run x:Name="tbTableName" FontWeight="Bold" Text="{Binding TableName}"/>
                 </TextBlock>
-                <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Run x:Name="tbTableLabel2" Text="Заказ №: "/>
-                    <Run x:Name="tbOrderNumber" FontWeight="Bold" Text="{Binding Number}"/>
-                </TextBlock>
+                <Border Grid.Column="1">
+                    <TextBlock x:Name="tblOrderNumber" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Run x:Name="tbTableLabel2" Text="Заказ №: "/>
+                        <Run x:Name="tbOrderNumber" FontWeight="Bold" Text="{Binding Number}"/>
+                    </TextBlock>
+                </Border>
             </Grid>
         </Border>
         

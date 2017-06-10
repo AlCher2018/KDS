@@ -42,6 +42,7 @@
     <xs:sequence>
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
       <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q1:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
+      <xs:element minOccurs="0" name="DivisionColorRGB" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Number" type="xs:int" />
@@ -58,7 +59,7 @@
       <xs:element minOccurs="0" name="Comment" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
       <xs:element minOccurs="0" name="DelayedStartTime" type="xs:int" />
-      <xs:element minOccurs="0" name="Department" nillable="true" type="tns:DepartmentModel" />
+      <xs:element minOccurs="0" name="DepartmentId" type="xs:int" />
       <xs:element minOccurs="0" name="DishStatusId" type="xs:int" />
       <xs:element minOccurs="0" name="EstimatedTime" type="xs:int" />
       <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />

@@ -32,6 +32,7 @@
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
+          <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -422,6 +423,7 @@
           <NavigationProperty Name="OrderStatus" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
           <NavigationProperty Name="OrderRunTime" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
+          <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
         </EntityType>
         <Association Name="FK_Order_OrderStatus">
           <End Type="KDSServiceModel.OrderStatus" Role="OrderStatus" Multiplicity="1" />
@@ -569,6 +571,7 @@
           <EntitySetMapping Name="Order">
             <EntityTypeMapping TypeName="KDSServiceModel.Order">
               <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="DivisionColorRGB" ColumnName="DivisionColorRGB" />
                 <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="Waiter" ColumnName="Waiter" />

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.ServiceModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Configuration;
 
 namespace KDSWPFClient
 {
@@ -78,20 +79,21 @@ namespace KDSWPFClient
             {
                 setOrderStatusFromService();
 
-                // получить отделы со службы
+                // получить отделы со службы и сохранить их в _deps
                 setDepartmentsFromService();
-                // прочитать из конфига отделы для отображения и сохранить их в _deps
-                string[] cfgDepUIDs = AppLib.GetDepartmentsUID();
-                if (cfgDepUIDs != null)
+                // прочитать из конфига отделы для установки флажка IsViewOnKDS
+                string sBuf = ConfigurationManager.AppSettings["depUIDs"];
+                if (sBuf != null)
                 {
+                    string[] cfgDepUIDs = sBuf.Split(',');
                     DepartmentViewModel curDep;
-                    foreach (string uid in cfgDepUIDs)
+                    foreach (string id in cfgDepUIDs)
                     {
-//                        curDep = _deps.Values.FirstOrDefault(d => d.UID == uid);
-                        curDep = _deps.Values.FirstOrDefault(d => d.UID == uid);
+                        curDep = _deps.Values.FirstOrDefault(d => d.Id.ToString() == id);
                         if (curDep != null) curDep.IsViewOnKDS = true;
                     }
                 }
+
 
                 // *** ПРОЧИЕ НАСТРОЙКИ ОТ СЛУЖБЫ
                 bool isIngrIndepend = GetIsIngredientsIndependent();
@@ -168,7 +170,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", ex.Message), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", ex.Message), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
             }
 

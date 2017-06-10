@@ -11,7 +11,6 @@
 namespace KDSWPFClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
-    using Lib;
     using View;
 
     [System.Diagnostics.DebuggerStepThroughAttribute()]
@@ -204,7 +203,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -214,6 +214,9 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private System.Collections.Generic.Dictionary<int, KDSWPFClient.ServiceReference1.OrderDishModel> DishesField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string DivisionColorRGBField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string HallNameField;
@@ -271,6 +274,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.DishesField, value) != true)) {
                     this.DishesField = value;
                     this.RaisePropertyChanged("Dishes");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string DivisionColorRGB {
+            get {
+                return this.DivisionColorRGBField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.DivisionColorRGBField, value) != true)) {
+                    this.DivisionColorRGBField = value;
+                    this.RaisePropertyChanged("DivisionColorRGB");
                 }
             }
         }
@@ -393,7 +409,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -408,7 +425,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private int DelayedStartTimeField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private KDSWPFClient.ServiceReference1.DepartmentModel DepartmentField;
+        private int DepartmentIdField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int DishStatusIdField;
@@ -490,14 +507,14 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public KDSWPFClient.ServiceReference1.DepartmentModel Department {
+        public int DepartmentId {
             get {
-                return this.DepartmentField;
+                return this.DepartmentIdField;
             }
             set {
-                if ((object.ReferenceEquals(this.DepartmentField, value) != true)) {
-                    this.DepartmentField = value;
-                    this.RaisePropertyChanged("Department");
+                if ((this.DepartmentIdField.Equals(value) != true)) {
+                    this.DepartmentIdField = value;
+                    this.RaisePropertyChanged("DepartmentId");
                 }
             }
         }

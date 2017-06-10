@@ -71,11 +71,13 @@ namespace KDSWPFClient.View
 
         #endregion
 
+        private Brush _divisionMarkBrush = null;
 
 
         public OrderPanelHeader(OrderViewModel order)
         {
             InitializeComponent();
+            this.Loaded += OrderPanelHeader_Loaded;
 
             grdHeader.DataContext = order;
 
@@ -93,8 +95,18 @@ namespace KDSWPFClient.View
             tbOrderDate.FontSize = tbTableName.FontSize;
 
             tbOrderCookingCounter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
+
+            if (!order.DivisionColorRGB.IsNull()) _divisionMarkBrush = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
         }
 
+        private void OrderPanelHeader_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_divisionMarkBrush != null)
+            {
+                brdDivisionMark.BorderBrush = _divisionMarkBrush;
+ //               tblOrderNumber.Background = _divisionMarkBrush;
+            }
+        }
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {

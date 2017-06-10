@@ -100,7 +100,7 @@ namespace KDSWPFClient.View
                 listBoxDepartments.ItemsSource = _deps.Values;
             }
 
-            _cfgValKeeper.AddPreValue("depUIDs", true, null);
+            _cfgValKeeper.AddPreValue("depUIDs", false, null);
             _cfgValKeeper.AddPreValue("IsWriteTraceMessages", true, chkIsWriteTraceMessages);
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
             _cfgValKeeper.AddPreValue("AppFontScale", false, tbFontSizeScale);
@@ -290,7 +290,7 @@ namespace KDSWPFClient.View
                 if (item.IsViewOnKDS == true)
                 {
                     if (sb.Length > 0) sb.Append(",");
-                    sb.Append(item.UID.ToString());
+                    sb.Append(item.Id.ToString());
                 }
             }
             return sb.ToString();

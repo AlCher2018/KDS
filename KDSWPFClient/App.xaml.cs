@@ -95,10 +95,6 @@ namespace KDSWPFClient
         {
             string cfgValue;
 
-            // отделы на КДСе
-            cfgValue = AppLib.GetAppSetting("depUIDs");
-            AppLib.SetAppGlobalValue("depUIDs", cfgValue);
-
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
             cfgValue = AppLib.GetAppSetting("IsLogUserAction");

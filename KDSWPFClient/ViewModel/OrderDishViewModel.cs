@@ -28,6 +28,8 @@ namespace KDSWPFClient.ViewModel
 
         public StatusEnum Status { get { return _status; } }
 
+        public int DepartmentId { get; set; }
+
         public string UID { get; set; }
 
         public string ParentUID { get; set; }
@@ -67,6 +69,7 @@ namespace KDSWPFClient.ViewModel
             Id = svcOrderDish.Id;
             DishStatusId = svcOrderDish.DishStatusId;
             _status = (StatusEnum)DishStatusId;
+            DepartmentId = svcOrderDish.DepartmentId;
             UID = svcOrderDish.Uid;
             ParentUID = svcOrderDish.ParentUid;
             DishName = svcOrderDish.Name;
@@ -90,8 +93,8 @@ namespace KDSWPFClient.ViewModel
             }
 
             if (UID != svcOrderDish.Uid) UID = svcOrderDish.Uid;
-
             if (ParentUID != svcOrderDish.ParentUid) ParentUID = svcOrderDish.ParentUid;
+            if (DepartmentId != svcOrderDish.DepartmentId) DepartmentId = svcOrderDish.DepartmentId;
 
             if (DishName != svcOrderDish.Name)
             {

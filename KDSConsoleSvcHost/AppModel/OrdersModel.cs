@@ -135,32 +135,32 @@ namespace KDSService.AppModel
         }
 
 
-        // блюда, которые ожидают готовки или уже готовятся, с их кол-вом в заказах
+        // блюда, которые ожидают готовки или уже готовятся, с их кол-вом в заказах для каждого НП
         // словарь хранится в свойствах приложения
         private void updateDishesQuantityDict(List<Order> dbOrders)
         {
-            // получить или создать словарь
-            Dictionary<string, decimal> dishesQty = null;
+            // получить или создать словарь по отделам (направлениям печати)
+            Dictionary<int, decimal> dishesQty = null;
             var v1 = AppEnv.GetAppProperty("dishesQty");
-            if (v1 == null) dishesQty = new Dictionary<string, decimal>();
-            else dishesQty = (Dictionary<string, decimal>)v1;
+            if (v1 == null) dishesQty = new Dictionary<int, decimal>();
+            else dishesQty = (Dictionary<int, decimal>)v1;
 
             // очистить кол-во
-            List<string> keys = dishesQty.Keys.ToList();
-            foreach (string key in keys) dishesQty[key] = 0m;
+            List<int> keys = dishesQty.Keys.ToList();
+            foreach (int key in keys) dishesQty[key] = 0m;
 
+            decimal qnt;
             foreach (Order order in dbOrders)   // orders loop
             {
                 foreach (OrderDish dish in order.OrderDish)  //  dishes loop
                 {
-                    // только для блюд в состоянии приготовления 
-                    if (dish.ParentUid.IsNull() && ((dish.DishStatusId??0) == 1))
-                    {
-                        if (dishesQty.ContainsKey(dish.UID))
-                            dishesQty[dish.UID] += dish.Quantity;
-                        else
-                            dishesQty.Add(dish.UID, dish.Quantity);
-                    }
+                    // кол-во для блюд в состоянии приготовления 
+                    qnt = (dish.ParentUid.IsNull() && ((dish.DishStatusId ?? 0) == 1)) ? dish.Quantity : 0;
+
+                    if (dishesQty.ContainsKey(dish.DepartmentId))
+                        dishesQty[dish.DepartmentId] += qnt;
+                    else
+                        dishesQty.Add(dish.DepartmentId, qnt);
                 }  // loop
             }  // loop
 

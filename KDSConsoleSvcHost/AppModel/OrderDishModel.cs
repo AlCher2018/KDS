@@ -63,11 +63,7 @@ namespace KDSService.AppModel
         private OrderStatusEnum Status { get; set; }
 
         [DataMember]
-        public DepartmentModel Department
-        {
-            get { return _department; }
-            set { }
-        }
+        public int DepartmentId { get; set; }
 
         [DataMember]
         public string ServiceErrorMessage { get { return _serviceErrorMessage; } set { } }
@@ -190,7 +186,13 @@ namespace KDSService.AppModel
             Comment = dbDish.Comment;
             Quantity = dbDish.Quantity;
             DelayedStartTime = dbDish.DelayedStartTime;
+
+            // свойства объекта с зависимыми полями
+            DepartmentId = dbDish.DepartmentId;
+            _department = ModelDicts.GetDepartmentById(DepartmentId); // объект отдела взять из справочника
+
             EstimatedTime = dbDish.EstimatedTime;
+            _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
             DishStatusId = dbDish.DishStatusId??0;
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
@@ -202,10 +204,6 @@ namespace KDSService.AppModel
             _isInrgIndepend = (bool)AppEnv.GetAppProperty("IsIngredientsIndependent");
             _isUseReadyConfirmed = (bool)AppEnv.GetAppProperty("UseReadyConfirmedState");
             _parentDish = null;
-
-            // объект отдела взять из справочника
-            _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-            _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
             // словарь дат входа в состояние
             _dtEnterStatusDict = new Dictionary<OrderStatusEnum, DateTime>();
@@ -229,9 +227,12 @@ namespace KDSService.AppModel
 
             // отмененное блюдо/ингредиент
             // для новой записи сразу сохраняем в БД
-            if ((Quantity < 0) && (Status != OrderStatusEnum.Cancelled))
+            if (Quantity < 0)
             {
-                UpdateStatus(OrderStatusEnum.Cancelled, false);
+                if (Status != OrderStatusEnum.Cancelled)
+                    UpdateStatus(OrderStatusEnum.Cancelled, false);
+                else
+                    startStatusTimerAtFirst();
             }
             else
             {
@@ -240,16 +241,7 @@ namespace KDSService.AppModel
                 {
                     UpdateFromDBEntity(dbDish);  // для новой записи DTS не сохранен
 
-                    StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
-                    DateTime dtEnterState = statusDTS.DateEntered;
-                    if (dtEnterState.IsZero())
-                    {
-                        dtEnterState = DateTime.Now;
-                        setStatusRunTimeDTS(this.Status, dtEnterState, -1);
-                        saveRunTimeRecord();
-                        statusDTS = getStatusRunTimeDTS(this.Status);
-                    }
-                    startStatusTimer(statusDTS);
+                    startStatusTimerAtFirst();
                 }
 
                 // а для ЗАВИСИМОГО ингредиента - по родительскому блюду
@@ -308,12 +300,8 @@ namespace KDSService.AppModel
                     if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
                         newStatus = OrderStatusEnum.Cooking;
 
-                    // если поменялся отдел
-                    if (_department.Id != dbDish.DepartmentId)
-                    {
-                        // объект отдела взять из справочника
-                        _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-                    }
+                    // если поменялся отдел, то объект отдела взять из справочника
+                    if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
                     UpdateStatus(newStatus, false);
                 }  // для БЛЮДА
@@ -412,14 +400,35 @@ namespace KDSService.AppModel
         }  // method UpdateStatus
 
 
-        // запуск таймера для текущего состояния
+        // первый (инициализирующий) старт таймера
+        private void startStatusTimerAtFirst()
+        {
+            StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
+
+            // установить дату входа в состояние
+            DateTime dtEnterState = statusDTS.DateEntered;
+            if (dtEnterState.IsZero())
+            {
+                dtEnterState = DateTime.Now;
+                setStatusRunTimeDTS(this.Status, dtEnterState, -1);
+                saveRunTimeRecord();
+                statusDTS = getStatusRunTimeDTS(this.Status);
+            }
+
+            startStatusTimer(statusDTS);
+        }
+
+        // запуск таймера для обновленного состояния
         private void startStatusTimer(StatusDTS statusDTS)
         {
             DateTime dtEnterToStatus = statusDTS.DateEntered;
             // сохранить дату входа в состояние во внутреннем словаре
             _dtEnterStatusDict[this.Status] = dtEnterToStatus;
 
-            if (_tsTimersDict.ContainsKey(this.Status))
+            if (_tsTimersDict.ContainsKey(this.Status)
+                && ((_curTimer == null) || (_curTimer.Enabled == false) || (_curTimer != _tsTimersDict[this.Status])
+                    || (_curTimer.StartDT != _tsTimersDict[this.Status].StartDT))
+                )
             {
                 _curTimer = _tsTimersDict[this.Status];
                 _curTimer.Start(dtEnterToStatus);
@@ -716,18 +725,18 @@ namespace KDSService.AppModel
         private bool canAutoPassToCookingStatus()
         {
             // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
-            bool retVal = (this.Department.IsAutoStart 
+            bool retVal = (_department.IsAutoStart 
                 && (DateTime.Now >= this.CreateDate.AddSeconds(this.DelayedStartTime)));
 
             // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
             if (retVal == true)
             {
-                Dictionary<string, decimal> dishesQtyDict = (Dictionary<string, decimal>)AppEnv.GetAppProperty("dishesQty");
-                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(this.Uid)))
+                Dictionary<int, decimal> dishesQtyDict = (Dictionary<int, decimal>)AppEnv.GetAppProperty("dishesQty");
+                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(DepartmentId)))
                 {
-                    retVal = ((dishesQtyDict[this.Uid] + this.Quantity) <= _department.DishQuantity);
+                    retVal = ((dishesQtyDict[DepartmentId] + this.Quantity) <= _department.DishQuantity);
                     // обновить кол-во в словаре, пока он не обновился из БД
-                    if (retVal) dishesQtyDict[this.Uid] += this.Quantity;
+                    if (retVal) dishesQtyDict[DepartmentId] += this.Quantity;
                 }
             }
 

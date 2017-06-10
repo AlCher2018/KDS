@@ -34,6 +34,7 @@ namespace KDSService
         public string Waiter { get; set; }
         public int LanguageTypeId { get; set; }
         public int QueueStatusId { get; set; }
+        public string DivisionColorRGB { get; set; }
     
         public virtual OrderStatus OrderStatus { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

@@ -457,23 +457,23 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        public static Brush GetBrushFromRGBString(string rgb)
+        {
+            string[] sArr = rgb.Split(',');
+            if (sArr.Count() != 3) return new SolidColorBrush(Color.FromRgb(0, 0, 0));
+
+            byte r = 0, g = 0, b = 0;
+            byte.TryParse(sArr[0], out r);
+            byte.TryParse(sArr[1], out g);
+            byte.TryParse(sArr[2], out b);
+
+            return new SolidColorBrush(Color.FromRgb(r, g, b));
+        }
+
         #endregion
 
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
-        public static string[] GetDepartmentsUID()
-        {
-            string sBuf = ConfigurationManager.AppSettings["depUIDs"];
-            if (sBuf != null) return sBuf.Split(',');
-
-            return null;
-        }
-
-        public static OrderStatusEnum GetStatusEnumFromInt(int statusId)
-        {
-            return (OrderStatusEnum)statusId;
-        }
-
         public static string GetAppStringTS(TimeSpan tsTimerValue)
         {
             string retVal = "";

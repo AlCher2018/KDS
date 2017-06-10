@@ -123,6 +123,7 @@ namespace KDSWPFClient.Model
         }
 
 
+        // пользовательские наборы состояний для их фильтрации
         public static List<KDSUserStatesSet> CreateUserStatesList(List<OrderStatusEnum> statesList)
         {
             if ((statesList == null) || (statesList.Count < 2)) return null;
@@ -167,7 +168,7 @@ namespace KDSWPFClient.Model
             {
                 curSet = new KDSUserStatesSet()
                 {
-                    Name = "Все блюда",
+                    Name = "Все статусы",
                     BackBrush = new SolidColorBrush(Colors.MediumSeaGreen),
                     FontBrush = new SolidColorBrush(Colors.Navy)
                 };
