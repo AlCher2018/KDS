@@ -26,8 +26,8 @@ namespace KDSWPFClient.View
     {
         private OrderDishViewModel _dishView;
 
-        private bool _isDish, _isIngrIndepend, _isTimerBrushesChanging;
-        private double _fontSize;
+        private bool _isDish, _isIngrIndepend, _isTimerBrushesIndepend;
+        private double _fontSize, _padd;
 
         // поля дат состояний и временных промежутков
         private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
@@ -39,29 +39,21 @@ namespace KDSWPFClient.View
         private bool _negativeTimer;
         private string _waitCookBrushesName;
 
-        public bool IsDish { get { return _isDish; } }
-
         private DishPanel _parentPanel;
-        public DishPanel ParentPanel
-        { get { return _parentPanel; }
-          set {
-                _parentPanel = value;
-                _waitCookBrushesName = getWaitCookBrushesName();
-            }
-        }
 
-        public DishPanel(OrderDishViewModel dishView)
+
+        public DishPanel(OrderDishViewModel dishView, DishPanel parentPanel = null)
         {
             InitializeComponent();
 
             _dishView = dishView;
+            _parentPanel = parentPanel;
             grdDishLine.DataContext = _dishView;
 
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
             // признак изменения рамки таймера
-            _isTimerBrushesChanging = (_isDish || (!_isDish && _isIngrIndepend) 
-                || (dishView.Quantity < 0));
+            _isTimerBrushesIndepend = (_isDish || (!_isDish && _isIngrIndepend));
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
@@ -85,8 +77,9 @@ namespace KDSWPFClient.View
             }
             this.tbDishQuantity.FontSize = _fontSize;
 
-            double padd = 0.5 * fontSize;  // от немасштабного фонта
-            brdMain.Padding = new Thickness(0, 0.5*padd, 0, 0.5*padd);
+            _padd = 0.5 * fontSize;  // от немасштабного фонта
+            brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
+            brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
 
             _negativeTimer = isTimerNegative();
             _waitCookBrushesName = getWaitCookBrushesName();
@@ -96,23 +89,9 @@ namespace KDSWPFClient.View
             _tsCookingEstimated = TimeSpan.FromSeconds(_dishView.EstimatedTime);
             _strCookingEstimated = AppLib.GetAppStringTS(_tsCookingEstimated);
 
-            // Таймер: для блюда и НЕзависимого ингр. сделать рамку вокруг текста
-            if (_isTimerBrushesChanging)
-            {
-                brdTimer.Padding = new Thickness(0, padd, 0, padd);
-                tbDishStatusTS.FontSize = 1.2 * _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Bold;
-                setTimerBrushes();
-            }
-            else
-            {
-                // для зависимого ингредиента рамки нет
-                BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
-                brdTimer.Background = brPair.Background;
-                tbDishStatusTS.FontSize = _fontSize;
-                tbDishStatusTS.Foreground = brPair.Foreground;
-            }
-
+            // рамка вокруг таймера
+            setTimerBorder();
+            
             // кисти и прочее
             //    блюдо
             if (_isDish)
@@ -139,7 +118,7 @@ namespace KDSWPFClient.View
             string retVal = StatusEnum.WaitingCook.ToString();
 
             // для ингредиент берем значение таймера от родителя
-            if (!_isTimerBrushesChanging && (_parentPanel != null))
+            if (!_isTimerBrushesIndepend && (_parentPanel != null))
             {
                 _timerString = _parentPanel.TimerString;
                 _dishView.WaitingTimerString = _timerString;
@@ -186,7 +165,10 @@ namespace KDSWPFClient.View
                 _dtCookingStartEstimated = _dishView.CreateDate.AddSeconds(_dishView.DelayedStartTime);
 
             // поменялся статус - однозначно меняем кисти
-            if (e.PropertyName == "Status") setTimerBrushes();
+            if (e.PropertyName == "Status")
+            {
+                setTimerBorder();
+            }
 
             // по значению таймера
             else if (e.PropertyName == "WaitingTimerString")
@@ -194,7 +176,7 @@ namespace KDSWPFClient.View
                 bool currentValue = isTimerNegative();
                 if (_negativeTimer != currentValue)
                 {
-                    _negativeTimer = currentValue; setTimerBrushes();
+                    _negativeTimer = currentValue; setTimerBorder();
                 }
                 else if (_dishView.Status == StatusEnum.WaitingCook)
                 {
@@ -202,8 +184,40 @@ namespace KDSWPFClient.View
                     if (_waitCookBrushesName != currentWaitCookBrushesName)
                     {
                         _waitCookBrushesName = currentWaitCookBrushesName;
-                        setTimerBrushes();
+                        setTimerBorder();
                     }
+                }
+            }
+        }
+
+        // установка рамки вокруг таймера
+        private void setTimerBorder()
+        {
+            // для блюда и независимого ингредиента
+            if (_isTimerBrushesIndepend)
+            {
+                tbDishStatusTS.FontSize = 1.2 * _fontSize;
+                tbDishStatusTS.FontWeight = FontWeights.Bold;
+                setTimerBrushes();
+            }
+            // для ЗАВИСИМОГО ИНГРЕДИЕНТА рамка зависит от одинаковости статуса ингредиента и блюда
+            else
+            {
+                tbDishStatusTS.FontSize = _fontSize;
+                tbDishStatusTS.FontWeight = FontWeights.Normal;
+
+                OrderDishViewModel parentDish = (OrderDishViewModel)_parentPanel.grdDishLine.DataContext;
+                bool isBorder = (_dishView.Status != parentDish.Status);
+                if (isBorder)
+                {
+                    setTimerBrushes();
+                }
+                // убрать рамку вокруг ЗАВИСИМОГО ингредиента
+                else
+                {
+                    BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
+                    brdTimer.Background = brPair.Background;
+                    tbDishStatusTS.Foreground = brPair.Foreground;
                 }
             }
         }
@@ -211,8 +225,6 @@ namespace KDSWPFClient.View
         // установка кистей при изменении состоянию блюда
         private void setTimerBrushes()
         {
-            if (!_isTimerBrushesChanging) return;
-
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
             StatusEnum status = _dishView.Status;
             BrushesPair brPair = null;
@@ -244,14 +256,16 @@ namespace KDSWPFClient.View
 
         }
 
+        // клик по строке блюда/ингредиента
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            // это ингредиент !!
-            if ((!_isDish) && (_dishView.Quantity > 0))
-            {
-                // зависимый или независимый ингредиент?
-                if (_isIngrIndepend == false) return;
-            }
+            // КЛИКАБЕЛЬНОСТЬ (условия отсутсвия)
+            // 1. не входит в отображаемые отделы
+            if (AppLib.IsDepViewOnKDS(_dishView.DepartmentId) == false) return;
+
+            // 2. ЗАВИСИМЫЙ, неотмененный ингредиент, родительское блюдо которого тоже входит в отображаемые отделы,
+            //    в этом случае, изменение состояния должно осуществляться блюдом
+            //if (!_isDish && !_isIngrIndepend && (_dishView.Quantity > 0)) return;
 
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);

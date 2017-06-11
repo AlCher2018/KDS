@@ -615,6 +615,11 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        internal static bool IsDepViewOnKDS(int depId, AppDataProvider dataProvider = null)
+        {
+            if (dataProvider == null) dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
+            return dataProvider.Departments[depId].IsViewOnKDS;
+        }
     }  // class
 }

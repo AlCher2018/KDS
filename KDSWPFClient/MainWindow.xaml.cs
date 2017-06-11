@@ -607,7 +607,7 @@ namespace KDSWPFClient
         }
         private bool isDepIdAllow(int depId)
         {
-            return _dataProvider.Departments[depId].IsViewOnKDS;
+            return AppLib.IsDepViewOnKDS(depId, _dataProvider);
         }
 
         // обновить фильтр состояний блюд

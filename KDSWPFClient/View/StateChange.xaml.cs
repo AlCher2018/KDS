@@ -271,6 +271,8 @@ namespace KDSWPFClient.View
                         _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
                     }
                 }
+
+                // изменение состояния БЛЮДА
                 else if (_modelType == AppViewModelEnum.Dish)
                 {
                     _dataProvider.SetNewDishStatus(Order.Id, Dish.Id, requiredState);

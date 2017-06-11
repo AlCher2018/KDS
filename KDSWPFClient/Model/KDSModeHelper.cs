@@ -281,18 +281,18 @@ namespace KDSWPFClient.Model
 
         }
 
+        // если в config-е режим не задан или задан неверно, то по умолчанию - Cook
         public static void PutCfgKDSModeToAppProps()
         {
-            string cfgValue = AppLib.GetAppSetting("KDSMode");
-            if (cfgValue.IsNull()) return;  // нет такого элемента
-
             KDSModeEnum mode;
-            if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false) return;  // не смогли распарсить
 
-            if (_definedKDSModes.ContainsKey(mode))
-                AppLib.SetAppGlobalValue("KDSMode", mode);
-            else
-                AppLib.SetAppGlobalValue("KDSMode", null);  // не является допустимой ролью
+            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            if (cfgValue.IsNull())
+                mode = KDSModeEnum.Cook;  // нет такого элемента
+            else if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false)
+                mode = KDSModeEnum.Cook;  // не смогли распарсить
+
+            AppLib.SetAppGlobalValue("KDSMode", mode);
 
             // особая роль, читаем доп.элементы в config и заполняем четвертый элемент в _definedKDSModes
             if (mode == KDSModeEnum.Special)

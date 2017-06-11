@@ -120,16 +120,17 @@ namespace KDSWPFClient.View
                     _curTopValue += curLineHeight; // сместить Top
                 }
 
-                dshPnl = new DishPanel(dishModel);
-                if (dshPnl.IsDish) curDshPnl = dshPnl;
-                else dshPnl.ParentPanel = curDshPnl;
+                if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
+                dshPnl = new DishPanel(dishModel, curDshPnl);
+                if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
+
                 ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
 
                 curLineHeight = Math.Round(dshPnl.DesiredSize.Height); // получить высоту строки блюда
                 if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
                 {
                     // разбиваем блюда заказа
-                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount)) 
+                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount))
                     {
                         // 1. удалить из ordPnl только что добавленное блюдо
                         //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
@@ -160,7 +161,7 @@ namespace KDSWPFClient.View
                 _curTopValue += curLineHeight;
                 //if (_curColIndex == 1) CurrentPage.Children.Add(new System.Windows.Shapes.Line() { X1 = 0, Y1 = _curTopValue, X2 = 40, Y2 = _curTopValue, Stroke = System.Windows.Media.Brushes.Red });
 
-            }
+            }  // foreach dishes
 
             // смещение слева по номеру тек.колонки
             ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
