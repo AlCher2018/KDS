@@ -196,6 +196,7 @@ namespace KDSWPFClient.Lib
 
             return new Point(left, top);
         }
+
         #endregion
 
         #region app settings
@@ -474,6 +475,8 @@ namespace KDSWPFClient.Lib
 
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
+
+        // преобразовать TimeSpan в строку
         public static string GetAppStringTS(TimeSpan tsTimerValue)
         {
             string retVal = "";
@@ -486,6 +489,13 @@ namespace KDSWPFClient.Lib
             }
 
             return retVal;
+        }
+        // преобразовать строку в TimeSpan
+        internal static TimeSpan GetTSFromString(string tsString)
+        {
+            TimeSpan ts = TimeSpan.Zero;
+            TimeSpan.TryParse(tsString, out ts);
+            return ts;
         }
 
 
@@ -590,7 +600,7 @@ namespace KDSWPFClient.Lib
             return retVal;
         }  // method
 
-        // узнать, в каком состоянии находятся все блюда заказа
+        // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
         public static OrderStatusEnum GetStatusAllDishes(List<OrderDishViewModel> dishes)
         {
             OrderStatusEnum retVal = OrderStatusEnum.None;
@@ -615,11 +625,13 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        // принадлежит ли переданный Ид цеха разрешенным цехам на этом КДСе
         internal static bool IsDepViewOnKDS(int depId, AppDataProvider dataProvider = null)
         {
             if (dataProvider == null) dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
 
             return dataProvider.Departments[depId].IsViewOnKDS;
         }
+
     }  // class
 }

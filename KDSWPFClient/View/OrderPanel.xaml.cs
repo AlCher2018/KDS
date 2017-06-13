@@ -61,6 +61,13 @@ namespace KDSWPFClient.View
 
             // пересчитать высоту панели
             this.Measure(new Size(base.Width, double.PositiveInfinity));
+
+            //if (!orderView.DivisionColorRGB.IsNull())
+            //{
+            //    brdOrder.BorderBrush = AppLib.GetBrushFromRGBString(orderView.DivisionColorRGB);
+            //    brdOrder.BorderThickness = new Thickness(10d);
+            //    brdOrder.CornerRadius = (isCreateHeaderPanel) ? new CornerRadius(15d,15d,0,0) : new CornerRadius(0);
+            //}
         }
 
 

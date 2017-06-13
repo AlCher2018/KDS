@@ -17,6 +17,10 @@ namespace KDSService.AppModel
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
 
+        /// <summary>
+        /// учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
+        /// </summary>
+        private bool _takeCancelledInAutostartCooking;
         private string _errorMsg;
 
 
@@ -24,6 +28,9 @@ namespace KDSService.AppModel
         public OrdersModel()
         {
             _orders = new Dictionary<int, OrderModel>();
+
+            // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
+            _takeCancelledInAutostartCooking = (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false);
         }
 
         //**************************************
@@ -150,12 +157,19 @@ namespace KDSService.AppModel
             foreach (int key in keys) dishesQty[key] = 0m;
 
             decimal qnt;
+            OrderStatusEnum eStatus;
+            bool isTakeQuantity, isTakeCancelled;
             foreach (Order order in dbOrders)   // orders loop
             {
                 foreach (OrderDish dish in order.OrderDish)  //  dishes loop
                 {
-                    // кол-во для блюд в состоянии приготовления 
-                    qnt = (dish.ParentUid.IsNull() && ((dish.DishStatusId ?? 0) == 1)) ? dish.Quantity : 0;
+                    eStatus = (OrderStatusEnum)(dish.DishStatusId ?? 0);
+                    isTakeCancelled = (_takeCancelledInAutostartCooking && (eStatus == OrderStatusEnum.Cancelled));
+                    isTakeQuantity = dish.ParentUid.IsNull()
+                        && ((eStatus == OrderStatusEnum.Cooking) || isTakeCancelled);
+
+                    // кол-во блюд для подсчета
+                    qnt = isTakeQuantity ? (isTakeCancelled ? -dish.Quantity : dish.Quantity) : 0;
 
                     if (dishesQty.ContainsKey(dish.DepartmentId))
                         dishesQty[dish.DepartmentId] += qnt;

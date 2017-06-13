@@ -37,6 +37,7 @@
                     <RadioButton x:Name="rbManualGen" GroupName="getType" Content="Ручная генерация" VerticalAlignment="Center" Checked="rbManualGen_Checked"/>
                     <Button x:Name="btnGenerateNewOrder" Content="создать заказ" Margin="20,0" Padding="5,2" Click="btnGenerateNewOrder_Click"/>
                     <Button x:Name="btnGenerateSubOrder" Content="создать ДОзаказ" Padding="5,2" Click="btnGenerateSubOrder_Click"/>
+                    <Button x:Name="btnTest1" Content="test1" Margin="10,0" Click="btnTest1_Click"/>
                 </StackPanel>
                 
             </StackPanel>

@@ -28,11 +28,11 @@ namespace WpfKDSOrdersEmulator
         {
             InitializeComponent();
 
-            _rooms = new string[] {"зал 1","зал 2","мансарда","бильярдная" };
+            _rooms = new string[] { "зал 1", "зал 2", "мансарда", "бильярдная" };
             _tables = new string[] { "стол 1", "стол 2", "стол 3", "стол 4", "стол 5", "стол 6", "стол 7", "стол 8" };
             _waiters = new string[] { "Дийнецька Мар'яна", "Оніщенко Віктор", "Потапенко Роман", "Попович Роман", "Ільясов Іскандер", "Лі Володимир", "Лабай Денис", "Левченко Слава", "Овдієнко Владислав", "Іванова Марта", "Довганич Вероніка", "Цуркан Іван", "Официант СФБ", "Харченко Ольга", "Фастовець Микола" };
-            _deps = new int[] { 1, 2, 15,16,17,18,19,20,21,22};
-            _delayStartTime = new int[] { 10, 15, 20, 25, 30};
+            _deps = new int[] { 1, 2, 15, 16, 17, 18, 19, 20, 21, 22 };
+            _delayStartTime = new int[] { 10, 15, 20, 25, 30 };
             _menuDishes = createMenuDishes();
             _ingredients = createMenuIngredients();
 
@@ -40,7 +40,7 @@ namespace WpfKDSOrdersEmulator
             _timer = new Timer(1000d);
             _timer.Elapsed += _timer_Elapsed;
 
-            _delegateAutoNewOrder =  new Action(() => createNewOrder(0));
+            _delegateAutoNewOrder = new Action(() => createNewOrder(0));
 
             //clearDB();
         }
@@ -133,7 +133,8 @@ namespace WpfKDSOrdersEmulator
                 Waiter = getRndWaiter(),
                 CreateDate = DateTime.Now,
                 OrderStatusId = 1,
-                LanguageTypeId = 1, QueueStatusId = 0
+                LanguageTypeId = 1, QueueStatusId = 0,
+                DivisionColorRGB = getRndDivisionColor()
             };
 
             // сразу сохранить в БД, чтобы получить Id заказа
@@ -155,11 +156,11 @@ namespace WpfKDSOrdersEmulator
         #region случайные значения
         private string getRndRoom()
         {
-            return _rooms[_rnd.Next(1,_rooms.Count())-1];
+            return _rooms[_rnd.Next(1, _rooms.Count()) - 1];
         }
         private string getRndTable()
         {
-            return _tables[_rnd.Next(1,_tables.Count())-1];
+            return _tables[_rnd.Next(1, _tables.Count()) - 1];
         }
         private string getRndWaiter()
         {
@@ -169,7 +170,17 @@ namespace WpfKDSOrdersEmulator
         {
             return _deps[_rnd.Next(1, _deps.Count()) - 1];
         }
+        private string getRndDivisionColor()
+        {
+            if (_rnd.NextDouble() < 0.3d)
+            {
+                byte[] aColors = new byte[3];
+                _rnd.NextBytes(aColors);
 
+                return aColors[0].ToString() + "," + aColors[1].ToString() + "," + aColors[2].ToString();
+            }
+            else return null;
+        }
         // случайные блюда
         private void createRndDishes(Order ord)
         {
@@ -226,7 +237,7 @@ namespace WpfKDSOrdersEmulator
 
         private MenuDish[] createMenuDishes()
         {
-            return new MenuDish[] 
+            return new MenuDish[]
             {
                 new MenuDish() { Name="Блюдо 1", DepartmentId = 1, EstimatedTime = 60, Comment=null},
                 new MenuDish() { Name="Блюдо 2", DepartmentId = 2, EstimatedTime = 0, Comment=null},
@@ -247,7 +258,7 @@ namespace WpfKDSOrdersEmulator
         }
         private MenuDish getRndMenuDish()
         {
-            return _menuDishes[_rnd.Next(1, _menuDishes.Count()+1) - 1];
+            return _menuDishes[_rnd.Next(1, _menuDishes.Count() + 1) - 1];
         }
 
         private MenuDish[] createMenuIngredients()
@@ -305,7 +316,7 @@ namespace WpfKDSOrdersEmulator
         //  создать ДОзаказ
         private void btnGenerateSubOrder_Click(object sender, RoutedEventArgs e)
         {
-//            string temp = Microsoft.VisualBasic.Interaction.InputBox("prompt", "title", "0");
+            //            string temp = Microsoft.VisualBasic.Interaction.InputBox("prompt", "title", "0");
 
             // CoolButton Clicked! Let's show our InputBox.
             InputBox.Visibility = System.Windows.Visibility.Visible;
@@ -326,6 +337,88 @@ namespace WpfKDSOrdersEmulator
             // Clear InputBox.
             InputTextBox.Text = String.Empty;
         }
+
+        private void btnTest1_Click(object sender, RoutedEventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            Order ord = new Order()
+            {
+                Number = 500,
+                UID = Guid.NewGuid().ToString(),
+                RoomNumber = getRndRoom(),
+                TableNumber = getRndTable(),
+                Waiter = getRndWaiter(),
+                CreateDate = dt, StartDate = dt,
+                OrderStatusId = 0,
+                LanguageTypeId = 1,
+                QueueStatusId = 0
+            };
+            using (BoardChefTestEntities db = new BoardChefTestEntities())
+            {
+                db.Database.ExecuteSqlCommand("delete from [OrderDish]; delete from [Order]");
+
+                db.Order.Add(ord);
+                db.SaveChanges();
+
+                db.OrderDish.Add(new OrderDish()
+                {
+                    OrderId = ord.Id,
+                    DishStatusId = 0,
+                    Quantity = 5,
+                    FilingNumber = 1,
+                    CreateDate = ord.CreateDate, StartDate = ord.CreateDate,
+                    UID = Guid.NewGuid().ToString().Substring(0, 15),
+                    DishName = "Пицца 1",
+                    DepartmentId = 17,
+                    DelayedStartTime = 0,
+                    EstimatedTime = 480
+                });
+                db.OrderDish.Add( new OrderDish()
+                {
+                    OrderId = ord.Id,
+                    DishStatusId = 0,
+                    Quantity = 1,
+                    FilingNumber = 1,
+                    CreateDate = ord.CreateDate, StartDate = ord.CreateDate,
+                    UID = Guid.NewGuid().ToString().Substring(0, 15),
+                    DishName = "Пицца 2",
+                    DepartmentId = 17,
+                    DelayedStartTime = 0,
+                    EstimatedTime = 480
+                });
+                db.OrderDish.Add(new OrderDish()
+                {
+                    OrderId = ord.Id,
+                    DishStatusId = 0,
+                    Quantity = 1,
+                    FilingNumber = 1,
+                    CreateDate = ord.CreateDate,
+                    StartDate = ord.CreateDate,
+                    UID = Guid.NewGuid().ToString().Substring(0, 15),
+                    DishName = "Пицца 3",
+                    DepartmentId = 17,
+                    DelayedStartTime = 0,
+                    EstimatedTime = 480
+                });
+                db.OrderDish.Add(new OrderDish()
+                {
+                    OrderId = ord.Id,
+                    DishStatusId = 0,
+                    Quantity = 1,
+                    FilingNumber = 1,
+                    CreateDate = ord.CreateDate,
+                    StartDate = ord.CreateDate,
+                    UID = Guid.NewGuid().ToString().Substring(0, 15),
+                    DishName = "Пицца 4",
+                    DepartmentId = 17,
+                    DelayedStartTime = 0,
+                    EstimatedTime = 480
+                });
+
+                db.SaveChanges();
+            }
+        }
+    
 
         private void NoButton_Click(object sender, RoutedEventArgs e)
         {

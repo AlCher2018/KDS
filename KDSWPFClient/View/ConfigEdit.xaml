@@ -138,8 +138,8 @@
         <StackPanel DockPanel.Dock="Bottom" Margin="10,20,10,0">
             <!-- логгирование -->
             <StackPanel  Orientation="Horizontal">
-                <CheckBox x:Name="chkIsWriteTraceMessages" Content="запись в лог отладочных сообщений"/>
-                <CheckBox x:Name="chkIsLogUserAction" Content="запись в лог действий пользователя (пока не работает)" Margin="20,8,0,8"/>
+                <CheckBox x:Name="chkIsWriteTraceMessages" Content="- запись в лог отладочных сообщений"/>
+                <CheckBox x:Name="chkIsLogUserAction" Content="- запись в лог действий пользователя (пока не работает)" Margin="20,8,0,8" Visibility="Hidden"/>
             </StackPanel>
         </StackPanel>
 
@@ -150,6 +150,10 @@
                 <TextBlock Text="количество колонок на экране:  "/>
                 <cavCtl:NumericUpDown x:Name="tbxOrdersColumnsCount" Minimum="2" Maximum="10" Value="4" Width="90" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
+
+            <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+
+            <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (независимо от блюда) или блюда на допнаправлении кликом по строке блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 
             <!-- интервал таймера автоматического перехода группировки заказов из "По номерам" в "По времени" -->
             <StackPanel  Margin="0,5" Orientation="Horizontal">

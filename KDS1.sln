@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFQueueEmulator", "WPFEmulator\WPFQueueEmulator.csproj", "{51C39A62-235B-4043-9737-BA9560B10675}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFQueueEmulator", "WPFQueueEmulator\WPFQueueEmulator.csproj", "{51C39A62-235B-4043-9737-BA9560B10675}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientOrderQueue", "ClientOrderQueue\ClientOrderQueue.csproj", "{377CDA51-6DF8-42E8-871E-54B13D7C8525}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "OrderQueueSetup", "Setup1\Setup1.vdproj", "{3A9DF837-30A2-4477-931A-20D9925A1860}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "OrderQueueSetup", "OrderQueueSetup\Setup1.vdproj", "{3A9DF837-30A2-4477-931A-20D9925A1860}"
 	ProjectSection(ProjectDependencies) = postProject
 		{51C39A62-235B-4043-9737-BA9560B10675} = {51C39A62-235B-4043-9737-BA9560B10675}
 	EndProjectSection

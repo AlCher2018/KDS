@@ -71,12 +71,12 @@ namespace KDSConsoleSvcHost
             _props.SetProperty(name, propObj);
         }
 
-        public static object GetAppProperty(string name)
+        public static object GetAppProperty(string name, object defaultValue = null)
         {
             if (_props.ContainsKey(name))
                 return _props.GetProperty(name);
             else
-                return null;
+                return defaultValue;
         }
 
         private static string getConfigString()
@@ -89,6 +89,7 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
             putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
             putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
+            putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
 
             return sb.ToString();
         }
@@ -118,6 +119,8 @@ namespace KDSConsoleSvcHost
             // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
             _props.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
 
+            // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
+            _props.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
@@ -300,6 +303,34 @@ namespace KDSConsoleSvcHost
         public static string GetAppDirectory()
         {
             return AppDomain.CurrentDomain.BaseDirectory;
+        }
+
+        #endregion
+
+        #region для конкретного приложения
+        // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
+        public static OrderStatusEnum GetStatusAllDishes(IEnumerable<OrderDish> dishes)
+        {
+            OrderStatusEnum retVal = OrderStatusEnum.None;
+
+            int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
+            int dishCount = dishes.Count();
+
+            int[] statArray = new int[iLen];
+
+            int iStatus;
+            foreach (OrderDish dish in dishes)
+            {
+                iStatus = (dish.DishStatusId ?? 0);
+                statArray[iStatus]++;
+            }
+
+            for (int i = 0; i < iLen; i++)
+            {
+                if (statArray[i] == dishCount) { retVal = (OrderStatusEnum)i; break; }
+            }
+
+            return retVal;
         }
 
         #endregion

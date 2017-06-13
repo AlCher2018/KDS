@@ -259,17 +259,20 @@ namespace KDSWPFClient.View
             {
                 if (_modelType == AppViewModelEnum.Order)
                 {
-                    if (_inOrderModeProcessDishes)  // поблюдная обработка
+                    // ПОБЛЮДНАЯ ОБРАБОТКА для блюд, которые отображаются для данного отдела
+                    //if (_inOrderModeProcessDishes)  
+                    //{
+                    // TODO изменение статуса блюда и ингредиентов ??
+                    foreach (OrderDishViewModel item in Order.Dishes)
                     {
-                        foreach (OrderDishViewModel item in Order.Dishes)
-                        {
+                        if (AppLib.IsDepViewOnKDS(item.DepartmentId, _dataProvider))
                             _dataProvider.SetNewDishStatus(Order.Id, item.Id, requiredState);
-                        }
                     }
-                    else
-                    {
-                        _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
-                    }
+                    //}
+                    //else
+                    //{
+                    //    _dataProvider.SetNewOrderStatus(Order.Id, requiredState);
+                    //}
                 }
 
                 // изменение состояния БЛЮДА

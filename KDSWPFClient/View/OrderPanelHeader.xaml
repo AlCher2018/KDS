@@ -7,7 +7,8 @@
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
              Name="root" MouseUp="root_MouseUp"
-             d:DesignHeight="100" d:DesignWidth="300">
+             d:DesignHeight="100" d:DesignWidth="300"
+             SnapsToDevicePixels="True">
 
     <UserControl.Resources>
         <Style x:Key="rowBrushesStyle" TargetType="Border">
@@ -47,8 +48,9 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <Border x:Name="brdDivisionMark" Grid.Row="0" Panel.ZIndex="5" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}" BorderThickness="5" Height="10" VerticalAlignment="Top"/>
-        
+        <!--<Border x:Name="brdDivisionMark" Grid.Row="0" Panel.ZIndex="5" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}" BorderThickness="5" Height="10" VerticalAlignment="Top"/>-->
+        <Polygon x:Name="brdDivisionMark" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Panel.ZIndex="5" HorizontalAlignment="Right" VerticalAlignment="Top" Points="0,0 80,0 80,70"/>
+
         <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
         <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" Style="{StaticResource row1Style}">
             <Grid x:Name="grdHdrTableRow" Style="{StaticResource rowMarginStyle}">

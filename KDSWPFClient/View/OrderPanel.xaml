@@ -15,6 +15,7 @@
         </Style>
     </UserControl.Resources>
 
+    <Border x:Name="brdOrder" BorderThickness="0">
     <Grid x:Name="grdOrderPanel">
         <Grid.RowDefinitions>
             <!-- 0. строка заголовка заказа, может содержать OrderPanelHeader-->
@@ -50,4 +51,5 @@
         <StackPanel x:Name="stkDishes" x:FieldModifier="private" Grid.Row="2"/>
 
     </Grid>
+    </Border>
 </UserControl>

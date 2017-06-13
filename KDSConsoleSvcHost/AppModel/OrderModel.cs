@@ -120,12 +120,25 @@ namespace KDSService.AppModel
                 _tsTimersDict.Add(OrderStatusEnum.ReadyConfirmed, new TimeCounter() { Name = OrderStatusEnum.ReadyConfirmed.ToString() });
             // таймер времени ожидания фиксации заказа, нахождение в состоянии Выдано
             _tsTimersDict.Add(OrderStatusEnum.Took, new TimeCounter() { Name = OrderStatusEnum.Took.ToString() });
+            // таймер нахождения в состоянии отмены
+            _tsTimersDict.Add(OrderStatusEnum.Cancelled, new TimeCounter() { Name = OrderStatusEnum.Cancelled.ToString() });
 
             // для нового объекта статус по умолчанию - В ПРОЦЕССЕ ГОТОВКИ
             if (this.OrderStatusId < 1)
             {
                 OrderStatusEnum newStatus = OrderStatusEnum.Cooking;
                 UpdateStatus(newStatus, false);
+            }
+            else
+            {
+                // обновить статус заказа по статусам всех блюд
+                OrderStatusEnum eStatusAllDishes = AppEnv.GetStatusAllDishes(dbOrder.OrderDish);
+                if ((eStatusAllDishes != OrderStatusEnum.None) 
+                    && (this.Status != eStatusAllDishes) 
+                    && ((int)this.Status < (int)eStatusAllDishes))
+                {
+                    UpdateStatus(eStatusAllDishes, false);
+                }
             }
 
             StatusDTS statusDTS = getStatusRunTimeDTS(this.Status);
@@ -140,7 +153,17 @@ namespace KDSService.AppModel
             startStatusTimer(statusDTS);
 
             // добавить блюда к заказу
-            foreach (OrderDish dbDish in dbOrder.OrderDish)
+            //   расставить сначала блюдо, потом его ингредиенты, т.к. ингр.могут идти ПЕРЕД блюдом
+            List<OrderDish> dList = dbOrder.OrderDish.Where(d => d.ParentUid.IsNull()).ToList();
+            List<OrderDish> dAll = new List<OrderDish>();
+            foreach (OrderDish dish in dList)
+            {
+                dAll.Add(dish);
+                List<OrderDish> dIngr = dbOrder.OrderDish.Where(d => d.ParentUid==dish.UID).ToList();
+                foreach (var ingr in dIngr) dAll.Add(ingr);
+            }
+
+            foreach (OrderDish dbDish in dAll)   // dbOrder.OrderDish
             {
                 OrderDishModel newDish = new OrderDishModel(dbDish, this);
                 this._dishesDict.Add(newDish.Id, newDish);

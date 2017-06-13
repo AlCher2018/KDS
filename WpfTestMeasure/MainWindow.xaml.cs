@@ -23,6 +23,10 @@ namespace WpfTestMeasure
         public MainWindow()
         {
             InitializeComponent();
+
+            TimeSpan ts;
+            TimeSpan.TryParse("-05:33:20", out ts);
+            TimeSpan ts1 = ts.Negate();
         }
 
         private void button_Click(object sender, RoutedEventArgs e)

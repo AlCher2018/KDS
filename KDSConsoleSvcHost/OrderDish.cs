@@ -34,10 +34,6 @@ namespace KDSService
         public string Comment { get; set; }
         public System.DateTime CreateDate { get; set; }
         public Nullable<System.DateTime> StartDate { get; set; }
-        public int SpentTime { get; set; }
-        public bool IsRollback { get; set; }
-        public Nullable<System.DateTime> RollbackDate { get; set; }
-        public int ReadySpentTime { get; set; }
         public string UID1C { get; set; }
         public int DelayedStartTime { get; set; }
     

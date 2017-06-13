@@ -96,20 +96,23 @@ namespace KDSWPFClient.View
 
             tbOrderCookingCounter.FontSize = fontScale * (double)AppLib.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
 
-            if (!order.DivisionColorRGB.IsNull()) _divisionMarkBrush = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
+            if (!order.DivisionColorRGB.IsNull())
+            {
+                brdDivisionMark.Fill = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
+            }
+
         }
 
         private void OrderPanelHeader_Loaded(object sender, RoutedEventArgs e)
         {
-            if (_divisionMarkBrush != null)
-            {
-                brdDivisionMark.BorderBrush = _divisionMarkBrush;
- //               tblOrderNumber.Background = _divisionMarkBrush;
-            }
         }
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // 1. настройка в config-файле для заголовка заказа
+            if ((bool)AppLib.GetAppGlobalValue("OrderHeaderClickable", false) == false) return;
+
+
             OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
 
             StateChange win = new StateChange() { Order = orderView, Dish = null };

@@ -137,8 +137,11 @@ namespace KDSService.AppModel
 
         public DepartmentModel(Department dbDep): this()
         {
-            Id = dbDep.Id; Name = dbDep.Name; UID = dbDep.UID;
-            IsAutoStart = dbDep.IsAutoStart; DishQuantity = dbDep.DishQuantity;
+            Id = dbDep.Id;
+            Name = dbDep.Name;
+            UID = dbDep.UID;
+            IsAutoStart = dbDep.IsAutoStart ?? false;
+            DishQuantity = dbDep.DishQuantity ?? 0;
         }
 
     }  // class Department

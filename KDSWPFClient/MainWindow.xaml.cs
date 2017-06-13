@@ -218,15 +218,16 @@ namespace KDSWPFClient
             //   и заказы, у которых нет разрешенных блюд
             _delOrderIds.ForEach(o => svcOrders.Remove(o));
 
-
+            // условие проигрывания мелодии при появлении нового заказа
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
-            // которых нет в preOrdersId, т.е. новые? (оиск по Id) - для того, чтобы проиграть мелодию
+            // которых нет в preOrdersId, т.е. новые? (поиск по Id)
             int[] curOrdersId = svcOrders.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
             if (_preOrdersId.Count > 0)
             {
                 foreach (int curId in curOrdersId)
-                    if (!_preOrdersId.Contains(curId)) { _wavPlayer.Play() ; break; }
-
+                    if (!_preOrdersId.Contains(curId)) {
+                        _wavPlayer.Play() ; break;
+                    }
                 _preOrdersId.Clear();
             }
             _preOrdersId.AddRange(curOrdersId);
@@ -281,17 +282,18 @@ namespace KDSWPFClient
             }
 
 
-            // после реорганизации списка блюд: группировка по подачам и сортировка по Ид блюда (порядок записи в БД)
-            bool isFilingGroup = true;  // группировка по подачам
+            // после реорганизации списка блюд
+            // группировка по подачам если надо
+            bool isFilingGroup = true;  
             Dictionary<int,OrderDishModel> sortedDishes;
             // сортировка словарей блюд
             foreach (OrderModel orderModel in svcOrders)
             {
                 if (isFilingGroup)   // сортировка по подачам и Ид
-                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.FilingNumber, dish.Id select dish).ToDictionary(d => d.Id);
-                else  // сортировка толко по Ид
-                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.Id select dish).ToDictionary(d => d.Id);
-                orderModel.Dishes = sortedDishes;
+                {
+                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
+                    orderModel.Dishes = sortedDishes;
+                }
             }
 
             // *** ОБНОВИТЬ _viewOrdes (для отображения на экране) ДАННЫМИ ИЗ svcOrders (получено из БД)

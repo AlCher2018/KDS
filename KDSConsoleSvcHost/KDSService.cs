@@ -112,17 +112,19 @@ namespace KDSService
         }
 
         // **** настройки из config-файла хоста
-        public bool GetIsIngredientsIndependent()
+        public Dictionary<string, object> GetHostAppSettings()
         {
-            var v1 = AppEnv.GetAppProperty("IsIngredientsIndependent");
-            return (v1 == null)? false : (bool)v1;
+            Dictionary<string, object> retval = new Dictionary<string, object>()
+            {
+                { "IsIngredientsIndependent", (bool)AppEnv.GetAppProperty("IsIngredientsIndependent", false)},
+                { "ExpectedTake", (int)AppEnv.GetAppProperty("ExpectedTake", 0)},
+                { "UseReadyConfirmedState", (bool)AppEnv.GetAppProperty("UseReadyConfirmedState", false)},
+                { "TakeCancelledInAutostartCooking", (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false)},
+            };
+
+            return retval;
         }
 
-        public int GetExpectedTakeValue()
-        {
-            var v1 = AppEnv.GetAppProperty("ExpectedTake");
-            return (v1 == null) ? 0 : (int)v1;
-        }
 
         public void SetExpectedTakeValue(int value)
         {
@@ -130,12 +132,6 @@ namespace KDSService
 
             string errMsg;
             AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
-        }
-
-        public bool GetUseReadyConfirmedState()
-        {
-            var v1 = AppEnv.GetAppProperty("UseReadyConfirmedState");
-            return (v1 == null) ? false : (bool)v1;
         }
 
         #endregion

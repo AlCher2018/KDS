@@ -12,8 +12,8 @@
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
-          <Property Name="IsAutoStart" Type="bit" Nullable="false" />
-          <Property Name="DishQuantity" Type="int" Nullable="false" />
+          <Property Name="IsAutoStart" Type="bit" />
+          <Property Name="DishQuantity" Type="int" />
         </EntityType>
         <EntityType Name="Order">
           <Key>
@@ -28,10 +28,9 @@
           <Property Name="CreateDate" Type="datetime" Nullable="false" />
           <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="StartDate" Type="datetime" />
-          <Property Name="SpentTime" Type="int" Nullable="false" />
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
-          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
         </EntityType>
         <EntityType Name="OrderDish">
@@ -51,10 +50,6 @@
           <Property Name="Comment" Type="nvarchar" MaxLength="300" />
           <Property Name="CreateDate" Type="datetime" Nullable="false" />
           <Property Name="StartDate" Type="datetime" />
-          <Property Name="SpentTime" Type="int" Nullable="false" />
-          <Property Name="IsRollback" Type="bit" Nullable="false" />
-          <Property Name="RollbackDate" Type="datetime" />
-          <Property Name="ReadySpentTime" Type="int" Nullable="false" />
           <Property Name="UID1C" Type="nvarchar" MaxLength="50" />
           <Property Name="DelayedStartTime" Type="int" Nullable="false" />
         </EntityType>
@@ -239,8 +234,8 @@
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="IsAutoStart" Type="Boolean" Nullable="false" />
-          <Property Name="DishQuantity" Type="Int32" Nullable="false" />
+          <Property Name="IsAutoStart" Type="Boolean" />
+          <Property Name="DishQuantity" Type="Int32" />
           <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Department" FromRole="Department" ToRole="OrderDish" />
         </EntityType>
         <EntityType Name="OrderDish">
@@ -260,10 +255,6 @@
           <Property Name="Comment" Type="String" MaxLength="300" FixedLength="false" Unicode="true" />
           <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="StartDate" Type="DateTime" Precision="3" />
-          <Property Name="SpentTime" Type="Int32" Nullable="false" />
-          <Property Name="IsRollback" Type="Boolean" Nullable="false" />
-          <Property Name="RollbackDate" Type="DateTime" Precision="3" />
-          <Property Name="ReadySpentTime" Type="Int32" Nullable="false" />
           <Property Name="UID1C" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="DelayedStartTime" Type="Int32" Nullable="false" />
           <NavigationProperty Name="Department" Relationship="Self.FK_OrderDish_Department" FromRole="OrderDish" ToRole="Department" />
@@ -416,7 +407,6 @@
           <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="RoomNumber" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="StartDate" Type="DateTime" Precision="3" />
-          <Property Name="SpentTime" Type="Int32" Nullable="false" />
           <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
@@ -496,10 +486,6 @@
                 <ScalarProperty Name="Comment" ColumnName="Comment" />
                 <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
-                <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
-                <ScalarProperty Name="IsRollback" ColumnName="IsRollback" />
-                <ScalarProperty Name="RollbackDate" ColumnName="RollbackDate" />
-                <ScalarProperty Name="ReadySpentTime" ColumnName="ReadySpentTime" />
                 <ScalarProperty Name="UID1C" ColumnName="UID1C" />
                 <ScalarProperty Name="DelayedStartTime" ColumnName="DelayedStartTime" />
               </MappingFragment>
@@ -575,7 +561,6 @@
                 <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="Waiter" ColumnName="Waiter" />
-                <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="RoomNumber" ColumnName="RoomNumber" />
                 <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />

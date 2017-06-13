@@ -55,8 +55,7 @@ namespace KDSWPFClient
             {
                 if (_getClient != null) _getClient.Close();
                 _getClient = new KDSServiceClient();
-                // попытаться получить какую-нибудь информацию от службы
-                _getClient.GetExpectedTakeValue();
+                _getClient.Open();
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
 
                 if (_setClient != null) _setClient.Close();
@@ -94,14 +93,15 @@ namespace KDSWPFClient
                     }
                 }
 
-
                 // *** ПРОЧИЕ НАСТРОЙКИ ОТ СЛУЖБЫ
-                bool isIngrIndepend = GetIsIngredientsIndependent();
-                AppLib.SetAppGlobalValue("IsIngredientsIndependent", isIngrIndepend);
-                int expTake = GetExpectedTakeValue();  // плановое время выноса
-                AppLib.SetAppGlobalValue("ExpectedTakeValue", expTake);
-                bool isReadyConfirm = GetUseReadyConfirmedState();
-                AppLib.SetAppGlobalValue("UseReadyConfirmedState", isReadyConfirm);
+                Dictionary<string, object> hostAppSettings = GetHostAppSettings();
+                if (hostAppSettings != null)
+                {
+                    foreach (KeyValuePair<string, object> pair in hostAppSettings)
+                    {
+                        AppLib.SetAppGlobalValue(pair.Key, pair.Value);
+                    }
+                }
 
                 retVal = true;
             }
@@ -160,7 +160,7 @@ namespace KDSWPFClient
             if (_getClient.State == CommunicationState.Faulted)
             {
                 _getClient = new KDSServiceClient();
-                bool isIngrIndepend = _getClient.GetIsIngredientsIndependent();
+                _getClient.Open();
             }
 
             List<OrderModel> retVal = null;
@@ -191,12 +191,12 @@ namespace KDSWPFClient
         }
 
         // *** communication object methods WRAPPERs
-        public bool GetIsIngredientsIndependent()
+        public Dictionary<string, object> GetHostAppSettings()
         {
-            bool retVal = false;
+            Dictionary<string, object> retVal = null;
             try
             {
-                retVal = _getClient.GetIsIngredientsIndependent();
+                retVal = _getClient.GetHostAppSettings();
             }
             catch (Exception ex)
             {
@@ -205,20 +205,6 @@ namespace KDSWPFClient
             return retVal;
         }
 
-        public int GetExpectedTakeValue()
-        {
-            int retVal=0;
-
-            try
-            {
-                retVal = _getClient.GetExpectedTakeValue();
-            }
-            catch (Exception ex)
-            {
-                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
-            }
-            return retVal;
-        }
 
         public void SetExpectedTakeValue(int value)
         {
@@ -231,20 +217,6 @@ namespace KDSWPFClient
             {
                 AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
             }
-        }
-
-        public bool GetUseReadyConfirmedState()
-        {
-            bool retVal = false;
-            try
-            {
-                retVal = _getClient.GetUseReadyConfirmedState();
-            }
-            catch (Exception ex)
-            {
-                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
-            }
-            return retVal;
         }
 
         #endregion

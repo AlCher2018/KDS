@@ -127,6 +127,13 @@ namespace KDSWPFClient
             cfgValue = AppLib.GetAppSetting("NewOrderAudioAttention");
             if (cfgValue != null) AppLib.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
 
+            cfgValue = AppLib.GetAppSetting("OrderHeaderClickable");
+            AppLib.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("IngrClickable");
+            AppLib.SetAppGlobalValue("IngrClickable", cfgValue.ToBool());
+
+            
+
             // режим ингредиента: 
             // - подчиненный блюду, т.е. переходит из состояния в состояние только вместе с блюдом, отображается только вместе с блюдом, 
             //         имеет такие же значения в runTimeRecords

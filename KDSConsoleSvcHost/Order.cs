@@ -30,7 +30,6 @@ namespace KDSService
         public System.DateTime CreateDate { get; set; }
         public string RoomNumber { get; set; }
         public Nullable<System.DateTime> StartDate { get; set; }
-        public int SpentTime { get; set; }
         public string Waiter { get; set; }
         public int LanguageTypeId { get; set; }
         public int QueueStatusId { get; set; }
