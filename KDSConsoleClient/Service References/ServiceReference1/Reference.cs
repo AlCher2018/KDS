@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace KDSWinFormClient.ServiceReference1 {
+namespace KDSConsoleClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
     
@@ -212,7 +212,7 @@ namespace KDSWinFormClient.ServiceReference1 {
         private System.DateTime CreateDateField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.OrderDishModel> DishesField;
+        private System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.OrderDishModel> DishesField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string DivisionColorRGBField;
@@ -265,7 +265,7 @@ namespace KDSWinFormClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public System.Collections.Generic.Dictionary<int, KDSWinFormClient.ServiceReference1.OrderDishModel> Dishes {
+        public System.Collections.Generic.Dictionary<int, KDSConsoleClient.ServiceReference1.OrderDishModel> Dishes {
             get {
                 return this.DishesField;
             }
@@ -694,168 +694,43 @@ namespace KDSWinFormClient.ServiceReference1 {
     public interface IKDSService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
-        KDSWinFormClient.ServiceReference1.GetOrderStatusesResponse GetOrderStatuses(KDSWinFormClient.ServiceReference1.GetOrderStatusesRequest request);
+        System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel> GetOrderStatuses();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetOrderStatusesResponse> GetOrderStatusesAsync(KDSWinFormClient.ServiceReference1.GetOrderStatusesRequest request);
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        KDSWinFormClient.ServiceReference1.GetDepartmentsResponse GetDepartments(KDSWinFormClient.ServiceReference1.GetDepartmentsRequest request);
+        System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.DepartmentModel> GetDepartments();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetDepartmentsResponse> GetDepartmentsAsync(KDSWinFormClient.ServiceReference1.GetDepartmentsRequest request);
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        KDSWinFormClient.ServiceReference1.GetOrdersResponse GetOrders(KDSWinFormClient.ServiceReference1.GetOrdersRequest request);
+        System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel> GetOrders();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetOrdersResponse> GetOrdersAsync(KDSWinFormClient.ServiceReference1.GetOrdersRequest request);
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel>> GetOrdersAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
-        KDSWinFormClient.ServiceReference1.GetHostAppSettingsResponse GetHostAppSettings(KDSWinFormClient.ServiceReference1.GetHostAppSettingsRequest request);
+        System.Collections.Generic.Dictionary<string, object> GetHostAppSettings();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetHostAppSettingsResponse> GetHostAppSettingsAsync(KDSWinFormClient.ServiceReference1.GetHostAppSettingsRequest request);
+        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync();
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
-        KDSWinFormClient.ServiceReference1.SetExpectedTakeValueResponse SetExpectedTakeValue(KDSWinFormClient.ServiceReference1.SetExpectedTakeValueRequest request);
+        void SetExpectedTakeValue(int value);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.SetExpectedTakeValueResponse> SetExpectedTakeValueAsync(KDSWinFormClient.ServiceReference1.SetExpectedTakeValueRequest request);
+        System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value);
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
+    public interface IKDSServiceChannel : KDSConsoleClient.ServiceReference1.IKDSService, System.ServiceModel.IClientChannel {
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetOrderStatuses", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetOrderStatusesRequest {
-        
-        public GetOrderStatusesRequest() {
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetOrderStatusesResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetOrderStatusesResponse {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public KDSWinFormClient.ServiceReference1.OrderStatusModel[] GetOrderStatusesResult;
-        
-        public GetOrderStatusesResponse() {
-        }
-        
-        public GetOrderStatusesResponse(KDSWinFormClient.ServiceReference1.OrderStatusModel[] GetOrderStatusesResult) {
-            this.GetOrderStatusesResult = GetOrderStatusesResult;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetDepartments", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetDepartmentsRequest {
-        
-        public GetDepartmentsRequest() {
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetDepartmentsResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetDepartmentsResponse {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public KDSWinFormClient.ServiceReference1.DepartmentModel[] GetDepartmentsResult;
-        
-        public GetDepartmentsResponse() {
-        }
-        
-        public GetDepartmentsResponse(KDSWinFormClient.ServiceReference1.DepartmentModel[] GetDepartmentsResult) {
-            this.GetDepartmentsResult = GetDepartmentsResult;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetOrders", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetOrdersRequest {
-        
-        public GetOrdersRequest() {
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetOrdersResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetOrdersResponse {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public KDSWinFormClient.ServiceReference1.OrderModel[] GetOrdersResult;
-        
-        public GetOrdersResponse() {
-        }
-        
-        public GetOrdersResponse(KDSWinFormClient.ServiceReference1.OrderModel[] GetOrdersResult) {
-            this.GetOrdersResult = GetOrdersResult;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetHostAppSettings", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetHostAppSettingsRequest {
-        
-        public GetHostAppSettingsRequest() {
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="GetHostAppSettingsResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class GetHostAppSettingsResponse {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public System.Collections.Generic.Dictionary<string, object> GetHostAppSettingsResult;
-        
-        public GetHostAppSettingsResponse() {
-        }
-        
-        public GetHostAppSettingsResponse(System.Collections.Generic.Dictionary<string, object> GetHostAppSettingsResult) {
-            this.GetHostAppSettingsResult = GetHostAppSettingsResult;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="SetExpectedTakeValue", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class SetExpectedTakeValueRequest {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public int value;
-        
-        public SetExpectedTakeValueRequest() {
-        }
-        
-        public SetExpectedTakeValueRequest(int value) {
-            this.value = value;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="SetExpectedTakeValueResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class SetExpectedTakeValueResponse {
-        
-        public SetExpectedTakeValueResponse() {
-        }
-    }
-    
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public interface IKDSServiceChannel : KDSWinFormClient.ServiceReference1.IKDSService, System.ServiceModel.IClientChannel {
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public partial class KDSServiceClient : System.ServiceModel.ClientBase<KDSWinFormClient.ServiceReference1.IKDSService>, KDSWinFormClient.ServiceReference1.IKDSService {
+    public partial class KDSServiceClient : System.ServiceModel.ClientBase<KDSConsoleClient.ServiceReference1.IKDSService>, KDSConsoleClient.ServiceReference1.IKDSService {
         
         public KDSServiceClient() {
         }
@@ -876,44 +751,44 @@ namespace KDSWinFormClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public KDSWinFormClient.ServiceReference1.GetOrderStatusesResponse GetOrderStatuses(KDSWinFormClient.ServiceReference1.GetOrderStatusesRequest request) {
-            return base.Channel.GetOrderStatuses(request);
+        public System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel> GetOrderStatuses() {
+            return base.Channel.GetOrderStatuses();
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetOrderStatusesResponse> GetOrderStatusesAsync(KDSWinFormClient.ServiceReference1.GetOrderStatusesRequest request) {
-            return base.Channel.GetOrderStatusesAsync(request);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync() {
+            return base.Channel.GetOrderStatusesAsync();
         }
         
-        public KDSWinFormClient.ServiceReference1.GetDepartmentsResponse GetDepartments(KDSWinFormClient.ServiceReference1.GetDepartmentsRequest request) {
-            return base.Channel.GetDepartments(request);
+        public System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.DepartmentModel> GetDepartments() {
+            return base.Channel.GetDepartments();
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetDepartmentsResponse> GetDepartmentsAsync(KDSWinFormClient.ServiceReference1.GetDepartmentsRequest request) {
-            return base.Channel.GetDepartmentsAsync(request);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync() {
+            return base.Channel.GetDepartmentsAsync();
         }
         
-        public KDSWinFormClient.ServiceReference1.GetOrdersResponse GetOrders(KDSWinFormClient.ServiceReference1.GetOrdersRequest request) {
-            return base.Channel.GetOrders(request);
+        public System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel> GetOrders() {
+            return base.Channel.GetOrders();
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetOrdersResponse> GetOrdersAsync(KDSWinFormClient.ServiceReference1.GetOrdersRequest request) {
-            return base.Channel.GetOrdersAsync(request);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSConsoleClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
+            return base.Channel.GetOrdersAsync();
         }
         
-        public KDSWinFormClient.ServiceReference1.GetHostAppSettingsResponse GetHostAppSettings(KDSWinFormClient.ServiceReference1.GetHostAppSettingsRequest request) {
-            return base.Channel.GetHostAppSettings(request);
+        public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings() {
+            return base.Channel.GetHostAppSettings();
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.GetHostAppSettingsResponse> GetHostAppSettingsAsync(KDSWinFormClient.ServiceReference1.GetHostAppSettingsRequest request) {
-            return base.Channel.GetHostAppSettingsAsync(request);
+        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync() {
+            return base.Channel.GetHostAppSettingsAsync();
         }
         
-        public KDSWinFormClient.ServiceReference1.SetExpectedTakeValueResponse SetExpectedTakeValue(KDSWinFormClient.ServiceReference1.SetExpectedTakeValueRequest request) {
-            return base.Channel.SetExpectedTakeValue(request);
+        public void SetExpectedTakeValue(int value) {
+            base.Channel.SetExpectedTakeValue(value);
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.SetExpectedTakeValueResponse> SetExpectedTakeValueAsync(KDSWinFormClient.ServiceReference1.SetExpectedTakeValueRequest request) {
-            return base.Channel.SetExpectedTakeValueAsync(request);
+        public System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value) {
+            return base.Channel.SetExpectedTakeValueAsync(value);
         }
     }
     
@@ -922,87 +797,25 @@ namespace KDSWinFormClient.ServiceReference1 {
     public interface IKDSCommandService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        KDSWinFormClient.ServiceReference1.ChangeOrderStatusResponse ChangeOrderStatus(KDSWinFormClient.ServiceReference1.ChangeOrderStatusRequest request);
+        void ChangeOrderStatus(int orderId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.ChangeOrderStatusResponse> ChangeOrderStatusAsync(KDSWinFormClient.ServiceReference1.ChangeOrderStatusRequest request);
+        System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusResponse ChangeOrderDishStatus(KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusRequest request);
+        void ChangeOrderDishStatus(int orderId, int orderDishId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderDishStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusResponse> ChangeOrderDishStatusAsync(KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusRequest request);
+        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
+    public interface IKDSCommandServiceChannel : KDSConsoleClient.ServiceReference1.IKDSCommandService, System.ServiceModel.IClientChannel {
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="ChangeOrderStatus", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class ChangeOrderStatusRequest {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public int orderId;
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=1)]
-        public KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus;
-        
-        public ChangeOrderStatusRequest() {
-        }
-        
-        public ChangeOrderStatusRequest(int orderId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderStatus) {
-            this.orderId = orderId;
-            this.orderStatus = orderStatus;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="ChangeOrderStatusResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class ChangeOrderStatusResponse {
-        
-        public ChangeOrderStatusResponse() {
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="ChangeOrderDishStatus", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class ChangeOrderDishStatusRequest {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=0)]
-        public int orderId;
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=1)]
-        public int orderDishId;
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://tempuri.org/", Order=2)]
-        public KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus;
-        
-        public ChangeOrderDishStatusRequest() {
-        }
-        
-        public ChangeOrderDishStatusRequest(int orderId, int orderDishId, KDSWinFormClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
-            this.orderId = orderId;
-            this.orderDishId = orderDishId;
-            this.orderDishStatus = orderDishStatus;
-        }
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    [System.ServiceModel.MessageContractAttribute(WrapperName="ChangeOrderDishStatusResponse", WrapperNamespace="http://tempuri.org/", IsWrapped=true)]
-    public partial class ChangeOrderDishStatusResponse {
-        
-        public ChangeOrderDishStatusResponse() {
-        }
-    }
-    
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public interface IKDSCommandServiceChannel : KDSWinFormClient.ServiceReference1.IKDSCommandService, System.ServiceModel.IClientChannel {
-    }
-    
-    [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
-    public partial class KDSCommandServiceClient : System.ServiceModel.ClientBase<KDSWinFormClient.ServiceReference1.IKDSCommandService>, KDSWinFormClient.ServiceReference1.IKDSCommandService {
+    public partial class KDSCommandServiceClient : System.ServiceModel.ClientBase<KDSConsoleClient.ServiceReference1.IKDSCommandService>, KDSConsoleClient.ServiceReference1.IKDSCommandService {
         
         public KDSCommandServiceClient() {
         }
@@ -1023,20 +836,20 @@ namespace KDSWinFormClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public KDSWinFormClient.ServiceReference1.ChangeOrderStatusResponse ChangeOrderStatus(KDSWinFormClient.ServiceReference1.ChangeOrderStatusRequest request) {
-            return base.Channel.ChangeOrderStatus(request);
+        public void ChangeOrderStatus(int orderId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            base.Channel.ChangeOrderStatus(orderId, orderStatus);
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.ChangeOrderStatusResponse> ChangeOrderStatusAsync(KDSWinFormClient.ServiceReference1.ChangeOrderStatusRequest request) {
-            return base.Channel.ChangeOrderStatusAsync(request);
+        public System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            return base.Channel.ChangeOrderStatusAsync(orderId, orderStatus);
         }
         
-        public KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusResponse ChangeOrderDishStatus(KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusRequest request) {
-            return base.Channel.ChangeOrderDishStatus(request);
+        public void ChangeOrderDishStatus(int orderId, int orderDishId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            base.Channel.ChangeOrderDishStatus(orderId, orderDishId, orderDishStatus);
         }
         
-        public System.Threading.Tasks.Task<KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusResponse> ChangeOrderDishStatusAsync(KDSWinFormClient.ServiceReference1.ChangeOrderDishStatusRequest request) {
-            return base.Channel.ChangeOrderDishStatusAsync(request);
+        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSConsoleClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            return base.Channel.ChangeOrderDishStatusAsync(orderId, orderDishId, orderDishStatus);
         }
     }
 }

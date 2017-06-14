@@ -7,7 +7,7 @@
         xmlns:cavCtl="clr-namespace:CAVControls;assembly=NumericUpDown"
         xmlns:KDSWPFClient="clr-namespace:KDSWPFClient" 
         mc:Ignorable="d" Name="appConfig" Background="FloralWhite"
-        Title="ConfigEdit" Height="777" Width="1159">
+        Title="ConfigEdit" Height="777" Width="1159" WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
         <!-- шаблон для отображения строк словаря отделов -->
@@ -148,7 +148,7 @@
             <!-- кол-во колонок -->
             <StackPanel  Margin="0" Orientation="Horizontal">
                 <TextBlock Text="количество колонок на экране:  "/>
-                <cavCtl:NumericUpDown x:Name="tbxOrdersColumnsCount" Minimum="2" Maximum="10" Value="4" Width="90" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
+                <cavCtl:NumericUpDown x:Name="tbxOrdersColumnsCount" Minimum="2" Maximum="10" Value="4" Width="90" IsVisibleRange="Visible" FontSize="24" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
 
             <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
@@ -170,9 +170,9 @@
             </StackPanel>-->
 
             <!-- масштаб шрифта -->
-            <StackPanel Margin="0,5" Orientation="Horizontal">
+            <StackPanel Margin="0,5,0,15" Orientation="Horizontal" >
                 <TextBlock Text="Коэффициент размера шрифтов:  "/>
-                <cavCtl:NumericUpDown x:Name="tbFontSizeScale" Minimum="0.5" Maximum="2.0" Value="1.0" Width="100" Increment="0.1" IsVisibleRange="Visible" ContentStringFormat="#0.0" FontSize="18" Background="{Binding Background, ElementName=appConfig}"/>
+                <cavCtl:NumericUpDown x:Name="tbFontSizeScale" Minimum="0.5" Maximum="2.0" Value="1.0" Width="100" Increment="0.1" IsVisibleRange="Visible" ContentStringFormat="#0.0" FontSize="24" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
 
             <!-- выбор звукового файла -->

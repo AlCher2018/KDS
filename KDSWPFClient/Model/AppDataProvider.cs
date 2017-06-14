@@ -40,10 +40,10 @@ namespace KDSWPFClient
 
         public AppDataProvider()
         {
-            CreateChannels();
-
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
+
+            CreateChannels();
         }
 
         public bool CreateChannels()

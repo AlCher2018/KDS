@@ -16,7 +16,8 @@ namespace KDSService
     /// 1. Периодический опрос заказов из БД
     /// </summary>
 
-    [ServiceBehavior(IncludeExceptionDetailInFaults = true, 
+    [ServiceBehavior(AddressFilterMode = AddressFilterMode.Any, 
+        IncludeExceptionDetailInFaults = true,
         InstanceContextMode = InstanceContextMode.Single)]
     public class KDSServiceClass : IDisposable, IKDSService, IKDSCommandService
     {

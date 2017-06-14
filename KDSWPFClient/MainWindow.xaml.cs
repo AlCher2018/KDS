@@ -19,6 +19,8 @@ namespace KDSWPFClient
     /// </summary>
     public partial class MainWindow : Window
     {
+        private double _screenWidth, _screenHeight;
+
         private Timer _timer;
         private short _canInvokeUpdateOrders;
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
@@ -64,7 +66,9 @@ namespace KDSWPFClient
             InitializeComponent();
 
             this.Loaded += MainWindow_Loaded;
-            this.Closing += MainWindow_Closing;
+
+            _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
+            _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
 
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
@@ -855,7 +859,7 @@ namespace KDSWPFClient
         private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(grdMain);
-            //            Debug.Print("-- down " + p.ToString());
+            Debug.Print("-- down " + p.ToString());
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y <= 30d))  // верхний левый угол
             {
@@ -874,12 +878,12 @@ namespace KDSWPFClient
         private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(grdMain);
-            //            int iSec = (DateTime.Now - _adminDate).Seconds;
-            //            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+                        int iSec = (DateTime.Now - _adminDate).Seconds;
+                        Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
 
-            if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 60))
+            if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 0.25d *_screenHeight))
                 _adminBitMask = _adminBitMask.SetBit(1); // верхний левый со смещением вниз
-            else if ((p.X <= brdAdmin.ActualWidth) && (p.Y >= (brdAdmin.ActualHeight - 60d)) && (p.Y <= (brdAdmin.ActualHeight - 30d)))  // нижний левый со смещением вверх
+            else if ((p.X <= brdAdmin.ActualWidth) && (p.Y >= (0.75d * brdAdmin.ActualHeight)) && (p.Y <= (brdAdmin.ActualHeight - 30d)))  // нижний левый со смещением вверх
             {
                 _adminBitMask = _adminBitMask.SetBit(3);
                 if (_adminBitMask == 15) openConfigPanel();
@@ -945,6 +949,5 @@ namespace KDSWPFClient
         }
 
         #endregion
-
     }  // class MainWindow
 }

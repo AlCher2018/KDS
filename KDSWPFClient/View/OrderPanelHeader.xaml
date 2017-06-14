@@ -7,7 +7,7 @@
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
              Name="root" MouseUp="root_MouseUp"
-             d:DesignHeight="100" d:DesignWidth="300"
+             d:DesignHeight="80" d:DesignWidth="300"
              SnapsToDevicePixels="True">
 
     <UserControl.Resources>
@@ -41,43 +41,51 @@
     <Grid x:Name="grdHeader">
         <Grid.RowDefinitions>
             <!-- 0. наимен.стола и номер заказа -->
-            <RowDefinition Height="1.2*"/>
+            <RowDefinition Height="*"/>
             <!-- 1. имя официанта -->
-            <RowDefinition Height="0.8*"/>
+            <RowDefinition Height="0.7*"/>
             <!-- 2. таймер состояния заказа -->
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!--<Border x:Name="brdDivisionMark" Grid.Row="0" Panel.ZIndex="5" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}" BorderThickness="5" Height="10" VerticalAlignment="Top"/>-->
-        <Polygon x:Name="brdDivisionMark" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Panel.ZIndex="5" HorizontalAlignment="Right" VerticalAlignment="Top" Points="0,0 80,0 80,70"/>
 
         <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
         <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" Style="{StaticResource row1Style}">
-            <Grid x:Name="grdHdrTableRow" Style="{StaticResource rowMarginStyle}">
+            <Grid x:Name="grdHdrTableRow">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource rowMarginStyle}">
                     <Run x:Name="tbTableLabel1" Text="Стол №: "/>
                     <Run x:Name="tbTableName" FontWeight="Bold" Text="{Binding TableName}"/>
                 </TextBlock>
+
+                <!--<Viewbox Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Width="{Binding ElementName=grdHdrTableRow, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" Height="50" Margin="0,-1,-1,0" Stretch="Fill" ClipToBounds="True">
+                    <Polygon x:Name="brdDivisionMark" Points="0,0 10,0 10,10"/>
+                </Viewbox>-->
+
                 <Border Grid.Column="1">
-                    <TextBlock x:Name="tblOrderNumber" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock x:Name="tblOrderNumber" HorizontalAlignment="Center" VerticalAlignment="Center"  Style="{StaticResource rowMarginStyle}">
                         <Run x:Name="tbTableLabel2" Text="Заказ №: "/>
                         <Run x:Name="tbOrderNumber" FontWeight="Bold" Text="{Binding Number}"/>
                     </TextBlock>
                 </Border>
             </Grid>
         </Border>
-        
+
         <!-- официант -->
         <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" Style="{StaticResource rowBrushesStyle}">
             <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
-                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left"/>
+                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,0,0,5"/>
             </Grid>
         </Border>
-        
+
+        <Viewbox Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Width="{Binding ElementName=grdHdrTableRow, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.2}" Margin="0,0,0,0" Stretch="Fill" ClipToBounds="True">
+            <Polygon x:Name="brdDivisionMark" Points="0,0 10,0 10,10" Opacity="0.7"/>
+        </Viewbox>
+
         <!-- время создания заказа и счетчик приготовления -->
         <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1" Style="{StaticResource rowBrushesStyle}">
             <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">

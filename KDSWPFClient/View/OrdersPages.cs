@@ -129,7 +129,7 @@ namespace KDSWPFClient.View
                 curLineHeight = Math.Round(dshPnl.DesiredSize.Height); // получить высоту строки блюда
                 if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
                 {
-                    // разбиваем блюда заказа
+                    // разбиваем блюда заказа на той же странице
                     if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount))
                     {
                         // 1. удалить из ordPnl только что добавленное блюдо
@@ -149,12 +149,32 @@ namespace KDSWPFClient.View
                         curLineHeight = 0; foreach (UIElement item in delItems) curLineHeight += Math.Round(item.DesiredSize.Height);
                         setNextColumn();
                     }
-                    // не разбиваем заказ, а полностью переносим
+
+                    // не разбиваем заказ, а полностью переносим на новую страницу
                     else
                     {
                         setNextColumn();
                         _curTopValue = _curTopValue - ordTop;  // "высота" заказа в новом столбце
                         ordTop = 0d;
+                        if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
+                        {
+                            // 1. удалить из ordPnl только что добавленное блюдо
+                            //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
+                            UIElement[] delItems = ordPnl.RemoveDish(dshPnl);
+                            // 2. добавить в канву начало заказа
+                            ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
+                            ordPnl.SetValue(Canvas.TopProperty, ordTop);
+                            CurrentPage.Children.Add(ordPnl);
+
+                            // 3. создать новый OrderPanel для текущего блюда с заголовком таблицы
+                            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
+                            ordTop = 0d; _curTopValue = Math.Round(ordPnl.DesiredSize.Height);
+                            // 4. добавить только что удаленное блюдо
+                            ordPnl.AddDish(delItems);  // добавить в стек без измерения высоты
+                                                       // переопределить приращение, просуммировав высоту всех удаленных элементов
+                            curLineHeight = 0; foreach (UIElement item in delItems) curLineHeight += Math.Round(item.DesiredSize.Height);
+                            setNextColumn();
+                        }
                     }
                 }
 
