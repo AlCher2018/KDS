@@ -14,6 +14,7 @@ using System.Xml.Linq;
 using System.Windows.Media;
 using KDSWPFClient.ViewModel;
 using KDSWPFClient.View;
+using System.Reflection;
 
 namespace KDSWPFClient.Lib
 {
@@ -457,6 +458,19 @@ namespace KDSWPFClient.Lib
 
             return retVal;
         }
+
+        // закрыть все открытые окна, кроме главного окна
+        // проще перечислить, какие надо закрывать, а какие прятать
+        public static void CloseChildWindows()
+        {
+            foreach (Window win in App.Current.Windows)
+            {
+                Type winType = win.GetType();
+                if (winType.Name == "MainWindow") continue;
+                PropertyInfo pInfo = winType.GetProperty("Host");
+                if (pInfo == null) win.Close();
+            }  // for each
+        }  // method
 
         public static Brush GetBrushFromRGBString(string rgb)
         {

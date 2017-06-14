@@ -186,7 +186,6 @@ namespace KDSWPFClient.View
                 // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
                 else
                 {
-                    if (_dishView.Id == 12) Debug.Print("** {0}", _dishView.WaitingTimerString);
                     // из глобальных настроек
                     bool isUseReadyConfirmed = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
                     if ((!isUseReadyConfirmed && (_dishView.Status == OrderStatusEnum.Ready))
@@ -198,7 +197,6 @@ namespace KDSWPFClient.View
                             tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
                         }
                     }
-                    if (_dishView.Id == 12) Debug.Print("**    {0}", tsTimerValue.ToString());
                 }
 
                 _timerString = AppLib.GetAppStringTS(tsTimerValue);
@@ -227,9 +225,15 @@ namespace KDSWPFClient.View
             {
                 string currentCookBrushesName = getCookBrushesName();
                 bool currentValue = isTimerNegative();
+
+                //if (_dishView.Id == 8) Debug.Print("_timerString={0}, _negativeTimer = {1}, currentValue={2}", _timerString, _negativeTimer, currentValue);
+
                 if (_negativeTimer != currentValue)
                 {
                     _negativeTimer = currentValue;
+
+                    //if (_dishView.Id == 8) Debug.Print(" --- setTimerBorder();  _isTimerBrushesIndepend={0}", _isTimerBrushesIndepend);
+
                     setTimerBorder();
                 }
                 else if (_cookBrushesName != currentCookBrushesName)
@@ -270,6 +274,9 @@ namespace KDSWPFClient.View
                 //    tbDishStatusTS.Foreground = brPair.Foreground;
                 //}
             }
+
+            //if (_dishView.Id == 8) Debug.Print(" --- setTimerBrushes();  _negativeTimer={0}", _negativeTimer);
+
             setTimerBrushes();
         }
 
@@ -298,6 +305,8 @@ namespace KDSWPFClient.View
                     if (appBrushes.ContainsKey(key)) brPair = appBrushes[key];
                 }
             }
+
+            //if (_dishView.Id == 8) Debug.Print(" --- (brPair == null) = {0}", (brPair == null));
 
             if (brPair != null)
             {

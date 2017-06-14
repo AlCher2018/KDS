@@ -53,7 +53,7 @@ namespace KDSWPFClient.View
         private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
-            this.Close();
+            this.Hide();
         }
     }  // class
 }

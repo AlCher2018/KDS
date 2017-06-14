@@ -8,7 +8,7 @@
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" Name="root"
              d:DesignHeight="60" d:DesignWidth="300"
-             MouseUp="root_MouseUp"
+             MouseDown="root_MouseUp"
              >
 
     <UserControl.Resources>

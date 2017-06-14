@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:KDSWPFClient.View"
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
-             Name="root" MouseUp="root_MouseUp"
+             Name="root" MouseDown="root_MouseUp"
              d:DesignHeight="80" d:DesignWidth="300"
              SnapsToDevicePixels="True">
 

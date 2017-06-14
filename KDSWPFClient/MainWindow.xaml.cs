@@ -11,6 +11,7 @@ using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using KDSWPFClient.Model;
+using System.ComponentModel;
 
 namespace KDSWPFClient
 {
@@ -56,6 +57,7 @@ namespace KDSWPFClient
         private Timer _adminTimer;
 
         private bool _mayGetData;
+        private ColorLegend _colorLegendWin;
 
         // звуки
         System.Media.SoundPlayer _wavPlayer;
@@ -143,9 +145,23 @@ namespace KDSWPFClient
                 _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
-
         }
 
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // окно легенды
+            _colorLegendWin = new ColorLegend();
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if ((_timer != null) && _timer.Enabled)
+            {
+                _timer.Stop(); _timer.Dispose();
+            }
+            AppLib.CloseChildWindows();
+            base.OnClosing(e);
+        }
 
         // основной таймер отображения панелей заказов
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -226,7 +242,7 @@ namespace KDSWPFClient
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
             // которых нет в preOrdersId, т.е. новые? (поиск по Id)
             int[] curOrdersId = svcOrders.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-            if (_preOrdersId.Count > 0)
+            if ((_preOrdersId.Count > 0) || (_preOrdersId.Count==0 && svcOrders.Count != 0))
             {
                 foreach (int curId in curOrdersId)
                     if (!_preOrdersId.Contains(curId)) {
@@ -859,7 +875,7 @@ namespace KDSWPFClient
         private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(grdMain);
-            Debug.Print("-- down " + p.ToString());
+            //Debug.Print("-- down " + p.ToString());
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y <= 30d))  // верхний левый угол
             {
@@ -872,14 +888,14 @@ namespace KDSWPFClient
             else
                 _adminBitMask = 0;
 
-            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
+            //Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
         }
 
         private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(grdMain);
-                        int iSec = (DateTime.Now - _adminDate).Seconds;
-                        Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+//            int iSec = (DateTime.Now - _adminDate).Seconds;
+//            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 0.25d *_screenHeight))
                 _adminBitMask = _adminBitMask.SetBit(1); // верхний левый со смещением вниз
@@ -890,11 +906,7 @@ namespace KDSWPFClient
             }
             else
                 _adminBitMask = 0;
-            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
-        }
-
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
+//            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
@@ -912,6 +924,8 @@ namespace KDSWPFClient
             Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
             Thickness leftTbMargin = new Thickness(0.1d * wRow, 0d, -hRow, -wRow);
 
+            tbColorsLegend.FontSize = 0.35d * wRow;
+
             btnOrderGroup.Margin = leftBtnMargin;
             btnOrderGroup.CornerRadius = crnRad;
             tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
@@ -925,29 +939,12 @@ namespace KDSWPFClient
             tbDishStatusFilter.Margin = leftTbMargin;
         }
 
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void btnColorsLegend_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if ((_timer != null) && _timer.Enabled)
-            {
-                _timer.Stop(); _timer.Dispose();
-            }
-        }
-
-
-        private void btnColorsLegend_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            bool isLegendOpen = false;
-            foreach (Window win in App.Current.Windows)
-            {
-                if (win is ColorLegend) { win.Close(); isLegendOpen = true; break; }
-            }
-            if (!isLegendOpen)
-            {
-                ColorLegend legend = new ColorLegend();
-                legend.ShowDialog();
-            }
+            _colorLegendWin.ShowDialog();
         }
 
         #endregion
+
     }  // class MainWindow
 }

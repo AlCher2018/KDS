@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="KDS" Height="720" Width="1024"
         WindowState="Maximized" WindowStyle="SingleBorderWindow"
-        SizeChanged="Window_SizeChanged" ResizeMode="NoResize" Closing="MainWindow_Closing" Icon="monitor7.ico">
+        SizeChanged="Window_SizeChanged" ResizeMode="NoResize" Icon="monitor7.ico">
 
     <Window.Resources>
 
@@ -23,7 +23,7 @@
             <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
 
-        <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,60,0,0" VerticalAlignment="Top" Click="button_Click"/>
+        <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
 
         <!-- панель заказов -->
         <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
@@ -49,21 +49,21 @@
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
 
-                <Button x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top" PreviewMouseDown ="btnColorsLegend_Click" MouseDoubleClick="btnColorsLegend_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="ButtonBase">
-                            <Border VerticalAlignment="Stretch" BorderBrush="LightGray" BorderThickness="1" Background="Transparent">
-                                <ContentPresenter RecognizesAccessKey="True" Content="{TemplateBinding ContentControl.Content}" ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}" SnapsToDevicePixels="True" Margin="3,10"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <Button.Content>
-                        <TextBlock Text="Легенда" TextWrapping="Wrap" Foreground="LightGray" FontSize="14" VerticalAlignment="Center"/>
-                    </Button.Content>
-                </Button>
+                <!--<Border x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top">
+                    <TextBlock Text="Легенда" TextWrapping="Wrap" Foreground="LightGray" FontSize="14" VerticalAlignment="Center"/>
+                </Border>-->
 
-                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2">
-                    <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110" MouseDown="tbOrderGroup_MouseDown">
+                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" MouseDown ="btnColorsLegend_MouseDown" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Margin="-20,0,-20,0" Height="{Binding ElementName=brdAdmin, Path=ActualWidth}" Background="Transparent">
+                    <Border.RenderTransform>
+                        <TransformGroup>
+                            <RotateTransform Angle="-90"/>
+                        </TransformGroup>
+                    </Border.RenderTransform>
+                    <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="Gray"/>
+                </Border>
+
+                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbOrderGroup_MouseDown">
+                    <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="-90"/>
@@ -72,8 +72,8 @@
                     </TextBlock>
                 </Border>
 
-                <Border x:Name="btnDishStatusFilter" Grid.Row="3" BorderBrush="DarkGray" BorderThickness="2">
-                    <TextBlock x:Name="tbDishStatusFilter" Text="В процессе" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-80,-28" Width="110" MouseDown="tbDishStatusFilter_MouseDown">
+                <Border x:Name="btnDishStatusFilter" Grid.Row="3" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbDishStatusFilter_MouseDown">
+                    <TextBlock x:Name="tbDishStatusFilter" Text="В процессе" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-80,-28" Width="110">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="-90"/>

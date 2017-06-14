@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
         Title="Легенда цветов таймеров состояний" Height="400" Width="500"
-        PreviewMouseUp="Window_PreviewMouseUp" SnapsToDevicePixels="True" WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" Background="Linen" SizeToContent="Height">
+        SnapsToDevicePixels="True" WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" Background="Linen" SizeToContent="Height">
 
     <Window.Resources>
         <!-- предотвращает появление голубой рамки вокруг пунктов меню -->
@@ -49,7 +49,7 @@
         
     </Window.Resources>
 
-    <DockPanel LastChildFill="True">
+    <DockPanel LastChildFill="True" MouseDown="Window_PreviewMouseUp">
         <Border DockPanel.Dock="Top" Background="Teal" Padding="0,3">
             <TextBlock Text="Легенда цветов состояний блюд/заказов" HorizontalAlignment="Center" Foreground="Yellow" FontSize="14"/>
         </Border>
@@ -58,7 +58,7 @@
         <ListBox x:Name="lstLegend" DockPanel.Dock="Top" ItemContainerStyle="{StaticResource listBoxItemStyle}" Background="Transparent" SnapsToDevicePixels="True" Focusable="False" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.CanContentScroll="False">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Style="{StaticResource brdListItem}">
+                    <Border Style="{StaticResource brdListItem}" MouseDown="Window_PreviewMouseUp">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="100"/>
