@@ -134,7 +134,7 @@ namespace KDSWPFClient
 
             _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
 
-            _adminTimer = new Timer() { Interval = 4000d, AutoReset = false };
+            _adminTimer = new Timer() { Interval = 3000d, AutoReset = false };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
 
             // звук предупреждения о появлении нового заказа
@@ -872,9 +872,9 @@ namespace KDSWPFClient
         }
 
         // админ жест
-        private void grdMain_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void brdAdmin_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            Point p = e.GetPosition(grdMain);
+            Point p = e.GetPosition(brdAdmin);
             //Debug.Print("-- down " + p.ToString());
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y <= 30d))  // верхний левый угол
@@ -891,9 +891,9 @@ namespace KDSWPFClient
             //Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
         }
 
-        private void grdMain_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void brdAdmin_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            Point p = e.GetPosition(grdMain);
+            Point p = e.GetPosition(brdAdmin);
 //            int iSec = (DateTime.Now - _adminDate).Seconds;
 //            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
 
@@ -924,8 +924,6 @@ namespace KDSWPFClient
             Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
             Thickness leftTbMargin = new Thickness(0.1d * wRow, 0d, -hRow, -wRow);
 
-            tbColorsLegend.FontSize = 0.35d * wRow;
-
             btnOrderGroup.Margin = leftBtnMargin;
             btnOrderGroup.CornerRadius = crnRad;
             tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
@@ -939,9 +937,11 @@ namespace KDSWPFClient
             tbDishStatusFilter.Margin = leftTbMargin;
         }
 
-        private void btnColorsLegend_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+
+        private void btnColorsLegend_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             _colorLegendWin.ShowDialog();
+            e.Handled = true;
         }
 
         #endregion

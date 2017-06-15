@@ -14,7 +14,7 @@
 
     </Window.Resources>
 
-    <Grid x:Name="grdMain" PreviewMouseDown="grdMain_PreviewMouseDown" PreviewMouseUp="grdMain_PreviewMouseUp">
+    <Grid x:Name="grdMain">
         <Grid.Background>
             <ImageBrush ImageSource="Images/steel.jpg"/>
         </Grid.Background>
@@ -23,17 +23,8 @@
             <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
 
-        <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
-
-        <!-- панель заказов -->
-        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
-        </Viewbox>
-
-        <!-- сообщение об ошибке связи со службой -->
-        <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
-
-        <!-- кнопка переключения состояний -->
-        <Border x:Name="brdAdmin"  Grid.Column="0">
+        <!-- админская панель -->
+        <Border x:Name="brdAdmin"  Grid.Column="0" PreviewMouseDown="brdAdmin_PreviewMouseDown" PreviewMouseUp="brdAdmin_PreviewMouseUp">
             <Border.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FFB2B2B2"/>
@@ -49,20 +40,20 @@
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
 
-                <!--<Border x:Name="btnColorsLegend" Grid.Row="0" Panel.ZIndex="10" Margin="0,100,0,0" VerticalAlignment="Top">
-                    <TextBlock Text="Легенда" TextWrapping="Wrap" Foreground="LightGray" FontSize="14" VerticalAlignment="Center"/>
-                </Border>-->
+                <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
 
-                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" MouseDown ="btnColorsLegend_MouseDown" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Margin="-20,0,-20,0" Height="{Binding ElementName=brdAdmin, Path=ActualWidth}" Background="Transparent">
-                    <Border.RenderTransform>
-                        <TransformGroup>
-                            <RotateTransform Angle="-90"/>
-                        </TransformGroup>
-                    </Border.RenderTransform>
-                    <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="Gray"/>
+                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Bottom" Margin="0,30" Background="Transparent" Height="100" MouseUp="btnColorsLegend_MouseUp">
+                    <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Foreground="Gray" FontSize="18" RenderTransformOrigin="0.5,0.5" Margin="-28,37" Width="87">
+                        <TextBlock.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="-90"/>
+                            </TransformGroup>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
                 </Border>
 
-                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbOrderGroup_MouseDown">
+                <!-- кнопка переключения состояний -->
+                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbOrderGroup_MouseDown" Background="Transparent">
                     <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
@@ -84,6 +75,13 @@
 
             </Grid>
         </Border>
+
+        <!-- панель заказов -->
+        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill">
+        </Viewbox>
+
+        <!-- сообщение об ошибке связи со службой -->
+        <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
 
         <!-- кнопки листания страниц -->
         <Viewbox x:Name="btnSetPagePrevious" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden" Stretch="Uniform">

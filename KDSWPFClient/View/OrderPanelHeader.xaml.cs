@@ -118,7 +118,7 @@ namespace KDSWPFClient.View
             StateChange win = new StateChange() { Order = orderView, Dish = null };
 
             win.ShowDialog();
-
+            e.Handled = true;
         }
     }// class 
 }

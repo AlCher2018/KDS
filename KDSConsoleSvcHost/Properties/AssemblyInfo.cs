@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("KDSConsoleSvcHost")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("KDS Service host")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Integra-IT Solutions")]
 [assembly: AssemblyProduct("KDSConsoleSvcHost")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyTrademark("Integra ITS, http://www.integra-its.com.ua/")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 

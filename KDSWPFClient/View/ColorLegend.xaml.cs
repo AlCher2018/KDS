@@ -50,10 +50,11 @@ namespace KDSWPFClient.View
             lstLegend.ItemsSource = context;
         }
 
-        private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        private void Window_MouseUp(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
             this.Hide();
         }
+
     }  // class
 }

@@ -338,6 +338,7 @@ namespace KDSWPFClient.View
             StateChange win = new StateChange() { Order = orderView, Dish = _dishView };
 
             win.ShowDialog();
+            e.Handled = true;
 
         //    MessageBox.Show(string.Format("dish id {0} - {1}, state {2}",dishView.Id, dishView.DishName, dishView.Status));
         }

@@ -7,13 +7,13 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("KDS")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("KDS WPF Client")]
+[assembly: AssemblyDescription("KDS WPF Client")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("KDS")]
+[assembly: AssemblyCompany("Integra-IT Solutions")]
+[assembly: AssemblyProduct("KDSWPFClient")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyTrademark("Integra ITS, http://www.integra-its.com.ua/")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
