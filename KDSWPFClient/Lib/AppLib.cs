@@ -307,6 +307,13 @@ namespace KDSWPFClient.Lib
             }
         }
 
+        internal static string GetShortErrMessage(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
+            return retVal;
+        }
+
         public static bool SaveAppSettings(string key, string value)
         {
             Dictionary<string, string> dict = new Dictionary<string, string>() { { key, value } };
@@ -512,6 +519,17 @@ namespace KDSWPFClient.Lib
             return ts;
         }
 
+        // установить размер окна (параметр) в размеры главного окна приложения
+        internal static void SetWinSizeToMainWinSize(Window win)
+        {
+            Window mWin = Application.Current.MainWindow;
+            // размеры
+            win.Width = mWin.ActualWidth; win.Height = mWin.ActualHeight;
+
+            // положение
+            Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
+            win.Top = topLeftPoint.Y; win.Left = topLeftPoint.X;
+        }
 
         // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
         internal static void RecalcOrderPanelsLayot()

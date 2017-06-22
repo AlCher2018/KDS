@@ -16,7 +16,6 @@ namespace KDSConsoleClient
             KDSCommandServiceClient _setClient;
             List<OrderModel> _orders;
 
-
             _getClient = new KDSServiceClient();
             //_getClient.Open();
 

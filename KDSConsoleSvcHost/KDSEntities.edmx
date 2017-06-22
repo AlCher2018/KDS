@@ -109,8 +109,9 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="AppName" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="Description" Type="nvarchar" MaxLength="500" />
         </EntityType>
         <Association Name="FK_Order_OrderStatus">
           <End Role="OrderStatus" Type="Self.OrderStatus" Multiplicity="1" />
@@ -262,15 +263,6 @@
           <NavigationProperty Name="OrderDishRunTime" Relationship="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDish" ToRole="OrderDishRunTime" />
           <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_OrderDish_Order" FromRole="OrderDish" ToRole="Order" />
         </EntityType>
-        <EntityType Name="OrderStatus">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" />
-          <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="OrderStatus" ToRole="Order" />
-        </EntityType>
         <Association Name="FK_OrderDish_Department">
           <End Role="Department" Type="Self.Department" Multiplicity="1" />
           <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
@@ -286,7 +278,6 @@
         <EntityContainer Name="KDSEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="Department" EntityType="Self.Department" />
           <EntitySet Name="OrderDish" EntityType="Self.OrderDish" />
-          <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" />
           <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
             <End Role="Department" EntitySet="Department" />
             <End Role="OrderDish" EntitySet="OrderDish" />
@@ -303,10 +294,6 @@
             <End Role="OrderDishRunTime" EntitySet="OrderDishRunTime" />
           </AssociationSet>
           <EntitySet Name="Order" EntityType="KDSServiceModel.Order" />
-          <AssociationSet Name="FK_Order_OrderStatus" Association="KDSServiceModel.FK_Order_OrderStatus">
-            <End Role="OrderStatus" EntitySet="OrderStatus" />
-            <End Role="Order" EntitySet="Order" />
-          </AssociationSet>
           <AssociationSet Name="FK_OrderDish_Order" Association="KDSServiceModel.FK_OrderDish_Order">
             <End Role="Order" EntitySet="Order" />
             <End Role="OrderDish" EntitySet="OrderDish" />
@@ -314,6 +301,11 @@
           <AssociationSet Name="FK_OrderRunTime_Order" Association="KDSServiceModel.FK_OrderRunTime_Order">
             <End Role="Order" EntitySet="Order" />
             <End Role="OrderRunTime" EntitySet="OrderRunTime" />
+          </AssociationSet>
+          <EntitySet Name="OrderStatus" EntityType="KDSServiceModel.OrderStatus" />
+          <AssociationSet Name="FK_Order_OrderStatus" Association="KDSServiceModel.FK_Order_OrderStatus">
+            <End Role="OrderStatus" EntitySet="OrderStatus" />
+            <End Role="Order" EntitySet="Order" />
           </AssociationSet>
         </EntityContainer>
         <EntityType Name="OrderDishReturnTime">
@@ -410,23 +402,11 @@
           <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="OrderStatus" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
           <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
           <NavigationProperty Name="OrderRunTime" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
           <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
+          <NavigationProperty Name="OrderStatus" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
         </EntityType>
-        <Association Name="FK_Order_OrderStatus">
-          <End Type="KDSServiceModel.OrderStatus" Role="OrderStatus" Multiplicity="1" />
-          <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="OrderStatus">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="Order">
-              <PropertyRef Name="OrderStatusId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_OrderDish_Order">
           <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="1" />
           <End Type="KDSServiceModel.OrderDish" Role="OrderDish" Multiplicity="*" />
@@ -450,6 +430,28 @@
             </Principal>
             <Dependent Role="OrderRunTime">
               <PropertyRef Name="OrderId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="OrderStatus">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="AppName" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="Description" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="OrderStatus" ToRole="Order" />
+        </EntityType>
+        <Association Name="FK_Order_OrderStatus">
+          <End Type="KDSServiceModel.OrderStatus" Role="OrderStatus" Multiplicity="1" />
+          <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderStatus">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="OrderStatusId" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -488,15 +490,6 @@
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="UID1C" ColumnName="UID1C" />
                 <ScalarProperty Name="DelayedStartTime" ColumnName="DelayedStartTime" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="OrderStatus">
-            <EntityTypeMapping TypeName="KDSServiceModel.OrderStatus">
-              <MappingFragment StoreEntitySet="OrderStatus">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -569,6 +562,16 @@
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
                 <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderStatus">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderStatus">
+              <MappingFragment StoreEntitySet="OrderStatus">
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="AppName" ColumnName="AppName" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>

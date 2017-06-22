@@ -334,8 +334,9 @@ namespace KDSWPFClient.View
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
-            
+
             StateChange win = new StateChange() { Order = orderView, Dish = _dishView };
+            AppLib.SetWinSizeToMainWinSize(win);
 
             win.ShowDialog();
             e.Handled = true;

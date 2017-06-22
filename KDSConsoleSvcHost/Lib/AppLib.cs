@@ -31,17 +31,17 @@ namespace KDSService
         #region OrderStatusEnum funcs
         public static OrderStatusEnum GetStatusEnumFromNullableInt(int? dbIntValue)
         {
-            if (dbIntValue == null)
-                return OrderStatusEnum.None;
-            else
-            {
-                OrderStatusEnum eVal;
-                if (Enum.TryParse<OrderStatusEnum>(dbIntValue.ToString(), out eVal)
-                    && (Enum.IsDefined(typeof(OrderStatusEnum), eVal)))
-                    return eVal;
-                else
-                    return OrderStatusEnum.None;
-            }
+            return (OrderStatusEnum)(dbIntValue ?? 0);
+            //if (dbIntValue == null)
+            //    return OrderStatusEnum.WaitingCook;
+            //else
+            //{
+            //    OrderStatusEnum eVal;
+            //    if (Enum.TryParse<OrderStatusEnum>(dbIntValue.ToString(), out eVal))
+            //        return eVal;
+            //    else
+            //        return OrderStatusEnum.WaitingCook;
+            //}
         }
 
         #endregion

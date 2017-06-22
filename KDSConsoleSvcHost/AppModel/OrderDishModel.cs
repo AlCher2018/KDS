@@ -259,7 +259,10 @@ namespace KDSService.AppModel
 
                     UpdateStatus(newStatus, false);
                 }  // для БЛЮДА
-
+                else
+                {
+                    UpdateStatus(newStatus, false);
+                }
             }  // lock
 
         }  // method
@@ -345,7 +348,10 @@ namespace KDSService.AppModel
                             updateChildIngredients(dtEnterToNewStatus, secondsInPrevState);
                     }
 
-                    // попытка обновить статус Заказа проверкой состояний всех блюд/ингредиентов
+                    // если это ингредиент, то попытаться обновить статус блюда по всем ингредиентам
+                    //if (this.ParentUid.IsNull() == false) updateDishStatusByIngrStatuses();
+
+                    // попытка обновить статус ЗАКАЗА проверкой состояний всех блюд/ингредиентов
                     if (isUpdateParentOrder) _modelOrder.UpdateStatusByVerificationDishes();
 
                     isUpdSuccess = true;
@@ -393,23 +399,47 @@ namespace KDSService.AppModel
 
 
         #region обновление ЗАВИСИМЫХ ингредиентов
+        // для ингредиента попытаться обновить статус блюда по всем ингредиентам
+        private void updateDishStatusByIngrStatuses()
+        {
+            OrderDishModel parentDish = getParentDish();
+            if (parentDish != null)
+            {
+                List<OrderDishModel> ingrs = getIngredients();
+
+                int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
+                int[] statArray = new int[iLen];
+
+                int iStatus, iDishesCount = ingrs.Count;
+                foreach (OrderDishModel modelDish in ingrs)
+                {
+                    iStatus = modelDish.DishStatusId;
+                    statArray[iStatus]++;
+                }
+
+                // в состояние 0 заказ автоматом переходить не должен
+                for (int i = 1; i < iLen; i++)
+                {
+                    if (statArray[i] == iDishesCount)
+                    {
+                        OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
+                        if (parentDish.Status != statDishes)
+                        {
+                            parentDish.UpdateStatus(statDishes, false);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         // обновить добавленный к списку зависимый ингредиент по родительскому блюду
         // т.е. для нового объекта в заказе
         private void updateIngredientByParentDish()
         {
-            _parentDish = null;
-            // найти уже существующее блюдо для данного ингредиента от текущей позиции и выше
-            List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
-            int idx = dishes.Count;  // индекс ингредиента
-            for (int i = idx - 1; i >= 0; i--)
-            {
-                // нашли родительское блюдо
-                if ((dishes[i].ParentUid.IsNull()) && (dishes[i].Uid == this.Uid))
-                {
-                    _parentDish = dishes[i]; break;
-                }
-            }
-
+            // найти уже существующее блюдо для данного ингредиента
+            _parentDish = getParentDish();
+                
             if (_parentDish != null)
             {
                 StatusDTS dtsBase = _parentDish.getStatusRunTimeDTS(_parentDish.Status);
@@ -429,31 +459,26 @@ namespace KDSService.AppModel
             }
         }
 
-        // обновить уже существующие ингредиенты, зависимые от текущего блюда, находящиеся ДАЛЬШЕ ПО СПИСКУ блюд, 
-        // чтобы не захватить ингредиенты у такого же блюда, перед или после данного в списке блюд!!!
+        private OrderDishModel getParentDish()
+        {
+            return this._modelOrder.Dishes.Values.FirstOrDefault(d => d.ParentUid.IsNull() && (d.Uid == this.ParentUid));
+        }
+        private List<OrderDishModel> getIngredients()
+        {
+            return this._modelOrder.Dishes.Values.Where(d => (d.Uid == this.Uid) && (d.ParentUid == this.Uid)).ToList();
+        }
+
+        // обновить уже существующие ингредиенты, зависимые от текущего блюда, по Uid блюда
         private void updateChildIngredients(DateTime dtEnterToNewStatus, int secondsInPrevState)
         {
-            List<OrderDishModel> dishes = this._modelOrder.Dishes.Values.ToList();
-            OrderDishModel probIngr;
-            int idx = dishes.IndexOf(this);  // индекс текущего блюда
-            // поиск последующих ингредиентов
-            if (idx > -1)
+            List<OrderDishModel> ingrs = getIngredients();
+            foreach (OrderDishModel ingr in ingrs)
             {
-                for (int i = idx + 1; i < dishes.Count; i++)
+                // TODO условие изменения статуса ингредиента - ТАКОЙ ЖЕ СТАТУС, КАК В БЛЮДЕ (в службе) или принадлежность отделу блюда (на клиенте)?
+                if ((this.DishStatusId != ingr.DishStatusId))
                 {
-                    probIngr = dishes[i];
-                    // это ингредиент данного блюда
-                    if ((probIngr.Uid == this.Uid) && (probIngr.ParentUid == this.Uid))
-                    {
-                        // TODO условие изменения статуса ингредиента - ТАКОЙ ЖЕ СТАТУС, КАК В БЛЮДЕ (в службе) или принадлежность отделу блюда (на клиенте)?
-                        if ((this.DishStatusId >= probIngr.DishStatusId) || (this.DepartmentId == probIngr.DepartmentId))
-                        {
-                            // поменять статус и запустить таймеры для 
-                            probIngr.UpdateStatus(this.Status, false, dtEnterToNewStatus, secondsInPrevState);
-                        }
-                    }
-                    // ингр.кончились - выйти из цикла
-                    else break;
+                    // поменять статус и запустить таймеры для 
+                    ingr.UpdateStatus(this.Status, false, dtEnterToNewStatus, secondsInPrevState);
                 }
             }
         }
@@ -675,8 +700,12 @@ namespace KDSService.AppModel
                     OrderDish dbDish = db.OrderDish.Find(this.Id);
                     if (dbDish != null)
                     {
-                        dbDish.DishStatusId = (int)status;
-                        db.SaveChanges();
+                        int iStatus = (int)status;
+                        if (dbDish.DishStatusId != iStatus)
+                        {
+                            dbDish.DishStatusId = iStatus;
+                            db.SaveChanges();
+                        }
                         retVal = true;
                     }
                 }

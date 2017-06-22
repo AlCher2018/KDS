@@ -8,6 +8,7 @@ using System.Timers;
 using KDSConsoleSvcHost;
 using KDSService.Lib;
 using System.Diagnostics;
+using System.Threading;
 
 namespace KDSService.AppModel
 {
@@ -23,6 +24,8 @@ namespace KDSService.AppModel
         private bool _takeCancelledInAutostartCooking;
         private string _errorMsg;
 
+        private bool _isTraceLog;
+        private bool _changeStatusYesterdayOrders;
 
         // CONSTRUCTOR
         public OrdersModel()
@@ -31,6 +34,9 @@ namespace KDSService.AppModel
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
             _takeCancelledInAutostartCooking = (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false);
+
+            _isTraceLog = (bool)AppEnv.GetAppProperty("IsWriteTraceMessages", false);
+            _changeStatusYesterdayOrders = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
         }
 
         //**************************************
@@ -38,6 +44,15 @@ namespace KDSService.AppModel
         //**************************************
         public string UpdateOrders()
         {
+            // время автосброса вчерашних заказов/блюд
+            if (_changeStatusYesterdayOrders)
+            {
+                ThreadStart tStart = new ThreadStart(updateYesterdayOrdersStatus);
+                Thread thread = new Thread(tStart);
+                thread.Start();
+                thread.Join();
+            }
+
             // получить заказы из БД
             List<Order> dbOrders = null;
             try
@@ -59,6 +74,13 @@ namespace KDSService.AppModel
                 return ex.Message;
             }
 
+            // получено заказов из БД
+            if (_isTraceLog)
+            {
+                string ids = string.Join(",", dbOrders.Select(o => o.Id).ToArray());
+                AppEnv.WriteLogTraceMessage("orders count from DB: {0} (ids: {1})", dbOrders.Count, ids);
+            }
+
             // цикл по полученным из БД заказам
             if (dbOrders != null)
             {
@@ -70,26 +92,38 @@ namespace KDSService.AppModel
                     //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
                     //}
 
-                    int[] delIds;
-                    // для последующех обработок удалить из заказов блюда с ненужными статусами
-                    foreach (Order dbOrder in dbOrders)
-                    {
-                        // массив блюд для удаления
-                        OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
-                        // удаление ненужных блюд
-                        foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
-                    }
+                    //// для последующех обработок удалить из заказов блюда с ненужными статусами
+                    //foreach (Order dbOrder in dbOrders)
+                    //{
+                    //    // массив блюд для удаления
+                    //    OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
+                    //    // удаление ненужных блюд
+                    //    foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
+                    //}
 
                     // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
-                    updateDishesQuantityDict(dbOrders);
+                    try
+                    {
+                        updateDishesQuantityDict(dbOrders);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppEnv.WriteLogErrorMessage("Ошибка обновления словаря цехов с количеством готовящихся блюд: " + ex.ToString());
+                    }
 
                     // удалить из внутр.словаря заказы, которых уже нет в БД
                     // причины две: или запись была удалена из БД, или запись получила статут, не входящий в условия отбора
                     //    словарь состояний заказов <id, status>
-                    Dictionary<int, OrderStatusEnum> ordersStatusDict = new Dictionary<int, OrderStatusEnum>();
-                    dbOrders.ForEach(o => ordersStatusDict.Add(o.Id, AppLib.GetStatusEnumFromNullableInt(o.OrderStatusId)));
-
-                    delIds = _orders.Keys.Except(ordersStatusDict.Keys).ToArray();
+                    //Dictionary<int, OrderStatusEnum> ordersStatusDict = new Dictionary<int, OrderStatusEnum>();
+                    //dbOrders.ForEach(o => ordersStatusDict.Add(o.Id, AppLib.GetStatusEnumFromNullableInt(o.OrderStatusId)));
+                    // delIds = _orders.Keys.Except(ordersStatusDict.Keys).ToArray();
+                    int[] delIds = dbOrders.Select(o => o.Id).ToArray();
+                    delIds = _orders.Keys.Except(delIds).ToArray();
+                    if (_isTraceLog)
+                    {
+                        string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
+                        if (s1 != "") AppEnv.WriteLogTraceMessage("   удалены заказы {0}", s1);
+                    }
                     foreach (int id in delIds)
                     {
                         //if (_orders[id].Status == OrderStatusEnum.Commit) _orders[id].UpdateStatus(OrderStatusEnum.Commit, true);
@@ -103,13 +137,31 @@ namespace KDSService.AppModel
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
                             // обновить существующий заказ
-                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю заказ {0}...", dbOrder.Id);
+                            try
+                            {
+                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                                if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю заказ {0}... Ok", dbOrder.Id);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                            }
                         }
                         else
                         {
                             // добавление заказа в словарь
-                            OrderModel newOrder = new OrderModel(dbOrder);
-                            _orders.Add(dbOrder.Id, newOrder);
+                            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   добавляю заказ {0}...", dbOrder.Id);
+                            try
+                            {
+                                OrderModel newOrder = new OrderModel(dbOrder);
+                                _orders.Add(dbOrder.Id, newOrder);
+                                if (_isTraceLog) AppEnv.WriteLogTraceMessage("   добавляю заказ {0}... Ok", dbOrder.Id);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                            }
                         }  //curOrder
                     }  // foreach
 
@@ -117,17 +169,61 @@ namespace KDSService.AppModel
                 dbOrders = null; GC.Collect(0, GCCollectionMode.Optimized);
             }
 
+            if (_isTraceLog)
+            {
+                string ids = "";
+                if (_orders.Count > 0) ids = string.Join(",", _orders.Values.Select(o => o.Id).ToArray());
+                AppEnv.WriteLogTraceMessage("   orders count for clients: {0} (ids: {1})", _orders.Count, ids);
+            }
+
             return null;
         }  // method
 
+        private void updateYesterdayOrdersStatus()
+        {
+                DateTime dt = DateTime.Today;
+                // промежуток времени в течение 5 сек
+                int secs = dt.Second - AppEnv.TimeOfAutoCloseYesterdayOrders.Seconds;
+                //if ((AppEnv.TimeOfAutoCloseYesterdayOrders.Hours == dt.Hour)
+                //    && (AppEnv.TimeOfAutoCloseYesterdayOrders.Minutes == dt.Minute)
+                //    && (secs >= 0) && (secs <= 5))
+                //{
+                AppEnv.WriteLogInfoMessage("Обновить статус вчерашних заказов...");
+                DateTime dtEstEndDay = new DateTime(dt.Year, dt.Month, dt.Day);
+                using (KDSEntities db = new KDSEntities())
+                {
+                    List<Order> yesterdayOrders = db.Order.Where(o => (o.OrderStatusId < 3) && (o.CreateDate < dtEstEndDay)).ToList();
+                    foreach (Order item in yesterdayOrders)
+                    {
+                        item.OrderStatusId = (int)OrderStatusEnum.YesterdayNotTook;
+                    }
+                    try
+                    {
+                        int processed = db.SaveChanges();
+                        AppEnv.WriteLogInfoMessage(" - обновлено заказов {0}", processed.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0}", ex.Message + (ex.InnerException == null ? "" : " Inner exception: " + ex.InnerException.Message));
+                    }
+                }
+                _changeStatusYesterdayOrders = false;
+            //            }
+
+        }
         // процедуры проверки числ.значения статуса Заказа/Блюда (из БД) на обработку в КДС
         // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
         // дата создания: только текущая!
         private bool isProcessingOrderStatusId(Order order)
         {
             return ( 
-                ((order.OrderStatusId <= 2) || (order.OrderStatusId == 4) || (order.OrderStatusId == 7)) 
-                && (order.CreateDate.Date.Equals(DateTime.Now.Date))
+                ((order.OrderStatus.AppName == OrderStatusEnum.WaitingCook.ToString())
+                || (order.OrderStatus.AppName == OrderStatusEnum.Cooking.ToString())
+                || (order.OrderStatus.AppName == OrderStatusEnum.Ready.ToString())
+                || (order.OrderStatus.AppName == OrderStatusEnum.Cancelled.ToString())
+                || (order.OrderStatus.AppName == OrderStatusEnum.Transferred.ToString())
+                || (order.OrderStatus.AppName == OrderStatusEnum.ReadyConfirmed.ToString()))
+                && (order.CreateDate.Date.Equals(DateTime.Today.Date))
             );
         }
         // статус: null - не указан, ... см.выше
@@ -156,6 +252,8 @@ namespace KDSService.AppModel
             List<int> keys = dishesQty.Keys.ToList();
             foreach (int key in keys) dishesQty[key] = 0m;
 
+            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю словарь количества готовящихся блюд по цехам...");
+
             decimal qnt;
             OrderStatusEnum eStatus;
             bool isTakeQuantity, isTakeCancelled;
@@ -179,6 +277,19 @@ namespace KDSService.AppModel
             }  // loop
 
             AppEnv.SetAppProperty("dishesQty", dishesQty);
+
+            if (_isTraceLog)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (KeyValuePair<int, decimal> item in dishesQty)
+                {
+                    if (sb.Length > 0) sb.Append("; ");
+                    sb.Append(string.Format("depId: {0}, qnt: {1}", item.Key, item.Value));
+                }
+                
+                AppEnv.WriteLogTraceMessage("   обновляю словарь количества готовящихся блюд: " + sb.ToString());
+            }
+
         }  // method
 
 

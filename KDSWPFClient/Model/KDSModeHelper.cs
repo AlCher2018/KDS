@@ -30,7 +30,8 @@ namespace KDSWPFClient.Model
             modeCook.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
             {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
-                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.Ready)
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cooking, OrderStatusEnum.Ready),
+                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled, OrderStatusEnum.CancelConfirmed)
             });
             modeCook.CreateUserStateSets();
             #endregion
@@ -54,7 +55,6 @@ namespace KDSWPFClient.Model
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.ReadyConfirmed),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Cooking),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Cancelled, OrderStatusEnum.CancelConfirmed),
-                new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took),
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Took)
                 });
             }
@@ -84,7 +84,8 @@ namespace KDSWPFClient.Model
             {
                 modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
                 {
-                OrderStatusEnum.ReadyConfirmed
+                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
+                OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
                 });
                 modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
@@ -95,7 +96,7 @@ namespace KDSWPFClient.Model
             {
                 modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
                 {
-                OrderStatusEnum.Ready
+                OrderStatusEnum.Cooking, OrderStatusEnum.Ready
                 });
                 modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
@@ -299,8 +300,10 @@ namespace KDSWPFClient.Model
             {
                 KDSModeStates modeStates = _definedKDSModes[KDSModeEnum.Special];
 
-                modeStates.StringToAllowedStates(AppLib.GetAppSetting("KDSSpecialModeStates"));
-                modeStates.StringToAllowedActions(AppLib.GetAppSetting("KDSSpecialModeActions"));
+                string cfgVal = AppLib.GetAppSetting("KDSModeSpecialStates");
+                modeStates.StringToAllowedStates(cfgVal);
+                cfgVal = AppLib.GetAppSetting("KDSModeSpecialActions");
+                modeStates.StringToAllowedActions(cfgVal);
                 modeStates.CreateUserStateSets();
             }
         }  // method

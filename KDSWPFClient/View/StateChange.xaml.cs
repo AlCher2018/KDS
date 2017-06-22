@@ -59,18 +59,15 @@ namespace KDSWPFClient.View
             setWinLayout();
         }
 
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+        }
+
 
         // размер шрифта зависит от высоты строки грида!!
         private void setWinLayout()
         {
-            // размеры 
-            //this.Width = (double)AppLib.GetAppGlobalValue("screenWidth");
-            //this.Height = (double)AppLib.GetAppGlobalValue("screenHeight");
-            KDSWPFClient.MainWindow mWin = (KDSWPFClient.MainWindow)App.Current.MainWindow;
-            this.Width = mWin.ActualWidth; this.Height = mWin.ActualHeight;
-            Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
-            this.Top = topLeftPoint.Y; this.Left = topLeftPoint.X;
-
             mainGrid.Width = 0.5d * Width;
             mainGrid.Height = 0.5d * Height;
 
@@ -117,7 +114,12 @@ namespace KDSWPFClient.View
             AppLib.AssignFontSizeByMeasureHeight(tbMessage, new Size(mainGrid.Width, mainGrid.Height), rowHeight, true);
 
             // кнопки переходов
-            if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish)) createChangeStateButtons();
+            if ((_modelType == AppViewModelEnum.Order) || (_modelType == AppViewModelEnum.Dish))
+            {
+                DebugTimer.Init("step 4");
+                createChangeStateButtons();
+                DebugTimer.GetInterval();
+            }
 
             // кнопка Закрыть
             double btnCloseFontSize = 0.3 * AppLib.GetRowHeightAbsValue(mainGrid, 3);
@@ -129,8 +131,6 @@ namespace KDSWPFClient.View
         private void createChangeStateButtons()
         {
             double rowHeight = AppLib.GetRowHeightAbsValue(mainGrid, 2);
-            // сообщение об отсутствии переходов
-            tbNoAllowedStates.FontSize = Math.Floor(0.15d * rowHeight);
 
             // из РАЗРЕШЕННЫХ переходов выбрать переходы, ДОСТУПНЫЕ для текущего состояния
             List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedStatesForCurrentState = null;
@@ -158,6 +158,8 @@ namespace KDSWPFClient.View
             // нет доступных переходов
             if (allowedStatesForCurrentState.Count == 0)
             {
+                // сообщение об отсутствии переходов
+                tbNoAllowedStates.FontSize = Math.Floor(0.15d * rowHeight);
                 tbNoAllowedStates.Visibility = Visibility.Visible;
                 return;
             }
@@ -287,7 +289,7 @@ namespace KDSWPFClient.View
 //                Debug.Print(ex.ToString());
                 MessageBox.Show(ex.Message);
             }
-            Close();
+            closeWin();
         }
 
         private void setModelType()
@@ -308,7 +310,12 @@ namespace KDSWPFClient.View
 
         private void btnClose_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            closeWin();
+        }
+
+        private void closeWin()
+        {
+            this.Hide();
         }
 
         private enum AppViewModelEnum

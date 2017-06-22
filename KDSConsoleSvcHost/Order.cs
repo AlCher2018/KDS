@@ -35,10 +35,10 @@ namespace KDSService
         public int QueueStatusId { get; set; }
         public string DivisionColorRGB { get; set; }
     
-        public virtual OrderStatus OrderStatus { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDish> OrderDish { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderRunTime> OrderRunTime { get; set; }
+        public virtual OrderStatus OrderStatus { get; set; }
     }
 }

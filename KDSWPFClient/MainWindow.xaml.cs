@@ -28,6 +28,7 @@ namespace KDSWPFClient
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
 
         private AppDataProvider _dataProvider;
+        private bool _isTraceLog, _traceOrderDetails;
 
         // текущая роль
         private KDSModeEnum _currentKDSMode;
@@ -74,6 +75,8 @@ namespace KDSWPFClient
 
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
+            _isTraceLog = AppLib.GetAppSetting("IsWriteTraceMessages").ToBool();
+            _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
 
             setCurrentKDSMode();
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -147,7 +150,23 @@ namespace KDSWPFClient
             }
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private string getDepsFilter()
+        {
+            string retVal = "";
+            DepartmentViewModel curItem;
+            foreach (KeyValuePair<int, DepartmentViewModel> pair in _dataProvider.Departments)
+            {
+                curItem = pair.Value;
+                if (curItem.IsViewOnKDS)
+                {
+                    if (retVal.IsNull() == false) retVal += ", ";
+                    retVal += string.Format("{0} (id {1})", curItem.Name, curItem.Id);
+                }
+            }
+            return retVal;
+        }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // окно легенды
             _colorLegendWin = new ColorLegend();
@@ -185,6 +204,7 @@ namespace KDSWPFClient
                 }
                 catch (Exception ex)
                 {
+                    AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", ex.ToString());
                 }
             }
             _timer.Start();
@@ -211,32 +231,61 @@ namespace KDSWPFClient
                 return;
             }
 
-            //OrderModel om = orders[0];
-            //string s = string.Format("id: {0}; Number {1}; hallName {2}; dishes count: {3}", om.Id, om.Number, om.HallName, om.Dishes.Count);
-            //Debug.Print(s);
-
             // получить заказы от сервиса
             List<OrderModel> svcOrders = _dataProvider.GetOrders();
             if (svcOrders == null) return;
 
+            if (_traceOrderDetails)
+            {
+                string s1 = "";
+                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд "+o.Dishes.Count.ToString()).ToArray());
+                AppLib.WriteLogTraceMessage(" - от службы получено заказов: {0} (ids: {1})", svcOrders.Count, s1);
+                AppLib.WriteLogTraceMessage(" - отображаемые отделы: {0}", getDepsFilter());
+            }
+
+            //обновить словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - обновляю служебный словарь _dependDeps...");
+            try
+            {
+                updateDependDepsDict(svcOrders);
+                if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   словарь _dependDeps обновлен успешно");
+            }
+            catch (Exception ex1)
+            {
+                AppLib.WriteLogErrorMessage("   Error: {0}", AppLib.GetShortErrMessage(ex1));
+            }
 
             // удалить из svcOrders блюда, не входящие в условия фильтрации
-            updateDependDepsDict(svcOrders);
-            _delOrderIds.Clear(); _delDishIds.Clear();
-            foreach (OrderModel orderModel in svcOrders)
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - фильтрация блюд (цеха и статусы данного КДС)...");
+            try
             {
-                // собрать Id блюд для удаления, т.е. не прошедшие фильтры по отделам и состояниям
-                foreach (KeyValuePair<int, OrderDishModel> item in orderModel.Dishes)
+                _delOrderIds.Clear(); _delDishIds.Clear();
+                foreach (OrderModel orderModel in svcOrders)
                 {
-                    if (_valueDishChecker.Checked(item.Value) == false) _delDishIds.Add(item.Key);
+                    // собрать Id блюд для удаления, т.е. не прошедшие фильтры по отделам и состояниям
+                    foreach (KeyValuePair<int, OrderDishModel> item in orderModel.Dishes)
+                    {
+                        if (_valueDishChecker.Checked(item.Value) == false) _delDishIds.Add(item.Key);
+                    }
+
+                    _delDishIds.ForEach(key => orderModel.Dishes.Remove(key)); // удалить неразрешенные блюда
+
+                    if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
                 }
-
-                _delDishIds.ForEach(key => orderModel.Dishes.Remove(key)); // удалить неразрешенные блюда
-
-                if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
+                //   и заказы, у которых нет разрешенных блюд
+                _delOrderIds.ForEach(o => svcOrders.Remove(o));
             }
-            //   и заказы, у которых нет разрешенных блюд
-            _delOrderIds.ForEach(o => svcOrders.Remove(o));
+            catch (Exception ex2)
+            {
+                AppLib.WriteLogErrorMessage("Ошибка удаления из svcOrders блюд, не входящие в условия фильтрации: {0}", ex2.ToString());
+            }
+
+            if (_traceOrderDetails)
+            {
+                string s1 = "";
+                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
+                AppLib.WriteLogTraceMessage("   после фильтрации заказов {0}, (ids: {1})", svcOrders.Count, s1);
+            }
 
             // условие проигрывания мелодии при появлении нового заказа
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
@@ -254,6 +303,7 @@ namespace KDSWPFClient
 
 
             // *** СОРТИРОВКА ЗАКАЗОВ  ***
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
             // группировка и сортировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
             {
@@ -292,15 +342,28 @@ namespace KDSWPFClient
 
                 // сортировка по CreateDate блюд
                 SortedList<DateTime, OrderModel> sortOrders = new SortedList<DateTime, OrderModel>();
+                OrderModel tmpOrder;
                 foreach (OrderModel om in svcOrders)
                 {
-                    foreach (DateTime dt in (om.Dishes.Values.Select(d => d.CreateDate).Distinct()))
-                        sortOrders.Add(dt, getCopyOrderModel(om, dt));
+                    // список уникальных дат
+                    List<DateTime> dtList = om.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
+                    // копия блюд по датам
+                    foreach (DateTime dt in dtList)
+                    {
+                        tmpOrder = getCopyOrderModel(om, dt);
+                        sortOrders.Add(dt, tmpOrder);
+                    }
                 }
 
                 svcOrders = sortOrders.Values.ToList();
             }
 
+            if (_traceOrderDetails)
+            {
+                string s1 = "";
+                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
+                AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, (ids: {1})", svcOrders.Count, s1);
+            }
 
             // после реорганизации списка блюд
             // группировка по подачам если надо
@@ -320,10 +383,26 @@ namespace KDSWPFClient
             // в случае с группировкой по времени и разбивкой заказов на несколько панелей AppLib.JoinSortedLists() работает НЕПРАВИЛЬНО!!!
             //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
             // поэтому сделано уникальной процедурой
-            bool isViewRepaint = updateViewOrdersList(svcOrders);
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   обновление служебной коллекции заказов (для отображения на экране)...");
+            bool isViewRepaint2 = false;
+            try
+            {
+                isViewRepaint2 = updateViewOrdersList(svcOrders);
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("Ошибка обновления служебной коллекции заказов для отображения на экране: {0}", ex.ToString());
+            }
+
+            if (_traceOrderDetails)
+            {
+                string s1 = "";
+                if (_viewOrders.Count > 0) s1 = string.Join("; ", _viewOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
+                AppLib.WriteLogTraceMessage("   для отображения на экране заказов: {0}, (ids: {1}) - {2}", _viewOrders.Count, s1, (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+            }
 
             // перерисовать полностью
-            if ((isViewRepaint == true) 
+            if ((isViewRepaint2 == true) 
                 || ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0))) repaintOrders();
 
         }  // method
@@ -337,17 +416,18 @@ namespace KDSWPFClient
             foreach (OrderModel orderModel in svcOrders)
             {
                 // отобрать только блюда
-                IEnumerable<OrderDishModel> v1 = orderModel.Dishes.Values.Where(d => d.ParentUid.IsNull());
+                List<OrderDishModel> v1 = orderModel.Dishes.Values.Where(d => d.ParentUid.IsNull()).ToList();
                 foreach (OrderDishModel dish in v1)
                 {
                     List<int> dd = new List<int>();
                     _dependDeps.Add(dish.Id, dd);
                     // ингредиенты к блюду
-                    IEnumerable<OrderDishModel> v2 = orderModel.Dishes.Values.Where(d => d.ParentUid == dish.Uid);
+                    List<OrderDishModel> v2 = orderModel.Dishes.Values.Where(d => d.ParentUid == dish.Uid).ToList();
                     foreach (OrderDishModel ingr in v2)
                     {
                         dd.Add(ingr.DepartmentId);
-                        _dependDeps.Add(ingr.Id, new List<int>() { dish.DepartmentId });  // а для ингредиента - Ид отдела родит.блюда
+                        if (_dependDeps.ContainsKey(ingr.Id) == false)
+                            _dependDeps.Add(ingr.Id, new List<int>() { dish.DepartmentId });  // а для ингредиента - Ид отдела родит.блюда
                     }
                 }  // foreach dish
             }  // foreach order
@@ -449,8 +529,8 @@ namespace KDSWPFClient
             {
                 retVal.Dishes.Add(dm.Id, dm);
                 dishes.Remove(dm);
-                // и собрать все ингредиенты, у некоторых CreateDate может отличаться от блюда!
-                ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid)).ToList();
+                // и собрать все ингредиенты с ТАКИМ же CreateDate!
+                ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
                 foreach (OrderDishModel dmIngr in ingrsForCopy)
                 {
                     if (!retVal.Dishes.ContainsKey(dmIngr.Id))
@@ -544,7 +624,7 @@ namespace KDSWPFClient
                     _userStatesLooper = null;  // обнулить, чтобы создать заново
                     updCheckerDishState();
                 }
-                if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates"))
+                if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates") && cfgEdit.AppNewSettings["KDSModeSpecialStates"].IsNull() == false)
                 {
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
                     _userStatesLooper = null;  // обнулить, чтобы создать заново
@@ -620,10 +700,15 @@ namespace KDSWPFClient
         // а в _dependDeps - для каждого Id блюда/ингр список зависимых Id отделов
         private bool checkAllowDepertment(OrderDishModel dishModel)
         {
+            // проверка в разрешенных самого блюда
             if (isDepIdAllow(dishModel.DepartmentId)) return true;
 
-            foreach (int ddId in _dependDeps[dishModel.Id])
-                if (isDepIdAllow(ddId)) return true;
+            // проверка зависимых ингредиентов
+            if (_dependDeps.ContainsKey(dishModel.Id) && _dependDeps[dishModel.Id] != null)
+            {
+                foreach (int ddId in _dependDeps[dishModel.Id])
+                    if (isDepIdAllow(ddId)) return true;
+            }
 
             return false;
         }
@@ -806,6 +891,7 @@ namespace KDSWPFClient
             {
                 _predicatesList.Clear();
             }
+
         }
 
         // класс для циклического получения значений из списка

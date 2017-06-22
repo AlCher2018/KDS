@@ -65,7 +65,6 @@ namespace KDSService
                 IntegratedSecurity = confBld.IntegratedSecurity,
                 UserID = confBld.UserID,
                 Password = confBld.Password,
-                ConnectRetryCount = 1,
                 ConnectTimeout = 1
             };
             SqlConnection testConn = new SqlConnection(testBld.ConnectionString);

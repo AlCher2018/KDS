@@ -59,24 +59,23 @@ namespace KDSService
 
         private void startService()
         {
-            _observeTimer.Start();
+            if (_observeTimer != null) _observeTimer.Start();
         }
         private void stopService()
         {
-            _observeTimer.Stop();
+            if (_observeTimer != null) _observeTimer.Stop();
         }
 
 
         // периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            _observeTimer.Stop();
-            //Console.WriteLine("  update Orders");
+            stopService();
 
             string errMsg = _ordersModel.UpdateOrders();
             if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
 
-            if (_observeTimer != null) _observeTimer.Start();
+            startService();
         }
 
 
@@ -170,6 +169,10 @@ namespace KDSService
 
         public void Dispose()
         {
+            // таймер остановить, отписаться от события и уничтожить
+            stopService();
+            _observeTimer.Dispose();
+
             string msg = "**** Закрытие служебного класса KDSService ****";
             try
             {
@@ -180,14 +183,6 @@ namespace KDSService
             catch (Exception ex)
             {
                 AppEnv.WriteLogInfoMessage("Error: " + ex.ToString());
-            }
-
-            // таймер остановить, отписаться от события и уничтожить
-            if (_observeTimer != null)
-            {
-                if (_observeTimer.Enabled == true) _observeTimer.Stop();
-                _observeTimer.Elapsed -= _observeTimer_Elapsed;
-                _observeTimer.Dispose();
             }
         }
 

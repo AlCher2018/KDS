@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Data.Entity;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,14 @@ namespace KDSConsoleSvcHost
         // логгер
         private static Logger _logger;
 
+        public static TimeSpan TimeOfAutoCloseYesterdayOrders
+        {
+            get {
+                var v = _props.GetProperty("TimeOfAutoCloseYesterdayOrders");
+                return (v == null) ? TimeSpan.Zero : (TimeSpan)v;
+            }
+        }
+
         // ctor
         public static bool AppInit(out string errMsg)
         {
@@ -34,7 +43,7 @@ namespace KDSConsoleSvcHost
 
             WriteLogInfoMessage("**** Инициализация приложения ****");
 
-            // 
+            // прочитать настройки из config-файла во внутренний словарь
             putAppConfigParamsToAppProperties();
 
             // вывести в лог настройки из config-файла
@@ -46,6 +55,11 @@ namespace KDSConsoleSvcHost
 
             // проверить доступность БД
             if (CheckDBConnection(typeof(KDSEntities), out errMsg) == false) return false;
+
+            // проверка наличия и количества справочных таблиц
+            WriteLogInfoMessage("Проверка наличия справочных таблиц...");
+            if (CheckAppDBTable(out errMsg) == false) return false;
+            WriteLogInfoMessage("Проверка наличия справочных таблиц... Ok");
 
             return true;
         }
@@ -90,7 +104,8 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
             putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
             putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
-
+            putCfgValueToStrBuilder(cfg, sb, "TimeOfAutoCloseYesterdayOrders");
+            
             return sb.ToString();
         }
         private static void putCfgValueToStrBuilder(NameValueCollection cfg, StringBuilder sb, string key)
@@ -121,6 +136,11 @@ namespace KDSConsoleSvcHost
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
             _props.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());
+
+            value = cfg["TimeOfAutoCloseYesterdayOrders"];
+            TimeSpan ts = TimeSpan.Zero;
+            if (value != null) TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts);
+            _props.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
@@ -228,6 +248,33 @@ namespace KDSConsoleSvcHost
             WriteLogInfoMessage("Проверка доступа к базе данных... " + ((retVal) ? "READY" :"ERROR!!!"));
             return retVal;
         }
+
+        private static bool CheckAppDBTable(out string errMsg)
+        {
+            bool retVal = false; errMsg = null;
+            try
+            {
+                using (KDSEntities db = new KDSEntities())
+                {
+                    if (db.Department== null)
+                        WriteLogErrorMessage(" - таблица Department ОТСУТСТВУЕТ!!");
+                    else
+                        WriteLogInfoMessage(" - таблица Department содержит {0} записей.", db.Department.Count());
+
+                    if (db.OrderStatus == null)
+                        WriteLogErrorMessage(" - таблица OrderStatus ОТСУТСТВУЕТ!!");
+                    else
+                        WriteLogInfoMessage(" - таблица OrderStatus содержит {0} записей.", db.OrderStatus.Count());
+                }
+                retVal = true;
+            }
+            catch (Exception ex)
+            {
+                errMsg = "Ошибка проверки справочных таблиц.";
+            }
+            return retVal;
+        }
+
 
         #region App logger
 

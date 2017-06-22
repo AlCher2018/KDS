@@ -43,7 +43,8 @@ namespace KDSService.AppModel
                 using (KDSEntities db = new KDSEntities())
                 {
                     retVal = db.OrderStatus
-                        .Select(os => new OrderStatusModel() { Id = os.Id, Name = os.Name, UID = os.UID })
+                        .Select(os => new OrderStatusModel() {
+                            Id = os.Id, Name = os.Name, AppName = os.AppName, Description = os.Description })
                         .ToList();
                 }
             }
@@ -108,7 +109,11 @@ namespace KDSService.AppModel
         public string Name { get; set; }
 
         [DataMember]
-        public string UID { get; set; }
+        public string AppName { get; set; }
+
+        [DataMember]
+        public string Description { get; set; }
+
     }  // class OrderStatusModel
 
 
@@ -138,9 +143,10 @@ namespace KDSService.AppModel
         public DepartmentModel(Department dbDep): this()
         {
             Id = dbDep.Id;
-            Name = dbDep.Name;
-            UID = dbDep.UID;
             IsAutoStart = dbDep.IsAutoStart ?? false;
+            Name = dbDep.Name;
+            if (IsAutoStart) Name += " (автостарт)";
+            UID = dbDep.UID;
             DishQuantity = dbDep.DishQuantity ?? 0;
         }
 

@@ -102,7 +102,7 @@ namespace KDSService.AppModel
             DivisionColorRGB = dbOrder.DivisionColorRGB;
 
             OrderStatusId = dbOrder.OrderStatusId;
-            Status = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
+            Status = (OrderStatusEnum)dbOrder.OrderStatusId; //AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
             _isUseReadyConfirmed = (bool)AppEnv.GetAppProperty("UseReadyConfirmedState");
 
@@ -166,7 +166,7 @@ namespace KDSService.AppModel
             foreach (OrderDish dbDish in dAll)   // dbOrder.OrderDish
             {
                 OrderDishModel newDish = new OrderDishModel(dbDish, this);
-                this._dishesDict.Add(newDish.Id, newDish);
+                if (this._dishesDict.ContainsKey(newDish.Id) == false) this._dishesDict.Add(newDish.Id, newDish);
             }
 
         }  // ctor
@@ -227,10 +227,10 @@ namespace KDSService.AppModel
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
                         // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
-                        if (dbDish.ParentUid.IsNull())  // это блюдо
-                        {
+                        //if (dbDish.ParentUid.IsNull())  // это блюдо
+                        //{
                             this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
-                        }
+                        //}
                     }
                     // иначе - добавить блюдо/ингр
                     else

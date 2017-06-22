@@ -112,10 +112,10 @@ namespace KDSWPFClient.View
             // 1. настройка в config-файле для заголовка заказа
             if ((bool)AppLib.GetAppGlobalValue("OrderHeaderClickable", false) == false) return;
 
-
             OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
 
             StateChange win = new StateChange() { Order = orderView, Dish = null };
+            AppLib.SetWinSizeToMainWinSize(win);
 
             win.ShowDialog();
             e.Handled = true;

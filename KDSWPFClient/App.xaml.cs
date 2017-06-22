@@ -16,7 +16,6 @@ namespace KDSWPFClient
     /// </summary>
     public partial class App : Application
     {
-
         /// <summary>
         /// Application Entry Point.
         /// </summary>
@@ -74,6 +73,9 @@ namespace KDSWPFClient
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             // после открытия канала к сервису, т.к. здесь используются значения, полученные от службы и сохраненные в св-вах приложения
             KDSModeHelper.PutCfgKDSModeToAppProps();
+
+            // создать и сохранить в свойствах приложения окно StateChange
+
 
             // основное окно приложения
             MainWindow mainWindow = new MainWindow();

@@ -17,6 +17,8 @@ namespace KDSWPFClient
 {
     public class AppDataProvider: IDisposable
     {
+        private bool _isTraceLog, _traceOrderDetails;
+
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
 
@@ -40,6 +42,9 @@ namespace KDSWPFClient
 
         public AppDataProvider()
         {
+            _isTraceLog = AppLib.GetAppSetting("IsWriteTraceMessages").ToBool();
+            _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
+
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
 
@@ -56,10 +61,13 @@ namespace KDSWPFClient
                 if (_getClient != null) _getClient.Close();
                 _getClient = new KDSServiceClient();
                 _getClient.Open();
+                logClientInfo(_getClient);
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
 
                 if (_setClient != null) _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
+                _setClient.Open();
+                logClientInfo(_setClient);
                 retVal = true;
             }
             catch (Exception ex)
@@ -69,6 +77,13 @@ namespace KDSWPFClient
 
             return retVal;
         }
+
+        private void logClientInfo<T>(System.ServiceModel.ClientBase<T> client) where T: class
+        {
+            System.ServiceModel.Description.ServiceEndpoint se = client.Endpoint;
+            AppLib.WriteLogInfoMessage("Client Info: type: {0}, address {1}; binding: {2}; contract: {3}",typeof(T).Name,  se.Address, se.Binding.Name, se.Contract.Name);
+        }
+
 
         #region get dictionaries from service
         public bool SetDictDataFromService()
@@ -107,7 +122,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = string.Format("{0}{1}", ex.Message, ((ex.InnerException == null) ? "" : ex.InnerException.Message));
+                _errMsg = getShortErrMsg(ex);
             }
 
             return retVal;
@@ -150,13 +165,15 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = string.Format("{0}: {1}", ex.Message, (ex.InnerException == null) ? "" : ex.InnerException.Message);
+                _errMsg = getShortErrMsg(ex);
             }
         }
         #endregion
 
         public List<OrderModel> GetOrders()
         {
+            if (_isTraceLog) AppLib.WriteLogTraceMessage("состояние службы: {0}", _getClient.State);
+
             if (_getClient.State == CommunicationState.Faulted)
             {
                 _getClient = new KDSServiceClient();
@@ -170,8 +187,9 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                //MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", ex.Message), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+                _errMsg = getShortErrMsg(ex);
+                MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", _errMsg), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppLib.WriteLogErrorMessage(_errMsg);
             }
 
             return retVal;
@@ -200,7 +218,8 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+                _errMsg = getShortErrMsg(ex);
+                AppLib.WriteLogErrorMessage(_errMsg);
             }
             return retVal;
         }
@@ -215,7 +234,8 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("Error: " + ex.ToString());
+                _errMsg = getShortErrMsg(ex);
+                AppLib.WriteLogErrorMessage(_errMsg);
             }
         }
 
@@ -261,6 +281,13 @@ namespace KDSWPFClient
             }
         }
 
+        private string getShortErrMsg(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
+            return retVal;
+        }
+
         public void Dispose()
         {
             disposeServiceClient(_getClient);
@@ -274,7 +301,13 @@ namespace KDSWPFClient
         {
             if (client != null)
             {
-                if (client.State == System.ServiceModel.CommunicationState.Opened) client.Close();
+                try
+                {
+                    if (client.State == System.ServiceModel.CommunicationState.Opened) client.Close();
+                }
+                catch (Exception)
+                {
+                }
                 client = null;
             }
         }

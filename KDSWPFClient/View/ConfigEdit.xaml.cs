@@ -48,8 +48,15 @@ namespace KDSWPFClient.View
             _cfgValKeeper = new CfgValueKeeper();
             _appNewSettings = new Dictionary<string, string>();
 
-            _useReadyConfirmedState =  (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+            // размеры окна
+            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
+            double screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            this.Width = 0.67d * screenWidth;
+            this.Height = 0.75d * screenHeight;
 
+
+            // дополнтельные действия в зависимости от подтверджения готовности
+            _useReadyConfirmedState =  (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
             if (_useReadyConfirmedState)
             {
                 cbxState7.Visibility = Visibility.Visible;
@@ -57,7 +64,6 @@ namespace KDSWPFClient.View
                 cbx17.Visibility = Visibility.Visible;
                 cbx27.Visibility = Visibility.Visible;
                 cbx73.Visibility = Visibility.Visible;
-                this.Height = 770;
             }
             else
             {
@@ -66,7 +72,6 @@ namespace KDSWPFClient.View
                 cbx17.Visibility = Visibility.Collapsed;
                 cbx27.Visibility = Visibility.Collapsed;
                 cbx73.Visibility = Visibility.Collapsed;
-                this.Height = 670;
             }
 
             // заполнить комбобокс звуковых файлов

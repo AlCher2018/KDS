@@ -7,7 +7,6 @@
       <Diagram DiagramId="bd9fc61f31aa40e8b8241e2a1e71aace" Name="Diagram1">
         <EntityTypeShape EntityType="KDSServiceModel.Department" Width="2.25" PointX="3.125" PointY="3.875" IsExpanded="true" />
         <EntityTypeShape EntityType="KDSServiceModel.OrderDish" Width="2.125" PointX="6.375" PointY="3.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="KDSServiceModel.OrderStatus" Width="1.5" PointX="1.5" PointY="9.125" IsExpanded="true" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderDish_Department" ManuallyRouted="false" />
         <EntityTypeShape EntityType="KDSServiceModel.OrderDishReturnTime" Width="2" PointX="9.25" PointY="2.875" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderDishReturnTime_OrderDish" />
@@ -15,9 +14,10 @@
         <EntityTypeShape EntityType="KDSServiceModel.OrderRunTime" Width="2" PointX="6.625" PointY="10.25" />
         <AssociationConnector Association="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" />
         <EntityTypeShape EntityType="KDSServiceModel.Order" Width="1.875" PointX="3.75" PointY="8" />
-        <AssociationConnector Association="KDSServiceModel.FK_Order_OrderStatus" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderDish_Order" />
         <AssociationConnector Association="KDSServiceModel.FK_OrderRunTime_Order" />
+        <EntityTypeShape EntityType="KDSServiceModel.OrderStatus" Width="1.5" PointX="1.5" PointY="9" />
+        <AssociationConnector Association="KDSServiceModel.FK_Order_OrderStatus" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>
