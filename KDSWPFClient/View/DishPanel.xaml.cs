@@ -335,10 +335,8 @@ namespace KDSWPFClient.View
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
-            StateChange win = new StateChange() { Order = orderView, Dish = _dishView };
-            AppLib.SetWinSizeToMainWinSize(win);
+            App.OpenStateChangeWindow(orderView, _dishView);
 
-            win.ShowDialog();
             e.Handled = true;
 
         //    MessageBox.Show(string.Format("dish id {0} - {1}, state {2}",dishView.Id, dishView.DishName, dishView.Status));

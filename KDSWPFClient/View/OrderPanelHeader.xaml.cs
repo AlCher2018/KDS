@@ -113,11 +113,8 @@ namespace KDSWPFClient.View
             if ((bool)AppLib.GetAppGlobalValue("OrderHeaderClickable", false) == false) return;
 
             OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
+            App.OpenStateChangeWindow(orderView, null);
 
-            StateChange win = new StateChange() { Order = orderView, Dish = null };
-            AppLib.SetWinSizeToMainWinSize(win);
-
-            win.ShowDialog();
             e.Handled = true;
         }
     }// class 

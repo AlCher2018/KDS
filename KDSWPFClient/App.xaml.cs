@@ -8,6 +8,7 @@ using KDSWPFClient.ViewModel;
 using KDSWPFClient.Model;
 using KDSWPFClient.View;
 using System.Windows.Media;
+using System.Linq;
 
 namespace KDSWPFClient
 {
@@ -74,11 +75,13 @@ namespace KDSWPFClient
             // после открытия канала к сервису, т.к. здесь используются значения, полученные от службы и сохраненные в св-вах приложения
             KDSModeHelper.PutCfgKDSModeToAppProps();
 
-            // создать и сохранить в свойствах приложения окно StateChange
-
-
             // основное окно приложения
             MainWindow mainWindow = new MainWindow();
+            // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
+            AppLib.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
+            // окно изменения статуса
+            AppLib.SetAppGlobalValue("StateChangeWindow", new StateChange());
+
             app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
@@ -147,6 +150,88 @@ namespace KDSWPFClient
 
         }
 
+        internal static void OpenColorLegendWindow()
+        {
+            ColorLegend colorLegendWin = (ColorLegend)AppLib.GetAppGlobalValue("ColorLegendWindow");
+            if (colorLegendWin != null) colorLegendWin.ShowDialog();
+        }
+
+        internal static void OpenStateChangeWindow( OrderViewModel orderModel, OrderDishViewModel dishModel)
+        {
+            if ((orderModel == null) && (dishModel == null)) return;
+
+            // из РАЗРЕШЕННЫХ переходов выбрать переходы, ДОСТУПНЫЕ для текущего состояния
+            OrderStatusEnum currentState = (OrderStatusEnum)((dishModel == null) ? orderModel.OrderStatusId : dishModel.DishStatusId);
+            KDSModeEnum kdsMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");  // текущий режим КДС
+
+            List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedActions = KDSModeHelper.DefinedKDSModes[kdsMode].AllowedActions;
+            if (allowedActions != null)
+            {
+                List<OrderStatusEnum> allowedStates = allowedActions.Where(p => (p.Key == currentState)).Select(p => p.Value).ToList();
+                // если нет доступных переходов при клике по ЗАКАЗУ
+                if ((allowedStates.Count == 0) && (dishModel == null))
+                {
+                    // проверить статус блюд в данном заказе
+                    OrderStatusEnum statAllDishes = AppLib.GetStatusAllDishes(orderModel.Dishes);
+                    if (statAllDishes != OrderStatusEnum.None)
+                    {
+                        // и, если в разрешенных переходах есть пара с таким ключем, т.е. ВСЕ блюда находятся в состоянии, которое есть в разрешенных переходах
+                        KeyValuePair<OrderStatusEnum, OrderStatusEnum> statAction = allowedActions.FirstOrDefault(s => s.Key == statAllDishes);
+                        // то добавляем этот переход для отображения
+                        if (statAction.Key == statAllDishes) // все равно проверяем, т.к. структура KeyValuePair создается и не равна null
+                        {
+                            allowedStates.Add(statAction.Value);
+                        }
+                    }
+                }
+
+                // открываем окно изменения статуса
+                if (allowedStates.Count != 0)
+                {
+                    StateChange win = (StateChange)AppLib.GetAppGlobalValue("StateChangeWindow");
+                    win.CurrentState = currentState;
+                    win.Order = orderModel;
+                    win.Dish = dishModel;
+                    win.AllowedStates = allowedStates;
+                    AppLib.SetWinSizeToMainWinSize(win);
+
+                    win.ShowDialog();
+
+                    // изменить статус
+                    AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+                    OrderStatusEnum newState = win.CurrentState;
+                    if ((newState != OrderStatusEnum.None) && (newState != currentState) && (dataProvider != null))
+                    {
+                        try
+                        {
+                            // изменение состояния БЛЮДА
+                            if (dishModel != null)
+                            {
+                                dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+                            }
+                            // изменение состояния Заказа
+                            else if (dishModel == null)
+                            {
+                                // меняем статус блюд в заказе, если блюдо разрешено для данного КДСа
+                                foreach (OrderDishViewModel item in orderModel.Dishes)
+                                {
+                                    if (AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider))
+                                        dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLib.WriteLogErrorMessage(ex.ToString());
+//                            MessageBox.Show(ex.Message);
+                        }
+
+                    } // if
+                }  // if (allowedStates.Count != 0)
+
+            } // if (allowedActions != null)
+
+        }  // method
 
     }  // class App
 }

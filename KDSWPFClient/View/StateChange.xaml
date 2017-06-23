@@ -34,13 +34,13 @@
 
         <!-- title -->
         <Border x:Name="borderTitle" Grid.Row="0" Background="LightSteelBlue">
-            <TextBlock x:Name="textTitle" Text="{Binding Title, ElementName=mbWindow, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="textTitle" Text="{Binding Title, ElementName=mbWindow, Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Left" FontStyle="Italic"/>
         </Border>
 
         <Border Grid.Row="1" Background="AliceBlue">
             <TextBlock x:Name="tbMessage" TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Run Text="Заказ "/>
-            <Run x:Name="runOrderNumber" FontWeight="Bold"/>
+            <Run x:Name="runOrderNumber"/>
             <Run x:Name="runDishText"/>
             <Run x:Name="runState"/>
             </TextBlock>
@@ -49,7 +49,7 @@
        
         <TextBlock x:Name="tbNoAllowedStates" Grid.Row="2" Text="Нет доступных действий" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Hidden" TextWrapping="Wrap"/>
 
-        <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden" Background="AliceBlue">
+        <StackPanel x:Name="pnlStateButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
         </StackPanel>
 
 

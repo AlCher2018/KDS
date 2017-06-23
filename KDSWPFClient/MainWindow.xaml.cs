@@ -58,7 +58,6 @@ namespace KDSWPFClient
         private Timer _adminTimer;
 
         private bool _mayGetData;
-        private ColorLegend _colorLegendWin;
 
         // звуки
         System.Media.SoundPlayer _wavPlayer;
@@ -67,8 +66,6 @@ namespace KDSWPFClient
         public MainWindow()
         {
             InitializeComponent();
-
-            this.Loaded += MainWindow_Loaded;
 
             _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
@@ -166,11 +163,6 @@ namespace KDSWPFClient
             return retVal;
         }
 
-    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            // окно легенды
-            _colorLegendWin = new ColorLegend();
-        }
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -624,8 +616,10 @@ namespace KDSWPFClient
                     _userStatesLooper = null;  // обнулить, чтобы создать заново
                     updCheckerDishState();
                 }
-                if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates") && cfgEdit.AppNewSettings["KDSModeSpecialStates"].IsNull() == false)
+                else if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates") 
+                    && (cfgEdit.AppNewSettings["KDSModeSpecialStates"].IsNull() == false))
                 {
+                    if (_currentKDSMode != KDSModeEnum.Special) _currentKDSMode = KDSModeEnum.Special;
                     _currentKDSStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
                     _userStatesLooper = null;  // обнулить, чтобы создать заново
                     updCheckerDishState();
@@ -1026,7 +1020,7 @@ namespace KDSWPFClient
 
         private void btnColorsLegend_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            _colorLegendWin.ShowDialog();
+            App.OpenColorLegendWindow();
             e.Handled = true;
         }
 

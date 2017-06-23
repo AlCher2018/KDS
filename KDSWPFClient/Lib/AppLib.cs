@@ -524,11 +524,13 @@ namespace KDSWPFClient.Lib
         {
             Window mWin = Application.Current.MainWindow;
             // размеры
-            win.Width = mWin.ActualWidth; win.Height = mWin.ActualHeight;
+            if (win.Width != mWin.ActualWidth) win.Width = mWin.ActualWidth;
+            if (win.Height != mWin.ActualHeight) win.Height = mWin.ActualHeight;
 
             // положение
             Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
-            win.Top = topLeftPoint.Y; win.Left = topLeftPoint.X;
+            if (win.Top != topLeftPoint.Y) win.Top = topLeftPoint.Y;
+            if (win.Left != topLeftPoint.X) win.Left = topLeftPoint.X;
         }
 
         // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ

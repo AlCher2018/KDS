@@ -265,8 +265,7 @@ namespace KDSWPFClient.View
                     if (_appNewSettings.ContainsKey("KDSModeSpecialStates"))
                     {
                         sBuf = _appNewSettings["KDSModeSpecialStates"];
-                        AppLib.SetAppGlobalValue("KDSModeSpecialStates", sBuf);
-
+                        // TODO проверить необходимость AppLib.SetAppGlobalValue("KDSModeSpecialStates", sBuf);
                         KDSModeStates modeStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
                         modeStates.StringToAllowedStates(sBuf);
                         modeStates.CreateUserStateSets();
@@ -274,7 +273,7 @@ namespace KDSWPFClient.View
                     if (_appNewSettings.ContainsKey("KDSModeSpecialActions"))
                     {
                         sBuf = _appNewSettings["KDSModeSpecialActions"];
-                        AppLib.SetAppGlobalValue("KDSModeSpecialActions", sBuf);
+                        // TODO проверить необходимость AppLib.SetAppGlobalValue("KDSModeSpecialActions", sBuf);
                         KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special].StringToAllowedActions(sBuf);
                     }
 
