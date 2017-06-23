@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace KDSService
+namespace KDSService.Lib
 {
 
     public static class StringExtensions
@@ -80,6 +80,43 @@ namespace KDSService
             return (bitMask & val) == val;
         }
 
-    }
+    }  // class
+
+
+    public static class DateTimeExtension
+    {
+        public static void SetZero(this DateTime source)
+        {
+            source = DateTime.MinValue;
+        }
+        public static bool IsZero(this DateTime source)
+        {
+            return source.Equals(DateTime.MinValue);
+        }
+
+    } // class
+
+    public static class TimeSpanExtension
+    {
+        public static void SetZero(this TimeSpan source)
+        {
+            source = TimeSpan.Zero;
+        }
+        public static bool IsZero(this TimeSpan source)
+        {
+            return source.Equals(TimeSpan.Zero);
+        }
+
+        public static DateTime ToDateTime(this TimeSpan source)
+        {
+            return new DateTime(source.Ticks, DateTimeKind.Local);
+        }
+
+        public static int ToIntSec(this TimeSpan source)
+        {
+            return (int)source.TotalSeconds;
+        }
+
+    }  // class
 
 }

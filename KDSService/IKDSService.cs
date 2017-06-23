@@ -1,11 +1,7 @@
-﻿using KDSService.AppModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
+using KDSService.AppModel;
+
 
 namespace KDSService
 {
@@ -15,20 +11,25 @@ namespace KDSService
     public interface IKDSService
     {
         // получить словари
-        //    группы отделов
+        //    статусов заказа/блюда
         [OperationContract]
-        Dictionary<int, DepartmentGroup> GetDepartmentGroups();
+        List<OrderStatusModel> GetOrderStatuses();
+
         //    отделы
         [OperationContract]
-        Dictionary<int, Department> GetDepartments();
+        List<DepartmentModel> GetDepartments();
 
-        // получить список заказов
-        //[OperationContract]
-        //OrdersModel GetOrdersModel();
 
+        // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
+        [OperationContract]
+        List<OrderModel> GetOrders();
+
+        // *** ПОЛУЧИТЬ НАСТРОЙКИ ИЗ CONFIG-ФАЙЛА ХОСТА ***
+        [OperationContract]
+        Dictionary<string, object> GetHostAppSettings();
 
         [OperationContract]
-        void ChangeStatus(OrderCommand command);
-    }
+        void SetExpectedTakeValue(int value);
 
+    }  // class
 }

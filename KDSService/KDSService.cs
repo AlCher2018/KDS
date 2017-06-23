@@ -1,12 +1,15 @@
-﻿using KDSService.AppModel;
+﻿using KDSConsoleSvcHost;
+using KDSService.AppModel;
 using NLog;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Configuration;
+using System.Diagnostics;
+using System.Linq;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Timers;
+using System.Windows;
 
 namespace KDSService
 {
@@ -14,144 +17,173 @@ namespace KDSService
     /// 1. Периодический опрос заказов из БД
     /// </summary>
 
-    [ServiceBehavior(IncludeExceptionDetailInFaults = true)]
-    public class KDSServiceClass : IDisposable, IKDSService
+    [ServiceBehavior(AddressFilterMode = AddressFilterMode.Any, 
+        IncludeExceptionDetailInFaults = true,
+        InstanceContextMode = InstanceContextMode.Single)]
+    public class KDSServiceClass : IDisposable, IKDSService, IKDSCommandService
     {
-        private const double _ObserveTimerInterval = 500;
-
-        // словарь глобальных свойств
-        private AppProperties _props;
-
-        // логгер
-        private Logger _logger;
-        // заказы на стороне службы (с таймерами)
-        private OrdersModel _ordersModel;  
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
+        // периодичность опроса БД, в мсек
+        private const double _ObserveTimerInterval = 1000;
 
+        // заказы на стороне службы (с таймерами)
+        private OrdersModel _ordersModel;
 
         public KDSServiceClass()
         {
-            _logger = LogManager.GetLogger("fileLogger");
-            
-            Console.WriteLine("конструктор KDSService");
+            // инициализация приложения
+            string msg = null;
+            if (AppEnv.AppInit(out msg) == false)
+            {
+                if (msg != null) throw new Exception("Ошибка инициализации приложения: " + msg);
+            }
 
-            _props = new AppProperties();
-            getAppPropertiesFromConfigFile();
+            msg = "  получение словарей приложения из БД...";
+            AppEnv.WriteLogInfoMessage(msg);
 
-            writeLogInfoMessage("*******  CREATE INSTANCE KDSService  ********");
+            if (ModelDicts.UpdateModelDictsFromDB(out msg) == false) throw new Exception(msg);
 
-            // вывести в лог настройки из config-файла
-            string cfgValuesString = getConfigString();
-            writeLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
+            msg = "  получение словарей приложения из БД... Ok";
+            AppEnv.WriteLogInfoMessage(msg);
 
-            _observeTimer = new Timer(_ObserveTimerInterval);
+            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true};
             _observeTimer.Elapsed += _observeTimer_Elapsed;
-            _observeTimer.Start();
 
             _ordersModel = new OrdersModel();
-            // DEBUG
-            _observeTimer_Elapsed(null, null);
+
+            startService();
         }
 
-        public void Dispose()
+        private void startService()
         {
-            writeLogInfoMessage("*******  PURGE KDSService  ********");
-
-            // таймер остановить, отписаться от события и уничтожить
-            if (_observeTimer != null)
-            {
-                if (_observeTimer.Enabled == true) _observeTimer.Stop();
-                _observeTimer.Elapsed -= _observeTimer_Elapsed;
-                _observeTimer.Dispose();
-            }
+            if (_observeTimer != null) _observeTimer.Start();
         }
-
-
-        private string getConfigString()
+        private void stopService()
         {
-            NameValueCollection cfg = ConfigurationManager.AppSettings;
-            StringBuilder sb = new StringBuilder();
-
-            putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
-            putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
-
-            return sb.ToString();
-        }
-        private void putCfgValueToStrBuilder(NameValueCollection cfg, StringBuilder sb, string key)
-        {
-            string value;
-            if ((value = cfg[key]) != null) sb.Append(string.Format("{0}{1}: {2}", (sb.Length == 0 ? "" : "; "), key, value));
+            if (_observeTimer != null) _observeTimer.Stop();
         }
 
-        private void getAppPropertiesFromConfigFile()
-        {
-            NameValueCollection cfg = ConfigurationManager.AppSettings;
-            string value;
 
-            if ((value = cfg["IsWriteTraceMessages"]) != null)
-                _props.SetProperty("IsWriteTraceMessages", value.ToBool());
-            if ((value = cfg["IsLogUserAction"]) != null)
-                _props.SetProperty("IsLogUserAction", value.ToBool());
-        }
-
-        // *** начало работы и периодический просмотр заказов
+        // периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            // DEBUG
-            _observeTimer.Stop();
+            stopService();
 
-            _ordersModel.UpdateOrders();
+            string errMsg = _ordersModel.UpdateOrders();
+            if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+
+            startService();
         }
 
 
         // ****  SERVICE CONTRACT  *****
-        #region service contract
-        public void ChangeStatus(OrderCommand command)
+        #region IKDSService inplementation
+
+        public List<OrderStatusModel> GetOrderStatuses()
         {
-            throw new NotImplementedException();
+            string errMsg = null;
+            List<OrderStatusModel>  retVal = ModelDicts.GetOrderStatusesList(out errMsg);
+
+            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+
+            return retVal;
         }
 
-        public Dictionary<int, DepartmentGroup> GetDepartmentGroups()
+        public List<DepartmentModel> GetDepartments()
         {
-            return ServiceDics.DepGroups.GetDictionary();
+            string errMsg = null;
+            List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
+
+            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+
+            return retVal;
         }
 
-        public Dictionary<int, Department> GetDepartments()
+        // все заказы
+        public List<OrderModel> GetOrders()
         {
-            return ServiceDics.Departments.GetDictionary();
+            List<OrderModel> retVal = null;
+            retVal = _ordersModel.Orders.Values.ToList();
+
+            return retVal;
+        }
+
+        // **** настройки из config-файла хоста
+        public Dictionary<string, object> GetHostAppSettings()
+        {
+            Dictionary<string, object> retval = new Dictionary<string, object>()
+            {
+                { "IsIngredientsIndependent", (bool)AppEnv.GetAppProperty("IsIngredientsIndependent", false)},
+                { "ExpectedTake", (int)AppEnv.GetAppProperty("ExpectedTake", 0)},
+                { "UseReadyConfirmedState", (bool)AppEnv.GetAppProperty("UseReadyConfirmedState", false)},
+                { "TakeCancelledInAutostartCooking", (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false)},
+            };
+
+            return retval;
+        }
+
+
+        public void SetExpectedTakeValue(int value)
+        {
+            AppEnv.SetAppProperty("ExpectedTake", value);
+
+            string errMsg;
+            AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
         }
 
         #endregion
 
-        #region App logger
+        #region IKDSCommandService implementation
 
-        private void writeLogTraceMessage(string msg)
+        // обновление статуса заказа с КДСа
+        public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
         {
-            if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(" " + msg);
-        }
+            _observeTimer.Stop();
 
-        private void writeLogInfoMessage(string msg)
-        {
-            _logger.Info(msg);
-        }
-
-        private void writeLogErrorMessage(string msg)
-        {
-            _logger.Error(msg);
-        }
-
-        private void writeAppAction(AppActionEnum action, string value = null)
-        {
-            if (_props.GetBoolProperty("IsLogUserAction"))
+            if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                string msg = action.ToString();
-                if (value != null) msg += ". " + value;
-                writeLogTraceMessage(msg);
+                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
+            }
+            _observeTimer.Start();
+        }
+
+        // обновление статуса блюда с КДСа
+        public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        {
+            _observeTimer.Stop();
+            if (_ordersModel.Orders.ContainsKey(orderId))
+            {
+                OrderModel modelOrder = _ordersModel.Orders[orderId];
+                if (modelOrder.Dishes.ContainsKey(orderDishId))
+                {
+                    OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
+                    modelDish.UpdateStatus(orderDishStatus, true);
+                }
+            }
+            _observeTimer.Start();
+        }
+        #endregion
+
+        public void Dispose()
+        {
+            // таймер остановить, отписаться от события и уничтожить
+            stopService();
+            _observeTimer.Dispose();
+
+            string msg = "**** Закрытие служебного класса KDSService ****";
+            try
+            {
+                Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
+                _ordersModel.Dispose();
+
+            }
+            catch (Exception ex)
+            {
+                AppEnv.WriteLogInfoMessage("Error: " + ex.ToString());
             }
         }
 
-        #endregion
 
     }  // class
 }

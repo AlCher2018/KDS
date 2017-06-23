@@ -12,13 +12,15 @@ namespace KDSService.DataSource
     using System;
     using System.Collections.Generic;
     
-    public partial class DepartmentDepartmentGroup
+    public partial class OrderDishReturnTime
     {
         public int Id { get; set; }
-        public int DepartmentId { get; set; }
-        public int DepartmentGroupId { get; set; }
+        public int OrderDishId { get; set; }
+        public System.DateTime ReturnDate { get; set; }
+        public int StatusFrom { get; set; }
+        public int StatusFromTimeSpan { get; set; }
+        public int StatusTo { get; set; }
     
-        public virtual Department Department { get; set; }
-        public virtual DepartmentGroup DepartmentGroup { get; set; }
+        public virtual OrderDish OrderDish { get; set; }
     }
 }

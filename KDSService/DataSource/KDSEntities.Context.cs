@@ -13,10 +13,10 @@ namespace KDSService.DataSource
     using System.Data.Entity;
     using System.Data.Entity.Infrastructure;
     
-    public partial class DBContext : DbContext
+    public partial class KDSEntities : DbContext
     {
-        public DBContext()
-            : base("name=DBContext")
+        public KDSEntities()
+            : base("name=KDSEntities")
         {
         }
     
@@ -26,10 +26,11 @@ namespace KDSService.DataSource
         }
     
         public virtual DbSet<Department> Department { get; set; }
-        public virtual DbSet<DepartmentDepartmentGroup> DepartmentDepartmentGroup { get; set; }
-        public virtual DbSet<DepartmentGroup> DepartmentGroup { get; set; }
         public virtual DbSet<Order> Order { get; set; }
         public virtual DbSet<OrderDish> OrderDish { get; set; }
+        public virtual DbSet<OrderDishReturnTime> OrderDishReturnTime { get; set; }
+        public virtual DbSet<OrderDishRunTime> OrderDishRunTime { get; set; }
+        public virtual DbSet<OrderRunTime> OrderRunTime { get; set; }
         public virtual DbSet<OrderStatus> OrderStatus { get; set; }
     }
 }

@@ -14,7 +14,7 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <XsdCodeGenEnabled>False</XsdCodeGenEnabled>
-    <WcfConfigValidationEnabled>False</WcfConfigValidationEnabled>
+    <WcfConfigValidationEnabled>True</WcfConfigValidationEnabled>
     <XsdCodeGenSerializerMode>XmlSerializer</XsdCodeGenSerializerMode>
     <XsdCodeGenReuseTypesFlag>True</XsdCodeGenReuseTypesFlag>
     <XsdCodeGenReuseTypesMode>All</XsdCodeGenReuseTypesMode>
@@ -80,78 +80,85 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppModel\AppActionEnum.cs" />
-    <Compile Include="AppModel\AppProperties.cs" />
+    <Compile Include="AppModel\IncrementalTimer.cs" />
+    <Compile Include="AppModel\ModelDicts.cs" />
+    <Compile Include="AppModel\OrderDishModel.cs" />
+    <Compile Include="AppModel\OrderModel.cs" />
+    <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
-    <Compile Include="AppModel\ServiceDics.cs" />
-    <Compile Include="AppModel\ServiceModels.cs" />
-    <Compile Include="Lib\AppLib.cs" />
-    <Compile Include="DataSource\DBModel.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>DBModel.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\DBModel.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>DBModel.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\DBModel.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>DBModel.edmx</DependentUpon>
-    </Compile>
+    <Compile Include="AppModel\StatusDTS.cs" />
+    <Compile Include="AppModel\TimeCounter.cs" />
     <Compile Include="DataSource\Department.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="DataSource\DepartmentDepartmentGroup.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+    <Compile Include="DataSource\KDSEntities.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntities.Context.tt</DependentUpon>
     </Compile>
-    <Compile Include="DataSource\DepartmentGroup.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+    <Compile Include="DataSource\KDSEntities.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="IKDSService.cs" />
-    <Compile Include="KDSService.cs" />
+    <Compile Include="DataSource\KDSEntities.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+    </Compile>
     <Compile Include="DataSource\Order.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="AppModel\OrderCommand.cs" />
     <Compile Include="DataSource\OrderDish.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\OrderDishReturnTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\OrderDishRunTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\OrderRunTime.cs">
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="DataSource\OrderStatus.cs">
-      <DependentUpon>DBModel.tt</DependentUpon>
+      <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="IKDSCommandService.cs" />
+    <Compile Include="IKDSService.cs" />
+    <Compile Include="KDSService.cs" />
+    <Compile Include="Lib\AppEnv.cs" />
+    <Compile Include="Lib\AppLib.cs" />
+    <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App.config">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EntityDeploy Include="DataSource\DBModel.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>DBModel.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <None Include="DataSource\DBModel.edmx.diagram">
-      <DependentUpon>DBModel.edmx</DependentUpon>
-    </None>
+    <Content Include="DataSource\KDSEntities.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+      <LastGenOutput>KDSEntities.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="DataSource\KDSEntities.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+      <LastGenOutput>KDSEntities.cs</LastGenOutput>
+    </Content>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <EntityDeploy Include="DataSource\KDSEntities.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="DataSource\KDSEntities.edmx.diagram">
+      <DependentUpon>KDSEntities.edmx</DependentUpon>
+    </None>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="DataSource\DBModel.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>DBModel.edmx</DependentUpon>
-      <LastGenOutput>DBModel.Context.cs</LastGenOutput>
-    </Content>
-    <Content Include="DataSource\DBModel.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>DBModel.edmx</DependentUpon>
-      <LastGenOutput>DBModel.cs</LastGenOutput>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
@@ -161,7 +168,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{3D9AD99F-2412-4246-B90B-4EAA41C64699}">
         <WcfProjectProperties>
-          <AutoStart>False</AutoStart>
+          <AutoStart>True</AutoStart>
         </WcfProjectProperties>
       </FlavorProperties>
     </VisualStudio>
