@@ -298,7 +298,6 @@ namespace KDSService.AppModel
         {
             if (_orders != null)
             {
-                AppEnv.WriteLogTraceMessage("dispose class OrdersModel");
                 foreach (OrderModel modelOrder in _orders.Values) modelOrder.Dispose();
                 _orders.Clear();
                 _orders = null;

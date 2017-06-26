@@ -603,9 +603,8 @@ namespace KDSService.AppModel
 
         public void Dispose()
         {
-#if DEBUG
             AppEnv.WriteLogTraceMessage("   dispose class OrderModel id {0}", this.Id);
-#endif
+
             // сохраняем в записи RunTimeRecord время нахождения в текущем состоянии
             if ((_curTimer != null) && (_curTimer.Enabled))
             {

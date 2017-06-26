@@ -18,11 +18,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSService", "KDSService\KD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSWinSvcHost", "KDSWinSvcHost\KDSWinSvcHost.csproj", "{D993561F-3A85-4773-A9D2-4F76ABF7D53C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleSvcHost", "KDSConsoleSvcHost\KDSConsoleSvcHost.csproj", "{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C81D45F6-9F1B-4D58-AD91-F909E58CB61F} = {C81D45F6-9F1B-4D58-AD91-F909E58CB61F}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSWinFormClient", "KDSWinFormClient\KDSWinFormClient.csproj", "{39CE6925-7C6D-42E2-B777-9B6470A06D1D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfTestMeasure", "WpfTestMeasure\WpfTestMeasure.csproj", "{E5462772-088B-41E5-81C5-5C4A036026F8}"
@@ -30,6 +25,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfKDSOrdersEmulator", "WpfKDSOrdersEmulator\WpfKDSOrdersEmulator.csproj", "{A622657F-2A44-44B7-ABC0-2E24FE0501E5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleClient", "KDSConsoleClient\KDSConsoleClient.csproj", "{8F9D1E93-B312-486D-9037-B5B3EAF5630D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0DEC3B92-8B25-4A42-961A-5F81DD6D2836}"
+	ProjectSection(SolutionItems) = preProject
+		KDSService.config = KDSService.config
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleSvcHost", "KDSConsoleSvcHost\KDSConsoleSvcHost.csproj", "{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,10 +61,6 @@ Global
 		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D993561F-3A85-4773-A9D2-4F76ABF7D53C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC3B4FBA-98EF-4F5F-BFB0-1A39EECF2061}.Release|Any CPU.Build.0 = Release|Any CPU
 		{39CE6925-7C6D-42E2-B777-9B6470A06D1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{39CE6925-7C6D-42E2-B777-9B6470A06D1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39CE6925-7C6D-42E2-B777-9B6470A06D1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -79,6 +77,10 @@ Global
 		{8F9D1E93-B312-486D-9037-B5B3EAF5630D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F9D1E93-B312-486D-9037-B5B3EAF5630D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F9D1E93-B312-486D-9037-B5B3EAF5630D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

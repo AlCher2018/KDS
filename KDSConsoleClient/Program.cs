@@ -1,6 +1,7 @@
 ﻿using KDSConsoleClient.ServiceReference1;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
@@ -12,6 +13,9 @@ namespace KDSConsoleClient
     {
         static void Main(string[] args)
         {
+            Type tt = typeof(ConfigurationManager);
+
+
             KDSServiceClient _getClient;
             KDSCommandServiceClient _setClient;
             List<OrderModel> _orders;
@@ -20,6 +24,7 @@ namespace KDSConsoleClient
             //_getClient.Open();
 
             List<OrderStatusModel> statuses = _getClient.GetOrderStatuses();
+
 
             _setClient = new KDSCommandServiceClient();
 

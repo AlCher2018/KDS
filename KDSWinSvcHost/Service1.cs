@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
@@ -10,94 +11,88 @@ namespace KDSWinSvcHost
 {
     public partial class Service1 : ServiceBase
     {
-        private ServiceHost _kdsHost;
+        // лог для приложений без UI
+        private string _logFile;
 
+        KDSService.KDSServiceClass service;
 
         public Service1()
         {
             InitializeComponent();
 
             this.AutoLog = true;
+            //_logFile = @"d:\KDSWinSvc.log";
+            _logFile = getAppPath() + "Logs\\kdsWinService.log";
         }
 
         protected override void OnStart(string[] args)
         {
-            // создать сервисный класс, который будет обслуживать канал
-            putToSvcLog("Создание сервисного класса KDSService...");
-            putToSvcLog("** System environment ** " + getSystemEnvironment());
-
-            // папка приложения ??? (dll-file)
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            putToSvcLog("Assembly.GetExecutingAssembly().Location = " + assembly.Location);
-            putToSvcLog("Assembly.GetExecutingAssembly().ManifestModule.Name = " + assembly.ManifestModule.Name);
-            putToSvcLog("AppDomain.CurrentDomain.BaseDirectory = " + AppDomain.CurrentDomain.BaseDirectory);
-
-            KDSService.KDSServiceClass service = null;
+            putToSvcLog("*** Запуск Windows-службы КДС ***");
+            // 1. Инициализация сервисного класса KDSService
             try
             {
+                // config file
+                //string cfgFile = @"D:\KDSService.config";
+                string cfgFile = getAppPath() + "KDSService.config";
+                putToSvcLog("Инициализация сервисного класса KDSService...");
                 service = new KDSService.KDSServiceClass();
+                service.InitService(cfgFile);
+                putToSvcLog("Инициализация сервисного класса KDSService... Ok");
             }
             catch (Exception ex)
             {
-                putToSvcLog("Ошибка создания сервисного класса: " + ex.ToString());
-                throw;
+                putToSvcLog("Ошибка инициализации сервисного класса: " + ex.Message);
+                exitApplication(1);
             }
-            putToSvcLog("Создание сервисного класса KDSService... Ok");
 
             // создать хост, параметры канала считываются из app.config
-            putToSvcLog("Создание канала для приема сообщений...");
             try
             {
-                if (_kdsHost != null) { _kdsHost.Close(); _kdsHost = null; }
-                _kdsHost = new ServiceHost(typeof(KDSService.KDSServiceClass));
-                //_kdsHost.OpenTimeout = TimeSpan.FromMinutes(10);  // default 1 min
-                //_kdsHost.CloseTimeout = TimeSpan.FromMinutes(1);  // default 10 sec
-
-                _kdsHost.Open();
-                writeHostInfoToLog(_kdsHost);
+                putToSvcLog("Создание канала для приема сообщений...");
+                service.CreateHost();
             }
             catch (Exception ex)
             {
-                putToSvcLog(string.Format("Ошибка открытия канала сообщений: {0}", ex.ToString()));
-                throw;
+                putToSvcLog("  ERROR: " + ex.Message);
+                exitApplication(2);
             }
-            putToSvcLog("Создание канала для приема сообщений... Ok\nСлужба готова к приему сообщений.");
+
+            service.StartService();
+
+            putToSvcLog("Создание канала для приема сообщений... Ok\n\tСлужба готова к приему сообщений.");
         }
 
-        private string getSystemEnvironment()
-        {
-            string retVal = string.Format("CurrentDirectory: {0}, MachineName: {1}, OSVersion: {2}, UserDomainName: {3}, UserName: {4}", Environment.CurrentDirectory, Environment.MachineName, Environment.OSVersion, Environment.UserDomainName, Environment.UserName);
-
-            return retVal;
-        }
 
         protected override void OnStop()
         {
-            if (_kdsHost != null)
+            if (service != null)
             {
-                _kdsHost.Close(); _kdsHost = null;
+                service.Dispose(); service = null;
             }
+            putToSvcLog("**** Остановка Windows-службы КДС ****");
         }
 
-
-        private void writeHostInfoToLog(ServiceHost host)
+        private string getAppPath()
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach (System.ServiceModel.Description.ServiceEndpoint se in host.Description.Endpoints)
-            {
-                if (sb.Length > 0) sb.AppendLine();
-                sb.AppendLine(string.Format("\tHost Info: address {0}; binding: {1}; contract: {2}", se.Address, se.Binding.Name, se.Contract.Name));
-            }
-            if (sb.Length > 0) this.putToSvcLog("Service endpoints:\n" + sb.ToString());
+            return AppDomain.CurrentDomain.BaseDirectory;
         }
 
+        private void exitApplication(int exitCode)
+        {
+            putToSvcLog("Abnormal program termination.");
+            Environment.Exit(exitCode);
+        }
 
         private void putToSvcLog(string msg)
         {
+            // для консольных приложений
+            //Console.WriteLine(msg);
+
+            // для приложений без UI
             StreamWriter sw = null;
             try
             {
-                sw = new StreamWriter(@"d:\svclog.txt", true);
+                sw = new StreamWriter(_logFile, true);
                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ": " + msg;
                 sw.WriteLine(msg);
             }

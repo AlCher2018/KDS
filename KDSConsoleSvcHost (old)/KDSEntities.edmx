@@ -1,0 +1,602 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="KDSServiceModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Department">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
+          <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="IsAutoStart" Type="bit" />
+          <Property Name="DishQuantity" Type="int" />
+        </EntityType>
+        <EntityType Name="Order">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderStatusId" Type="int" Nullable="false" />
+          <Property Name="DepartmentId" Type="int" Nullable="false" />
+          <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Number" Type="int" Nullable="false" />
+          <Property Name="TableNumber" Type="nvarchar" MaxLength="10" Nullable="false" />
+          <Property Name="CreateDate" Type="datetime" Nullable="false" />
+          <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
+          <Property Name="QueueStatusId" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+          <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
+        </EntityType>
+        <EntityType Name="OrderDish">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderId" Type="int" Nullable="false" />
+          <Property Name="DishStatusId" Type="int" />
+          <Property Name="DepartmentId" Type="int" Nullable="false" />
+          <Property Name="UID" Type="nvarchar" MaxLength="15" Nullable="false" />
+          <Property Name="DishName" Type="nvarchar" MaxLength="250" Nullable="false" />
+          <Property Name="FilingNumber" Type="int" Nullable="false" />
+          <Property Name="Quantity" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+          <Property Name="ParentUid" Type="nvarchar" MaxLength="15" />
+          <Property Name="EstimatedTime" Type="int" Nullable="false" />
+          <Property Name="Comment" Type="nvarchar" MaxLength="300" />
+          <Property Name="CreateDate" Type="datetime" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="UID1C" Type="nvarchar" MaxLength="50" />
+          <Property Name="DelayedStartTime" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="OrderDishReturnTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderDishId" Type="int" Nullable="false" />
+          <Property Name="ReturnDate" Type="datetime" Nullable="false" />
+          <Property Name="StatusFrom" Type="int" Nullable="false" />
+          <Property Name="StatusFromTimeSpan" Type="int" Nullable="false" />
+          <Property Name="StatusTo" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="OrderDishRunTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderDishId" Type="int" Nullable="false" />
+          <Property Name="InitDate" Type="datetime" />
+          <Property Name="WaitingCookTS" Type="int" />
+          <Property Name="CookingStartDate" Type="datetime" />
+          <Property Name="CookingTS" Type="int" />
+          <Property Name="ReadyDate" Type="datetime" />
+          <Property Name="WaitingTakeTS" Type="int" />
+          <Property Name="TakeDate" Type="datetime" />
+          <Property Name="WaitingCommitTS" Type="int" />
+          <Property Name="CommitDate" Type="datetime" />
+          <Property Name="CancelDate" Type="datetime" />
+          <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
+        </EntityType>
+        <EntityType Name="OrderRunTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="OrderId" Type="int" Nullable="false" />
+          <Property Name="InitDate" Type="datetime" />
+          <Property Name="WaitingCookTS" Type="int" />
+          <Property Name="CookingStartDate" Type="datetime" />
+          <Property Name="CookingTS" Type="int" />
+          <Property Name="ReadyDate" Type="datetime" />
+          <Property Name="WaitingTakeTS" Type="int" />
+          <Property Name="TakeDate" Type="datetime" />
+          <Property Name="WaitingCommitTS" Type="int" />
+          <Property Name="CommitDate" Type="datetime" />
+          <Property Name="CancelDate" Type="datetime" />
+          <Property Name="CancelConfirmedDate" Type="datetime" />
+          <Property Name="ReadyTS" Type="int" />
+          <Property Name="ReadyConfirmedDate" Type="datetime" />
+        </EntityType>
+        <EntityType Name="OrderStatus">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="AppName" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="Description" Type="nvarchar" MaxLength="500" />
+        </EntityType>
+        <Association Name="FK_Order_OrderStatus">
+          <End Role="OrderStatus" Type="Self.OrderStatus" Multiplicity="1" />
+          <End Role="Order" Type="Self.Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderStatus">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="OrderStatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrderDish_Department">
+          <End Role="Department" Type="Self.Department" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Department">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDish">
+              <PropertyRef Name="DepartmentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrderDish_Order">
+          <End Role="Order" Type="Self.Order" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Order">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDish">
+              <PropertyRef Name="OrderId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrderDishReturnTime_OrderDish">
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="OrderDishReturnTime" Type="Self.OrderDishReturnTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderDish">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDishReturnTime">
+              <PropertyRef Name="OrderDishId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrderRunTime_Order">
+          <End Role="Order" Type="Self.Order" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="OrderRunTime" Type="Self.OrderRunTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Order">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderRunTime">
+              <PropertyRef Name="OrderId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrdrerDishRunTime_OrderDish">
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="OrderDishRunTime" Type="Self.OrderDishRunTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderDish">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDishRunTime">
+              <PropertyRef Name="OrderDishId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="KDSServiceModelStoreContainer">
+          <EntitySet Name="Department" EntityType="Self.Department" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="OrderDish" EntityType="Self.OrderDish" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="OrderDishReturnTime" EntityType="Self.OrderDishReturnTime" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="OrderDishRunTime" EntityType="Self.OrderDishRunTime" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="OrderRunTime" EntityType="Self.OrderRunTime" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_Order_OrderStatus" Association="Self.FK_Order_OrderStatus">
+            <End Role="OrderStatus" EntitySet="OrderStatus" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
+            <End Role="Department" EntitySet="Department" />
+            <End Role="OrderDish" EntitySet="OrderDish" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrderDish_Order" Association="Self.FK_OrderDish_Order">
+            <End Role="Order" EntitySet="Order" />
+            <End Role="OrderDish" EntitySet="OrderDish" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrderDishReturnTime_OrderDish" Association="Self.FK_OrderDishReturnTime_OrderDish">
+            <End Role="OrderDish" EntitySet="OrderDish" />
+            <End Role="OrderDishReturnTime" EntitySet="OrderDishReturnTime" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrderRunTime_Order" Association="Self.FK_OrderRunTime_Order">
+            <End Role="Order" EntitySet="Order" />
+            <End Role="OrderRunTime" EntitySet="OrderRunTime" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrdrerDishRunTime_OrderDish" Association="Self.FK_OrdrerDishRunTime_OrderDish">
+            <End Role="OrderDish" EntitySet="OrderDish" />
+            <End Role="OrderDishRunTime" EntitySet="OrderDishRunTime" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="KDSServiceModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="Department">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="IsAutoStart" Type="Boolean" />
+          <Property Name="DishQuantity" Type="Int32" />
+          <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Department" FromRole="Department" ToRole="OrderDish" />
+        </EntityType>
+        <EntityType Name="OrderDish">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderId" Type="Int32" Nullable="false" />
+          <Property Name="DishStatusId" Type="Int32" />
+          <Property Name="DepartmentId" Type="Int32" Nullable="false" />
+          <Property Name="UID" Type="String" MaxLength="15" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="DishName" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="FilingNumber" Type="Int32" Nullable="false" />
+          <Property Name="Quantity" Type="Decimal" Precision="18" Scale="2" Nullable="false" />
+          <Property Name="ParentUid" Type="String" MaxLength="15" FixedLength="false" Unicode="true" />
+          <Property Name="EstimatedTime" Type="Int32" Nullable="false" />
+          <Property Name="Comment" Type="String" MaxLength="300" FixedLength="false" Unicode="true" />
+          <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="StartDate" Type="DateTime" Precision="3" />
+          <Property Name="UID1C" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="DelayedStartTime" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Department" Relationship="Self.FK_OrderDish_Department" FromRole="OrderDish" ToRole="Department" />
+          <NavigationProperty Name="OrderDishReturnTime" Relationship="KDSServiceModel.FK_OrderDishReturnTime_OrderDish" FromRole="OrderDish" ToRole="OrderDishReturnTime" />
+          <NavigationProperty Name="OrderDishRunTime" Relationship="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDish" ToRole="OrderDishRunTime" />
+          <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_OrderDish_Order" FromRole="OrderDish" ToRole="Order" />
+        </EntityType>
+        <Association Name="FK_OrderDish_Department">
+          <End Role="Department" Type="Self.Department" Multiplicity="1" />
+          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Department">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDish">
+              <PropertyRef Name="DepartmentId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="KDSEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Department" EntityType="Self.Department" />
+          <EntitySet Name="OrderDish" EntityType="Self.OrderDish" />
+          <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
+            <End Role="Department" EntitySet="Department" />
+            <End Role="OrderDish" EntitySet="OrderDish" />
+          </AssociationSet>
+          <EntitySet Name="OrderDishReturnTime" EntityType="KDSServiceModel.OrderDishReturnTime" />
+          <AssociationSet Name="FK_OrderDishReturnTime_OrderDish" Association="KDSServiceModel.FK_OrderDishReturnTime_OrderDish">
+            <End Role="OrderDish" EntitySet="OrderDish" />
+            <End Role="OrderDishReturnTime" EntitySet="OrderDishReturnTime" />
+          </AssociationSet>
+          <EntitySet Name="OrderDishRunTime" EntityType="KDSServiceModel.OrderDishRunTime" />
+          <EntitySet Name="OrderRunTime" EntityType="KDSServiceModel.OrderRunTime" />
+          <AssociationSet Name="FK_OrdrerDishRunTime_OrderDish" Association="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish">
+            <End Role="OrderDish" EntitySet="OrderDish" />
+            <End Role="OrderDishRunTime" EntitySet="OrderDishRunTime" />
+          </AssociationSet>
+          <EntitySet Name="Order" EntityType="KDSServiceModel.Order" />
+          <AssociationSet Name="FK_OrderDish_Order" Association="KDSServiceModel.FK_OrderDish_Order">
+            <End Role="Order" EntitySet="Order" />
+            <End Role="OrderDish" EntitySet="OrderDish" />
+          </AssociationSet>
+          <AssociationSet Name="FK_OrderRunTime_Order" Association="KDSServiceModel.FK_OrderRunTime_Order">
+            <End Role="Order" EntitySet="Order" />
+            <End Role="OrderRunTime" EntitySet="OrderRunTime" />
+          </AssociationSet>
+          <EntitySet Name="OrderStatus" EntityType="KDSServiceModel.OrderStatus" />
+          <AssociationSet Name="FK_Order_OrderStatus" Association="KDSServiceModel.FK_Order_OrderStatus">
+            <End Role="OrderStatus" EntitySet="OrderStatus" />
+            <End Role="Order" EntitySet="Order" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="OrderDishReturnTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderDishId" Type="Int32" Nullable="false" />
+          <Property Name="ReturnDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="StatusFrom" Type="Int32" Nullable="false" />
+          <Property Name="StatusFromTimeSpan" Type="Int32" Nullable="false" />
+          <Property Name="StatusTo" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrderDishReturnTime_OrderDish" FromRole="OrderDishReturnTime" ToRole="OrderDish" />
+        </EntityType>
+        <Association Name="FK_OrderDishReturnTime_OrderDish">
+          <End Type="KDSServiceModel.OrderDish" Role="OrderDish" Multiplicity="1" />
+          <End Type="KDSServiceModel.OrderDishReturnTime" Role="OrderDishReturnTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderDish">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDishReturnTime">
+              <PropertyRef Name="OrderDishId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="OrderDishRunTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderDishId" Type="Int32" Nullable="false" />
+          <Property Name="InitDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingCookTS" Type="Int32" />
+          <Property Name="CookingStartDate" Type="DateTime" Precision="3" />
+          <Property Name="CookingTS" Type="Int32" />
+          <Property Name="ReadyDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingTakeTS" Type="Int32" />
+          <Property Name="TakeDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingCommitTS" Type="Int32" />
+          <Property Name="CommitDate" Type="DateTime" Precision="3" />
+          <Property Name="CancelDate" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDishRunTime" ToRole="OrderDish" />
+          <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="OrderRunTime">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderId" Type="Int32" Nullable="false" />
+          <Property Name="InitDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingCookTS" Type="Int32" />
+          <Property Name="CookingStartDate" Type="DateTime" Precision="3" />
+          <Property Name="CookingTS" Type="Int32" />
+          <Property Name="ReadyDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingTakeTS" Type="Int32" />
+          <Property Name="TakeDate" Type="DateTime" Precision="3" />
+          <Property Name="WaitingCommitTS" Type="Int32" />
+          <Property Name="CommitDate" Type="DateTime" Precision="3" />
+          <Property Name="CancelDate" Type="DateTime" Precision="3" />
+          <Property Name="CancelConfirmedDate" Type="DateTime" Precision="3" />
+          <Property Name="ReadyTS" Type="Int32" />
+          <Property Name="ReadyConfirmedDate" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="OrderRunTime" ToRole="Order" />
+        </EntityType>
+        <Association Name="FK_OrdrerDishRunTime_OrderDish">
+          <End Type="KDSServiceModel.OrderDish" Role="OrderDish" Multiplicity="1" />
+          <End Type="KDSServiceModel.OrderDishRunTime" Role="OrderDishRunTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderDish">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDishRunTime">
+              <PropertyRef Name="OrderDishId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="Order">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="OrderStatusId" Type="Int32" Nullable="false" />
+          <Property Name="DepartmentId" Type="Int32" Nullable="false" />
+          <Property Name="UID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Number" Type="Int32" Nullable="false" />
+          <Property Name="TableNumber" Type="String" Nullable="false" MaxLength="10" FixedLength="false" Unicode="true" />
+          <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="RoomNumber" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="StartDate" Type="DateTime" Precision="3" />
+          <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="OrderDish" Relationship="KDSServiceModel.FK_OrderDish_Order" FromRole="Order" ToRole="OrderDish" />
+          <NavigationProperty Name="OrderRunTime" Relationship="KDSServiceModel.FK_OrderRunTime_Order" FromRole="Order" ToRole="OrderRunTime" />
+          <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
+          <NavigationProperty Name="OrderStatus" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="Order" ToRole="OrderStatus" />
+        </EntityType>
+        <Association Name="FK_OrderDish_Order">
+          <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="1" />
+          <End Type="KDSServiceModel.OrderDish" Role="OrderDish" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Order">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderDish">
+              <PropertyRef Name="OrderId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_OrderRunTime_Order">
+          <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="KDSServiceModel.OrderRunTime" Role="OrderRunTime" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Order">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="OrderRunTime">
+              <PropertyRef Name="OrderId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="OrderStatus">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="AppName" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="Description" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Order" Relationship="KDSServiceModel.FK_Order_OrderStatus" FromRole="OrderStatus" ToRole="Order" />
+        </EntityType>
+        <Association Name="FK_Order_OrderStatus">
+          <End Type="KDSServiceModel.OrderStatus" Role="OrderStatus" Multiplicity="1" />
+          <End Type="KDSServiceModel.Order" Role="Order" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="OrderStatus">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Order">
+              <PropertyRef Name="OrderStatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="KDSServiceModelStoreContainer" CdmEntityContainer="KDSEntities">
+          <EntitySetMapping Name="Department">
+            <EntityTypeMapping TypeName="KDSServiceModel.Department">
+              <MappingFragment StoreEntitySet="Department">
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="IsAutoStart" ColumnName="IsAutoStart" />
+                <ScalarProperty Name="DishQuantity" ColumnName="DishQuantity" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderDish">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderDish">
+              <MappingFragment StoreEntitySet="OrderDish">
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="OrderId" ColumnName="OrderId" />
+                <ScalarProperty Name="DishStatusId" ColumnName="DishStatusId" />
+                <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="DishName" ColumnName="DishName" />
+                <ScalarProperty Name="FilingNumber" ColumnName="FilingNumber" />
+                <ScalarProperty Name="Quantity" ColumnName="Quantity" />
+                <ScalarProperty Name="ParentUid" ColumnName="ParentUid" />
+                <ScalarProperty Name="EstimatedTime" ColumnName="EstimatedTime" />
+                <ScalarProperty Name="Comment" ColumnName="Comment" />
+                <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="UID1C" ColumnName="UID1C" />
+                <ScalarProperty Name="DelayedStartTime" ColumnName="DelayedStartTime" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderDishReturnTime">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderDishReturnTime">
+              <MappingFragment StoreEntitySet="OrderDishReturnTime">
+                <ScalarProperty Name="StatusTo" ColumnName="StatusTo" />
+                <ScalarProperty Name="StatusFromTimeSpan" ColumnName="StatusFromTimeSpan" />
+                <ScalarProperty Name="StatusFrom" ColumnName="StatusFrom" />
+                <ScalarProperty Name="ReturnDate" ColumnName="ReturnDate" />
+                <ScalarProperty Name="OrderDishId" ColumnName="OrderDishId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderDishRunTime">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderDishRunTime">
+              <MappingFragment StoreEntitySet="OrderDishRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
+                <ScalarProperty Name="CancelConfirmedDate" ColumnName="CancelConfirmedDate" />
+                <ScalarProperty Name="CancelDate" ColumnName="CancelDate" />
+                <ScalarProperty Name="CommitDate" ColumnName="CommitDate" />
+                <ScalarProperty Name="WaitingCommitTS" ColumnName="WaitingCommitTS" />
+                <ScalarProperty Name="TakeDate" ColumnName="TakeDate" />
+                <ScalarProperty Name="WaitingTakeTS" ColumnName="WaitingTakeTS" />
+                <ScalarProperty Name="ReadyDate" ColumnName="ReadyDate" />
+                <ScalarProperty Name="CookingTS" ColumnName="CookingTS" />
+                <ScalarProperty Name="CookingStartDate" ColumnName="CookingStartDate" />
+                <ScalarProperty Name="WaitingCookTS" ColumnName="WaitingCookTS" />
+                <ScalarProperty Name="InitDate" ColumnName="InitDate" />
+                <ScalarProperty Name="OrderDishId" ColumnName="OrderDishId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderRunTime">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderRunTime">
+              <MappingFragment StoreEntitySet="OrderRunTime">
+                <ScalarProperty Name="ReadyConfirmedDate" ColumnName="ReadyConfirmedDate" />
+                <ScalarProperty Name="ReadyTS" ColumnName="ReadyTS" />
+                <ScalarProperty Name="CancelConfirmedDate" ColumnName="CancelConfirmedDate" />
+                <ScalarProperty Name="CancelDate" ColumnName="CancelDate" />
+                <ScalarProperty Name="CommitDate" ColumnName="CommitDate" />
+                <ScalarProperty Name="WaitingCommitTS" ColumnName="WaitingCommitTS" />
+                <ScalarProperty Name="TakeDate" ColumnName="TakeDate" />
+                <ScalarProperty Name="WaitingTakeTS" ColumnName="WaitingTakeTS" />
+                <ScalarProperty Name="ReadyDate" ColumnName="ReadyDate" />
+                <ScalarProperty Name="CookingTS" ColumnName="CookingTS" />
+                <ScalarProperty Name="CookingStartDate" ColumnName="CookingStartDate" />
+                <ScalarProperty Name="WaitingCookTS" ColumnName="WaitingCookTS" />
+                <ScalarProperty Name="InitDate" ColumnName="InitDate" />
+                <ScalarProperty Name="OrderId" ColumnName="OrderId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Order">
+            <EntityTypeMapping TypeName="KDSServiceModel.Order">
+              <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="DivisionColorRGB" ColumnName="DivisionColorRGB" />
+                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
+                <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
+                <ScalarProperty Name="Waiter" ColumnName="Waiter" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="RoomNumber" ColumnName="RoomNumber" />
+                <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
+                <ScalarProperty Name="TableNumber" ColumnName="TableNumber" />
+                <ScalarProperty Name="Number" ColumnName="Number" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
+                <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderStatus">
+            <EntityTypeMapping TypeName="KDSServiceModel.OrderStatus">
+              <MappingFragment StoreEntitySet="OrderStatus">
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="AppName" ColumnName="AppName" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

@@ -18,6 +18,7 @@ using System.Xml.Linq;
 
 namespace KDSConsoleSvcHost
 {
+    // служебный статический класс для работы со словарем свойств и журналом сообщений
     public static class AppEnv
     {
         // словарь глобальных свойств
@@ -33,17 +34,15 @@ namespace KDSConsoleSvcHost
             }
         }
 
-        // ctor
+        public static string LoggerInit()
+        {
+            return initLogger("fileLogger");
+        }
+
         public static bool AppInit(out string errMsg)
         {
             errMsg = null;
-
-            errMsg = initLogger("fileLogger");
-            if (errMsg.IsNull() == false) return false;
-
             _props = new AppProperties();
-
-            WriteLogInfoMessage("**** Инициализация приложения ****");
 
             // прочитать настройки из config-файла во внутренний словарь
             putAppConfigParamsToAppProperties();
@@ -54,14 +53,6 @@ namespace KDSConsoleSvcHost
 
             // доступная память
             WriteLogInfoMessage("Доступная память: {0} Mb", GetAvailableRAM());
-
-            // проверить доступность БД
-            if (CheckDBConnection(typeof(KDSEntities), out errMsg) == false) return false;
-
-            // проверка наличия и количества справочных таблиц
-            WriteLogInfoMessage("Проверка наличия справочных таблиц...");
-            if (CheckAppDBTable(out errMsg) == false) return false;
-            WriteLogInfoMessage("Проверка наличия справочных таблиц... Ok");
 
             return true;
         }
@@ -76,7 +67,7 @@ namespace KDSConsoleSvcHost
             {
                 return ex.Message;
             }
-            if (_logger.IsInfoEnabled == false) return "Ошибка инициализации журнала трассировки " + logName;
+            if (_logger.IsInfoEnabled == false) return "Ошибка инициализации журнала сообщений " + logName;
             else return null;
         }
 
@@ -206,11 +197,10 @@ namespace KDSConsoleSvcHost
         {
             string s;
             errMsg = null;
-            WriteLogInfoMessage("Проверка доступа к базе данных...");
 
             // контекст БД
             DbContext dbContext = (DbContext)Activator.CreateInstance(dbType);
-
+            
             SqlConnection dbConn = (SqlConnection)dbContext.Database.Connection;
             s = " - строка подключения: " + dbConn.ConnectionString;
             WriteLogInfoMessage(s);
@@ -237,7 +227,6 @@ namespace KDSConsoleSvcHost
             catch (Exception ex)
             {
                 errMsg = ex.Message;
-                WriteLogErrorMessage(" - ошибка доступа к БД: " + ex.Message);
             }
             finally
             {
@@ -245,11 +234,10 @@ namespace KDSConsoleSvcHost
                 testConn = null;
             }
 
-            WriteLogInfoMessage("Проверка доступа к базе данных... " + ((retVal) ? "READY" :"ERROR!!!"));
             return retVal;
         }
 
-        private static bool CheckAppDBTable(out string errMsg)
+        internal static bool CheckAppDBTable(out string errMsg)
         {
             bool retVal = false; errMsg = null;
             try
@@ -257,21 +245,22 @@ namespace KDSConsoleSvcHost
                 using (KDSEntities db = new KDSEntities())
                 {
                     if (db.Department== null)
-                        WriteLogErrorMessage(" - таблица Department ОТСУТСТВУЕТ!!");
+                        AppEnv.WriteLogInfoMessage(" - таблица Department ОТСУТСТВУЕТ!!");
                     else
-                        WriteLogInfoMessage(" - таблица Department содержит {0} записей.", db.Department.Count());
+                        AppEnv.WriteLogInfoMessage(" - таблица Department содержит {0} записей.", db.Department.Count());
 
                     if (db.OrderStatus == null)
-                        WriteLogErrorMessage(" - таблица OrderStatus ОТСУТСТВУЕТ!!");
+                        AppEnv.WriteLogInfoMessage(" - таблица OrderStatus ОТСУТСТВУЕТ!!");
                     else
-                        WriteLogInfoMessage(" - таблица OrderStatus содержит {0} записей.", db.OrderStatus.Count());
+                        AppEnv.WriteLogInfoMessage(" - таблица OrderStatus содержит {0} записей.", db.OrderStatus.Count());
                 }
                 retVal = true;
             }
             catch (Exception ex)
             {
-                errMsg = "Ошибка проверки справочных таблиц.";
+                errMsg = ex.Message;
             }
+
             return retVal;
         }
 

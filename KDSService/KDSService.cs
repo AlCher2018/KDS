@@ -1,15 +1,14 @@
 ﻿using KDSConsoleSvcHost;
 using KDSService.AppModel;
-using NLog;
+using KDSService.DataSource;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
-using System.Text;
 using System.Timers;
-using System.Windows;
+
 
 namespace KDSService
 {
@@ -26,54 +25,122 @@ namespace KDSService
         private Timer _observeTimer;
         // периодичность опроса БД, в мсек
         private const double _ObserveTimerInterval = 1000;
+        
+        // сервис WCF
+        private ServiceHost _host;
+        public ServiceHost ServiceHost { get { return _host; } }
 
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;
 
         public KDSServiceClass()
         {
-            // инициализация приложения
-            string msg = null;
-            if (AppEnv.AppInit(out msg) == false)
-            {
-                if (msg != null) throw new Exception("Ошибка инициализации приложения: " + msg);
-            }
-
-            msg = "  получение словарей приложения из БД...";
-            AppEnv.WriteLogInfoMessage(msg);
-
-            if (ModelDicts.UpdateModelDictsFromDB(out msg) == false) throw new Exception(msg);
-
-            msg = "  получение словарей приложения из БД... Ok";
-            AppEnv.WriteLogInfoMessage(msg);
-
-            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true};
-            _observeTimer.Elapsed += _observeTimer_Elapsed;
-
-            _ordersModel = new OrdersModel();
-
-            startService();
         }
 
-        private void startService()
+        public void InitService(string configFile = null)
+        {
+            // установить свой config-файл
+            if (configFile != null) AppConfig.Change(configFile);
+
+            bool isResultOk;
+            string msg = null;
+
+            msg = AppEnv.LoggerInit();
+            if (msg != null)
+                throw new Exception("Error: " + msg);
+
+            // инициализация приложения
+            AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
+            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
+            isResultOk = AppEnv.AppInit(out msg);
+            if (!isResultOk)
+                throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
+
+            // проверить доступность БД
+            AppEnv.WriteLogInfoMessage("  Проверка доступа к базе данных...");
+            isResultOk = AppEnv.CheckDBConnection(typeof(KDSEntities), out msg);
+            if (!isResultOk)
+                throw new Exception("Ошибка проверки доступа к базе данных: " + msg);
+
+            // проверка справочных таблиц (в классе ModelDicts)
+            AppEnv.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
+            isResultOk = AppEnv.CheckAppDBTable(out msg);
+            if (!isResultOk)
+                throw new Exception("Ошибка проверки справочных таблиц: " + msg);
+
+            // получение словарей приложения из БД
+            AppEnv.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
+            isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
+            if (!isResultOk)
+                throw new Exception("Ошибка получения словарей из БД: " + msg);
+
+            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true };
+            _observeTimer.Elapsed += _observeTimer_Elapsed;
+
+            AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
+            try
+            {
+                _ordersModel = new OrdersModel();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+        }
+
+        // создает сервис WCF, параметры канала считываются из app.config
+        public void CreateHost()
+        {
+            try
+            {
+                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений...");
+                //host = new ServiceHost(typeof(KDSService.KDSServiceClass));
+                _host = new ServiceHost(this);
+                //host.OpenTimeout = TimeSpan.FromMinutes(10);  // default 1 min
+                //host.CloseTimeout = TimeSpan.FromMinutes(1);  // default 10 sec
+
+                _host.Open();
+                writeHostInfoToLog();
+                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений... Ok");
+            }
+            catch (Exception ex)
+            {
+                // исключение записать в лог
+                AppEnv.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}", ex.Message, Environment.NewLine, ex.StackTrace);
+                // и передать выше
+                throw;
+            }
+        }
+
+        public void StartService()
         {
             if (_observeTimer != null) _observeTimer.Start();
         }
-        private void stopService()
+
+        public void StopService()
         {
             if (_observeTimer != null) _observeTimer.Stop();
         }
 
+        private void writeHostInfoToLog()
+        {
+            foreach (System.ServiceModel.Description.ServiceEndpoint se in _host.Description.Endpoints)
+            {
+                AppEnv.WriteLogInfoMessage("Host Info: address {0}; binding: {1}; contract: {2}", se.Address, se.Binding.Name, se.Contract.Name);
+            }
+        }
 
         // периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            stopService();
+            StopService();
 
             string errMsg = _ordersModel.UpdateOrders();
             if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
 
-            startService();
+            StartService();
         }
 
 
@@ -167,21 +234,41 @@ namespace KDSService
 
         public void Dispose()
         {
+            AppEnv.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
+            bool b1 = true;
             // таймер остановить, отписаться от события и уничтожить
-            stopService();
+            StopService();
             _observeTimer.Dispose();
 
-            string msg = "**** Закрытие служебного класса KDSService ****";
-            try
+            AppEnv.WriteLogTraceMessage("   close ServiceHost...");
+            if (_host != null)
             {
-                Console.WriteLine(msg); AppEnv.WriteLogInfoMessage(msg);
-                _ordersModel.Dispose();
+                try
+                {
+                    _host.Close(); _host = null;
+                }
+                catch (Exception ex)
+                {
+                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    b1 = false;
+                }
+            }
 
-            }
-            catch (Exception ex)
+            AppEnv.WriteLogTraceMessage("   clear inner Orders collection...");
+            if (_ordersModel != null)
             {
-                AppEnv.WriteLogInfoMessage("Error: " + ex.ToString());
+                try
+                {
+                    _ordersModel.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    b1 = false;
+                }
             }
+
+            AppEnv.WriteLogInfoMessage("**** ЗАВЕРШЕНИЕ работы КДС-сервиса ****");
         }
 
 
