@@ -1,9 +1,8 @@
 IF EXIST "%ProgramFiles(x86)%" (
-   InstallUtil64.exe ..\KDSWinSvcHost.exe
+   "%~dp0InstallUtil64.exe" "%~dp0..\KDSWinSvcHost.exe"
 ) else (
-   InstallUtil.exe ..\KDSWinSvcHost.exe
+   "%~dp0InstallUtil.exe" "%~dp0..\KDSWinSvcHost.exe"
 )
-
 
 @echo off
 echo.

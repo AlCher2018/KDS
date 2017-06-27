@@ -326,14 +326,10 @@ namespace KDSWPFClient
                 svcOrders.RemoveAll(o => o.Dishes.Count==0);
             }
 
-            // группировка и сортировка по времени БЛЮДА
+            // группировка по времени БЛЮДА и по номеру заказа
             else
             {
-                // сортировка по CreateDate заказа
-                //svcOrders = svcOrders.OrderBy(o => o.CreateDate).ThenBy(o => o.Id).ToList();
-
-                // сортировка по CreateDate блюд
-                SortedList<DateTime, OrderModel> sortOrders = new SortedList<DateTime, OrderModel>();
+                List<DateNumberOrder> sortOrders = new List<DateNumberOrder>();
                 OrderModel tmpOrder;
                 foreach (OrderModel om in svcOrders)
                 {
@@ -343,11 +339,16 @@ namespace KDSWPFClient
                     foreach (DateTime dt in dtList)
                     {
                         tmpOrder = getCopyOrderModel(om, dt);
-                        sortOrders.Add(dt, tmpOrder);
+                        sortOrders.Add(new DateNumberOrder() {DishDate = dt, Number = om.Number, Order = tmpOrder } );
                     }
                 }
+                // сортировка по CreateDate блюд и номеру заказа
+                sortOrders = (from o in sortOrders
+                              orderby o.DishDate ascending, o.Number ascending
+                              select o).ToList();
 
-                svcOrders = sortOrders.Values.ToList();
+                svcOrders.Clear();
+                svcOrders = sortOrders.Select(s => s.Order).ToList();
             }
 
             if (_traceOrderDetails)
@@ -940,6 +941,13 @@ namespace KDSWPFClient
         }
 
         private enum OrderGroupEnum { ByTime, ByOrderNumber}
+
+        private class DateNumberOrder
+        {
+            public DateTime DishDate { get; set; }
+            public int Number { get; set; }
+            public OrderModel Order { get; set; }
+        }
 
         #endregion
 

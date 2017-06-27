@@ -188,7 +188,7 @@ namespace KDSWPFClient
             catch (Exception ex)
             {
                 _errMsg = getShortErrMsg(ex);
-                MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", _errMsg), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", _errMsg), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
 

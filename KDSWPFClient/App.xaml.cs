@@ -216,9 +216,11 @@ namespace KDSWPFClient
                                 foreach (OrderDishViewModel item in orderModel.Dishes)
                                 {
                                     if (AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider))
+                                    {
                                         dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
-                                }
-                            }
+                                    }
+                                }  // foreach
+                            }  // order status
                         }
                         catch (Exception ex)
                         {

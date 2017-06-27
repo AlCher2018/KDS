@@ -93,14 +93,14 @@ namespace KDSService.AppModel
                     //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
                     //}
 
-                    //// для последующех обработок удалить из заказов блюда с ненужными статусами
-                    //foreach (Order dbOrder in dbOrders)
-                    //{
-                    //    // массив блюд для удаления
-                    //    OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
-                    //    // удаление ненужных блюд
-                    //    foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
-                    //}
+                    // для последующех обработок удалить из заказов блюда с ненужными статусами
+                    foreach (Order dbOrder in dbOrders)
+                    {
+                        // массив блюд для удаления
+                        OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
+                        // удаление ненужных блюд
+                        foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
+                    }
 
                     // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
                     try
@@ -212,6 +212,7 @@ namespace KDSService.AppModel
             //            }
 
         }
+        
         // процедуры проверки числ.значения статуса Заказа/Блюда (из БД) на обработку в КДС
         // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
         // дата создания: только текущая!

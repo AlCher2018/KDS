@@ -121,8 +121,9 @@ namespace ClientOrderQueue
 
         private void fillCells(Grid grid, List<Order> orders)
         {
-            List<int> s0 = new List<int>();
-            bool isCooked = false;
+            // коллекция Id заказов в состоянии приготовления (QueueStatusId == 0)
+            List<int> s0 = new List<int>();  
+            bool isCooked = false;  // признак того, что готовящийся заказ изменил статус на ГОТОВ и надо проиграть мелодию
 
             int rowCount = grid.RowDefinitions.Count;
             int colCount = grid.ColumnDefinitions.Count;
@@ -164,15 +165,21 @@ namespace ClientOrderQueue
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
-                        var dbOrders = db.Order.ToList();
-                        //retVal = db.Order.OrderBy(o => o.Number).Where(o => o.QueueStatusId < 2).ToList();
-                        retVal = (from o in dbOrders where o.QueueStatusId < 2 orderby o.Number select o).ToList();
+                        List<Order> dbOrders = (from o in db.Order
+                                                where ((o.OrderStatusId == 1) 
+                                                        || (o.OrderStatusId == 2) 
+                                                        || (o.OrderStatusId == 8))
+                                                    && ((o.QueueStatusId == 0)
+                                                        || (o.QueueStatusId == 1))
+                                                orderby o.Number
+                                                select o).ToList();
+                        retVal = dbOrders;
                     }
                 }
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage(string.Format("{0}", ex.ToString()));
+                AppLib.WriteLogShortErrorMessage(ex);
             }
 
             return retVal;

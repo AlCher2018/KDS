@@ -253,7 +253,6 @@ namespace KDSService.AppModel
                         newStatus = OrderStatusEnum.Cooking;
                         _isUpdateDependIngr = true;
                     }
-                        
 
                     // если поменялся отдел, то объект отдела взять из справочника
                     if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
@@ -353,7 +352,7 @@ namespace KDSService.AppModel
                     //if (this.ParentUid.IsNull() == false) updateDishStatusByIngrStatuses();
 
                     // попытка обновить статус ЗАКАЗА проверкой состояний всех блюд/ингредиентов
-                    if (isUpdateParentOrder) _modelOrder.UpdateStatusByVerificationDishes();
+                    if (isUpdateParentOrder) _modelOrder.UpdateStatusByVerificationDishes(preStatus, newStatus);
 
                     isUpdSuccess = true;
                 }
@@ -460,13 +459,19 @@ namespace KDSService.AppModel
             }
         }
 
+        // получить родительское блюдо
         private OrderDishModel getParentDish()
         {
-            return this._modelOrder.Dishes.Values.FirstOrDefault(d => d.ParentUid.IsNull() && (d.Uid == this.ParentUid));
+            return this._modelOrder.Dishes.Values.FirstOrDefault(
+                d => d.ParentUid.IsNull() && (d.Uid == this.ParentUid) && (d.CreateDate == this.CreateDate)
+                );
         }
+        // получить список ингредиентов
         private List<OrderDishModel> getIngredients()
         {
-            return this._modelOrder.Dishes.Values.Where(d => (d.Uid == this.Uid) && (d.ParentUid == this.Uid)).ToList();
+            return this._modelOrder.Dishes.Values
+                .Where(d => (d.Uid == this.Uid) && (d.ParentUid == this.Uid) && (d.CreateDate == this.CreateDate))
+                .ToList();
         }
 
         // обновить уже существующие ингредиенты, зависимые от текущего блюда, по Uid блюда

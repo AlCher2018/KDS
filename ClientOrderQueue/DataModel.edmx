@@ -18,10 +18,10 @@
           <Property Name="CreateDate" Type="datetime" Nullable="false" />
           <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="StartDate" Type="datetime" />
-          <Property Name="SpentTime" Type="int" Nullable="false" />
           <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
-          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="int" Nullable="false" />
+          <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
         </EntityType>
         <EntityContainer Name="KDSModelStoreContainer">
           <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
@@ -46,10 +46,10 @@
           <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="RoomNumber" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="StartDate" Type="DateTime" Precision="3" />
-          <Property Name="SpentTime" Type="Int32" Nullable="false" />
           <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
+          <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
+          <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -60,10 +60,10 @@
           <EntitySetMapping Name="Order">
             <EntityTypeMapping TypeName="KDSModel.Order">
               <MappingFragment StoreEntitySet="Order">
-                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
+                <ScalarProperty Name="DivisionColorRGB" ColumnName="DivisionColorRGB" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
+                <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
                 <ScalarProperty Name="Waiter" ColumnName="Waiter" />
-                <ScalarProperty Name="SpentTime" ColumnName="SpentTime" />
                 <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="RoomNumber" ColumnName="RoomNumber" />
                 <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />

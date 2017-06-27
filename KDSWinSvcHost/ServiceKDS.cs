@@ -9,14 +9,14 @@ using System.ServiceProcess;
 
 namespace KDSWinSvcHost
 {
-    public partial class Service1 : ServiceBase
+    public partial class ServiceKDS : ServiceBase
     {
         // лог для приложений без UI
         private string _logFile;
 
         KDSService.KDSServiceClass service;
 
-        public Service1()
+        public ServiceKDS()
         {
             InitializeComponent();
 

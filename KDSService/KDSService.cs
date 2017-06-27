@@ -128,7 +128,7 @@ namespace KDSService
         {
             foreach (System.ServiceModel.Description.ServiceEndpoint se in _host.Description.Endpoints)
             {
-                AppEnv.WriteLogInfoMessage("Host Info: address {0}; binding: {1}; contract: {2}", se.Address, se.Binding.Name, se.Contract.Name);
+                AppEnv.WriteLogInfoMessage(" - host info: address {0}; binding {1}; contract {2}", se.Address, se.Binding.Name, se.Contract.Name);
             }
         }
 

@@ -40,6 +40,14 @@ namespace ClientOrderQueue.Lib
         {
             AppLogger.Error(msg);
         }
+        public static void WriteLogShortErrorMessage(Exception ex)
+        {
+            string msg = ex.Message;
+            if (ex.InnerException != null) msg += " Inner message: " + ex.InnerException.Message;
+
+            AppLogger.Error(msg);
+        }
+
         #endregion
 
         #region system info

@@ -1,7 +1,7 @@
 IF EXIST "%ProgramFiles(x86)%" (
-   InstallUtil64.exe ..\KDSWinSvcHost.exe /u
+   "%~dp0InstallUtil64.exe" "%~dp0..\KDSWinSvcHost.exe" /u
 ) else (
-   InstallUtil.exe ..\KDSWinSvcHost.exe /u
+   "%~dp0InstallUtil.exe" "%~dp0..\KDSWinSvcHost.exe" /u
 )
 
 

@@ -331,7 +331,7 @@ namespace KDSService.AppModel
         // обновление состояния заказа проверкой состояний всех блюд
         // установить сост.заказа в 0,2,3,4,5 если ВСЕ блюда наход.в этом состоянии
         // установить сост.заказа в 1, если ХОТЬ одно блюдо наход.в сост. 1
-        public void UpdateStatusByVerificationDishes()
+        public void UpdateStatusByVerificationDishes(OrderStatusEnum preStatus, OrderStatusEnum newStatus)
         {
             int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
             int[] statArray = new int[iLen];
@@ -347,7 +347,10 @@ namespace KDSService.AppModel
             for(int i=1; i < iLen; i++)
             {
                 if ((i == 1) && (statArray[i] > 0))
+                {
                     UpdateStatus(OrderStatusEnum.Cooking, false);
+                    _isUpdStatusFromDishes = true;
+                }
                 else if (statArray[i] == iDishesCount)
                 {
                     OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
@@ -359,6 +362,19 @@ namespace KDSService.AppModel
                     break;
                 }
             }
+
+            // еще одна проверка - если больше нет блюд в состоянии preStatus, то перевести заказ в состояние newStatus
+            // НЕПРАВИЛЬНАЯ ЛОГИКА
+            //if (_isUpdStatusFromDishes == false)
+            //{
+            //    bool isExistPreStatus = _dishesDict.Values.Any(d => d.DishStatusId == (int)preStatus);
+            //    if ((!isExistPreStatus) && (this.Status != newStatus))
+            //    {
+            //        UpdateStatus(newStatus, false);
+            //        _isUpdStatusFromDishes = true;
+            //    }
+            //}
+
         }  // method
 
         // получить последнюю дату входа в состояние из блюд
