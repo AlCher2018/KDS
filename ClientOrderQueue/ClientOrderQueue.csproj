@@ -128,9 +128,6 @@
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\ImageHelper.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
-    <Compile Include="Order.cs">
-      <DependentUpon>DataModel.tt</DependentUpon>
-    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -155,6 +152,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Order.cs">
+      <DependentUpon>DataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -5,51 +5,53 @@
     <!-- SSDL content -->
     <edmx:StorageModels>
     <Schema Namespace="KDSModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityType Name="Order">
+        <!--Errors Found During Generation:
+warning 6002: The table/view 'KDS.dbo.vwOrderQueue' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.-->
+        <EntityType Name="vwOrderQueue">
           <Key>
             <PropertyRef Name="Id" />
+            <PropertyRef Name="Number" />
+            <PropertyRef Name="QueueStatusId" />
+            <PropertyRef Name="LanguageTypeId" />
+            <PropertyRef Name="CreateDate" />
           </Key>
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="OrderStatusId" Type="int" Nullable="false" />
-          <Property Name="DepartmentId" Type="int" Nullable="false" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="Number" Type="int" Nullable="false" />
-          <Property Name="TableNumber" Type="nvarchar" MaxLength="10" Nullable="false" />
-          <Property Name="CreateDate" Type="datetime" Nullable="false" />
-          <Property Name="RoomNumber" Type="nvarchar" MaxLength="50" Nullable="false" />
-          <Property Name="StartDate" Type="datetime" />
-          <Property Name="Waiter" Type="nvarchar" MaxLength="50" />
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
-          <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
+          <Property Name="CreateDate" Type="datetime" Nullable="false" />
         </EntityType>
         <EntityContainer Name="KDSModelStoreContainer">
-          <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="vwOrderQueue" EntityType="Self.vwOrderQueue" store:Type="Views" store:Schema="dbo">
+            <DefiningQuery>SELECT 
+    [vwOrderQueue].[Id] AS [Id], 
+    [vwOrderQueue].[Number] AS [Number], 
+    [vwOrderQueue].[QueueStatusId] AS [QueueStatusId], 
+    [vwOrderQueue].[LanguageTypeId] AS [LanguageTypeId], 
+    [vwOrderQueue].[CreateDate] AS [CreateDate]
+    FROM [dbo].[vwOrderQueue] AS [vwOrderQueue]</DefiningQuery>
+          </EntitySet>
         </EntityContainer>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="KDSModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
         <EntityContainer Name="KDSContext" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="Order" EntityType="KDSModel.Order" />
+          <EntitySet Name="vwOrderQueue" EntityType="KDSModel.Order" />
         </EntityContainer>
         <EntityType Name="Order">
           <Key>
             <PropertyRef Name="Id" />
+            <PropertyRef Name="Number" />
+            <PropertyRef Name="QueueStatusId" />
+            <PropertyRef Name="LanguageTypeId" />
+            <PropertyRef Name="CreateDate" />
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="OrderStatusId" Type="Int32" Nullable="false" />
-          <Property Name="DepartmentId" Type="Int32" Nullable="false" />
-          <Property Name="UID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="Number" Type="Int32" Nullable="false" />
-          <Property Name="TableNumber" Type="String" Nullable="false" MaxLength="10" FixedLength="false" Unicode="true" />
-          <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
-          <Property Name="RoomNumber" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="StartDate" Type="DateTime" Precision="3" />
-          <Property Name="Waiter" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
-          <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
+          <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -57,21 +59,13 @@
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="KDSModelStoreContainer" CdmEntityContainer="KDSContext">
-          <EntitySetMapping Name="Order">
+          <EntitySetMapping Name="vwOrderQueue">
             <EntityTypeMapping TypeName="KDSModel.Order">
-              <MappingFragment StoreEntitySet="Order">
-                <ScalarProperty Name="DivisionColorRGB" ColumnName="DivisionColorRGB" />
+              <MappingFragment StoreEntitySet="vwOrderQueue">
+                <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
-                <ScalarProperty Name="Waiter" ColumnName="Waiter" />
-                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
-                <ScalarProperty Name="RoomNumber" ColumnName="RoomNumber" />
-                <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
-                <ScalarProperty Name="TableNumber" ColumnName="TableNumber" />
                 <ScalarProperty Name="Number" ColumnName="Number" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
-                <ScalarProperty Name="DepartmentId" ColumnName="DepartmentId" />
-                <ScalarProperty Name="OrderStatusId" ColumnName="OrderStatusId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>

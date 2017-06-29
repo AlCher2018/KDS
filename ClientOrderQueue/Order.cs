@@ -15,17 +15,9 @@ namespace ClientOrderQueue
     public partial class Order
     {
         public int Id { get; set; }
-        public int OrderStatusId { get; set; }
-        public int DepartmentId { get; set; }
-        public string UID { get; set; }
         public int Number { get; set; }
-        public string TableNumber { get; set; }
-        public System.DateTime CreateDate { get; set; }
-        public string RoomNumber { get; set; }
-        public Nullable<System.DateTime> StartDate { get; set; }
-        public string Waiter { get; set; }
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
-        public string DivisionColorRGB { get; set; }
+        public System.DateTime CreateDate { get; set; }
     }
 }

@@ -165,13 +165,8 @@ namespace ClientOrderQueue
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
-                        List<Order> dbOrders = (from o in db.Order
-                                                where ((o.OrderStatusId == 1) 
-                                                        || (o.OrderStatusId == 2) 
-                                                        || (o.OrderStatusId == 8))
-                                                    && ((o.QueueStatusId == 0)
-                                                        || (o.QueueStatusId == 1))
-                                                orderby o.Number
+                        List<Order> dbOrders = (from o in db.vwOrderQueue
+                                                orderby o.CreateDate ascending, o.Number ascending
                                                 select o).ToList();
                         retVal = dbOrders;
                     }
