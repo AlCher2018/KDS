@@ -31,16 +31,26 @@ namespace KDSWPFClient.Lib
         }
 
         #region app logger
+        // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
             if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
                 AppLogger.Trace(msg??"null");
         }
-
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
             if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
                 AppLogger.Trace(format, args);
+        }
+
+        // сообщения о действиях пользователя
+        public static void WriteLogUserAction(string msg)
+        {
+            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + msg);
+        }
+        public static void WriteLogUserAction(string format, params object[] paramArray)
+        {
+            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
         }
 
         public static void WriteLogInfoMessage(string msg)
@@ -176,6 +186,13 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        public static string GetAppVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            return fvi.FileVersion;
+        }
+
         public static Point GetWindowTopLeftPoint(Window window)
         {
             double left, top;
@@ -307,12 +324,6 @@ namespace KDSWPFClient.Lib
             }
         }
 
-        internal static string GetShortErrMessage(Exception ex)
-        {
-            string retVal = ex.Message;
-            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
-            return retVal;
-        }
 
         public static bool SaveAppSettings(string key, string value)
         {
@@ -358,6 +369,13 @@ namespace KDSWPFClient.Lib
             {
                 dict[key] = value;
             }
+        }
+
+        internal static string GetShortErrMessage(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
+            return retVal;
         }
 
         #endregion

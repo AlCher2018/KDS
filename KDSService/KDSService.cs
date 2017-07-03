@@ -53,7 +53,7 @@ namespace KDSService
             // инициализация приложения
             AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
-            AppEnv.WriteLogInfoMessage("   - версия: " + AppEnv.GetAppVersion());
+            AppEnv.WriteLogInfoMessage("   - версия файла {0}: {1}", AppEnv.GetAppFileName(),  AppEnv.GetAppVersion());
             isResultOk = AppEnv.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);

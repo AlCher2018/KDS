@@ -220,6 +220,7 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility != Visibility.Visible)
                     tblChannelErrorMessage.Visibility = Visibility.Visible;
                 if (_pages != null) _pages.ClearPages();
+                if (_viewOrders != null) _viewOrders.Clear();
                 return;
             }
 

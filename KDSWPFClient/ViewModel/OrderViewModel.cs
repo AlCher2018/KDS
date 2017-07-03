@@ -81,10 +81,12 @@ namespace KDSWPFClient.ViewModel
             WaitingTimerString = svcOrder.WaitingTimerString;
             DivisionColorRGB = svcOrder.DivisionColorRGB;
 
+            // создание коллекции блюд
             this.Dishes = new List<OrderDishViewModel>();
             int dishIndex = 0, curIndex = 0;
             foreach (OrderDishModel item in svcOrder.Dishes.Values)
             {
+                // нумеруем только блюда
                 if (item.ParentUid.IsNull()) { dishIndex++; curIndex = dishIndex; }
                 else curIndex = 0;
 

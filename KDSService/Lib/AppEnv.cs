@@ -190,6 +190,14 @@ namespace KDSConsoleSvcHost
             }
         }
 
+        public static string GetShortErrMessage(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
+            return retVal;
+        }
+
+        // 
         #endregion
 
 
@@ -305,21 +313,6 @@ namespace KDSConsoleSvcHost
             _logger.Error(format, paramArray);
         }
 
-        public static string GetShortErrMessage(Exception ex)
-        {
-            string retVal = ex.Message;
-            if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
-            return retVal;
-        }
-
-        // 
-        public static string GetAppVersion()
-        {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            return fvi.FileVersion;
-        }
-
         public static void WriteAppAction(AppActionEnum action, string value = null)
         {
             if (_props.GetBoolProperty("IsLogUserAction"))
@@ -366,6 +359,14 @@ namespace KDSConsoleSvcHost
         {
             return AppDomain.CurrentDomain.BaseDirectory;
         }
+
+        public static string GetAppVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            return fvi.FileVersion;
+        }
+
 
         #endregion
 

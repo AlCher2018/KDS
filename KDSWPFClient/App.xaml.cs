@@ -44,6 +44,8 @@ namespace KDSWPFClient
 
             // создать каналы
             AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService...");
+            AppLib.WriteLogTraceMessage("   - версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
+
             AppDataProvider dataProvider = new AppDataProvider();
             if (dataProvider.ErrorMessage != null)
             {

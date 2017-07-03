@@ -17,7 +17,7 @@ namespace KDSWPFClient
 {
     public class AppDataProvider: IDisposable
     {
-        private bool _isTraceLog, _traceOrderDetails;
+        private bool _traceOrderDetails;
 
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
@@ -42,7 +42,6 @@ namespace KDSWPFClient
 
         public AppDataProvider()
         {
-            _isTraceLog = AppLib.GetAppSetting("IsWriteTraceMessages").ToBool();
             _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
 
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
@@ -91,9 +90,11 @@ namespace KDSWPFClient
             bool retVal = false;
             try
             {
+                AppLib.WriteLogTraceMessage("  - получаю словарь статусов...");
                 setOrderStatusFromService();
 
                 // получить отделы со службы и сохранить их в _deps
+                AppLib.WriteLogTraceMessage("  - получаю словарь отделов...");
                 setDepartmentsFromService();
                 // прочитать из конфига отделы для установки флажка IsViewOnKDS
                 string sBuf = ConfigurationManager.AppSettings["depUIDs"];
@@ -109,14 +110,19 @@ namespace KDSWPFClient
                 }
 
                 // *** ПРОЧИЕ НАСТРОЙКИ ОТ СЛУЖБЫ
+                AppLib.WriteLogTraceMessage("  - получаю настройки от КДС-службы...");
+                sBuf = "";
                 Dictionary<string, object> hostAppSettings = GetHostAppSettings();
                 if (hostAppSettings != null)
                 {
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
                         AppLib.SetAppGlobalValue(pair.Key, pair.Value);
+                        if (sBuf.Length > 0) sBuf += "; ";
+                        sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
                 }
+                AppLib.WriteLogTraceMessage("      получено: " + sBuf);
 
                 retVal = true;
             }
@@ -172,10 +178,11 @@ namespace KDSWPFClient
 
         public List<OrderModel> GetOrders()
         {
-            if (_isTraceLog) AppLib.WriteLogTraceMessage("состояние службы: {0}", _getClient.State);
+            AppLib.WriteLogTraceMessage("Получаю от службы заказы (состояние службы: {0})...", _getClient.State);
 
             if (_getClient.State == CommunicationState.Faulted)
             {
+                AppLib.WriteLogTraceMessage(" - restart KDSServiceClient !!!");
                 _getClient = new KDSServiceClient();
                 _getClient.Open();
             }
@@ -184,6 +191,7 @@ namespace KDSWPFClient
             try
             {
                 retVal = _getClient.GetOrders();
+                AppLib.WriteLogTraceMessage(" - получено {0} заказов", retVal.Count);
             }
             catch (Exception ex)
             {
@@ -245,8 +253,11 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
+            AppLib.WriteLogUserAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
+
             if (_setClient.State == CommunicationState.Faulted)
             {
+                AppLib.WriteLogTraceMessage(" - restart KDSCommandServiceClient !!!");
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }
@@ -254,6 +265,7 @@ namespace KDSWPFClient
             try
             {
                 _setClient.ChangeOrderStatus(orderId, newStatus);
+                AppLib.WriteLogTraceMessage(" - результат: успешно");
             }
             catch (Exception)
             {
@@ -265,8 +277,11 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
+            AppLib.WriteLogUserAction("Установить статус блюда (id {2}) заказа (id {1}) в {3} (состояние службы: {0})...", _getClient.State, orderId, dishId, newStatus.ToString());
+
             if (_setClient.State == CommunicationState.Faulted)
             {
+                AppLib.WriteLogTraceMessage(" - restart KDSCommandServiceClient !!!");
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }
@@ -274,6 +289,7 @@ namespace KDSWPFClient
             try
             {
                 _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
+                AppLib.WriteLogTraceMessage(" - результат: успешно");
             }
             catch (Exception)
             {
