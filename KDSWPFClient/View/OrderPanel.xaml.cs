@@ -23,6 +23,8 @@ namespace KDSWPFClient.View
 
         public int PageIndex { get { return _pageIndex; } }
 
+        public int Lines { get { return this.stkDishes.Children.Count; } }
+
         // ctor
         public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
         {
@@ -91,20 +93,36 @@ namespace KDSWPFClient.View
             }
         }
 
+        // для удаляемого блюда (при переносе в следующую колонку), создать массив UI-элементов, которые будут
+        // переноситься в следующую колонку для предотвращения "висячих" разделителей номера подачи и ингредиентов
         internal UIElement[] RemoveDish(DishPanel dishPanel)
         {
+            List<UIElement> retVal = new List<UIElement>();
+            retVal.Add(dishPanel);
             this.stkDishes.Children.Remove(dishPanel);
 
-            if (stkDishes.Children[stkDishes.Children.Count - 1] is DishDelimeterPanel)
-            {
-                DishDelimeterPanel delim = (DishDelimeterPanel)stkDishes.Children[stkDishes.Children.Count - 1];
-                this.stkDishes.Children.Remove(delim);
+            string parentUid = dishPanel.DishView.ParentUID;  // если не пусто, то содержит значение родительского Uid
 
-                return new UIElement[] { delim, dishPanel};
+            int idx = stkDishes.Children.IndexOf(dishPanel);
+            idx = stkDishes.Children.Count - 1;
+            UIElement uiElem;
+            // сохраняем в массиве разделитель подач или все ингредиенты вместе с блюдом
+            for (int i = idx; i >= 0; i--)
+            {
+                uiElem = stkDishes.Children[i];
+                if ((uiElem is DishDelimeterPanel)
+                    || ((uiElem is DishPanel) && !parentUid.IsNull() 
+                        && ((uiElem as DishPanel).DishView.UID == parentUid)))
+                {
+                    retVal.Add(uiElem);
+                    this.stkDishes.Children.Remove(uiElem);
+                }
+                else
+                    break;
             }
-                
-            else
-                return new UIElement[] { dishPanel };
+            if (retVal.Count > 1) retVal.Reverse();
+
+            return retVal.ToArray();
         }
 
         public void AddDelimiter(DishDelimeterPanel delimPanel)

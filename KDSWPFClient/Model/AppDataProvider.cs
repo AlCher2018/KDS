@@ -265,11 +265,11 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
-            //if (_setClient.State == CommunicationState.Faulted)
-            //{
-            //    _setClient.Close();
-            //    _setClient = new KDSCommandServiceClient();
-            //}
+            if (_setClient.State == CommunicationState.Faulted)
+            {
+                _setClient.Close();
+                _setClient = new KDSCommandServiceClient();
+            }
 
             try
             {

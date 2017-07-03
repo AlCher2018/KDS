@@ -1,4 +1,5 @@
-﻿using KDSService.AppModel;
+﻿using KDSConsoleSvcHost;
+using KDSService.AppModel;
 using KDSService.DataSource;
 using System;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace KDSService.AppModel
             }
             catch (Exception ex)
             {
-                errMsg = string.Format("{0}{1}", ex.Message, (ex.InnerException == null)? "" : " (" + ex.InnerException.Message + ")");
+                errMsg = AppEnv.GetShortErrMessage(ex);
             }
             return retVal;
         }  // method

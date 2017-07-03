@@ -597,7 +597,6 @@ namespace KDSWPFClient.Lib
                 else if (targetList[index].Id == srcObj.Id)
                 {
                     trgObj = targetList[index];
-                    trgObj.Index = index + 1;
                     trgObj.UpdateFromSvc(srcObj);
                     if ((trgObj is IContainInnerCollection) && ((trgObj as IContainInnerCollection).IsInnerListUpdated) && !retVal) retVal = true;
                 }
@@ -616,7 +615,6 @@ namespace KDSWPFClient.Lib
                     {
                         targetList.Remove(trgObj);
                         targetList.Insert(index, trgObj);
-                        trgObj.Index = index + 1;
                         trgObj.UpdateFromSvc(srcObj);
                         if ((trgObj is IContainInnerCollection) && ((trgObj as IContainInnerCollection).IsInnerListUpdated) && !retVal) retVal = true;
                     }

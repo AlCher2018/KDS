@@ -225,7 +225,6 @@ namespace KDSWPFClient
                         catch (Exception ex)
                         {
                             AppLib.WriteLogErrorMessage(ex.ToString());
-//                            MessageBox.Show(ex.Message);
                         }
 
                     } // if

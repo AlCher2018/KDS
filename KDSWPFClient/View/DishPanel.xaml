@@ -31,7 +31,7 @@
                 <ColumnDefinition Width="0.8*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index}"/>
+            <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index, Converter={StaticResource isZeroConverter}}"/>
             
             <TextBlock Grid.Column="1" TextWrapping="Wrap" Foreground="DarkBlue">
                 <Run x:Name="tbDishName" Text="{Binding DishName}"/>

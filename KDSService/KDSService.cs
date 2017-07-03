@@ -1,6 +1,7 @@
 ﻿using KDSConsoleSvcHost;
 using KDSService.AppModel;
 using KDSService.DataSource;
+using KDSService.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,6 +53,7 @@ namespace KDSService
             // инициализация приложения
             AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
+            AppEnv.WriteLogInfoMessage("   - версия: " + AppEnv.GetAppVersion());
             isResultOk = AppEnv.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
@@ -150,9 +152,18 @@ namespace KDSService
         public List<OrderStatusModel> GetOrderStatuses()
         {
             string errMsg = null;
+            string userAction = "GetOrderStatuses()... ";
+
             List<OrderStatusModel>  retVal = ModelDicts.GetOrderStatusesList(out errMsg);
 
-            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+            if (errMsg.IsNull())
+                userAction += string.Format("Ok ({0} records)",retVal.Count);
+            else
+            {
+                AppEnv.WriteLogErrorMessage(errMsg);
+                userAction += errMsg;
+            }
+            AppEnv.WriteLogUserAction(userAction);
 
             return retVal;
         }
@@ -160,9 +171,18 @@ namespace KDSService
         public List<DepartmentModel> GetDepartments()
         {
             string errMsg = null;
+            string userAction = "GetDepartments()... ";
+
             List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
 
-            if (retVal == null) AppEnv.WriteLogErrorMessage(errMsg);
+            if (errMsg.IsNull())
+                userAction += string.Format("Ok ({0} records)", retVal.Count);
+            else
+            {
+                AppEnv.WriteLogErrorMessage(errMsg);
+                userAction += errMsg;
+            }
+            AppEnv.WriteLogUserAction(userAction);
 
             return retVal;
         }
@@ -208,6 +228,8 @@ namespace KDSService
         {
             _observeTimer.Stop();
 
+            AppEnv.WriteLogUserAction("ChangeOrderStatus(orderId:{0}, status:{1})", orderId, orderStatus.ToString());
+
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
@@ -225,6 +247,9 @@ namespace KDSService
                 if (modelOrder.Dishes.ContainsKey(orderDishId))
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
+
+                    AppEnv.WriteLogUserAction("ChangeOrderDishStatus(orderId:{0}, orderDishId:{1}, status:{2})", orderId, orderDishId, orderDishStatus.ToString());
+
                     modelDish.UpdateStatus(orderDishStatus, true);
                 }
             }

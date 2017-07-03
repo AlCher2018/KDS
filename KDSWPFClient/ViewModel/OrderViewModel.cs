@@ -82,11 +82,13 @@ namespace KDSWPFClient.ViewModel
             DivisionColorRGB = svcOrder.DivisionColorRGB;
 
             this.Dishes = new List<OrderDishViewModel>();
-            int dishIndex = 0;
+            int dishIndex = 0, curIndex = 0;
             foreach (OrderDishModel item in svcOrder.Dishes.Values)
             {
-                dishIndex++;
-                this.Dishes.Add(new OrderDishViewModel(item, dishIndex));
+                if (item.ParentUid.IsNull()) { dishIndex++; curIndex = dishIndex; }
+                else curIndex = 0;
+
+                this.Dishes.Add(new OrderDishViewModel(item, curIndex));
             }
             _isDishesListUpdated = true;
         }
@@ -148,7 +150,6 @@ namespace KDSWPFClient.ViewModel
             // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд или изменен порядок блюд
             // и необходимо перерисовать все панели
             _isDishesListUpdated = AppLib.JoinSortedLists<OrderDishViewModel, OrderDishModel>(Dishes, svcOrder.Dishes.Values.ToList());
-
         }
 
 

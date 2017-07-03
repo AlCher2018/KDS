@@ -156,18 +156,26 @@ namespace KDSService.AppModel
             // добавить блюда к заказу
             //   расставить сначала блюдо, потом его ингредиенты, т.к. ингр.могут идти ПЕРЕД блюдом
             List<OrderDish> dList = dbOrder.OrderDish.Where(d => d.ParentUid.IsNull()).ToList();
-            List<OrderDish> dAll = new List<OrderDish>();
+            Dictionary<int, OrderDish> dAll = new Dictionary<int,OrderDish>();
             foreach (OrderDish dish in dList)
             {
-                dAll.Add(dish);
-                List<OrderDish> dIngr = dbOrder.OrderDish.Where(d => d.ParentUid==dish.UID).ToList();
-                foreach (var ingr in dIngr) dAll.Add(ingr);
+                if (dAll.ContainsKey(dish.Id) == false)
+                {
+                    dAll.Add(dish.Id, dish);
+
+                    List<OrderDish> dIngr = dbOrder.OrderDish.Where(d => (d.UID == dish.UID) && (d.Id != dish.Id)).ToList();
+                    foreach (var ingr in dIngr)
+                        if (dAll.ContainsKey(ingr.Id) == false) dAll.Add(ingr.Id, ingr);
+                }
             }
 
-            foreach (OrderDish dbDish in dAll)   // dbOrder.OrderDish
+            foreach (OrderDish dbDish in dAll.Values)   // dbOrder.OrderDish
             {
-                OrderDishModel newDish = new OrderDishModel(dbDish, this);
-                if (this._dishesDict.ContainsKey(newDish.Id) == false) this._dishesDict.Add(newDish.Id, newDish);
+                if (this._dishesDict.ContainsKey(dbDish.Id) == false)
+                {
+                    OrderDishModel newDish = new OrderDishModel(dbDish, this);
+                    this._dishesDict.Add(newDish.Id, newDish);
+                }
             }
 
         }  // ctor

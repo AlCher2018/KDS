@@ -12,6 +12,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -258,7 +259,7 @@ namespace KDSConsoleSvcHost
             }
             catch (Exception ex)
             {
-                errMsg = ex.Message;
+                errMsg = AppEnv.GetShortErrMessage(ex);
             }
 
             return retVal;
@@ -267,6 +268,7 @@ namespace KDSConsoleSvcHost
 
         #region App logger
 
+        // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
             if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(msg);
@@ -274,6 +276,15 @@ namespace KDSConsoleSvcHost
         public static void WriteLogTraceMessage(string format, params object[] paramArray)
         {
             if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(format, paramArray);
+        }
+        // сообщения о действиях пользователя
+        public static void WriteLogUserAction(string msg)
+        {
+            if (_props.GetBoolProperty("IsLogUserAction")) _logger.Trace("userAct: " + msg);
+        }
+        public static void WriteLogUserAction(string format, params object[] paramArray)
+        {
+            if (_props.GetBoolProperty("IsLogUserAction")) _logger.Trace("userAct: " + format, paramArray);
         }
 
         public static void WriteLogInfoMessage(string msg)
@@ -292,6 +303,21 @@ namespace KDSConsoleSvcHost
         public static void WriteLogErrorMessage(string format, params object[] paramArray)
         {
             _logger.Error(format, paramArray);
+        }
+
+        public static string GetShortErrMessage(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
+            return retVal;
+        }
+
+        // 
+        public static string GetAppVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            return fvi.FileVersion;
         }
 
         public static void WriteAppAction(AppActionEnum action, string value = null)

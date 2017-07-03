@@ -12,7 +12,7 @@
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
         <locLib:IsNullConverter x:Key="isNullConverter"/>
         <locLib:ViewDateConverter x:Key="viewDateConverter"/>
-
+        <locLib:IsZeroConverter x:Key="isZeroConverter"/>
         
 
         <locLib:BrushConverter x:Key="brushConverter" />

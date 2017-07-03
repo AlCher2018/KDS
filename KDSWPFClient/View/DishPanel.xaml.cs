@@ -103,6 +103,7 @@ namespace KDSWPFClient.View
             //    ингредиент
             else
             {
+                tbDishName.FontWeight = FontWeights.Bold;
                 BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
                 tbDishName.Background = brPair.Background;
                 tbDishName.Foreground = brPair.Foreground;

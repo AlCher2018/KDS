@@ -130,7 +130,7 @@ namespace KDSWPFClient.View
                 if ((_curTopValue + curLineHeight) >= _pageContentHeight)  // переход в новый столбец
                 {
                     // разбиваем блюда заказа на той же странице
-                    if ((dishModel.Index > 2) && (_curColIndex < _pageColsCount))
+                    if ((ordPnl.Lines > 2) && (_curColIndex < _pageColsCount))
                     {
                         // 1. удалить из ordPnl только что добавленное блюдо
                         //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи

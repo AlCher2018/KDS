@@ -27,6 +27,21 @@ namespace KDSWPFClient.View
         }
     }
 
+    [ValueConversion(typeof(int), typeof(string))]
+    public class IsZeroConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            int iValue = System.Convert.ToInt32(value);
+            return (iValue <= 0) ? "" : iValue.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 
     [ValueConversion(typeof(double), typeof(double))]
     public class MultiplyParamValueConverter : IValueConverter
