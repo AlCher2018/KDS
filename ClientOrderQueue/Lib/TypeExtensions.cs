@@ -55,6 +55,14 @@ namespace ClientOrderQueue.Lib
             return (chList.Count > 0) ? int.Parse(string.Join("", chList.ToArray())) : 0;
         }
 
+        public static bool IsNull(this string source)
+        {
+            string retVal = null;
+            if (!string.IsNullOrEmpty(source)) retVal = source.Trim();
+
+            return string.IsNullOrEmpty(retVal);
+        }
+
         public static bool IsNumber(this string source)
         {
             return source.All(c => char.IsDigit(c));

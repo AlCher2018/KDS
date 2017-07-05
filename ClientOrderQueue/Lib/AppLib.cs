@@ -131,6 +131,8 @@ namespace ClientOrderQueue.Lib
 
         public static string GetFullFileName(string relPath, string fileName)
         {
+            if (relPath.IsNull() || fileName.IsNull()) return null;
+
             return getFullPath(relPath) + fileName;
         }
         private static string getFullPath(string relPath)

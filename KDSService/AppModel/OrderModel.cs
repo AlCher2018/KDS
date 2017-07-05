@@ -218,7 +218,6 @@ namespace KDSService.AppModel
 
                 UpdateStatus(newStatus, false);
 
-
                 // *** СЛОВАРЬ БЛЮД  ***
                 // удалить блюда из внутр.модели заказа, которых уже нет в БД
                 List<int> idDishList = dbOrder.OrderDish.Select(d => d.Id).ToList();  // все Id блюд из БД
@@ -226,7 +225,6 @@ namespace KDSService.AppModel
                 foreach (int idDish in idForRemove)
                 {
                     _dishesDict[idDish].Dispose(); _dishesDict.Remove(idDish);
-
                 }
 
                 _isUpdStatusFromDishes = false;
@@ -308,7 +306,6 @@ namespace KDSService.AppModel
                                 // дату входа в состояние берем из заказа, а время нахожд.в предыд.состоянии из самого блюда
                                 dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, statusDTS.DateEntered);
                             }
-
                         }
                     }
                     catch (Exception ex)
@@ -620,7 +617,7 @@ namespace KDSService.AppModel
         private void writeDBException(Exception ex, string subMsg1)
         {
             _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}", this.Id, ex.Message);
+            AppEnv.WriteLogErrorMessage("DB Error (order id {0}): {1}", this.Id, AppEnv.GetShortErrMessage(ex));
         }
 
         #endregion

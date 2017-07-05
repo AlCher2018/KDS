@@ -92,12 +92,11 @@ namespace ClientOrderQueue.Model
             panel.Children.Add(_tbStatusName);
             grdStatus.Children.Add(panel);
 
-            string sPath = AppLib.GetAppSetting("ImagesPath");
-            string sFName = AppLib.GetAppSetting("StatusReadyImage");
-            if ((sPath != null) && (sFName != null))
+            string fileName = AppLib.GetFullFileName(AppLib.GetAppSetting("ImagesPath"), AppLib.GetAppSetting("StatusReadyImage"));
+            if (!fileName.IsNull())
             {
                 _imgStatusReady = new Image();
-                _imgStatusReady.Source = ImageHelper.GetBitmapImage(AppLib.GetFullFileName(sPath, sFName));
+                _imgStatusReady.Source = ImageHelper.GetBitmapImage(fileName);
                 _imgStatusReady.Stretch = Stretch.Uniform;
                 _imgStatusReady.VerticalAlignment = VerticalAlignment.Center;
                 _imgStatusReady.HorizontalAlignment = HorizontalAlignment.Right;
@@ -140,7 +139,8 @@ namespace ClientOrderQueue.Model
             int acceptLang = (langId == 1) ? 1 : (langId == 2) ? 0 : 2;
             _tbStatusTitle.Text = _statusTitleLang[acceptLang];
             _tbStatusName.Text = _statusLang[statusId][acceptLang];
-            _imgStatusReady.Visibility = (statusId == 1) ? Visibility.Visible : Visibility.Collapsed;
+
+            if (_imgStatusReady != null) _imgStatusReady.Visibility = (statusId == 1) ? Visibility.Visible : Visibility.Collapsed;
 
             if (base.Visibility != Visibility.Visible)
             {

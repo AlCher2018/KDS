@@ -726,7 +726,7 @@ namespace KDSService.AppModel
         private void writeDBException(Exception ex, string subMsg1)
         {
             _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}, Source: {2}", this.Id, ex.Message, ex.Source);
+            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}", this.Id, AppEnv.GetShortErrMessage(ex));
         }
 
         #endregion
