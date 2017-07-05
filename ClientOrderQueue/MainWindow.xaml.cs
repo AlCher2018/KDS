@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -19,12 +20,14 @@ namespace ClientOrderQueue
         private System.Media.SoundPlayer simpleSound = null;
         private DispatcherTimer updateTimer = new DispatcherTimer();
 
+        private CellBrushes[] _cellBrushes;
         private List<int> _cookingIds;
 
         public MainWindow()
         {
             InitializeComponent();
 
+            setCellBrushes();
             _cookingIds = new List<int>();
 
             string statusReadyAudioFile = AppLib.GetFullFileName(AppLib.GetAppSetting("AudioPath"), AppLib.GetAppSetting("StatusReadyAudioFile"));
@@ -49,19 +52,37 @@ namespace ClientOrderQueue
             setLayoutAfterLoaded(); // Logo image
         }
 
+        private void setCellBrushes()
+        {
+            _cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes() };
+            App app = (App)Application.Current;
+
+            // cooking
+            _cellBrushes[0].Background = (Brush)app.Resources["statusCookingBrush"];
+            if (_cellBrushes[0].Background == null) _cellBrushes[0].Background = Brushes.Orange;
+            _cellBrushes[0].DelimLine = new SolidColorBrush(Color.FromRgb(218, 151, 88));
+
+            // cooked
+            _cellBrushes[1].Background = (Brush)app.Resources["statusCookedBrush"];
+            if (_cellBrushes[1].Background == null) _cellBrushes[1].Background = Brushes.Lime;
+            _cellBrushes[1].DelimLine = new SolidColorBrush(Color.FromRgb(97, 210, 67));
+        }
+
         private void createGridContainers(Grid grid)
         {
             Size mainGridSize = getMainGridSize();
             int rowsCount = grid.RowDefinitions.Count, colsCount = grid.ColumnDefinitions.Count;
-            App app = (Application.Current as App);
 
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
 
+            bool isShowWaitText = ((double)AppLib.GetAppGlobalValue("OrderReadyTime") != 0d);
+            bool isShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName");
+
             for (int i = 0; i < rowsCount; i++)
                 for (int j = 0; j < colsCount; j++)
                 {
-                    CellContainer cc = new CellContainer(cellWidth, cellHeight, app.cellBrushes, app.statusTitleLang, app.statusLang);
+                    CellContainer cc = new CellContainer(cellWidth, cellHeight, _cellBrushes, isShowWaitText, isShowClientName);
                     Grid.SetRow(cc, i); Grid.SetColumn(cc, j);
                     grid.Children.Add(cc);
                 }
@@ -224,7 +245,7 @@ namespace ClientOrderQueue
             string logoFile = AppLib.GetAppSetting("LogoImage");
             if (logoFile != null)
             {
-                logoFile = AppLib.GetFullFileName(AppLib.GetAppSetting("ImagesPath"), logoFile);
+                logoFile = AppLib.GetFullFileName((string)AppLib.GetAppGlobalValue("ImagesPath", ""), logoFile);
                 double d1 = 0.15 * brdTitle.ActualHeight;
                 imgLogo.Source = ImageHelper.GetBitmapImage(logoFile);
                 imgLogo.Margin = new Thickness(0,d1,0,d1);

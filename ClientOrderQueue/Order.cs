@@ -19,5 +19,6 @@ namespace ClientOrderQueue
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
         public System.DateTime CreateDate { get; set; }
+        public string ClientName { get; set; }
     }
 }

@@ -28,7 +28,7 @@ namespace ClientOrderQueue.Lib
         #region app logger
         public static void WriteLogTraceMessage(string msg)
         {
-            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool()) AppLogger.Trace(string.Format("{0}", msg));
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false)) AppLogger.Trace(msg);
         }
 
         public static void WriteLogInfoMessage(string msg)

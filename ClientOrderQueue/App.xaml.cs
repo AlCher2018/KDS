@@ -13,17 +13,11 @@ namespace ClientOrderQueue
     /// </summary>
     public partial class App : Application
     {
-        public CellBrushes[] cellBrushes;
-        public double orderNumberFontSize = 0;
-        public string[] statusTitleLang;
-        public string[][] statusLang;
-
         [STAThread]
         public static void Main()
         {
             AppLib.WriteLogInfoMessage("************  Start application  *************");
             App app = new App();
-            app.cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes()};
 
             // splash
             getAppLayout();
@@ -40,44 +34,12 @@ namespace ClientOrderQueue
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
-            app.orderNumberFontSize = AppLib.GetAppSetting("OrderNumberFontSize").ToDouble();
-
-            AppLib.WriteLogTraceMessage("-- создание сетки для меток...");
-            setCellBrushes(app);
-            setCellLangTexts(app);
-            AppLib.WriteLogTraceMessage("-- создание сетки для меток - READY");
+            setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
 
             MainWindow mWindow = new MainWindow();
             app.Run(mWindow);
 
             AppLib.WriteLogInfoMessage("************  End application    *************");
-        }
-
-        private static void setCellBrushes(App app)
-        {
-            // cooking
-            app.cellBrushes[0].Background = (Brush)app.Resources["statusCookingBrush"];
-            if (app.cellBrushes[0].Background == null) app.cellBrushes[0].Background = Brushes.Orange;
-            app.cellBrushes[0].DelimLine = new SolidColorBrush(Color.FromRgb(218, 151, 88));
-
-            // cooked
-            app.cellBrushes[1].Background = (Brush)app.Resources["statusCookedBrush"];
-            if (app.cellBrushes[1].Background == null) app.cellBrushes[1].Background = Brushes.Lime;
-            app.cellBrushes[1].DelimLine = new SolidColorBrush(Color.FromRgb(97, 210, 67));
-        }
-        private static void setCellLangTexts(App app)
-        {
-            string sBuf = AppLib.GetAppSetting("StatusTitle");
-            if (sBuf == null) sBuf = "Заказ|Замовлення|Order";
-            app.statusTitleLang = sBuf.Split('|');
-
-            string sBuf0 = AppLib.GetAppSetting("StatusLang0");
-            if (sBuf0 == null) sBuf0 = "Готовится|Готується|In process";
-            string sBuf1 = AppLib.GetAppSetting("StatusLang1");
-            if (sBuf1 == null) sBuf1 = "Готов|Готово|Done";
-            string sBuf2 = AppLib.GetAppSetting("StatusLang2");
-            if (sBuf2 == null) sBuf2 = "Забрали|Забрали|Taken";
-            app.statusLang = new string[][] { sBuf0.Split('|'), sBuf1.Split('|'), sBuf2.Split('|') };
         }
 
 
@@ -86,6 +48,48 @@ namespace ClientOrderQueue
             AppLib.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
             AppLib.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
         }
+
+        // сохранить в свойствах приложения часто используемые значения, чтобы не дергать config-файл
+        private static void setAppGlobalValues()
+        {
+            string cfgValue;
+
+            cfgValue = AppLib.GetAppSetting("ImagesPath");
+            AppLib.SetAppGlobalValue("ImagesPath", cfgValue);
+            cfgValue = AppLib.GetAppSetting("StatusReadyImage");
+            AppLib.SetAppGlobalValue("StatusReadyImage", cfgValue);
+
+            // размер шрифта номера заказа
+            cfgValue = AppLib.GetAppSetting("OrderNumberFontSize");
+            AppLib.SetAppGlobalValue("OrderNumberFontSize", cfgValue.ToDouble());
+            // время приготовления заказа - отображается на панели, если != 0
+            cfgValue = AppLib.GetAppSetting("OrderReadyTime");
+            AppLib.SetAppGlobalValue("OrderReadyTime", cfgValue.ToDouble());
+            // имя клиента - отображается на панели, если есть
+            cfgValue = AppLib.GetAppSetting("IsShowClientName");
+            AppLib.SetAppGlobalValue("IsShowClientName", cfgValue.ToBool());
+
+            cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
+            AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
+
+            // массивы строк для различных языков
+            cfgValue = AppLib.GetAppSetting("PanelTitle");
+            if (cfgValue == null) cfgValue = "Заказ|Замовлення|Order";
+            AppLib.SetAppGlobalValue("PanelTitle", cfgValue.Split('|'));
+
+            cfgValue = AppLib.GetAppSetting("PanelWaitText");
+            if (cfgValue != null) cfgValue = "Ожидать|Чекати|Wait";
+            AppLib.SetAppGlobalValue("PanelWaitText", cfgValue.Split('|'));
+
+            string sBuf0 = AppLib.GetAppSetting("StatusLang0");
+            if (sBuf0 == null) sBuf0 = "Готовится|Готується|In process";
+            string sBuf1 = AppLib.GetAppSetting("StatusLang1");
+            if (sBuf1 == null) sBuf1 = "Готов|Готово|Done";
+            string sBuf2 = AppLib.GetAppSetting("StatusLang2");
+            if (sBuf2 == null) sBuf2 = "Забрали|Забрали|Taken";
+            AppLib.SetAppGlobalValue("StatusLang", new string[][] { sBuf0.Split('|'), sBuf1.Split('|'), sBuf2.Split('|') });
+        }
+
 
     }  // class App
 }

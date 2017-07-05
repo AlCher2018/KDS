@@ -15,8 +15,12 @@ namespace ClientOrderQueue.Model
     public class CellContainer: Border
     {
         private CellBrushes[] _brushes;
-        private string[] _statusTitleLang;
-        private string[][] _statusLang;
+        private string[] _titleLangs;
+        private string[][] _statusLangs;
+
+        private bool _isShowWaitText;
+        private string[] _waitTextLangs;
+        private bool _isShowClientName;
 
         private Grid _gridCell;
         private Path _delimLine;
@@ -29,17 +33,23 @@ namespace ClientOrderQueue.Model
 
         public bool CellVisible { get { return _isVisible; } }
 
-        public CellContainer(double width, double height, CellBrushes[] cellBrushes, string[] statusTitleLang, string[][] statusLang)
+        public CellContainer(double width, double height, CellBrushes[] cellBrushes, bool isShowWaitText, bool isShowClientName)
         {
             _brushes = cellBrushes;
-            _statusTitleLang = statusTitleLang;
-            _statusLang = statusLang;
+
+            _titleLangs = (string[])AppLib.GetAppGlobalValue("PanelTitle");
+            _statusLangs = (string[][])AppLib.GetAppGlobalValue("StatusLang");
+
+            _isShowWaitText = isShowWaitText;
+            if (_isShowWaitText) _waitTextLangs = (string[])AppLib.GetAppGlobalValue("PanelWaitText");
+            _isShowClientName = isShowClientName;
+
             _isVisible = false;
 
             base.Visibility = Visibility.Collapsed;
 
             double dMin = Math.Min(width, height);
-            _fontSize = (Application.Current as App).orderNumberFontSize;
+            _fontSize = (double)AppLib.GetAppGlobalValue("OrderNumberFontSize", 0);
             if (_fontSize == 0) _fontSize = 0.3d * dMin;
 
             double d1, d2;
@@ -48,24 +58,43 @@ namespace ClientOrderQueue.Model
             d1 = 0.03 * dMin;
             base.Margin = new System.Windows.Thickness(d1);
 
+            // создание контейнера для данных
+            double[] rowsHeight = new double[2];
+            if (_isShowWaitText) {
+                rowsHeight[0] = 0.7d; rowsHeight[1] = 1d;
+            }
+            else {
+                rowsHeight[0] = 1d; rowsHeight[1] = 1d;
+            }
+
             _gridCell = new Grid();
-            _gridCell.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1.5d, System.Windows.GridUnitType.Star) });
-            _gridCell.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1d, System.Windows.GridUnitType.Star) });
+            d1 = 0.05 * dMin; d2 = 0.05 * dMin;
+            _gridCell.Margin = new Thickness(d1, d2, d1, d2);
+            _gridCell.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(rowsHeight[0], System.Windows.GridUnitType.Star) });
+            _gridCell.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(rowsHeight[1], System.Windows.GridUnitType.Star) });
 
             // номер заказа в первой строке
-            TextBlock tbNum = new TextBlock() { VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0.06 * dMin, 0, 0, 0)
-            };
-            tbNum.Inlines.Add(new Run() { Text = "№ ", FontSize = 0.5 * _fontSize });
-            _tbNumber = new Run()
+            //    c текстом ожидания - грид с двумя строками, номером и временем ожидания
+            if (_isShowWaitText)
             {
-                FontSize = _fontSize,
-                FontWeight = FontWeights.Normal,
-                FontFamily = new FontFamily("Impact")   // Arial Black, Impact
-            };
-            tbNum.Inlines.Add(_tbNumber);
-            Grid.SetRow(tbNum, 0);
-            _gridCell.Children.Add(tbNum);
+                _fontSize *= 0.8d;
+                Grid grid1 = new Grid();
+                grid1.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1d, System.Windows.GridUnitType.Star) });
+                grid1.RowDefinitions.Add(new RowDefinition() { Height = new System.Windows.GridLength(1d, System.Windows.GridUnitType.Star) });
+                TextBlock tbNum = getOrderNumberTextBlock("Arial");
+                Grid.SetRow(tbNum, 0);
+                grid1.Children.Add(tbNum);
+
+                Grid.SetRow(grid1, 0);
+                _gridCell.Children.Add(grid1);
+            }
+            //    только номер
+            else
+            {
+                TextBlock tbNum = getOrderNumberTextBlock("Impact");
+                Grid.SetRow(tbNum, 0);
+                _gridCell.Children.Add(tbNum);
+            }
 
             // подчеркнуть номер заказа
             _delimLine = new Path();
@@ -92,7 +121,9 @@ namespace ClientOrderQueue.Model
             panel.Children.Add(_tbStatusName);
             grdStatus.Children.Add(panel);
 
-            string fileName = AppLib.GetFullFileName(AppLib.GetAppSetting("ImagesPath"), AppLib.GetAppSetting("StatusReadyImage"));
+            string fileName = AppLib.GetFullFileName(
+                (string)AppLib.GetAppGlobalValue("ImagesPath", ""), 
+                (string)AppLib.GetAppGlobalValue("StatusReadyImage", ""));
             if (!fileName.IsNull())
             {
                 _imgStatusReady = new Image();
@@ -108,6 +139,24 @@ namespace ClientOrderQueue.Model
             _gridCell.Children.Add(grdStatus);
 
             this.Child = _gridCell;
+        }
+
+        private TextBlock getOrderNumberTextBlock(string fontFamilyName)
+        {
+            TextBlock tbNum = new TextBlock()
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            tbNum.Inlines.Add(new Run() { Text = "№ ", FontSize = 0.8d * _fontSize });
+            _tbNumber = new Run()
+            {
+                FontSize = _fontSize,
+                FontWeight = FontWeights.Normal,
+                FontFamily = new FontFamily(fontFamilyName)   // Arial Black, Impact
+            };
+            tbNum.Inlines.Add(_tbNumber);
+
+            return tbNum;
         }
 
 
@@ -137,8 +186,8 @@ namespace ClientOrderQueue.Model
             _delimLine.Stroke = _brushes[statusId].DelimLine;
 
             int acceptLang = (langId == 1) ? 1 : (langId == 2) ? 0 : 2;
-            _tbStatusTitle.Text = _statusTitleLang[acceptLang];
-            _tbStatusName.Text = _statusLang[statusId][acceptLang];
+            _tbStatusTitle.Text = _titleLangs[acceptLang];
+            _tbStatusName.Text = _statusLangs[statusId][acceptLang];
 
             if (_imgStatusReady != null) _imgStatusReady.Visibility = (statusId == 1) ? Visibility.Visible : Visibility.Collapsed;
 

@@ -20,6 +20,7 @@ warning 6002: The table/view 'KDS.dbo.vwOrderQueue' does not have a primary key 
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="CreateDate" Type="datetime" Nullable="false" />
+          <Property Name="ClientName" Type="nvarchar" MaxLength="120" />
         </EntityType>
         <EntityContainer Name="KDSModelStoreContainer">
           <EntitySet Name="vwOrderQueue" EntityType="Self.vwOrderQueue" store:Type="Views" store:Schema="dbo">
@@ -28,7 +29,8 @@ warning 6002: The table/view 'KDS.dbo.vwOrderQueue' does not have a primary key 
     [vwOrderQueue].[Number] AS [Number], 
     [vwOrderQueue].[QueueStatusId] AS [QueueStatusId], 
     [vwOrderQueue].[LanguageTypeId] AS [LanguageTypeId], 
-    [vwOrderQueue].[CreateDate] AS [CreateDate]
+    [vwOrderQueue].[CreateDate] AS [CreateDate], 
+    [vwOrderQueue].[ClientName] AS [ClientName]
     FROM [dbo].[vwOrderQueue] AS [vwOrderQueue]</DefiningQuery>
           </EntitySet>
         </EntityContainer>
@@ -52,6 +54,7 @@ warning 6002: The table/view 'KDS.dbo.vwOrderQueue' does not have a primary key 
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <Property Name="CreateDate" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="ClientName" Type="String" MaxLength="120" FixedLength="false" Unicode="true" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -62,6 +65,7 @@ warning 6002: The table/view 'KDS.dbo.vwOrderQueue' does not have a primary key 
           <EntitySetMapping Name="vwOrderQueue">
             <EntityTypeMapping TypeName="KDSModel.Order">
               <MappingFragment StoreEntitySet="vwOrderQueue">
+                <ScalarProperty Name="ClientName" ColumnName="ClientName" />
                 <ScalarProperty Name="CreateDate" ColumnName="CreateDate" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
                 <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
