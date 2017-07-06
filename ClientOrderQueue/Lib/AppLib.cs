@@ -26,31 +26,60 @@ namespace ClientOrderQueue.Lib
         }
 
         #region app logger
+        // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false)) AppLogger.Trace(msg);
+            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
+                AppLogger.Trace(msg ?? "null");
+        }
+        public static void WriteLogTraceMessage(string format, params object[] args)
+        {
+            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
+                AppLogger.Trace(format, args);
+        }
+
+        // сообщения о действиях пользователя
+        public static void WriteLogUserAction(string msg)
+        {
+            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + msg);
+        }
+        public static void WriteLogUserAction(string format, params object[] paramArray)
+        {
+            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
         }
 
         public static void WriteLogInfoMessage(string msg)
         {
-            AppLogger.Info(msg);
+            if (AppLogger.IsInfoEnabled) AppLogger.Info(msg ?? "null");
+        }
+        public static void WriteLogInfoMessage(string format, params object[] args)
+        {
+            if (AppLogger.IsInfoEnabled) AppLogger.Info(format, args);
         }
 
         public static void WriteLogErrorMessage(string msg)
         {
-            AppLogger.Error(msg);
+            if (AppLogger.IsErrorEnabled) AppLogger.Error(msg ?? "null");
         }
-        public static void WriteLogShortErrorMessage(Exception ex)
+        public static void WriteLogErrorMessage(string format, params object[] args)
         {
-            string msg = ex.Message;
-            if (ex.InnerException != null) msg += " Inner message: " + ex.InnerException.Message;
-
-            AppLogger.Error(msg);
+            if (AppLogger.IsErrorEnabled) AppLogger.Error(format, args);
+        }
+        public static void WriteLogErrorShortMessage(Exception ex)
+        {
+            if (AppLogger.IsErrorEnabled) AppLogger.Error(GetShortErrMessage(ex));
         }
 
         #endregion
 
         #region system info
+        internal static string GetEnvironmentString()
+        {
+            return string.Format("machine={0}, user={1}, current directory={2}, OS version={3}, isOS64bit={4}, processor count={5}, free RAM={6} Mb",
+                Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, getAvailableRAM());
+        }
+
+
         // in Mb
         public static int getAvailableRAM()
         {
@@ -149,6 +178,14 @@ namespace ClientOrderQueue.Lib
 
             return retVal;
         }
+
+        public static string GetAppVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            return fvi.FileVersion;
+        }
+
         #endregion
 
         #region app settings
@@ -159,6 +196,32 @@ namespace ClientOrderQueue.Lib
                 return ConfigurationManager.AppSettings.Get(key);
             else
                 return null;
+        }
+
+        // настройки из config-файла
+        internal static string GetAppSettingsFromConfigFile()
+        {
+            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
+        }
+        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
+        {
+            if (appSettingNames == null) return null;
+            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
+        }
+        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
+        {
+            StringBuilder sb = new StringBuilder();
+            string sValue;
+            foreach (string settingName in appSettingNames)
+            {
+                sValue = ConfigurationManager.AppSettings[settingName];
+                if (sValue.IsNull() == false)
+                {
+                    if (sb.Length > 0) sb.Append("; ");
+                    sb.Append(settingName + "=" + sValue);
+                }
+            }
+            return sb.ToString();
         }
 
         // получить глобальное значение приложения из его свойств
@@ -181,6 +244,13 @@ namespace ClientOrderQueue.Lib
             {
                 dict[key] = value;
             }
+        }
+
+        internal static string GetShortErrMessage(Exception ex)
+        {
+            string retVal = ex.Message;
+            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
+            return retVal;
         }
 
         #endregion
@@ -206,5 +276,26 @@ namespace ClientOrderQueue.Lib
 
         #endregion
 
-    }
+        public static string GetAppStringTS(TimeSpan tsTimerValue)
+        {
+            string retVal = "";
+
+            if (tsTimerValue != TimeSpan.Zero)
+            {
+                retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
+                // отрицательное время
+                if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
+            }
+
+            return retVal;
+        }
+        // преобразовать строку в TimeSpan
+        internal static TimeSpan GetTSFromString(string tsString)
+        {
+            TimeSpan ts = TimeSpan.Zero;
+            TimeSpan.TryParse(tsString, out ts);
+            return ts;
+        }
+
+    }  // class
 }

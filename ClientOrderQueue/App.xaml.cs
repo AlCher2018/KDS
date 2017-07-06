@@ -16,7 +16,11 @@ namespace ClientOrderQueue
         [STAThread]
         public static void Main()
         {
-            AppLib.WriteLogInfoMessage("************  Start application  *************");
+            AppLib.WriteLogInfoMessage("****  Start application  ****");
+            AppLib.WriteLogInfoMessage("Системное окружение: " + AppLib.GetEnvironmentString());
+            AppLib.WriteLogInfoMessage("Версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
+            AppLib.WriteLogInfoMessage("Настройки из config-файла: " + AppLib.GetAppSettingsFromConfigFile());
+
             App app = new App();
 
             // splash
@@ -26,11 +30,11 @@ namespace ClientOrderQueue
             splashScreen.Show(true);
 
             // проверка доступа к БД
-            //if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
-            //{
-            //    MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
-            //    App.Current.Shutdown(1);
-            //}
+            if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
+            {
+                MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+                App.Current.Shutdown(1);
+            }
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
@@ -39,7 +43,7 @@ namespace ClientOrderQueue
             MainWindow mWindow = new MainWindow();
             app.Run(mWindow);
 
-            AppLib.WriteLogInfoMessage("************  End application    *************");
+            AppLib.WriteLogInfoMessage("****  End application  ****");
         }
 
 
@@ -54,10 +58,10 @@ namespace ClientOrderQueue
         {
             string cfgValue;
 
-            cfgValue = AppLib.GetAppSetting("ImagesPath");
-            AppLib.SetAppGlobalValue("ImagesPath", cfgValue);
-            cfgValue = AppLib.GetAppSetting("StatusReadyImage");
-            AppLib.SetAppGlobalValue("StatusReadyImage", cfgValue);
+            // файл изображения состояния
+            string sPath = AppLib.GetAppSetting("ImagesPath"), sFile = AppLib.GetAppSetting("StatusReadyImage");
+            string fileName = AppLib.GetFullFileName(sPath, sFile);
+            if ((fileName != null) && (System.IO.File.Exists(fileName))) AppLib.SetAppGlobalValue("StatusReadyImageFile", fileName);
 
             // размер шрифта номера заказа
             cfgValue = AppLib.GetAppSetting("OrderNumberFontSize");
@@ -73,9 +77,9 @@ namespace ClientOrderQueue
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
 
             // массивы строк для различных языков
-            cfgValue = AppLib.GetAppSetting("PanelTitle");
+            cfgValue = AppLib.GetAppSetting("StatusTitle");
             if (cfgValue == null) cfgValue = "Заказ|Замовлення|Order";
-            AppLib.SetAppGlobalValue("PanelTitle", cfgValue.Split('|'));
+            AppLib.SetAppGlobalValue("StatusTitle", cfgValue.Split('|'));
 
             cfgValue = AppLib.GetAppSetting("PanelWaitText");
             if (cfgValue != null) cfgValue = "Ожидать|Чекати|Wait";

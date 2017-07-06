@@ -76,13 +76,20 @@ namespace ClientOrderQueue
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
 
-            bool isShowWaitText = ((double)AppLib.GetAppGlobalValue("OrderReadyTime") != 0d);
-            bool isShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName");
-
             for (int i = 0; i < rowsCount; i++)
                 for (int j = 0; j < colsCount; j++)
                 {
-                    CellContainer cc = new CellContainer(cellWidth, cellHeight, _cellBrushes, isShowWaitText, isShowClientName);
+                    CellContainer cc = new CellContainer(cellWidth, cellHeight)
+                    {
+                        PanelBrushes = _cellBrushes,
+                        TitleLangs = (string[])AppLib.GetAppGlobalValue("StatusTitle"),
+                        StatusLangs = (string[][])AppLib.GetAppGlobalValue("StatusLang"),
+                        OrderReadyMinute = (double)AppLib.GetAppGlobalValue("OrderReadyTime"),
+                        IsShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName"),
+                        OrderNumberFontSize = (double)AppLib.GetAppGlobalValue("OrderNumberFontSize", 0),
+                        StatusReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile")
+                    };
+
                     Grid.SetRow(cc, i); Grid.SetColumn(cc, j);
                     grid.Children.Add(cc);
                 }
@@ -157,11 +164,15 @@ namespace ClientOrderQueue
                     CellContainer cc = (CellContainer)grid.Children[listIndex];
                     if (listIndex < orders.Count)
                     {
-                        Order o = orders[listIndex];
-                        cc.SetOrderData(o.Number, o.LanguageTypeId, o.QueueStatusId);
+                        Order curOrder = orders[listIndex];
+                        cc.SetOrderData(curOrder);
 
-                        if (o.QueueStatusId == 0) s0.Add(o.Id);
-                        else if ((o.QueueStatusId == 1) && (isCooked == false) && (_cookingIds.Contains(o.Id))) isCooked = true;
+                        if (curOrder.QueueStatusId == 0)
+                            s0.Add(curOrder.Id);
+                        else if ((curOrder.QueueStatusId == 1) 
+                                && (isCooked == false) 
+                                && (_cookingIds.Contains(curOrder.Id)))
+                            isCooked = true;
                     }
                     else
                         cc.Clear();
@@ -195,7 +206,7 @@ namespace ClientOrderQueue
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogShortErrorMessage(ex);
+                AppLib.WriteLogErrorShortMessage(ex);
             }
 
             return retVal;
