@@ -57,11 +57,18 @@ namespace ClientOrderQueue
         private static void setAppGlobalValues()
         {
             string cfgValue;
+            string sPath = AppLib.GetAppSetting("ImagesPath");
+            AppLib.SetAppGlobalValue("ImagesPath", sPath);
 
             // файл изображения состояния
-            string sPath = AppLib.GetAppSetting("ImagesPath"), sFile = AppLib.GetAppSetting("StatusReadyImage");
+            string sFile = AppLib.GetAppSetting("StatusReadyImage");
             string fileName = AppLib.GetFullFileName(sPath, sFile);
             if ((fileName != null) && (System.IO.File.Exists(fileName))) AppLib.SetAppGlobalValue("StatusReadyImageFile", fileName);
+
+            // кисти фона и текста заголовка окна
+            createWinTitleBrushes();
+            // кисти фона панели заказа (CellBrushes - кисть фона и разделительной полосы)
+            createPanelBackBrushes();
 
             // размер шрифта номера заказа
             cfgValue = AppLib.GetAppSetting("OrderNumberFontSize");
@@ -94,6 +101,77 @@ namespace ClientOrderQueue
             AppLib.SetAppGlobalValue("StatusLang", new string[][] { sBuf0.Split('|'), sBuf1.Split('|'), sBuf2.Split('|') });
         }
 
+        private static void createWinTitleBrushes()
+        {
+            string cfgValue;
+            cfgValue = AppLib.GetAppSetting("WinTitleBackground");
+            if (cfgValue == null) cfgValue = "122;34;104";   // по умолчанию - т.фиолетовый
+            AppLib.SetAppGlobalValue("WinTitleBackground", getBrushByName(cfgValue, "122;34;104"));
+
+            cfgValue = AppLib.GetAppSetting("WinTitleForeground");
+            if (cfgValue == null) cfgValue = "255;200;62";   // по умолчанию - т.желтый
+            AppLib.SetAppGlobalValue("WinTitleForeground", getBrushByName(cfgValue, "255;200;62"));
+        }
+
+        private static void createPanelBackBrushes()
+        {
+            string cfgValue;
+
+            CellBrushes[] cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes() };
+            Color col, col1;
+            float darkKoef = 0.8f;  // коэффициент затемнения
+
+            cfgValue = AppLib.GetAppSetting("StatusCookingPanelBackground");
+            if (cfgValue == null) cfgValue = "Gold";
+            cellBrushes[0].Background = getBrushByName(cfgValue, "Gold");
+            col = ((SolidColorBrush)cellBrushes[0].Background).Color;
+            col1 = Color.Multiply(col, darkKoef); col1.A = 255;
+            cellBrushes[0].DelimLine = new SolidColorBrush(col1);
+
+            cfgValue = AppLib.GetAppSetting("StatusReadyPanelBackground");
+            if (cfgValue == null) cfgValue = "LimeGreen";
+            cellBrushes[1].Background = getBrushByName(cfgValue, "LimeGreen");
+            col = ((SolidColorBrush)cellBrushes[1].Background).Color;
+            col1 = Color.Multiply(col, darkKoef); col1.A = 255;
+            cellBrushes[1].DelimLine = new SolidColorBrush(col1);
+
+            // сохранить в свойствах
+            AppLib.SetAppGlobalValue("PanelBackgroundBrushes", cellBrushes);
+        }
+
+        // brushName может быть как наименованием цвета, так и RGB
+        private static SolidColorBrush getBrushByName(string brushName, string defaultBrushName = null)
+        {
+            SolidColorBrush retVal = null;
+
+            // кисть по RGB
+            if (brushName.Contains(";"))
+            {
+                string[] rgb = brushName.Split(';');
+                if (rgb.Length == 3)
+                {
+                    Color c = Color.FromRgb(Convert.ToByte(rgb[0]), Convert.ToByte(rgb[1]), Convert.ToByte(rgb[2]));
+                    retVal = new SolidColorBrush(c);
+                }
+            }
+            else
+            {
+                Type t = typeof(Brushes);
+                System.Reflection.PropertyInfo[] bProps = t.GetProperties();
+                foreach (System.Reflection.PropertyInfo item in bProps)
+                {
+                    if (item.Name == brushName)
+                    {
+                        retVal = (SolidColorBrush)item.GetValue(null, null);
+                        break;
+                    }
+                }
+            }
+
+            if ((retVal == null) && (defaultBrushName != null)) retVal = getBrushByName(defaultBrushName);
+
+            return retVal;
+        }
 
     }  // class App
 }

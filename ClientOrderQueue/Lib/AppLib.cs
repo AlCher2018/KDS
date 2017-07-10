@@ -273,19 +273,16 @@ namespace ClientOrderQueue.Lib
             }
         }
 
-
-        #endregion
-
+        // преобразовать TimeSpan в строку
         public static string GetAppStringTS(TimeSpan tsTimerValue)
         {
-            string retVal = "";
+            string sFormat = (tsTimerValue.Days > 0d) 
+                ? @"d\.hh\:mm\:ss" 
+                : ((tsTimerValue.Hours > 0d) ? @"hh\:mm\:ss" : @"mm\:ss");
 
-            if (tsTimerValue != TimeSpan.Zero)
-            {
-                retVal = (tsTimerValue.Days > 0d) ? tsTimerValue.ToString(@"d\.hh\:mm\:ss") : tsTimerValue.ToString(@"hh\:mm\:ss");
-                // отрицательное время
-                if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
-            }
+            string retVal = tsTimerValue.ToString(sFormat);
+            // отрицательное время
+            if (tsTimerValue.Ticks < 0) retVal = "-" + retVal;
 
             return retVal;
         }
@@ -296,6 +293,8 @@ namespace ClientOrderQueue.Lib
             TimeSpan.TryParse(tsString, out ts);
             return ts;
         }
+
+        #endregion
 
     }  // class
 }

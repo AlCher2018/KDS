@@ -27,8 +27,14 @@ namespace ClientOrderQueue
         {
             InitializeComponent();
 
-            setCellBrushes();
             _cookingIds = new List<int>();
+
+            // кисти заголовка окна
+            brdTitle.Background = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleBackground");
+            tbMainTitle.Foreground = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleForeground");
+
+            // кисти для панелей заказов
+            _cellBrushes = (CellBrushes[])AppLib.GetAppGlobalValue("PanelBackgroundBrushes");
 
             string statusReadyAudioFile = AppLib.GetFullFileName(AppLib.GetAppSetting("AudioPath"), AppLib.GetAppSetting("StatusReadyAudioFile"));
             if (System.IO.File.Exists(statusReadyAudioFile))
@@ -52,21 +58,6 @@ namespace ClientOrderQueue
             setLayoutAfterLoaded(); // Logo image
         }
 
-        private void setCellBrushes()
-        {
-            _cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes() };
-            App app = (App)Application.Current;
-
-            // cooking
-            _cellBrushes[0].Background = (Brush)app.Resources["statusCookingBrush"];
-            if (_cellBrushes[0].Background == null) _cellBrushes[0].Background = Brushes.Orange;
-            _cellBrushes[0].DelimLine = new SolidColorBrush(Color.FromRgb(218, 151, 88));
-
-            // cooked
-            _cellBrushes[1].Background = (Brush)app.Resources["statusCookedBrush"];
-            if (_cellBrushes[1].Background == null) _cellBrushes[1].Background = Brushes.Lime;
-            _cellBrushes[1].DelimLine = new SolidColorBrush(Color.FromRgb(97, 210, 67));
-        }
 
         private void createGridContainers(Grid grid)
         {

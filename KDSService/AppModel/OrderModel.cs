@@ -310,12 +310,12 @@ namespace KDSService.AppModel
                     }
                     catch (Exception ex)
                     {
-                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.Message);
+                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.ToString());
                         dishUpdSuccess = false;
                     }
                 }
-
             }
+
         }  // method
 
         private void startStatusTimer(StatusDTS statusDTS)
@@ -583,6 +583,8 @@ namespace KDSService.AppModel
             {
                 try
                 {
+                    AppEnv.WriteLogTraceMessage("   - save to DB...");
+
                     Order dbOrder = db.Order.Find(this.Id);
                     if (dbOrder != null)
                     {
@@ -598,11 +600,11 @@ namespace KDSService.AppModel
                             dbOrder.QueueStatusId = 1;
                         else if (status == OrderStatusEnum.Took)
                             dbOrder.QueueStatusId = 2;
-                        else
-                            dbOrder.QueueStatusId = dbOrder.OrderStatusId-1;
 
                         db.SaveChanges();
                         retVal = true;
+
+                        AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
                     }
                 }
                 catch (Exception ex)
@@ -617,7 +619,7 @@ namespace KDSService.AppModel
         private void writeDBException(Exception ex, string subMsg1)
         {
             _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("DB Error (order id {0}): {1}", this.Id, AppEnv.GetShortErrMessage(ex));
+            AppEnv.WriteLogErrorMessage("   - DB Error ORDER id {0}: {1}", this.Id, ex.ToString());
         }
 
         #endregion

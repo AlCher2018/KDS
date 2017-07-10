@@ -5,22 +5,7 @@
              xmlns:locLib="clr-namespace:ClientOrderQueue.Lib"
              >
     <Application.Resources>
-        <Color x:Key="appTitleBackgroundColor" R="122" G="34" B="104" A="255"/>
-        <Color x:Key="appTitleForegroundColor" R="255" G="200" B="62" A="255"/>
-        <Color x:Key="statusCookingColor" R="254" G="198" B="63" A="255"/>
-        <Color x:Key="statusCookedColor" R="101" G="224" B="67" A="255"/>
-        
-        <!-- Кисть фона заголовка окна (dark pink) -->
-        <SolidColorBrush x:Key="appTitleBackgroundBrush" Color="{StaticResource appTitleBackgroundColor}"/>
-        <!-- Кисть шрифта в заголовке окна (dark yellow)-->
-        <SolidColorBrush x:Key="appTitleForegroundBrush" Color="{StaticResource appTitleForegroundColor}"/>
-        <!-- Кисть фона состояния Готовится (yellow) -->
-        <SolidColorBrush x:Key="statusCookingBrush" Color="{StaticResource statusCookingColor}"/>
-        <!-- Кисть фона состояния Готов (green) -->
-        <SolidColorBrush x:Key="statusCookedBrush" Color="{StaticResource statusCookedColor}"/>
-
         <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
         <locLib:GetMargin x:Key="getMargin"/>
-
     </Application.Resources>
 </Application>

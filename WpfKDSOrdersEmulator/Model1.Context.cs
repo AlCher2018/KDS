@@ -25,7 +25,6 @@ namespace WpfKDSOrdersEmulator
             throw new UnintentionalCodeFirstException();
         }
     
-        public virtual DbSet<Department> Department { get; set; }
         public virtual DbSet<Order> Order { get; set; }
         public virtual DbSet<OrderDish> OrderDish { get; set; }
         public virtual DbSet<OrderDishReturnTime> OrderDishReturnTime { get; set; }

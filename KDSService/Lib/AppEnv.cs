@@ -194,6 +194,7 @@ namespace KDSConsoleSvcHost
         {
             string retVal = ex.Message;
             if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
+            retVal += ex.Source;
             return retVal;
         }
 

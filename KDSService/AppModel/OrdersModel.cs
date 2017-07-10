@@ -16,6 +16,8 @@ namespace KDSService.AppModel
     // основной класс службы
     public class OrdersModel : IDisposable
     {
+        private HashSet<int> allowedKDSStatuses;
+
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
 
@@ -31,6 +33,15 @@ namespace KDSService.AppModel
         // CONSTRUCTOR
         public OrdersModel()
         {
+            // статусы заказов, которые выбираются из БД для отображения на КДС (все НЕтерминальные)
+            allowedKDSStatuses = new HashSet<int>();
+            allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
+            allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
+            allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
+            allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
+            allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
+            allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);
+
             _orders = new Dictionary<int, OrderModel>();
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
@@ -79,7 +90,7 @@ namespace KDSService.AppModel
             if (_isTraceLog)
             {
                 string ids = string.Join(",", dbOrders.Select(o => o.Id).ToArray());
-                AppEnv.WriteLogTraceMessage("orders count from DB: {0} (ids: {1})", dbOrders.Count, ids);
+                AppEnv.WriteLogTraceMessage("> DB orders from: {0} (ids: {1})", dbOrders.Count, ids);
             }
 
             // цикл по полученным из БД заказам
@@ -174,7 +185,7 @@ namespace KDSService.AppModel
             {
                 string ids = "";
                 if (_orders.Count > 0) ids = string.Join(",", _orders.Values.Select(o => o.Id).ToArray());
-                AppEnv.WriteLogTraceMessage("   orders count for clients: {0} (ids: {1})", _orders.Count, ids);
+                AppEnv.WriteLogTraceMessage("< Clients orders to: {0} (ids: {1})", _orders.Count, ids);
             }
 
             return null;
@@ -218,15 +229,9 @@ namespace KDSService.AppModel
         // дата создания: только текущая!
         private bool isProcessingOrderStatusId(Order order)
         {
-            return ( 
-                ((order.OrderStatus.AppName == OrderStatusEnum.WaitingCook.ToString())
-                || (order.OrderStatus.AppName == OrderStatusEnum.Cooking.ToString())
-                || (order.OrderStatus.AppName == OrderStatusEnum.Ready.ToString())
-                || (order.OrderStatus.AppName == OrderStatusEnum.Cancelled.ToString())
-                || (order.OrderStatus.AppName == OrderStatusEnum.Transferred.ToString())
-                || (order.OrderStatus.AppName == OrderStatusEnum.ReadyConfirmed.ToString()))
-                && (order.CreateDate.Date.Equals(DateTime.Today.Date))
-            );
+            bool retVal = allowedKDSStatuses.Contains(order.OrderStatusId) 
+                && order.CreateDate.Date.Equals(DateTime.Today.Date);
+            return retVal;
         }
         // статус: null - не указан, ... см.выше
         // и количество != 0 (положительные - готовятся, отрицательные - отмененные)
@@ -286,10 +291,10 @@ namespace KDSService.AppModel
                 foreach (KeyValuePair<int, decimal> item in dishesQty)
                 {
                     if (sb.Length > 0) sb.Append("; ");
-                    sb.Append(string.Format("depId: {0}, qnt: {1}", item.Key, item.Value));
+                    sb.Append(string.Format("depId {0} - {1}", item.Key, item.Value));
                 }
                 
-                AppEnv.WriteLogTraceMessage("   обновляю словарь количества готовящихся блюд: " + sb.ToString());
+                AppEnv.WriteLogTraceMessage("   result: " + sb.ToString());
             }
 
         }  // method

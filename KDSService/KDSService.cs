@@ -226,21 +226,23 @@ namespace KDSService
         // обновление статуса заказа с КДСа
         public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
         {
-            _observeTimer.Stop();
-
-            AppEnv.WriteLogUserAction("ChangeOrderStatus(orderId:{0}, status:{1})", orderId, orderStatus.ToString());
+            StopService();
+            AppEnv.WriteLogUserAction("KDS service try to change ORDER status (Id {0}) to {1}", orderId, orderStatus.ToString());
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
             }
-            _observeTimer.Start();
+
+            StartService();
         }
 
         // обновление статуса блюда с КДСа
         public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
-            _observeTimer.Stop();
+            StopService();
+            AppEnv.WriteLogUserAction("KDS service try to change DISH status (Id {0}, orderId {1}) to {2}", orderDishId, orderId, orderDishStatus.ToString());
+
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 OrderModel modelOrder = _ordersModel.Orders[orderId];
@@ -248,12 +250,11 @@ namespace KDSService
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
 
-                    AppEnv.WriteLogUserAction("ChangeOrderDishStatus(orderId:{0}, orderDishId:{1}, status:{2})", orderId, orderDishId, orderDishStatus.ToString());
-
-                    modelDish.UpdateStatus(orderDishStatus, true);
+                    bool result = modelDish.UpdateStatus(orderDishStatus, true);
                 }
             }
-            _observeTimer.Start();
+
+            StartService();
         }
         #endregion
 

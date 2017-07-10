@@ -286,7 +286,7 @@ namespace ClientOrderQueue.Model
                 _estimatedReadyDT = DateTime.Now.AddSeconds(_orderReadyMinute * 60d);
             }
             TimeSpan ts = getRoundedTimeSpan(_estimatedReadyDT - DateTime.Now, 1d);
-            _tbWaitTime.Text = ts.ToString(@"mm\:ss");
+            _tbWaitTime.Text = AppLib.GetAppStringTS(ts);
         }
 
         public void Clear()

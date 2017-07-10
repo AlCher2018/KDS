@@ -15,14 +15,14 @@
 
         <Image Grid.RowSpan="2" x:Name="backgroundImage" Stretch="Fill"/>
 
-        <Border x:Name="brdTitle" Grid.Row="0" Background="{StaticResource appTitleBackgroundBrush}">
+        <Border x:Name="brdTitle" Grid.Row="0">
             <Grid Margin="20,0,20,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="0.5*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов / Status of orders"  Foreground="{StaticResource appTitleForegroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
+                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов / Status of orders"  HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
 
                 <Image x:Name="imgLogo" Grid.Column="1" HorizontalAlignment="Right" Stretch="Uniform"/>
             </Grid>

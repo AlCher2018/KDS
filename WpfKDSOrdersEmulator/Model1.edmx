@@ -5,16 +5,6 @@
     <!-- SSDL content -->
     <edmx:StorageModels>
     <Schema Namespace="BoardChefTestModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityType Name="Department">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" Nullable="false" />
-          <Property Name="IsAutoStart" Type="bit" />
-          <Property Name="DishQuantity" Type="int" />
-        </EntityType>
         <EntityType Name="Order">
           <Key>
             <PropertyRef Name="Id" />
@@ -32,6 +22,7 @@
           <Property Name="QueueStatusId" Type="int" Nullable="false" />
           <Property Name="LanguageTypeId" Type="int" Nullable="false" />
           <Property Name="DivisionColorRGB" Type="nchar" MaxLength="11" />
+          <Property Name="ClientName" Type="nvarchar" MaxLength="120" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -109,33 +100,10 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="250" Nullable="false" />
-          <Property Name="UID" Type="nvarchar" MaxLength="50" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="AppName" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="Description" Type="nvarchar" MaxLength="500" />
         </EntityType>
-        <Association Name="FK_Order_OrderStatus">
-          <End Role="OrderStatus" Type="Self.OrderStatus" Multiplicity="1" />
-          <End Role="Order" Type="Self.Order" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="OrderStatus">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="Order">
-              <PropertyRef Name="OrderStatusId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_OrderDish_Department">
-          <End Role="Department" Type="Self.Department" Multiplicity="1" />
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Department">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="OrderDish">
-              <PropertyRef Name="DepartmentId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_OrderDish_Order">
           <End Role="Order" Type="Self.Order" Multiplicity="1" />
           <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
@@ -191,21 +159,12 @@
           </ReferentialConstraint>
         </Association>
         <EntityContainer Name="BoardChefTestModelStoreContainer">
-          <EntitySet Name="Department" EntityType="Self.Department" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Order" EntityType="Self.Order" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDish" EntityType="Self.OrderDish" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDishReturnTime" EntityType="Self.OrderDishReturnTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderDishRunTime" EntityType="Self.OrderDishRunTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderRunTime" EntityType="Self.OrderRunTime" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK_Order_OrderStatus" Association="Self.FK_Order_OrderStatus">
-            <End Role="OrderStatus" EntitySet="OrderStatus" />
-            <End Role="Order" EntitySet="Order" />
-          </AssociationSet>
-          <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
-            <End Role="Department" EntitySet="Department" />
-            <End Role="OrderDish" EntitySet="OrderDish" />
-          </AssociationSet>
           <AssociationSet Name="FK_OrderDish_Order" Association="Self.FK_OrderDish_Order">
             <End Role="Order" EntitySet="Order" />
             <End Role="OrderDish" EntitySet="OrderDish" />
@@ -227,17 +186,6 @@
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="BoardChefTestModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
-        <EntityType Name="Department">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="IsAutoStart" Type="Boolean" />
-          <Property Name="DishQuantity" Type="Int32" />
-          <NavigationProperty Name="OrderDish" Relationship="Self.FK_OrderDish_Department" FromRole="Department" ToRole="OrderDish" />
-        </EntityType>
         <EntityType Name="Order">
           <Key>
             <PropertyRef Name="Id" />
@@ -258,6 +206,7 @@
           <Property Name="LanguageTypeId" Type="Int32" Nullable="false" />
           <Property Name="QueueStatusId" Type="Int32" Nullable="false" />
           <Property Name="DivisionColorRGB" Type="String" MaxLength="11" FixedLength="true" Unicode="true" />
+          <Property Name="ClientName" Type="String" MaxLength="120" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="OrderDish">
           <Key>
@@ -278,7 +227,6 @@
           <Property Name="StartDate" Type="DateTime" Precision="3" />
           <Property Name="UID1C" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="DelayedStartTime" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="Department" Relationship="Self.FK_OrderDish_Department" FromRole="OrderDish" ToRole="Department" />
           <NavigationProperty Name="Order" Relationship="Self.FK_OrderDish_Order" FromRole="OrderDish" ToRole="Order" />
           <NavigationProperty Name="OrderDishReturnTime" Relationship="Self.FK_OrderDishReturnTime_OrderDish" FromRole="OrderDish" ToRole="OrderDishReturnTime" />
           <NavigationProperty Name="OrderDishRunTime" Relationship="Self.FK_OrdrerDishRunTime_OrderDish" FromRole="OrderDish" ToRole="OrderDishRunTime" />
@@ -342,22 +290,12 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" />
-          <Property Name="Name" Type="String" MaxLength="250" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Name" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="UID" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="Order" Relationship="Self.FK_Order_OrderStatus" FromRole="OrderStatus" ToRole="Order" />
+          <Property Name="AppName" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="Description" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
         </EntityType>
-        <Association Name="FK_OrderDish_Department">
-          <End Role="Department" Type="Self.Department" Multiplicity="1" />
-          <End Role="OrderDish" Type="Self.OrderDish" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Department">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="OrderDish">
-              <PropertyRef Name="DepartmentId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Order_OrderStatus">
           <End Role="OrderStatus" Type="Self.OrderStatus" Multiplicity="1" />
           <End Role="Order" Type="Self.Order" Multiplicity="*" />
@@ -419,17 +357,12 @@
           </ReferentialConstraint>
         </Association>
         <EntityContainer Name="BoardChefTestEntities" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="Department" EntityType="Self.Department" />
           <EntitySet Name="Order" EntityType="Self.Order" />
           <EntitySet Name="OrderDish" EntityType="Self.OrderDish" />
           <EntitySet Name="OrderDishReturnTime" EntityType="Self.OrderDishReturnTime" />
           <EntitySet Name="OrderDishRunTime" EntityType="Self.OrderDishRunTime" />
           <EntitySet Name="OrderRunTime" EntityType="Self.OrderRunTime" />
           <EntitySet Name="OrderStatus" EntityType="Self.OrderStatus" />
-          <AssociationSet Name="FK_OrderDish_Department" Association="Self.FK_OrderDish_Department">
-            <End Role="Department" EntitySet="Department" />
-            <End Role="OrderDish" EntitySet="OrderDish" />
-          </AssociationSet>
           <AssociationSet Name="FK_Order_OrderStatus" Association="Self.FK_Order_OrderStatus">
             <End Role="OrderStatus" EntitySet="OrderStatus" />
             <End Role="Order" EntitySet="Order" />
@@ -457,20 +390,10 @@
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="BoardChefTestModelStoreContainer" CdmEntityContainer="BoardChefTestEntities">
-          <EntitySetMapping Name="Department">
-            <EntityTypeMapping TypeName="BoardChefTestModel.Department">
-              <MappingFragment StoreEntitySet="Department">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
-                <ScalarProperty Name="IsAutoStart" ColumnName="IsAutoStart" />
-                <ScalarProperty Name="DishQuantity" ColumnName="DishQuantity" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="Order">
             <EntityTypeMapping TypeName="BoardChefTestModel.Order">
               <MappingFragment StoreEntitySet="Order">
+                <ScalarProperty Name="ClientName" ColumnName="ClientName" />
                 <ScalarProperty Name="DivisionColorRGB" ColumnName="DivisionColorRGB" />
                 <ScalarProperty Name="QueueStatusId" ColumnName="QueueStatusId" />
                 <ScalarProperty Name="LanguageTypeId" ColumnName="LanguageTypeId" />
@@ -565,9 +488,10 @@
           <EntitySetMapping Name="OrderStatus">
             <EntityTypeMapping TypeName="BoardChefTestModel.OrderStatus">
               <MappingFragment StoreEntitySet="OrderStatus">
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="AppName" ColumnName="AppName" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

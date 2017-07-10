@@ -279,7 +279,10 @@ namespace KDSService.AppModel
             DateTime dtEnterState = default(DateTime), int preStateTS = 0)
         {
             // если статус не поменялся для существующей записи, то ничего не делать
-            if (this.Status == newStatus) return false; 
+            if (this.Status == newStatus)
+            {
+                return false;
+            }
 
             bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
@@ -703,6 +706,7 @@ namespace KDSService.AppModel
             {
                 try
                 {
+                    AppEnv.WriteLogTraceMessage("   - save to DB...");
                     OrderDish dbDish = db.OrderDish.Find(this.Id);
                     if (dbDish != null)
                     {
@@ -714,6 +718,7 @@ namespace KDSService.AppModel
                         }
                         retVal = true;
                     }
+                    AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
                 }
                 catch (Exception ex)
                 {
@@ -726,7 +731,7 @@ namespace KDSService.AppModel
         private void writeDBException(Exception ex, string subMsg1)
         {
             _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("DB Error (dish id {0}): {1}", this.Id, AppEnv.GetShortErrMessage(ex));
+            AppEnv.WriteLogErrorMessage("   - DB Error DISH id {0}: {1}", this.Id, ex.ToString());
         }
 
         #endregion
@@ -735,7 +740,6 @@ namespace KDSService.AppModel
         private bool canAutoPassToCookingStatus()
         {
             DateTime n = DateTime.Now;
-            Debug.Print("canAutoPassToCooking: now {0}, n >= this.CreateDate.AddSeconds(this.DelayedStartTime) - {1}", n, n >= this.CreateDate.AddSeconds(this.DelayedStartTime));
             // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
             bool retVal = (_department.IsAutoStart 
                 && (n >= this.CreateDate.AddSeconds(this.DelayedStartTime)));
@@ -746,7 +750,6 @@ namespace KDSService.AppModel
                 Dictionary<int, decimal> dishesQtyDict = (Dictionary<int, decimal>)AppEnv.GetAppProperty("dishesQty");
                 if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(DepartmentId)))
                 {
-                    Debug.Print("dishesQtyDict[DepartmentId] + this.Quantity <= _department.DishQuantity = {0}+{1} <= {2}", dishesQtyDict[DepartmentId], this.Quantity, _department.DishQuantity);
                     retVal = ((dishesQtyDict[DepartmentId] + this.Quantity) <= _department.DishQuantity);
                     // обновить кол-во в словаре, пока он не обновился из БД
                     if (retVal) dishesQtyDict[DepartmentId] += this.Quantity;
