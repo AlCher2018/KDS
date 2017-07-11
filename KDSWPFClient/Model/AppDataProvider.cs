@@ -216,6 +216,21 @@ namespace KDSWPFClient
             return null;
         }
 
+        public string GetDepNames()
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (DepartmentViewModel item in _deps.Values)
+            {
+                if (item.IsViewOnKDS)
+                {
+                    if (sb.Length > 0) sb.Append("; ");
+                    sb.Append(item.Name);
+                }
+            }
+            
+            return sb.ToString();
+        }
+
         // *** communication object methods WRAPPERs
         public Dictionary<string, object> GetHostAppSettings()
         {

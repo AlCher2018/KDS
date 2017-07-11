@@ -75,8 +75,8 @@ namespace KDSWPFClient
             _isTraceLog = AppLib.GetAppSetting("IsWriteTraceMessages").ToBool();
             _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
 
-            setCurrentKDSMode();
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            setCurrentKDSMode();
 
             double timerInterval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
@@ -611,6 +611,11 @@ namespace KDSWPFClient
             //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
             if (cfgEdit.AppNewSettings.Count > 0)
             {
+                if (cfgEdit.AppNewSettings.ContainsKey("depUIDs"))
+                {
+                    setCurrentKDSMode();
+                }
+
                 // обновить фильтр блюд
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSMode"))
                 {
@@ -689,7 +694,16 @@ namespace KDSWPFClient
             _currentKDSMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
             _currentKDSStates = KDSModeHelper.DefinedKDSModes[_currentKDSMode];
 
-            this.Title = "KDS - " + _currentKDSMode.ToString().ToUpper();
+            // отобразить в заголовке роль КДСа
+            string title = "KDS - " + _currentKDSMode.ToString().ToUpper();
+            // и отображаемые цеха
+            if (_dataProvider != null)
+            {
+                string depNames = _dataProvider.GetDepNames();
+                if (!depNames.IsNull()) title += " (" + depNames + ")";
+            }
+
+            this.Title = title;
         }
 
         // в _dataProvider.Departments, поле IsViewOnKDS = true, если отдел разрешен для показа на этом КДСе

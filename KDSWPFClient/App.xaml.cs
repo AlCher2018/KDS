@@ -170,19 +170,19 @@ namespace KDSWPFClient
             if (allowedActions != null)
             {
                 List<OrderStatusEnum> allowedStates = allowedActions.Where(p => (p.Key == currentState)).Select(p => p.Value).ToList();
-                // если нет доступных переходов при клике по ЗАКАЗУ
-                if ((allowedStates.Count == 0) && (dishModel == null))
+                // при клике по ЗАКАЗУ проверить статус отображаемых на данном КДСе позиций
+                if (dishModel == null)
                 {
-                    // проверить статус блюд в данном заказе
                     OrderStatusEnum statAllDishes = AppLib.GetStatusAllDishes(orderModel.Dishes);
                     if (statAllDishes != OrderStatusEnum.None)
                     {
-                        // и, если в разрешенных переходах есть пара с таким ключем, т.е. ВСЕ блюда находятся в состоянии, которое есть в разрешенных переходах
-                        KeyValuePair<OrderStatusEnum, OrderStatusEnum> statAction = allowedActions.FirstOrDefault(s => s.Key == statAllDishes);
-                        // то добавляем этот переход для отображения
-                        if (statAction.Key == statAllDishes) // все равно проверяем, т.к. структура KeyValuePair создается и не равна null
+                        currentState = statAllDishes;  // текущее состояние - по блюдам!
+                        // и, если в разрешенных переходах есть пары с таким ключем, т.е. ВСЕ блюда находятся в состоянии, которое есть в разрешенных переходах
+                        var tmpList = allowedActions.Where(s => s.Key == statAllDishes).ToList();
+                        // то отображаем эти переходы, а не переходы из состояния заказа!
+                        if (tmpList != null)
                         {
-                            allowedStates.Add(statAction.Value);
+                            allowedStates = tmpList.Select(p => p.Value).ToList();
                         }
                     }
                 }

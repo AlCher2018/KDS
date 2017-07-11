@@ -235,7 +235,7 @@ namespace ClientOrderQueue.Model
                 langId = order.LanguageTypeId,
                 statusId = order.QueueStatusId;
 
-            if ((number <= 0) || (statusId < 0) || (statusId > 2) || (langId < 1) || (langId > 3))
+            if ((number <= 0) || (statusId < 0) || (statusId > 1) || (langId < 1) || (langId > 3))
             {
                 Clear(); return;
             }

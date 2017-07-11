@@ -23,11 +23,14 @@ namespace ClientOrderQueue
         private CellBrushes[] _cellBrushes;
         private List<int> _cookingIds;
 
+        private HashSet<int> _unUsedDeps;
+
         public MainWindow()
         {
             InitializeComponent();
 
             _cookingIds = new List<int>();
+            _unUsedDeps = (HashSet<int>)AppLib.GetAppGlobalValue("UnusedDepartments");
 
             // кисти заголовка окна
             brdTitle.Background = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleBackground");
@@ -183,6 +186,7 @@ namespace ClientOrderQueue
             List<Order> retVal = null;
             try
             {
+                AppLib.WriteLogTraceMessage("Получаю заказы для очереди...");
                 using (KDSContext db = new KDSContext())
                 {
                     db.Database.Connection.Open();
@@ -191,9 +195,54 @@ namespace ClientOrderQueue
                         List<Order> dbOrders = (from o in db.vwOrderQueue
                                                 orderby o.CreateDate ascending, o.Number ascending
                                                 select o).ToList();
+
+                        // пройтись по всем заказам
+                        int iCnt;
+                        Dictionary<int, IntWrapper> statesCnt = new Dictionary<int, IntWrapper>();
+                        List<Order> delOrd = new List<Order>();
+                        foreach (Order order in dbOrders)
+                        {
+                            foreach (int key in statesCnt.Keys) statesCnt[key].IWValue = 0;
+                            // достать из БД блюда и удалить из них позиции для неиспользуемых цехов
+                            var dishes = db.Database.SqlQuery<OrderDish>("SELECT Id, DishStatusId, DepartmentId FROM OrderDish WHERE OrderId = " + order.Id.ToString(), order.Id).ToList();
+                            iCnt = dishes.Count;
+                            foreach (var dish in dishes)
+                            {
+                                if (_unUsedDeps.Contains(dish.DepartmentId))
+                                    iCnt--;
+                                else
+                                {
+                                    if (!statesCnt.ContainsKey(dish.DishStatusId)) statesCnt.Add(dish.DishStatusId, new IntWrapper());
+                                    statesCnt[dish.DishStatusId].IWValue += 1;
+                                }
+                            }
+                            if (iCnt == 0) delOrd.Add(order);
+                            // узнать общий статус оставшихся блюд
+                            foreach (var key in statesCnt.Keys)
+                            {
+                                int queueStat = key - 1;
+                                if ((statesCnt[key].IWValue == iCnt) && (queueStat >= 0) && (order.QueueStatusId != queueStat))
+                                    order.QueueStatusId = queueStat;
+                            }
+                        }
+                        foreach (Order item in delOrd) dbOrders.Remove(item);
+
                         retVal = dbOrders;
                     }
                 }
+
+                string msg = string.Format("  - получено {0} заказов", retVal.Count);
+                if (retVal.Count > 0)
+                {
+                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                    foreach (Order item in retVal)
+                    {
+                        if (sb.Length > 0) sb.Append(",");
+                        sb.Append(item.Id);
+                    }
+                    msg += " (ids " + sb.ToString() + ")";
+                }
+                AppLib.WriteLogTraceMessage(msg);
             }
             catch (Exception ex)
             {
@@ -275,8 +324,26 @@ namespace ClientOrderQueue
             return new Size(gridW, gridH);
         }
 
-#endregion
+        #endregion
 
+        private class OrderDish
+        {
+            public int Id { get; set; }
+            public int DishStatusId { get; set; }
+            public int DepartmentId { get; set; }
+        }
+
+        private class IntWrapper
+        {
+            public int IWKey { get; set; }
+            public int IWValue { get; set; }
+
+            public IntWrapper()
+            {
+                IWKey = 0; IWValue = 0;
+            }
+        }
 
     }  // class
+
 }

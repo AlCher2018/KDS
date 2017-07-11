@@ -30,6 +30,9 @@ namespace KDSService.AppModel
         private bool _isTraceLog;
         private bool _changeStatusYesterdayOrders;
 
+        private HashSet<int> _unUsedDeps;
+
+
         // CONSTRUCTOR
         public OrdersModel()
         {
@@ -49,6 +52,8 @@ namespace KDSService.AppModel
 
             _isTraceLog = (bool)AppEnv.GetAppProperty("IsWriteTraceMessages", false);
             _changeStatusYesterdayOrders = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
+
+            _unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
         }
 
         //**************************************
@@ -104,9 +109,34 @@ namespace KDSService.AppModel
                     //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
                     //}
 
-                    // для последующех обработок удалить из заказов блюда с ненужными статусами
+                    // для последующих обработок удалить из заказов блюда с ненужными статусами и неотображаемые на КДСах
                     foreach (Order dbOrder in dbOrders)
                     {
+                        OrderStatusEnum dishesStatus = AppEnv.GetStatusAllDishes(dbOrder.OrderDish);
+                        // общий статус всех блюд НЕ совпадает со статусом заказа и для статуса блюд = 3 (Выданы)
+                        if ((dishesStatus != OrderStatusEnum.None) 
+                            && ((int)dishesStatus != dbOrder.OrderStatusId) && (dishesStatus == OrderStatusEnum.Took))
+                        {
+                            dbOrder.OrderStatusId = 3;
+                            dbOrder.QueueStatusId = 2;
+                            using (KDSEntities db = new KDSEntities())
+                            {
+                                try
+                                {
+                                    db.Order.Attach(dbOrder);
+                                    //var manager = ((System.Data.Entity.Infrastructure.IObjectContextAdapter)db).ObjectContext.ObjectStateManager;
+                                    //manager.ChangeObjectState(dbOrder, System.Data.Entity.EntityState.Modified);
+                                    db.Entry(dbOrder).State = System.Data.Entity.EntityState.Modified;
+                                    db.SaveChanges();
+                                    AppEnv.WriteLogTraceMessage(string.Format("Изменен статус заказа {0} на {1} согласно общему статусу всех блюд", dbOrder.Id, dbOrder.OrderStatusId));
+                                }
+                                catch (Exception ex)
+                                {
+                                    AppEnv.WriteLogErrorMessage(string.Format("Ошибка изменения статуса заказа {0} на {1} согласно общему статусу всех блюд: {2}", dbOrder.Id, dbOrder.OrderStatusId, ex.ToString()));
+                                }
+                            }
+                        }
+
                         // массив блюд для удаления
                         OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
                         // удаление ненужных блюд
@@ -191,6 +221,7 @@ namespace KDSService.AppModel
             return null;
         }  // method
 
+
         private void updateYesterdayOrdersStatus()
         {
                 DateTime dt = DateTime.Today;
@@ -235,13 +266,15 @@ namespace KDSService.AppModel
         }
         // статус: null - не указан, ... см.выше
         // и количество != 0 (положительные - готовятся, отрицательные - отмененные)
+        // и цех (напр.печати) - отображаемый
         private bool isProcessingDishStatusId(OrderDish dish)
         {
             return ((dish.DishStatusId == null) 
                 || (dish.DishStatusId <= 2) 
                 || (dish.DishStatusId == 4) 
                 || (dish.DishStatusId == 7))
-                && (dish.Quantity != 0m);
+                && (dish.Quantity != 0m)
+                && (!_unUsedDeps.Contains(dish.DepartmentId));
         }
 
 

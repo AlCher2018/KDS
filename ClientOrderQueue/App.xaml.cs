@@ -65,6 +65,22 @@ namespace ClientOrderQueue
             string fileName = AppLib.GetFullFileName(sPath, sFile);
             if ((fileName != null) && (System.IO.File.Exists(fileName))) AppLib.SetAppGlobalValue("StatusReadyImageFile", fileName);
 
+            // неиспользуемые цеха
+            HashSet<int> unUsed = new HashSet<int>();
+            cfgValue = AppLib.GetAppSetting("UnusedDepartments");
+            if (cfgValue != null)
+            {
+                if (cfgValue.Contains(",")) cfgValue = cfgValue.Replace(',', ';');
+                int id;
+                foreach (string item in cfgValue.Split(';'))
+                {
+                    id = item.ToInt();
+                    if (!unUsed.Contains(id)) unUsed.Add(id);
+                }
+                    
+            }
+            AppLib.SetAppGlobalValue("UnusedDepartments", unUsed);
+
             // кисти фона и текста заголовка окна
             createWinTitleBrushes();
             // кисти фона панели заказа (CellBrushes - кисть фона и разделительной полосы)

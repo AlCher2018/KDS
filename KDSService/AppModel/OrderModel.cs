@@ -78,6 +78,9 @@ namespace KDSService.AppModel
         }
 
         #region Fields
+        // MS SQL data type Datetime: January 1, 1753, through December 31, 9999
+        private DateTime sqlMinDate = new DateTime(1753, 1, 1);
+
         // FIELDS
         // накопительные счетчики нахождения в конкретном состоянии
         private Dictionary<OrderStatusEnum, TimeCounter> _tsTimersDict; // словарь накопительных счетчиков для различных состояний
@@ -367,19 +370,6 @@ namespace KDSService.AppModel
                     break;
                 }
             }
-
-            // еще одна проверка - если больше нет блюд в состоянии preStatus, то перевести заказ в состояние newStatus
-            // НЕПРАВИЛЬНАЯ ЛОГИКА
-            //if (_isUpdStatusFromDishes == false)
-            //{
-            //    bool isExistPreStatus = _dishesDict.Values.Any(d => d.DishStatusId == (int)preStatus);
-            //    if ((!isExistPreStatus) && (this.Status != newStatus))
-            //    {
-            //        UpdateStatus(newStatus, false);
-            //        _isUpdStatusFromDishes = true;
-            //    }
-            //}
-
         }  // method
 
         // получить последнюю дату входа в состояние из блюд
@@ -561,7 +551,11 @@ namespace KDSService.AppModel
             using (KDSEntities db = new KDSEntities())
             {
                 try
-                {
+                {   
+                    // в _dbRunTimeRecord могут быть даты 01.01.0001, которые не поддерживаются типом MS SQL DateTime, 
+                    // который используется в БД !!!
+                    checkDateFields(_dbRunTimeRecord);
+
                     db.OrderRunTime.Attach(_dbRunTimeRecord);
                     // указать, что запись изменилась
                     db.Entry<OrderRunTime>(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
@@ -574,6 +568,33 @@ namespace KDSService.AppModel
                 }
             }
             return retVal;
+        }
+
+        private void checkDateFields(OrderRunTime dbRec)
+        {
+            if ((dbRec.InitDate != null)
+                && ((dbRec.InitDate.Value.Ticks == 0) || (dbRec.InitDate.Value < sqlMinDate))) dbRec.InitDate = null;
+
+            if ((dbRec.CookingStartDate != null)
+                && ((dbRec.CookingStartDate.Value.Ticks == 0) || (dbRec.CookingStartDate.Value < sqlMinDate))) dbRec.CookingStartDate = null;
+
+            if ((dbRec.ReadyDate != null)
+                && ((dbRec.ReadyDate.Value.Ticks == 0) || (dbRec.ReadyDate.Value < sqlMinDate))) dbRec.ReadyDate = null;
+
+            if ((dbRec.TakeDate != null)
+                && ((dbRec.TakeDate.Value.Ticks == 0) || (dbRec.TakeDate.Value < sqlMinDate))) dbRec.TakeDate = null;
+
+            if ((dbRec.CommitDate != null)
+                && ((dbRec.CommitDate.Value.Ticks == 0) || (dbRec.CommitDate.Value < sqlMinDate))) dbRec.CommitDate = null;
+
+            if ((dbRec.CancelDate != null)
+                && ((dbRec.CancelDate.Value.Ticks == 0) || (dbRec.CancelDate.Value < sqlMinDate))) dbRec.CancelDate = null;
+
+            if ((dbRec.CancelConfirmedDate != null)
+                && ((dbRec.CancelConfirmedDate.Value.Ticks == 0) || (dbRec.CancelConfirmedDate.Value < sqlMinDate))) dbRec.CancelConfirmedDate = null;
+
+            if ((dbRec.ReadyConfirmedDate != null)
+                && ((dbRec.ReadyConfirmedDate.Value.Ticks == 0) || (dbRec.ReadyConfirmedDate.Value < sqlMinDate))) dbRec.ReadyConfirmedDate = null;
         }
 
         private bool saveStatusToDB(OrderStatusEnum status)

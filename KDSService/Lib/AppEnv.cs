@@ -99,7 +99,8 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
             putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
             putCfgValueToStrBuilder(cfg, sb, "TimeOfAutoCloseYesterdayOrders");
-            
+            putCfgValueToStrBuilder(cfg, sb, "UnusedDepartments");
+
             return sb.ToString();
         }
         private static void putCfgValueToStrBuilder(NameValueCollection cfg, StringBuilder sb, string key)
@@ -135,6 +136,17 @@ namespace KDSConsoleSvcHost
             TimeSpan ts = TimeSpan.Zero;
             if (value != null) TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts);
             _props.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
+
+            // неиспользуемые цеха
+            HashSet<int> unUsed = new HashSet<int>();
+            value = cfg["UnusedDepartments"];
+            if (value != null)
+            {
+                if (value.Contains(',')) value = value.Replace(',', ';');
+                var ids = value.Split(';').Select(s => s.ToInt());
+                foreach (int item in ids) if (!unUsed.Contains(item)) unUsed.Add(item);
+            }
+            _props.SetProperty("UnusedDepartments", unUsed);
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
@@ -274,7 +286,6 @@ namespace KDSConsoleSvcHost
             return retVal;
         }
 
-
         #region App logger
 
         // отладочные сообщения
@@ -381,12 +392,20 @@ namespace KDSConsoleSvcHost
             int dishCount = dishes.Count();
 
             int[] statArray = new int[iLen];
+            HashSet<int> unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
 
             int iStatus;
             foreach (OrderDish dish in dishes)
             {
-                iStatus = (dish.DishStatusId ?? 0);
-                statArray[iStatus]++;
+                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId)))
+                {
+                    dishCount--;
+                }
+                else
+                {
+                    iStatus = (dish.DishStatusId ?? 0);
+                    statArray[iStatus]++;
+                }
             }
 
             for (int i = 0; i < iLen; i++)
