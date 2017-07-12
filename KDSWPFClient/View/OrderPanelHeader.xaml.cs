@@ -25,49 +25,49 @@ namespace KDSWPFClient.View
     {
 
         #region dependency properties
-        public static readonly DependencyProperty PanelWidthProperty = DependencyProperty.Register("PanelWidth", typeof(double), typeof(OrderPanelHeader), new PropertyMetadata(300d));
-        public double PanelWidth
-        {
-            get { return (double)GetValue(PanelWidthProperty); }
-            set { SetValue(PanelWidthProperty, value); }
-        }
+        //public static readonly DependencyProperty PanelWidthProperty = DependencyProperty.Register("PanelWidth", typeof(double), typeof(OrderPanelHeader), new PropertyMetadata(300d));
+        //public double PanelWidth
+        //{
+        //    get { return (double)GetValue(PanelWidthProperty); }
+        //    set { SetValue(PanelWidthProperty, value); }
+        //}
 
-        // фон заголовка для строк 1 и 2
-        public static readonly DependencyProperty HeaderBackground12Property = DependencyProperty.Register("HeaderBackground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Green)));
-        public Brush HeaderBackground12
-        {
-            get { return (Brush)GetValue(HeaderBackground12Property); }
-            set { SetValue(HeaderBackground12Property, value); }
-        }
-        // фон заголовка для строки 3
-        public static readonly DependencyProperty HeaderBackground3Property = DependencyProperty.Register("HeaderBackground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
-        public Brush HeaderBackground3
-        {
-            get { return (Brush)GetValue(HeaderBackground3Property); }
-            set { SetValue(HeaderBackground3Property, value); }
-        }
-        // фон счетчика приготовления Заказа
-        public static readonly DependencyProperty OrderStatusTSBackgroundProperty = DependencyProperty.Register("OrderStatusTSBackground", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.YellowGreen)));
-        public Brush OrderStatusTSBackground
-        {
-            get { return (Brush)GetValue(OrderStatusTSBackgroundProperty); }
-            set { SetValue(OrderStatusTSBackgroundProperty, value); }
-        }
+        //// фон заголовка для строк 1 и 2
+        //public static readonly DependencyProperty HeaderBackground12Property = DependencyProperty.Register("HeaderBackground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Green)));
+        //public Brush HeaderBackground12
+        //{
+        //    get { return (Brush)GetValue(HeaderBackground12Property); }
+        //    set { SetValue(HeaderBackground12Property, value); }
+        //}
+        //// фон заголовка для строки 3
+        //public static readonly DependencyProperty HeaderBackground3Property = DependencyProperty.Register("HeaderBackground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
+        //public Brush HeaderBackground3
+        //{
+        //    get { return (Brush)GetValue(HeaderBackground3Property); }
+        //    set { SetValue(HeaderBackground3Property, value); }
+        //}
+        //// фон счетчика приготовления Заказа
+        //public static readonly DependencyProperty OrderStatusTSBackgroundProperty = DependencyProperty.Register("OrderStatusTSBackground", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.YellowGreen)));
+        //public Brush OrderStatusTSBackground
+        //{
+        //    get { return (Brush)GetValue(OrderStatusTSBackgroundProperty); }
+        //    set { SetValue(OrderStatusTSBackgroundProperty, value); }
+        //}
 
-        // цвет текста для строк 1, 2
-        public static readonly DependencyProperty HeaderForeground12Property = DependencyProperty.Register("HeaderForeground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
-        public Brush HeaderForeground12
-        {
-            get { return (Brush)GetValue(HeaderForeground12Property); }
-            set { SetValue(HeaderForeground12Property, value); }
-        }
-        // цвет текста для строки 3
-        public static readonly DependencyProperty HeaderForeground3Property = DependencyProperty.Register("HeaderForeground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Black)));
-        public Brush HeaderForeground3
-        {
-            get { return (Brush)GetValue(HeaderForeground3Property); }
-            set { SetValue(HeaderForeground3Property, value); }
-        }
+        //// цвет текста для строк 1, 2
+        //public static readonly DependencyProperty HeaderForeground12Property = DependencyProperty.Register("HeaderForeground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
+        //public Brush HeaderForeground12
+        //{
+        //    get { return (Brush)GetValue(HeaderForeground12Property); }
+        //    set { SetValue(HeaderForeground12Property, value); }
+        //}
+        //// цвет текста для строки 3
+        //public static readonly DependencyProperty HeaderForeground3Property = DependencyProperty.Register("HeaderForeground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Black)));
+        //public Brush HeaderForeground3
+        //{
+        //    get { return (Brush)GetValue(HeaderForeground3Property); }
+        //    set { SetValue(HeaderForeground3Property, value); }
+        //}
 
         #endregion
 
@@ -77,7 +77,6 @@ namespace KDSWPFClient.View
         public OrderPanelHeader(OrderViewModel order)
         {
             InitializeComponent();
-            this.Loaded += OrderPanelHeader_Loaded;
 
             grdHeader.DataContext = order;
 
@@ -101,10 +100,6 @@ namespace KDSWPFClient.View
                 brdDivisionMark.Fill = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
             }
 
-        }
-
-        private void OrderPanelHeader_Loaded(object sender, RoutedEventArgs e)
-        {
         }
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)

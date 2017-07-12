@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using KDSWPFClient.ViewModel;
+using System.Diagnostics;
 
 namespace KDSWPFClient.View
 {
@@ -18,6 +19,9 @@ namespace KDSWPFClient.View
         private double _fontSize;
         private int _pageIndex;
         private OrderViewModel _orderView;
+
+        // высота панели заказа
+        public double HeightPanel { get { return this.DesiredSize.Height; } }
 
         public OrderViewModel OrderViewModel { get { return _orderView; } }
 
@@ -42,9 +46,8 @@ namespace KDSWPFClient.View
                 // и добавить его к заказу
                 this.grdHeader.Children.Add(hdrPnl);
 
-                hdrPnl.Measure(new Size(base.Width, double.PositiveInfinity));
-//                grdHeader.Arrange(new Rect(0, 0, hdrPnl.DesiredSize.Width, hdrPnl.DesiredSize.Height));
-                grdHeader.UpdateLayout();
+//                hdrPnl.Measure(new Size(base.Width, double.PositiveInfinity));
+//                grdHeader.UpdateLayout();
             }
 
             // установить шрифт текстовых блоков в заголовке таблицы блюд
@@ -56,10 +59,6 @@ namespace KDSWPFClient.View
             {
                 tb.FontSize = _fontSize;
             }
-            // пересчитать размер панели
-            brdTblHeader.Measure(new Size(base.Width, double.PositiveInfinity));
-//            grdHeader.Arrange(new Rect(0, 0, brdTblHeader.DesiredSize.Width, brdTblHeader.DesiredSize.Height));
-            grdHeader.UpdateLayout();
 
             // пересчитать высоту панели
             this.Measure(new Size(base.Width, double.PositiveInfinity));
@@ -79,35 +78,37 @@ namespace KDSWPFClient.View
             this.stkDishes.Children.Add(dishPanel);
 
             //  update DesiredSize
-            dishPanel.Measure(new Size(base.Width, double.PositiveInfinity));
-            //grdHeader.UpdateLayout();
             stkDishes.UpdateLayout();
         }
 
-        // добавить массив элементов в стек БЕЗ измерения высоты
+        // добавить массив элементов в стек
         internal void AddDish(UIElement[] delItems)
         {
             foreach (UIElement item in delItems)
             {
                 this.stkDishes.Children.Add(item);
             }
+
+            //  update DesiredSize
+            stkDishes.UpdateLayout();
         }
 
         // для удаляемого блюда (при переносе в следующую колонку), создать массив UI-элементов, которые будут
         // переноситься в следующую колонку для предотвращения "висячих" разделителей номера подачи и ингредиентов
-        internal UIElement[] RemoveDish(DishPanel dishPanel)
+        internal UIElement[] RemoveDish(DishPanel dishPanel, double cnvHeight)
         {
+            int idx = stkDishes.Children.IndexOf(dishPanel);
+            double totalHeight = this.DesiredSize.Height;
+
             List<UIElement> retVal = new List<UIElement>();
             retVal.Add(dishPanel);
             this.stkDishes.Children.Remove(dishPanel);
+            totalHeight -= dishPanel.DesiredSize.Height;
 
             string parentUid = dishPanel.DishView.ParentUID;  // если не пусто, то содержит значение родительского Uid
-
-            int idx = stkDishes.Children.IndexOf(dishPanel);
-            idx = stkDishes.Children.Count - 1;
             UIElement uiElem;
             // сохраняем в массиве разделитель подач или все ингредиенты вместе с блюдом
-            for (int i = idx; i >= 0; i--)
+            for (int i = idx-1; i >= 0; i--)
             {
                 uiElem = stkDishes.Children[i];
                 if ((uiElem is DishDelimeterPanel)
@@ -116,8 +117,9 @@ namespace KDSWPFClient.View
                 {
                     retVal.Add(uiElem);
                     this.stkDishes.Children.Remove(uiElem);
+                    totalHeight -= uiElem.DesiredSize.Height;
                 }
-                else
+                else if (totalHeight < cnvHeight)
                     break;
             }
             if (retVal.Count > 1) retVal.Reverse();
@@ -130,8 +132,6 @@ namespace KDSWPFClient.View
             this.stkDishes.Children.Add(delimPanel);
 
             //  update DesiredSize
-            delimPanel.Measure(new Size(base.Width, double.PositiveInfinity));
-            //grdHeader.UpdateLayout();
             stkDishes.UpdateLayout();
         }
 

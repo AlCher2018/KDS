@@ -67,8 +67,13 @@ namespace KDSWPFClient
         {
             InitializeComponent();
 
+            this.Loaded += MainWindow_Loaded;
+
             _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
             _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+
+            this.Top = 0; this.Left = 0;
+            this.Width = _screenWidth; this.Height = _screenHeight;
 
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
@@ -111,10 +116,6 @@ namespace KDSWPFClient
             double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
 
-            // отрисовка страниц заказов
-            _pages = new OrdersPages();
-            _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
-
             _preOrdersId = new List<int>();
             _viewOrders = new List<OrderViewModel>();
             _dependDeps = new Dictionary<int, List<int>>();
@@ -145,6 +146,36 @@ namespace KDSWPFClient
                 _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // размер канвы для панелей заказов
+            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
+            double cnvHeight = Math.Floor(grdMain.ActualHeight - 2d * topBotMargin);
+            double cnvWidth = grdMain.ActualWidth;
+            _pages = new OrdersPages(cnvWidth, cnvHeight);
+            _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
+
+            // настройки кнопок пользов.группировки и фильтрации
+            double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
+            double wRow = grdUserConfig.ActualWidth;
+            double rad = 0.2 * wRow;
+            CornerRadius crnRad = new CornerRadius(rad, 0d, 0d, rad);
+            Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
+            Thickness leftTbMargin = new Thickness(0.1d * wRow, 0d, -hRow, -wRow);
+
+            btnOrderGroup.Margin = leftBtnMargin;
+            btnOrderGroup.CornerRadius = crnRad;
+            tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
+            tbOrderGroup.FontSize = 0.35d * wRow;
+            tbOrderGroup.Margin = leftTbMargin;
+
+            btnDishStatusFilter.Margin = leftBtnMargin;
+            btnDishStatusFilter.CornerRadius = crnRad;
+            tbDishStatusFilter.Width = hRow; tbDishStatusFilter.Height = wRow;
+            tbDishStatusFilter.FontSize = 0.35d * wRow;
+            tbDishStatusFilter.Margin = leftTbMargin;
         }
 
         private string getDepsFilter()
@@ -548,7 +579,9 @@ namespace KDSWPFClient
             _pages.ClearPages(); // очистить панели заказов
 
             // добавить заказы
+            //DebugTimer.Init("AddOrdersPanels");
             _pages.AddOrdersPanels(_viewOrders);
+            //DebugTimer.GetInterval();
 
             setCurrentPage();
         }
@@ -785,9 +818,6 @@ namespace KDSWPFClient
                 if (btnDishStatusFilter.Visibility == Visibility.Hidden) btnDishStatusFilter.Visibility = Visibility.Visible;
                 setUserStatesTab();  // отобразить на вкладке текущий набор
             }
-
-            // и перерисовать панели заказов
-            repaintOrders();
         }
         #endregion
 
@@ -829,12 +859,17 @@ namespace KDSWPFClient
         // перебор фильтров состояний по клику на вкладке
         private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            _timer.Stop();
+
             // сдвинуть фильтр
             _userStatesLooper.SetNextIndex();
+
             // обновить пользовательский фильтр текущим набором
             updCheckerDishState();
 
             _preOrdersId.Clear();
+
+            _timer.Start();
         }
 
         // отобразить следующий набор фильтров по состоянию на вкладке
@@ -1016,30 +1051,6 @@ namespace KDSWPFClient
         {
             openConfigPanel();
         }
-
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            // настройки кнопок пользов.группировки и фильтрации
-            double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
-            double wRow = grdUserConfig.ActualWidth;
-            double rad = 0.2 * wRow;
-            CornerRadius crnRad = new CornerRadius(rad, 0d, 0d, rad);
-            Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
-            Thickness leftTbMargin = new Thickness(0.1d * wRow, 0d, -hRow, -wRow);
-
-            btnOrderGroup.Margin = leftBtnMargin;
-            btnOrderGroup.CornerRadius = crnRad;
-            tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
-            tbOrderGroup.FontSize = 0.35d * wRow;
-            tbOrderGroup.Margin = leftTbMargin;
-
-            btnDishStatusFilter.Margin = leftBtnMargin;
-            btnDishStatusFilter.CornerRadius = crnRad;
-            tbDishStatusFilter.Width = hRow; tbDishStatusFilter.Height = wRow;
-            tbDishStatusFilter.FontSize = 0.35d * wRow;
-            tbDishStatusFilter.Margin = leftTbMargin;
-        }
-
 
         private void btnColorsLegend_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {

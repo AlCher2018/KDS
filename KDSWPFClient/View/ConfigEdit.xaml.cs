@@ -59,19 +59,19 @@ namespace KDSWPFClient.View
             _useReadyConfirmedState =  (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
             if (_useReadyConfirmedState)
             {
-                cbxState7.Visibility = Visibility.Visible;
+                cbxState8.Visibility = Visibility.Visible;
 
-                cbx17.Visibility = Visibility.Visible;
-                cbx27.Visibility = Visibility.Visible;
-                cbx73.Visibility = Visibility.Visible;
+                cbx18.Visibility = Visibility.Visible;
+                cbx28.Visibility = Visibility.Visible;
+                cbx83.Visibility = Visibility.Visible;
             }
             else
             {
-                cbxState7.Visibility = Visibility.Collapsed;
+                cbxState8.Visibility = Visibility.Collapsed;
 
-                cbx17.Visibility = Visibility.Collapsed;
-                cbx27.Visibility = Visibility.Collapsed;
-                cbx73.Visibility = Visibility.Collapsed;
+                cbx18.Visibility = Visibility.Collapsed;
+                cbx28.Visibility = Visibility.Collapsed;
+                cbx83.Visibility = Visibility.Collapsed;
             }
 
             // заполнить комбобокс звуковых файлов

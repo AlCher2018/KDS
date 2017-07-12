@@ -23,13 +23,16 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string AppNameField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string DescriptionField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string NameField;
-        
-        [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private string UIDField;
         
         [global::System.ComponentModel.BrowsableAttribute(false)]
         public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
@@ -38,6 +41,32 @@ namespace KDSWPFClient.ServiceReference1 {
             }
             set {
                 this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string AppName {
+            get {
+                return this.AppNameField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.AppNameField, value) != true)) {
+                    this.AppNameField = value;
+                    this.RaisePropertyChanged("AppName");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string Description {
+            get {
+                return this.DescriptionField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.DescriptionField, value) != true)) {
+                    this.DescriptionField = value;
+                    this.RaisePropertyChanged("Description");
+                }
             }
         }
         
@@ -63,19 +92,6 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.NameField, value) != true)) {
                     this.NameField = value;
                     this.RaisePropertyChanged("Name");
-                }
-            }
-        }
-        
-        [System.Runtime.Serialization.DataMemberAttribute()]
-        public string UID {
-            get {
-                return this.UIDField;
-            }
-            set {
-                if ((object.ReferenceEquals(this.UIDField, value) != true)) {
-                    this.UIDField = value;
-                    this.RaisePropertyChanged("UID");
                 }
             }
         }
@@ -687,7 +703,13 @@ namespace KDSWPFClient.ServiceReference1 {
         CancelConfirmed = 6,
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
-        ReadyConfirmed = 7,
+        Transferred = 7,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ReadyConfirmed = 8,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        YesterdayNotTook = 9,
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]

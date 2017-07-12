@@ -140,7 +140,7 @@ namespace KDSWPFClient
             {
                 List<OrderStatusModel> svcList = _getClient.GetOrderStatuses();
                 svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
-                    new OrderStatusViewModel() { Id = o.Id, Name = o.Name, UID = o.UID }
+                    new OrderStatusViewModel() { Id = o.Id, Name = o.Name, AppName = o.AppName, Description = o.Description }
                     ));
             }
             catch (Exception)

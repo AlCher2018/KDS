@@ -7,8 +7,8 @@
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
         Title="KDS" Height="720" Width="1024"
-        WindowState="Maximized" WindowStyle="SingleBorderWindow"
-        SizeChanged="Window_SizeChanged" ResizeMode="NoResize" Icon="monitor7.ico">
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize" Icon="monitor7.ico">
 
     <Window.Resources>
 

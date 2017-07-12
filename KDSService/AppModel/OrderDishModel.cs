@@ -741,7 +741,6 @@ namespace KDSService.AppModel
             {
                 try
                 {
-                    AppEnv.WriteLogTraceMessage("   - save to DB...");
                     OrderDish dbDish = db.OrderDish.Find(this.Id);
                     if (dbDish != null)
                     {
@@ -749,11 +748,13 @@ namespace KDSService.AppModel
                         if (dbDish.DishStatusId != iStatus)
                         {
                             dbDish.DishStatusId = iStatus;
+
+                            AppEnv.WriteLogInfoMessage("   - save to DB...");
                             db.SaveChanges();
+                            AppEnv.WriteLogInfoMessage("   - save to DB... Ok");
                         }
                         retVal = true;
                     }
-                    AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
                 }
                 catch (Exception ex)
                 {

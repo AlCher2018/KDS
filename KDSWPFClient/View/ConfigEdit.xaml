@@ -242,7 +242,7 @@
                                 <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
                         <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
                                 <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
-                                <CheckBox x:Name="cbxState7" Tag="7" Content="Готовность подтверждена"/>
+                                <CheckBox x:Name="cbxState8" Tag="8" Content="Готовность подтверждена"/>
                                 <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
                             </StackPanel>
                         </Border>
@@ -255,11 +255,11 @@
                                 <StackPanel x:Name="pnlActions">
                                     <CheckBox x:Name="cbx01" Tag="0,1" Content="Начать приготовление блюда/заказа"/>
                                     <CheckBox x:Name="cbx12" Tag="1,2" Content="Закончить приготовление блюда/заказа"/>
-                                    <CheckBox x:Name="cbx27" Tag="2,7" Content="Подтвердить приготовление"/>
-                                    <CheckBox x:Name="cbx17" Tag="1,7" Content="Закончить приготовление с подтверждением"/>
+                                    <CheckBox x:Name="cbx28" Tag="2,8" Content="Подтвердить статус Готово"/>
+                                    <CheckBox x:Name="cbx18" Tag="1,8" Content="Закончить приготовление с подтверждением"/>
                                     <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
                                     <CheckBox x:Name="cbx23" Tag="2,3" Content="Выдать готовое блюдо/заказ"/>
-                                    <CheckBox x:Name="cbx73" Tag="7,3" Content="Выдать подтвержденное шеф-поваром"/>
+                                    <CheckBox x:Name="cbx83" Tag="8,3" Content="Выдать подтвержденное шеф-поваром"/>
                                     <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
                                 </StackPanel>
                             </ScrollViewer>

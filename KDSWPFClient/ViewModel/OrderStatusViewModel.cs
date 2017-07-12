@@ -12,7 +12,9 @@ namespace KDSWPFClient.ViewModel
 
         public string Name { get; set; }
 
-        public string UID { get; set; }
+        public string AppName { get; set; }
+
+        public string Description { get; set; }
 
     }  // class
 }

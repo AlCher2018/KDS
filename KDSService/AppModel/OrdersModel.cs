@@ -255,7 +255,7 @@ namespace KDSService.AppModel
 
         }
         
-        // процедуры проверки числ.значения статуса Заказа/Блюда (из БД) на обработку в КДС
+        // процедуры проверки числ.значения статуса ЗАКАЗА (из БД) на обработку в КДС
         // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
         // дата создания: только текущая!
         private bool isProcessingOrderStatusId(Order order)
@@ -264,17 +264,16 @@ namespace KDSService.AppModel
                 && order.CreateDate.Date.Equals(DateTime.Today.Date);
             return retVal;
         }
-        // статус: null - не указан, ... см.выше
+        // фильтр БЛЮД
         // и количество != 0 (положительные - готовятся, отрицательные - отмененные)
         // и цех (напр.печати) - отображаемый
         private bool isProcessingDishStatusId(OrderDish dish)
         {
-            return ((dish.DishStatusId == null) 
-                || (dish.DishStatusId <= 2) 
-                || (dish.DishStatusId == 4) 
-                || (dish.DishStatusId == 7))
+            bool retVal = allowedKDSStatuses.Contains(dish.DishStatusId??-1)
                 && (dish.Quantity != 0m)
                 && (!_unUsedDeps.Contains(dish.DepartmentId));
+
+            return retVal;
         }
 
 

@@ -218,12 +218,12 @@ namespace ClientOrderQueue
                             }
                             if (iCnt == 0) delOrd.Add(order);
                             // узнать общий статус оставшихся блюд
-                            foreach (var key in statesCnt.Keys)
-                            {
-                                int queueStat = key - 1;
-                                if ((statesCnt[key].IWValue == iCnt) && (queueStat >= 0) && (order.QueueStatusId != queueStat))
-                                    order.QueueStatusId = queueStat;
-                            }
+                            //foreach (var key in statesCnt.Keys)
+                            //{
+                            //    int queueStat = key - 1;
+                            //    if ((statesCnt[key].IWValue == iCnt) && (queueStat >= 0) && (order.QueueStatusId != queueStat))
+                            //        order.QueueStatusId = queueStat;
+                            //}
                         }
                         foreach (Order item in delOrd) dbOrders.Remove(item);
 

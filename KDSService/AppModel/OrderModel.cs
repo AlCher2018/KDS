@@ -604,8 +604,6 @@ namespace KDSService.AppModel
             {
                 try
                 {
-                    AppEnv.WriteLogTraceMessage("   - save to DB...");
-
                     Order dbOrder = db.Order.Find(this.Id);
                     if (dbOrder != null)
                     {
@@ -622,10 +620,10 @@ namespace KDSService.AppModel
                         else if (status == OrderStatusEnum.Took)
                             dbOrder.QueueStatusId = 2;
 
+                        AppEnv.WriteLogInfoMessage("   - save to DB...");
                         db.SaveChanges();
+                        AppEnv.WriteLogInfoMessage("   - save to DB...");
                         retVal = true;
-
-                        AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
                     }
                 }
                 catch (Exception ex)

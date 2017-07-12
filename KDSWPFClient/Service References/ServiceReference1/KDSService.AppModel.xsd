@@ -10,9 +10,10 @@
   <xs:element name="ArrayOfOrderStatusModel" nillable="true" type="tns:ArrayOfOrderStatusModel" />
   <xs:complexType name="OrderStatusModel">
     <xs:sequence>
+      <xs:element minOccurs="0" name="AppName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Description" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
-      <xs:element minOccurs="0" name="UID" nillable="true" type="xs:string" />
     </xs:sequence>
   </xs:complexType>
   <xs:element name="OrderStatusModel" nillable="true" type="tns:OrderStatusModel" />
@@ -131,10 +132,24 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:enumeration>
-      <xs:enumeration value="ReadyConfirmed">
+      <xs:enumeration value="Transferred">
         <xs:annotation>
           <xs:appinfo>
             <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">7</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ReadyConfirmed">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">8</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="YesterdayNotTook">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">9</EnumerationValue>
           </xs:appinfo>
         </xs:annotation>
       </xs:enumeration>

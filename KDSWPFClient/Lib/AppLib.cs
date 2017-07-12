@@ -343,7 +343,7 @@ namespace KDSWPFClient.Lib
             double _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
             double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
 
-            return Math.Floor(_screenHeight - 2d * topBotMargin);
+             return Math.Floor(_screenHeight - 2d * topBotMargin);
         }
 
 

@@ -235,11 +235,6 @@ namespace ClientOrderQueue.Model
                 langId = order.LanguageTypeId,
                 statusId = order.QueueStatusId;
 
-            if ((number <= 0) || (statusId < 0) || (statusId > 1) || (langId < 1) || (langId > 3))
-            {
-                Clear(); return;
-            }
-            
             _tbNumber.Text = number.ToString();
             if (_tbNumber.FontSize != _orderNumberFontSize) _tbNumber.FontSize = _orderNumberFontSize;
 
