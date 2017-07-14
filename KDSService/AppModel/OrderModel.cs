@@ -304,7 +304,8 @@ namespace KDSService.AppModel
                     {
                         foreach (OrderDishModel modelDish in _dishesDict.Values)
                         {
-                            if (modelDish.ParentUid.IsNull())  // только для блюд
+                            // только для блюд
+                            if (modelDish.ParentUid.IsNull())
                             {
                                 // дату входа в состояние берем из заказа, а время нахожд.в предыд.состоянии из самого блюда
                                 dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, statusDTS.DateEntered);

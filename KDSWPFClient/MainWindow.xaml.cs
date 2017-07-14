@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using KDSWPFClient.Model;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace KDSWPFClient
 {
@@ -20,6 +21,13 @@ namespace KDSWPFClient
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const int GWL_STYLE = -16;
+        private const int WS_SYSMENU = 0x80000;
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
         private double _screenWidth, _screenHeight;
 
         private Timer _timer;
@@ -50,12 +58,11 @@ namespace KDSWPFClient
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;
         private List<int> _delDishIds;  
-        private bool _isUpdateLayout = false;
 
         // переменные для опеределения условий отображения окна настройки
-        private DateTime _adminDate;
         private int _adminBitMask;
         private Timer _adminTimer;
+        private DateTime _adminDate;
 
         private bool _mayGetData;
 
@@ -150,6 +157,10 @@ namespace KDSWPFClient
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // hide Close button
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
+
             // размер канвы для панелей заказов
             double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
             double cnvHeight = Math.Floor(grdMain.ActualHeight - 2d * topBotMargin);
@@ -221,14 +232,13 @@ namespace KDSWPFClient
                         _mayGetData = _dataProvider.CreateChannels();
                     else
                         _mayGetData = true;
-
-                    this.Dispatcher.Invoke(new Action(updateOrders));
-
                 }
                 catch (Exception ex)
                 {
-                    AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", ex.ToString());
+                    AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", AppLib.GetShortErrMessage(ex));
                 }
+
+                this.Dispatcher.Invoke(new Action(updateOrders));
             }
             _timer.Start();
         }  // method
@@ -246,12 +256,13 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility == Visibility.Visible)
                     tblChannelErrorMessage.Visibility = Visibility.Hidden;
             }
+
+            // очистить канву от заказов и отобразить сообщение об ошибке связи
             else
             {
-                if (tblChannelErrorMessage.Visibility != Visibility.Visible)
-                    tblChannelErrorMessage.Visibility = Visibility.Visible;
-                if (_pages != null) _pages.ClearPages();
-                if (_viewOrders != null) _viewOrders.Clear();
+                if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
+                _pages.ClearPages();
+                if (_viewOrders.Count > 0) _viewOrders.Clear();
                 return;
             }
 
@@ -1047,15 +1058,29 @@ namespace KDSWPFClient
 //            Debug.Print("_adminMask = {0}", _adminBitMask.ToString());
         }
 
+        private void btnColorsLegend_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _adminDate = DateTime.Now;
+            e.Handled = true;
+        }
+
+        private void btnColorsLegend_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            double admSecs = (DateTime.Now - _adminDate).TotalSeconds;
+            if ((admSecs > 3d) && (admSecs < 10d))
+            {
+                openConfigPanel();
+            }
+            else
+                App.OpenColorLegendWindow();
+
+            _adminDate = DateTime.MaxValue;
+            e.Handled = true;
+        }
+
         private void button_Click(object sender, RoutedEventArgs e)
         {
             openConfigPanel();
-        }
-
-        private void btnColorsLegend_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            App.OpenColorLegendWindow();
-            e.Handled = true;
         }
 
         #endregion

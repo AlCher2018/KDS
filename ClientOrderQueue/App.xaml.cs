@@ -89,9 +89,13 @@ namespace ClientOrderQueue
             // размер шрифта номера заказа
             cfgValue = AppLib.GetAppSetting("OrderNumberFontSize");
             AppLib.SetAppGlobalValue("OrderNumberFontSize", cfgValue.ToDouble());
-            // время приготовления заказа - отображается на панели, если != 0
-            cfgValue = AppLib.GetAppSetting("OrderReadyTime");
-            AppLib.SetAppGlobalValue("OrderReadyTime", cfgValue.ToDouble());
+
+            // показывать ли ожидаемое время приготовления заказа
+            cfgValue = AppLib.GetAppSetting("IsShowOrderEstimateTime");
+            AppLib.SetAppGlobalValue("IsShowOrderEstimateTime", cfgValue.ToBool());
+            // ожидаемое время приготовления заказа
+            cfgValue = AppLib.GetAppSetting("OrderEstimateTime");
+            AppLib.SetAppGlobalValue("OrderEstimateTime", cfgValue.ToDouble());
             // имя клиента - отображается на панели, если есть
             cfgValue = AppLib.GetAppSetting("IsShowClientName");
             AppLib.SetAppGlobalValue("IsShowClientName", cfgValue.ToBool());

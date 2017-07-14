@@ -42,7 +42,7 @@ namespace KDSConSvcHost
                 exitWithPrompt(2);
             }
 
-            service.StartService();
+            service.StartTimer();
 
             Console.WriteLine("\nСлужба готова к приему сообщений.\nДля завершения нажмите Enter\n");
             Console.ReadKey();

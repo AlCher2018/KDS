@@ -78,7 +78,7 @@ namespace ClientOrderQueue
                         PanelBrushes = _cellBrushes,
                         TitleLangs = (string[])AppLib.GetAppGlobalValue("StatusTitle"),
                         StatusLangs = (string[][])AppLib.GetAppGlobalValue("StatusLang"),
-                        OrderReadyMinute = (double)AppLib.GetAppGlobalValue("OrderReadyTime"),
+                        IsShowOrderEstimateTime = (bool)AppLib.GetAppGlobalValue("IsShowOrderEstimateTime"),
                         IsShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName"),
                         OrderNumberFontSize = (double)AppLib.GetAppGlobalValue("OrderNumberFontSize", 0),
                         StatusReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile")

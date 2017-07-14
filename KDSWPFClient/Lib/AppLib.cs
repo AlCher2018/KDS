@@ -23,11 +23,14 @@ namespace KDSWPFClient.Lib
     {
         // общий логгер
         public static NLog.Logger AppLogger;
+        public static NLog.Logger _dbCommandLogger = null;
 
         static AppLib()
         {
             // логгер приложения
             AppLogger = NLog.LogManager.GetLogger("appLogger");
+            // общий логгер КДС-клиента и службы
+            //_dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
         }
 
         #region app logger
@@ -69,6 +72,15 @@ namespace KDSWPFClient.Lib
         public static void WriteLogErrorMessage(string format, params object[] args)
         {
             if (AppLogger.IsErrorEnabled) AppLogger.Error(format, args);
+        }
+
+        public static void WriteDBCommandMsg(string msg)
+        {
+            if (_dbCommandLogger != null) _dbCommandLogger.Info(msg);
+        }
+        public static void WriteDBCommandMsg(string format, params object[] args)
+        {
+            if (_dbCommandLogger != null) _dbCommandLogger.Info(format, args);
         }
         #endregion
 

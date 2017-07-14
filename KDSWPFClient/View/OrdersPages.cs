@@ -199,11 +199,14 @@ namespace KDSWPFClient.View
         // очистить все страницы и удалить все, кроме первой
         public void ClearPages()
         {
-            foreach (OrdersPage page in _pages) page.ClearOrders();
-
-            _pages.RemoveRange(1, _pages.Count-1);
+            if (_pages.Count > 1)
+            {
+                foreach (OrdersPage page in _pages) page.ClearOrders();
+                _pages.RemoveRange(1, _pages.Count - 1);
+            }
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
+            CurrentPage.ClearOrders();
         }
 
 

@@ -1,6 +1,7 @@
 ﻿using ClientOrderQueue.Lib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,10 +28,13 @@ namespace ClientOrderQueue.Model
         private string[][] _statusLangs;
         public string[][] StatusLangs { set { _statusLangs = value; } }
 
-        private double _orderReadyMinute;
-        public double OrderReadyMinute { set { _orderReadyMinute = value; } }
-        private bool _isShowWaitText;
+        // время приготовления заказа
+        private Timer _timer;
+        private DateTime _orderEstimateDT;
+        private bool _isExistOrderEstimateDT;
         private string[] _waitTextLangs;
+        private bool _isShowOrderEstimateTime;
+        public bool IsShowOrderEstimateTime { set { _isShowOrderEstimateTime = value; } }
         private bool _isShowClientName;
         public bool IsShowClientName { set { _isShowClientName = value; } }
 
@@ -49,10 +53,6 @@ namespace ClientOrderQueue.Model
         private Run _tbNumber;
         private Image _imgStatusReady;
         private bool _isVisible;
-
-        // для режима отображения времени ожидания
-        private DateTime _estimatedReadyDT = DateTime.MinValue;
-        private Timer _timer;
 
         public bool CellVisible { get { return _isVisible; } }
 
@@ -74,8 +74,7 @@ namespace ClientOrderQueue.Model
         private void CellContainer_Loaded(object sender, RoutedEventArgs e)
         {
             // здесь, т.к. часть полей инициализируется через свойства класса, ПОСЛЕ конструктора
-            _isShowWaitText = (_orderReadyMinute != 0);
-            if (_isShowWaitText)
+            if (_isShowOrderEstimateTime)
             {
                 _waitTextLangs = (string[])AppLib.GetAppGlobalValue("PanelWaitText");
                 _timer = new Timer() { Interval = 1000d };
@@ -91,7 +90,7 @@ namespace ClientOrderQueue.Model
         {
             // создание контейнера для данных
             double[] rowsHeight = new double[2];
-            if (_isShowWaitText) { rowsHeight[0] = 0.9d; rowsHeight[1] = 1d; }
+            if (_isShowOrderEstimateTime) { rowsHeight[0] = 0.9d; rowsHeight[1] = 1d; }
             else { rowsHeight[0] = 1d; rowsHeight[1] = 1d; }
             // главный контейнер
             _mainGrid = new Grid();
@@ -115,7 +114,7 @@ namespace ClientOrderQueue.Model
             Thickness gridMargin = new Thickness(d1, d2, d1, 0d);
 
             //    c текстом ожидания - панель с двумя строками, номером и временем ожидания
-            if (_isShowWaitText)
+            if (_isShowOrderEstimateTime)
             {
                 StackPanel grid1 = new StackPanel();
                 grid1.Margin = gridMargin;
@@ -246,9 +245,17 @@ namespace ClientOrderQueue.Model
             // в заголовке статуса показывать или заголовок статуса(для соотв.языка), или наименование клиента
             _tbStatusTitle.Text = (_isShowClientName) ? order.ClientName : _titleLangs[acceptLang];
 
-            if (_isShowWaitText)
+            if (_isShowOrderEstimateTime)
             {
                 _tbWaitText.Text = _waitTextLangs[acceptLang];
+
+                if (_orderEstimateDT == DateTime.MinValue)
+                {
+                    double estDT = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
+                    _isExistOrderEstimateDT = (estDT != 0d);
+                    _orderEstimateDT = (_isExistOrderEstimateDT ? DateTime.Now.AddSeconds(estDT * 60d) : DateTime.Now);
+                }
+
                 if (!_timer.Enabled)
                 {
                     _timer.Enabled = true;
@@ -270,29 +277,31 @@ namespace ClientOrderQueue.Model
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            _timer.Enabled = false;
+
             this.Dispatcher.Invoke(updateWaitTimer);
+
+            _timer.Enabled = true;
         }
 
         private void updateWaitTimer()
         {
-            // при первом входе, установить ожидаемую дату приготовления и запустить таймер ожидания
-            if (_estimatedReadyDT == DateTime.MinValue)
-            {
-                _estimatedReadyDT = DateTime.Now.AddSeconds(_orderReadyMinute * 60d);
-            }
-            TimeSpan ts = getRoundedTimeSpan(_estimatedReadyDT - DateTime.Now, 1d);
+            TimeSpan ts = (_isExistOrderEstimateDT ? _orderEstimateDT-DateTime.Now : DateTime.Now-_orderEstimateDT);
+            ts = getRoundedTimeSpan(ts, 1d);
+
             _tbWaitTime.Text = AppLib.GetAppStringTS(ts);
+            Debug.Print(_tbWaitTime.Text);
         }
 
         public void Clear()
         {
             _isVisible = false;
             base.Visibility = Visibility.Collapsed;
-            if (_isShowWaitText)
+            if (_isShowOrderEstimateTime)
             {
                 if (_timer.Enabled) _timer.Enabled = false;
-                _estimatedReadyDT = DateTime.MinValue;
                 _tbWaitText.Text = "";_tbWaitTime.Text = "";
+                _orderEstimateDT = DateTime.MinValue;
             }
         }
 

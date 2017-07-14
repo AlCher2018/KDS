@@ -24,6 +24,7 @@ namespace KDSService
     {
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
+        private bool _timerEnable;
         // периодичность опроса БД, в мсек
         private const double _ObserveTimerInterval = 1000;
         
@@ -78,6 +79,7 @@ namespace KDSService
 
             _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
+            _timerEnable = true;
 
             AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
@@ -116,12 +118,12 @@ namespace KDSService
             }
         }
 
-        public void StartService()
+        public void StartTimer()
         {
             if (_observeTimer != null) _observeTimer.Start();
         }
 
-        public void StopService()
+        public void StopTimer()
         {
             if (_observeTimer != null) _observeTimer.Stop();
         }
@@ -137,12 +139,16 @@ namespace KDSService
         // периодический просмотр заказов
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            StopService();
+            StopTimer();
 
-            string errMsg = _ordersModel.UpdateOrders();
-            if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+            if (_timerEnable)
+            {
+                string errMsg = _ordersModel.UpdateOrders();
 
-            StartService();
+                if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+            }
+
+            StartTimer();
         }
 
 
@@ -226,7 +232,8 @@ namespace KDSService
         // обновление статуса заказа с КДСа
         public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
         {
-            StopService();
+            StopTimer();
+            _timerEnable = false;
             AppEnv.WriteLogUserAction("KDS service try to change ORDER status (Id {0}) to {1}", orderId, orderStatus.ToString());
 
             if (_ordersModel.Orders.ContainsKey(orderId))
@@ -234,15 +241,24 @@ namespace KDSService
                 _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
             }
 
-            StartService();
+            StartTimer();
+            _timerEnable = true;
         }
 
         // обновление статуса блюда с КДСа
         public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
-            StopService();
-            AppEnv.WriteLogUserAction("KDS service try to change DISH status (Id {0}, orderId {1}) to {2}", orderDishId, orderId, orderDishStatus.ToString());
+            StopTimer();
+            _timerEnable = false;
+            AppEnv.SetAppProperty("UpdatingOrderId", orderId);
+            AppEnv.SetAppProperty("UpdatingDishId", orderDishId);
 
+
+            string msg = string.Format("KDS-service got the command to change DISH status (Id {0}, orderId {1}) to {2}", orderDishId, orderId, orderDishStatus.ToString());
+            AppEnv.WriteDBCommandMsg(msg + " -- START");
+            AppEnv.WriteLogUserAction(msg);
+
+            bool result = false;
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 OrderModel modelOrder = _ordersModel.Orders[orderId];
@@ -250,20 +266,52 @@ namespace KDSService
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
 
-                    bool result = modelDish.UpdateStatus(orderDishStatus, true);
+                    result = modelDish.UpdateStatus(orderDishStatus, true);
                 }
             }
 
-            StartService();
+            if (result)
+            {
+                // убедиться, что в БД записан нужный статус
+                DateTime dt = DateTime.Now;
+                bool chkStat = false;
+                while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
+                {
+                    System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
+                    using (KDSEntities db = new KDSEntities())
+                    {
+                        try
+                        {
+                            OrderDish dbDish = db.OrderDish.Find(orderDishId);
+                            chkStat = ((dbDish != null) && (dbDish.DishStatusId == (int)orderDishStatus));
+                        }
+                        catch (Exception ex)
+                        {
+                            AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
+                        }
+                    }
+                }
+                // истекло время ожидания записи в БД
+                if (!chkStat)
+                {
+                    AppEnv.WriteLogErrorMessage("Истекло время ожидания проверочного чтения после записи нового состояния.");
+                }
+            }
+
+            AppEnv.WriteDBCommandMsg(msg + " -- FINISH");
+
+            AppEnv.SetAppProperty("UpdatingOrderId", 0);
+            AppEnv.SetAppProperty("UpdatingDishId", 0);
+            StartTimer();
+            _timerEnable = true;
         }
         #endregion
 
         public void Dispose()
         {
             AppEnv.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
-            bool b1 = true;
             // таймер остановить, отписаться от события и уничтожить
-            StopService();
+            StopTimer();
             _observeTimer.Dispose();
 
             AppEnv.WriteLogTraceMessage("   close ServiceHost...");
@@ -276,7 +324,6 @@ namespace KDSService
                 catch (Exception ex)
                 {
                     AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
-                    b1 = false;
                 }
             }
 
@@ -290,7 +337,6 @@ namespace KDSService
                 catch (Exception ex)
                 {
                     AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
-                    b1 = false;
                 }
             }
 

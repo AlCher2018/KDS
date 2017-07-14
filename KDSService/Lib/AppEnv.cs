@@ -26,6 +26,7 @@ namespace KDSConsoleSvcHost
         private static AppProperties _props;
         // логгер
         private static Logger _logger;
+        public static NLog.Logger _dbCommandLogger = null;
 
         public static TimeSpan TimeOfAutoCloseYesterdayOrders
         {
@@ -37,6 +38,8 @@ namespace KDSConsoleSvcHost
 
         public static string LoggerInit()
         {
+            //_dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
+            WriteDBCommandMsg("init dbCommandLogger");
             return initLogger("fileLogger");
         }
 
@@ -147,6 +150,9 @@ namespace KDSConsoleSvcHost
                 foreach (int item in ids) if (!unUsed.Contains(item)) unUsed.Add(item);
             }
             _props.SetProperty("UnusedDepartments", unUsed);
+
+            _props.SetProperty("UpdatingOrderId", 0);
+            _props.SetProperty("UpdatingDishId", 0);
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
@@ -333,6 +339,15 @@ namespace KDSConsoleSvcHost
                 if (value != null) msg += ". " + value;
                 WriteLogTraceMessage(msg);
             }
+        }
+
+        public static void WriteDBCommandMsg(string msg)
+        {
+            if (_dbCommandLogger != null) _dbCommandLogger.Info(msg);
+        }
+        public static void WriteDBCommandMsg(string format, params object[] args)
+        {
+            if (_dbCommandLogger != null) _dbCommandLogger.Info(format, args);
         }
 
         #endregion

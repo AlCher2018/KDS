@@ -7,7 +7,7 @@
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
         Title="KDS" Height="720" Width="1024"
-        WindowStyle="SingleBorderWindow"
+        WindowStyle="ToolWindow" 
         ResizeMode="NoResize" Icon="monitor7.ico">
 
     <Window.Resources>
@@ -42,7 +42,7 @@
 
                 <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
 
-                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Bottom" Margin="0,30" Background="Transparent" Height="100" MouseUp="btnColorsLegend_MouseUp">
+                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Bottom" Margin="0,30" Background="Transparent" Height="100"  PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
                     <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Foreground="Gray" FontSize="18" RenderTransformOrigin="0.5,0.5" Margin="-28,37" Width="87">
                         <TextBlock.RenderTransform>
                             <TransformGroup>

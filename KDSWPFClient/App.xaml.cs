@@ -9,6 +9,7 @@ using KDSWPFClient.Model;
 using KDSWPFClient.View;
 using System.Windows.Media;
 using System.Linq;
+using System.Text;
 
 namespace KDSWPFClient
 {
@@ -43,23 +44,28 @@ namespace KDSWPFClient
             AppLib.WriteLogInfoMessage("App settings from config file: " + AppLib.GetAppSettingsFromConfigFile());
 
             // создать каналы
-            AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService...");
-            AppLib.WriteLogTraceMessage("   - версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
+            AppLib.WriteLogInfoMessage("\nСоздаю клиента для работы со службой KDSService...");
+            AppLib.WriteLogInfoMessage("   - версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
 
             AppDataProvider dataProvider = new AppDataProvider();
-            if (dataProvider.ErrorMessage != null)
+            try
+            {
+                dataProvider.CreateChannels();
+                AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService... Ok");
+            }
+            catch (Exception ex)
             {
                 // КДСы могут быть уже запущены, а служба еще нет!
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
+
                 //if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
-                //MessageBox.Show("Ошибка создания каналов к службе KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+                //string msg = string.Format("Ошибка создания каналов к службе KDSService: {0}\n{1}", dataProvider.ErrorMessage, ex.ToString());
+                //MessageBox.Show(msg, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 //Environment.Exit(1);
             }
-            else
-                AppLib.WriteLogTraceMessage("Создаю клиента для работы со службой KDSService... Ok");
             
             // и получить словари и настройки от службы
-            AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService...");
+            AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService...");
             if (dataProvider.SetDictDataFromService() == false)
             {
                 // КДСы могут быть уже запущены, а служба еще нет!
@@ -69,7 +75,7 @@ namespace KDSWPFClient
                 //Environment.Exit(2);
             }
             else
-                AppLib.WriteLogTraceMessage("Получаю словари и настройки от службы KDSService... Ok");
+                AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService... Ok");
 
             AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
 
@@ -158,7 +164,9 @@ namespace KDSWPFClient
             if (colorLegendWin != null) colorLegendWin.ShowDialog();
         }
 
-        internal static void OpenStateChangeWindow( OrderViewModel orderModel, OrderDishViewModel dishModel)
+
+        // из обработчика MouseUp объектов DishPanel и OrderPanelHeader
+        internal static void OpenStateChangeWindow(OrderViewModel orderModel, OrderDishViewModel dishModel)
         {
             if ((orderModel == null) && (dishModel == null)) return;
 
@@ -187,6 +195,10 @@ namespace KDSWPFClient
                     }
                 }
 
+                StringBuilder sb = new StringBuilder();
+                allowedStates.ForEach(status => sb.Append(status.ToString()));
+                AppLib.WriteLogUserAction("Open StateChange win, allowedStates: " + sb.ToString());
+
                 // открываем окно изменения статуса
                 if (allowedStates.Count != 0)
                 {
@@ -198,6 +210,7 @@ namespace KDSWPFClient
                     AppLib.SetWinSizeToMainWinSize(win);
 
                     win.ShowDialog();
+                    AppLib.WriteLogUserAction("Close StateChange win, result: {0}", win.CurrentState.ToString());
 
                     // изменить статус
                     AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -214,10 +227,13 @@ namespace KDSWPFClient
                             // изменение состояния Заказа
                             else if (dishModel == null)
                             {
+                                AppLib.WriteLogUserAction("Set new ORDER status to {0} by each dish...", newState.ToString());
                                 // меняем статус блюд в заказе, если блюдо разрешено для данного КДСа
                                 foreach (OrderDishViewModel item in orderModel.Dishes)
                                 {
-                                    if (AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider))
+                                    bool isDepAllowed = AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider);
+                                    AppLib.WriteLogUserAction("   - dish {0} ({1}), dpmt {2} is {3}", item.Id, item.DishName, item.DepartmentId, (isDepAllowed?"allowed":"NOT allowed"));
+                                    if (isDepAllowed)
                                     {
                                         dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
                                     }

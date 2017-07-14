@@ -201,7 +201,9 @@ namespace KDSService.AppModel
             if (Quantity < 0)
             {
                 if (Status != OrderStatusEnum.Cancelled)
+                {
                     UpdateStatus(OrderStatusEnum.Cancelled, false);
+                }
                 else
                     startStatusTimerAtFirst();
             }
@@ -247,25 +249,34 @@ namespace KDSService.AppModel
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
 
-                // обновление состояния для блюда или независимого ингредиента
-                if (_isDish || (!_isDish && _isInrgIndepend))
+                AppEnv.WriteDBCommandMsg("   Dish.UpdateFromDBEntity({0}) to {1}, updId {2}", this.Id, dbDish.DishStatusId.ToString(), AppEnv.GetAppProperty("UpdatingDishId", 0));
+                if (this.Id == (int)AppEnv.GetAppProperty("UpdatingDishId", 0))
                 {
-                    // проверяем условие автоматического перехода в режим приготовления
-                    if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
-                    {
-                        newStatus = OrderStatusEnum.Cooking;
-                        _isUpdateDependIngr = true;
-                    }
-
-                    // если поменялся отдел, то объект отдела взять из справочника
-                    if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-
-                    UpdateStatus(newStatus, false);
-                }  // для БЛЮДА
+                    // данное блюдо в этот момент обновляется с КДСа
+                }
                 else
                 {
-                    UpdateStatus(newStatus, false);
+                    // обновление состояния для блюда или независимого ингредиента
+                    if (_isDish || (!_isDish && _isInrgIndepend))
+                    {
+                        // проверяем условие автоматического перехода в режим приготовления
+                        if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
+                        {
+                            newStatus = OrderStatusEnum.Cooking;
+                            _isUpdateDependIngr = true;
+                        }
+
+                        // если поменялся отдел, то объект отдела взять из справочника
+                        if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
+
+                        UpdateStatus(newStatus, false);
+                    }  // для БЛЮДА
+                    else
+                    {
+                        UpdateStatus(newStatus, false);
+                    }
                 }
+
             }  // lock
 
         }  // method
@@ -286,6 +297,8 @@ namespace KDSService.AppModel
             {
                 return false;
             }
+
+            AppEnv.WriteDBCommandMsg("UpdateStatus() DishId {4} ({5}), old status {0}-{1}, new status {2}-{3} -- START", ((int)this.Status).ToString(), this.Status.ToString(), ((int)newStatus).ToString(), newStatus.ToString(), this.Id, this.Name);
 
             bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
@@ -363,6 +376,8 @@ namespace KDSService.AppModel
                     isUpdSuccess = true;
                 }
             }
+
+            AppEnv.WriteDBCommandMsg("UpdateStatus() DishId {0} ({1}) -- FINISH", this.Id, this.Name);
 
             return isUpdSuccess;
         }  // method UpdateStatus
@@ -737,6 +752,8 @@ namespace KDSService.AppModel
         private bool saveStatusToDB(OrderStatusEnum status)
         {
             bool retVal = false;
+            int iStatus = (int)status;
+
             using (KDSEntities db = new KDSEntities())
             {
                 try
@@ -744,14 +761,13 @@ namespace KDSService.AppModel
                     OrderDish dbDish = db.OrderDish.Find(this.Id);
                     if (dbDish != null)
                     {
-                        int iStatus = (int)status;
                         if (dbDish.DishStatusId != iStatus)
                         {
                             dbDish.DishStatusId = iStatus;
 
-                            AppEnv.WriteLogInfoMessage("   - save to DB...");
+                            //AppEnv.WriteLogTraceMessage("   - save to DB...");
                             db.SaveChanges();
-                            AppEnv.WriteLogInfoMessage("   - save to DB... Ok");
+                            //AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
                         }
                         retVal = true;
                     }
@@ -761,6 +777,35 @@ namespace KDSService.AppModel
                     writeDBException(ex, "сохранения");
                 }
             }
+
+            //if (retVal)
+            //{
+            //    // убедиться, что в БД записан нужный статус
+            //    DateTime dt = DateTime.Now;
+            //    bool chkStat = false;
+            //    while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
+            //    {
+            //        System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
+            //        using (KDSEntities db = new KDSEntities())
+            //        {
+            //            try
+            //            {
+            //                OrderDish dbDish = db.OrderDish.Find(this.Id);
+            //                chkStat = ((dbDish != null) && (dbDish.DishStatusId == iStatus));
+            //            }
+            //            catch (Exception ex)
+            //            {
+            //                AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
+            //            }
+            //        }
+            //    }
+            //    // истекло время ожидания записи в БД
+            //    if (!chkStat)
+            //    {
+            //        AppEnv.WriteLogErrorMessage("Истекло время ожидания проверочного чтения после записи нового состояния.");
+            //    }
+            //}
+
             return retVal;
         }
 

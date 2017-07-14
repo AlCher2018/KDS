@@ -178,6 +178,8 @@ namespace KDSService.AppModel
                     {
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
+                            AppEnv.WriteDBCommandMsg("  ORDER UpdateFromDBEntity(id {0}) -- START", dbOrder.Id);
+
                             // обновить существующий заказ
                             if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю заказ {0}...", dbOrder.Id);
                             try
@@ -189,6 +191,8 @@ namespace KDSService.AppModel
                             {
                                 AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
                             }
+
+                            AppEnv.WriteDBCommandMsg("  ORDER UpdateFromDBEntity(id {0}) -- FINISH", dbOrder.Id);
                         }
                         else
                         {

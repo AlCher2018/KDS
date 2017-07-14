@@ -57,7 +57,7 @@ namespace KDSWinSvcHost
                 exitApplication(2);
             }
 
-            service.StartService();
+            service.StartTimer();
 
             putToSvcLog("Создание канала для приема сообщений... Ok\n\tСлужба готова к приему сообщений.");
         }
