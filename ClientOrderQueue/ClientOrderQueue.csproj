@@ -112,6 +112,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
     <Compile Include="Lib\Converters.cs" />

@@ -15,7 +15,6 @@ namespace KDSConsoleClient
         {
             Type tt = typeof(ConfigurationManager);
 
-
             KDSServiceClient _getClient;
             KDSCommandServiceClient _setClient;
             List<OrderModel> _orders;

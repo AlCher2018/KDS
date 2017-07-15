@@ -17,6 +17,9 @@ namespace ClientOrderQueue.Model
     public class CellContainer: Border
     {
         #region fields & properties
+        private AppOrder _appOrder;
+        public AppOrder AppOrder { get { return _appOrder; } }
+
         private double _width, _height;
 
         private CellBrushes[] _brushes;
@@ -30,8 +33,6 @@ namespace ClientOrderQueue.Model
 
         // время приготовления заказа
         private Timer _timer;
-        private DateTime _orderEstimateDT;
-        private bool _isExistOrderEstimateDT;
         private string[] _waitTextLangs;
         private bool _isShowOrderEstimateTime;
         public bool IsShowOrderEstimateTime { set { _isShowOrderEstimateTime = value; } }
@@ -228,13 +229,14 @@ namespace ClientOrderQueue.Model
         /// <param name="number">Номер заказа</param>
         /// <param name="langId">1-украинский, 2-русский, 3-английский</param>
         /// <param name="statusId">0-готовится, 1-готово, 2-забрано</param>
-        public void SetOrderData(Order order)
+        public void SetOrderData(AppOrder appOrder)
         {
-            int number = order.Number,
-                langId = order.LanguageTypeId,
-                statusId = order.QueueStatusId;
+            _appOrder = appOrder;
 
-            _tbNumber.Text = number.ToString();
+            int langId = _appOrder.Order.LanguageTypeId,
+                statusId = _appOrder.Order.QueueStatusId;
+
+            _tbNumber.Text = _appOrder.Order.Number.ToString();
             if (_tbNumber.FontSize != _orderNumberFontSize) _tbNumber.FontSize = _orderNumberFontSize;
 
             base.Background = _brushes[statusId].Background;
@@ -243,18 +245,11 @@ namespace ClientOrderQueue.Model
             int acceptLang = (langId == 1) ? 1 : (langId == 2) ? 0 : 2;
 
             // в заголовке статуса показывать или заголовок статуса(для соотв.языка), или наименование клиента
-            _tbStatusTitle.Text = (_isShowClientName) ? order.ClientName : _titleLangs[acceptLang];
+            _tbStatusTitle.Text = (_isShowClientName) ? _appOrder.Order.ClientName : _titleLangs[acceptLang];
 
             if (_isShowOrderEstimateTime)
             {
                 _tbWaitText.Text = _waitTextLangs[acceptLang];
-
-                if (_orderEstimateDT == DateTime.MinValue)
-                {
-                    double estDT = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
-                    _isExistOrderEstimateDT = (estDT != 0d);
-                    _orderEstimateDT = (_isExistOrderEstimateDT ? DateTime.Now.AddSeconds(estDT * 60d) : DateTime.Now);
-                }
 
                 if (!_timer.Enabled)
                 {
@@ -272,7 +267,7 @@ namespace ClientOrderQueue.Model
                 _isVisible = true;
                 base.Visibility = Visibility.Visible;
             }
-                
+
         }
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -286,7 +281,9 @@ namespace ClientOrderQueue.Model
 
         private void updateWaitTimer()
         {
-            TimeSpan ts = (_isExistOrderEstimateDT ? _orderEstimateDT-DateTime.Now : DateTime.Now-_orderEstimateDT);
+            TimeSpan ts = (_appOrder.IsExistOrderEstimateDT 
+                ? _appOrder.OrderCookingBaseDT - DateTime.Now 
+                : DateTime.Now - _appOrder.OrderCookingBaseDT);
             ts = getRoundedTimeSpan(ts, 1d);
 
             _tbWaitTime.Text = AppLib.GetAppStringTS(ts);
@@ -295,13 +292,13 @@ namespace ClientOrderQueue.Model
 
         public void Clear()
         {
+            _appOrder = null;
             _isVisible = false;
             base.Visibility = Visibility.Collapsed;
             if (_isShowOrderEstimateTime)
             {
                 if (_timer.Enabled) _timer.Enabled = false;
                 _tbWaitText.Text = "";_tbWaitTime.Text = "";
-                _orderEstimateDT = DateTime.MinValue;
             }
         }
 

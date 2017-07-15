@@ -5,10 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ClientOrderQueue
 {
@@ -17,11 +14,12 @@ namespace ClientOrderQueue
     /// </summary>
     public partial class MainWindow : Window
     {
+        private List<AppOrder> _appOrders;
+
         private System.Media.SoundPlayer simpleSound = null;
-        private DispatcherTimer updateTimer = new DispatcherTimer();
+        private System.Timers.Timer _updateTimer;
 
         private CellBrushes[] _cellBrushes;
-        private List<int> _cookingIds;
 
         private HashSet<int> _unUsedDeps;
 
@@ -29,7 +27,7 @@ namespace ClientOrderQueue
         {
             InitializeComponent();
 
-            _cookingIds = new List<int>();
+            _appOrders = new List<AppOrder>();
             _unUsedDeps = (HashSet<int>)AppLib.GetAppGlobalValue("UnusedDepartments");
 
             // кисти заголовка окна
@@ -51,9 +49,10 @@ namespace ClientOrderQueue
             createGridContainers(G15);
             createGridContainers(G24);
 
-            updateTimer.Tick += new EventHandler(updateTimer_Tick);
-            updateTimer.Interval = new TimeSpan(0, 0, 0, 1, 0);
-            updateTimer.Start();
+            _updateTimer = new System.Timers.Timer();
+            _updateTimer.Elapsed += updateTimer_Tick;
+            _updateTimer.Interval = 1000d;
+            _updateTimer.Start();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -92,18 +91,18 @@ namespace ClientOrderQueue
 
         #region update timer
 
-        private void updateTimer_Tick(object sender, EventArgs e)
+        private void updateTimer_Tick(object sender, System.Timers.ElapsedEventArgs e)
         {
-            updateTimer.Stop();
+            _updateTimer.Stop();
 #if DEBUG
             DateTime dt1 = DateTime.Now;
 #endif
-            loadItems();
+            this.Dispatcher.Invoke(loadItems);
 
 #if DEBUG
             System.Diagnostics.Debug.Print("-- " + DateTime.Now.Subtract(dt1).TotalMilliseconds);
 #endif
-            updateTimer.Start();
+            _updateTimer.Start();
         }
 
         private void loadItems()
@@ -116,18 +115,59 @@ namespace ClientOrderQueue
                 return;
             }
 
+            updateAppOrders(orders);
+
             if (orders.Count <= 15)
             {
-                fillCells(G15, orders);
+                fillCells(G15);
                 setGridVisibility(G24, Visibility.Collapsed);
                 setGridVisibility(G15 , Visibility.Visible);
             }
             else
             {
-                fillCells(G24, orders);
+                fillCells(G24);
                 setGridVisibility(G15, Visibility.Collapsed);
                 setGridVisibility(G24, Visibility.Visible);
             }
+        }
+
+        private void updateAppOrders(List<Order> orders)
+        {
+            // признак того, что появился заказ в статусе ГОТОВ и надо проиграть мелодию
+            bool isCooked = false;  
+
+            int[] dbIds = orders.Select(o => o.Id).ToArray();
+            // удалить выданные заказы
+            int[] delIds = _appOrders.Select(o => o.Id).Except(dbIds).ToArray();
+            _appOrders.RemoveAll(o => delIds.Contains(o.Id));
+            // добавить новые
+            double estDT = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
+            AppOrder curAppOrd;
+            foreach (Order dbOrd in orders)
+            {
+                curAppOrd = _appOrders.FirstOrDefault(ao => (ao.Id == dbOrd.Id));
+                if (curAppOrd == null)
+                {
+                    AppOrder newAppOrder = new AppOrder() { Id = dbOrd.Id, Order = dbOrd };
+                    newAppOrder.IsExistOrderEstimateDT = (estDT != 0d);
+                    newAppOrder.OrderCookingBaseDT = (estDT == 0d) ? dbOrd.CreateDate : dbOrd.CreateDate.AddMinutes(estDT);
+                    // новый заказ сразу в статусе ГОТОВ
+                    if (dbOrd.QueueStatusId == 1) isCooked = true;
+
+                    _appOrders.Add(newAppOrder);
+                }
+                else
+                {
+                    // заказ поменял статус
+                    if ((dbOrd.QueueStatusId == 1) && (curAppOrd.Order.QueueStatusId != dbOrd.QueueStatusId)) isCooked = true;
+                    curAppOrd.Order = dbOrd;
+                }
+            }
+
+            if ((isCooked) && (simpleSound != null)) simpleSound.Play();
+
+            // сортировка orderby o.CreateDate ascending, o.Number ascending
+            _appOrders = _appOrders.OrderBy(o => o.Order.CreateDate).ThenBy(o => o.Order.Number).ToList();
         }
 
         private void hideCells(Grid grid)
@@ -141,12 +181,8 @@ namespace ClientOrderQueue
             }
         }
 
-        private void fillCells(Grid grid, List<Order> orders)
+        private void fillCells(Grid grid)
         {
-            // коллекция Id заказов в состоянии приготовления (QueueStatusId == 0)
-            List<int> s0 = new List<int>();  
-            bool isCooked = false;  // признак того, что готовящийся заказ изменил статус на ГОТОВ и надо проиграть мелодию
-
             int rowCount = grid.RowDefinitions.Count;
             int colCount = grid.ColumnDefinitions.Count;
             int listIndex;
@@ -156,24 +192,13 @@ namespace ClientOrderQueue
                 {
                     listIndex = (i * colCount) + j;
                     CellContainer cc = (CellContainer)grid.Children[listIndex];
-                    if (listIndex < orders.Count)
+                    if (listIndex < _appOrders.Count)
                     {
-                        Order curOrder = orders[listIndex];
-                        cc.SetOrderData(curOrder);
-
-                        if (curOrder.QueueStatusId == 0)
-                            s0.Add(curOrder.Id);
-                        else if ((curOrder.QueueStatusId == 1) 
-                                && (isCooked == false) 
-                                && (_cookingIds.Contains(curOrder.Id)))
-                            isCooked = true;
+                        cc.SetOrderData(_appOrders[listIndex]);
                     }
-                    else
-                        cc.Clear();
+                    else if (cc.AppOrder != null) cc.Clear();
                 }
             }
-            _cookingIds = s0;
-            if ((isCooked) && (simpleSound != null)) simpleSound.Play();
         }
 
         private void setGridVisibility(Grid grid, Visibility visi)
@@ -192,9 +217,7 @@ namespace ClientOrderQueue
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
-                        List<Order> dbOrders = (from o in db.vwOrderQueue
-                                                orderby o.CreateDate ascending, o.Number ascending
-                                                select o).ToList();
+                        List<Order> dbOrders = db.vwOrderQueue.ToList();
 
                         // пройтись по всем заказам
                         int iCnt;

@@ -276,7 +276,7 @@ namespace ClientOrderQueue.Lib
         // преобразовать TimeSpan в строку
         public static string GetAppStringTS(TimeSpan tsTimerValue)
         {
-            string sFormat = (tsTimerValue.Days > 0d) 
+            string sFormat = (tsTimerValue.Days != 0d) 
                 ? @"d\.hh\:mm\:ss" 
                 : ((tsTimerValue.Hours > 0d) ? @"hh\:mm\:ss" : @"mm\:ss");
 
