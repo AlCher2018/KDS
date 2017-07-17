@@ -205,12 +205,20 @@ namespace KDSService
         // **** настройки из config-файла хоста
         public Dictionary<string, object> GetHostAppSettings()
         {
+            // сложные типы передаем клиенту, как строки
+            string s1 = ((TimeSpan)AppEnv.GetAppProperty("TimeOfAutoCloseYesterdayOrders", TimeSpan.Zero)).ToString();
+            var v1 = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
+            string s2;
+            if (v1 == null) s2 = ""; else s2 = string.Join(",", v1);
+
             Dictionary<string, object> retval = new Dictionary<string, object>()
             {
                 { "IsIngredientsIndependent", (bool)AppEnv.GetAppProperty("IsIngredientsIndependent", false)},
                 { "ExpectedTake", (int)AppEnv.GetAppProperty("ExpectedTake", 0)},
                 { "UseReadyConfirmedState", (bool)AppEnv.GetAppProperty("UseReadyConfirmedState", false)},
                 { "TakeCancelledInAutostartCooking", (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false)},
+                { "TimeOfAutoCloseYesterdayOrders", s1},
+                { "UnusedDepartments", s2}
             };
 
             return retval;

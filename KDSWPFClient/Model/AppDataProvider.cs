@@ -120,6 +120,19 @@ namespace KDSWPFClient
                         if (sBuf.Length > 0) sBuf += "; ";
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
+
+                    // получить сложные типы из строк
+                    //    TimeSpan
+                    sBuf = (string)AppLib.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!sBuf.IsNull()) AppLib.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(sBuf));
+                    //    HashSet<int>
+                    sBuf = (string)AppLib.GetAppGlobalValue("UnusedDepartments");
+                    if (!sBuf.IsNull())
+                    {
+                        int[] iArr = sBuf.Split(',').Select(s => s.ToInt()).ToArray();
+                        List<int> hsInt = new List<int>(iArr);
+                        AppLib.SetAppGlobalValue("UnusedDepartments", hsInt);
+                    }
                 }
                 AppLib.WriteLogInfoMessage("      получено: " + sBuf);
 

@@ -109,6 +109,8 @@ namespace KDSService.AppModel
                     //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
                     //}
 
+                    List<Order> delOrders = new List<Order>();
+
                     // для последующих обработок удалить из заказов блюда с ненужными статусами и неотображаемые на КДСах
                     foreach (Order dbOrder in dbOrders)
                     {
@@ -141,7 +143,12 @@ namespace KDSService.AppModel
                         OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
                         // удаление ненужных блюд
                         foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
+
+                        // коллекция заказов с нулевым количеством блюд - клиентам не передавать
+                        if (dbOrder.OrderDish.Count == 0) delOrders.Add(dbOrder);
                     }
+                    // удалить заказы, у которых нет разрешенных блюд
+                    delOrders.ForEach(o => dbOrders.Remove(o));
 
                     // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
                     try

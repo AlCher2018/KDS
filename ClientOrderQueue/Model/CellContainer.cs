@@ -287,7 +287,7 @@ namespace ClientOrderQueue.Model
             ts = getRoundedTimeSpan(ts, 1d);
 
             _tbWaitTime.Text = AppLib.GetAppStringTS(ts);
-            Debug.Print(_tbWaitTime.Text);
+            //Debug.Print(_tbWaitTime.Text);
         }
 
         public void Clear()
