@@ -18,6 +18,9 @@ namespace KDSWPFClient
     /// </summary>
     public partial class App : Application
     {
+        // тестовая задержка
+        private static Random rnd = new Random();
+
         /// <summary>
         /// Application Entry Point.
         /// </summary>
@@ -41,6 +44,7 @@ namespace KDSWPFClient
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
+            AppLib.InitDBCommandLogger();
             AppLib.WriteLogInfoMessage("App settings from config file: " + AppLib.GetAppSettingsFromConfigFile());
 
             // создать каналы
@@ -222,22 +226,38 @@ namespace KDSWPFClient
                             // изменение состояния БЛЮДА
                             if (dishModel != null)
                             {
+                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
+                                dataProvider.LockOrder(orderModel.Id);
+                                dataProvider.LockDish(dishModel.Id);
+
                                 dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+
+                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}", orderModel.Id);
+                                dataProvider.DelockOrder(orderModel.Id);
+                                dataProvider.DelockDish(dishModel.Id);
                             }
-                            // изменение состояния Заказа
+
+                            // изменение состояния Заказа, но изменяем все равно поблюдно
                             else if (dishModel == null)
                             {
+                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
+                                dataProvider.LockOrder(orderModel.Id);
+
                                 AppLib.WriteLogUserAction("Set new ORDER status to {0} by each dish...", newState.ToString());
                                 // меняем статус блюд в заказе, если блюдо разрешено для данного КДСа
                                 foreach (OrderDishViewModel item in orderModel.Dishes)
                                 {
                                     bool isDepAllowed = AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider);
-                                    AppLib.WriteLogUserAction("   - dish {0} ({1}), dpmt {2} is {3}", item.Id, item.DishName, item.DepartmentId, (isDepAllowed?"allowed":"NOT allowed"));
+                                    AppLib.WriteLogTraceMessage("clt: DISH set status {4} dishId {0} ({1}), dpmt {2} is {3}", item.Id, item.DishName, item.DepartmentId, (isDepAllowed?"allowed":"NOT allowed"), newState.ToString());
                                     if (isDepAllowed)
                                     {
                                         dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
                                     }
                                 }  // foreach
+
+                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}", orderModel.Id);
+                                dataProvider.DelockOrder(orderModel.Id);
+
                             }  // order status
                         }
                         catch (Exception ex)

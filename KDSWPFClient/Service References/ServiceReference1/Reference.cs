@@ -425,7 +425,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -819,6 +820,30 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.ServiceModel.ServiceContractAttribute(ConfigurationName="ServiceReference1.IKDSCommandService")]
     public interface IKDSCommandService {
         
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
+        void LockOrder(int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
+        System.Threading.Tasks.Task LockOrderAsync(int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
+        void DelockOrder(int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
+        System.Threading.Tasks.Task DelockOrderAsync(int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
+        void LockDish(int dishId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
+        System.Threading.Tasks.Task LockDishAsync(int dishId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
+        void DelockDish(int dishId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
+        System.Threading.Tasks.Task DelockDishAsync(int dishId);
+        
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
         void ChangeOrderStatus(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
@@ -857,6 +882,38 @@ namespace KDSWPFClient.ServiceReference1 {
         
         public KDSCommandServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress) {
+        }
+        
+        public void LockOrder(int orderId) {
+            base.Channel.LockOrder(orderId);
+        }
+        
+        public System.Threading.Tasks.Task LockOrderAsync(int orderId) {
+            return base.Channel.LockOrderAsync(orderId);
+        }
+        
+        public void DelockOrder(int orderId) {
+            base.Channel.DelockOrder(orderId);
+        }
+        
+        public System.Threading.Tasks.Task DelockOrderAsync(int orderId) {
+            return base.Channel.DelockOrderAsync(orderId);
+        }
+        
+        public void LockDish(int dishId) {
+            base.Channel.LockDish(dishId);
+        }
+        
+        public System.Threading.Tasks.Task LockDishAsync(int dishId) {
+            return base.Channel.LockDishAsync(dishId);
+        }
+        
+        public void DelockDish(int dishId) {
+            base.Channel.DelockDish(dishId);
+        }
+        
+        public System.Threading.Tasks.Task DelockDishAsync(int dishId) {
+            return base.Channel.DelockDishAsync(dishId);
         }
         
         public void ChangeOrderStatus(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {

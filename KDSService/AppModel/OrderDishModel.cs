@@ -249,32 +249,24 @@ namespace KDSService.AppModel
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
 
-                AppEnv.WriteDBCommandMsg("   Dish.UpdateFromDBEntity({0}) to {1}, updId {2}", this.Id, dbDish.DishStatusId.ToString(), AppEnv.GetAppProperty("UpdatingDishId", 0));
-                if (this.Id == (int)AppEnv.GetAppProperty("UpdatingDishId", 0))
+                // обновление состояния для блюда или независимого ингредиента
+                if (_isDish || (!_isDish && _isInrgIndepend))
                 {
-                    // данное блюдо в этот момент обновляется с КДСа
-                }
+                    // проверяем условие автоматического перехода в режим приготовления
+                    if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
+                    {
+                        newStatus = OrderStatusEnum.Cooking;
+                        _isUpdateDependIngr = true;
+                    }
+
+                    // если поменялся отдел, то объект отдела взять из справочника
+                    if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
+
+                    UpdateStatus(newStatus, false);
+                }  // для БЛЮДА
                 else
                 {
-                    // обновление состояния для блюда или независимого ингредиента
-                    if (_isDish || (!_isDish && _isInrgIndepend))
-                    {
-                        // проверяем условие автоматического перехода в режим приготовления
-                        if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
-                        {
-                            newStatus = OrderStatusEnum.Cooking;
-                            _isUpdateDependIngr = true;
-                        }
-
-                        // если поменялся отдел, то объект отдела взять из справочника
-                        if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
-
-                        UpdateStatus(newStatus, false);
-                    }  // для БЛЮДА
-                    else
-                    {
-                        UpdateStatus(newStatus, false);
-                    }
+                    UpdateStatus(newStatus, false);
                 }
 
             }  // lock
@@ -298,7 +290,7 @@ namespace KDSService.AppModel
                 return false;
             }
 
-            AppEnv.WriteDBCommandMsg("UpdateStatus() DishId {4} ({5}), old status {0}-{1}, new status {2}-{3} -- START", ((int)this.Status).ToString(), this.Status.ToString(), ((int)newStatus).ToString(), newStatus.ToString(), this.Id, this.Name);
+            AppEnv.WriteLogTraceMessage("svc:  DISH.UpdateStatus() Id {0} ({1}), from {2} to {3} -- START", this.Id, this.Name, this.Status.ToString(), newStatus.ToString());
 
             bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
@@ -377,7 +369,7 @@ namespace KDSService.AppModel
                 }
             }
 
-            AppEnv.WriteDBCommandMsg("UpdateStatus() DishId {0} ({1}) -- FINISH", this.Id, this.Name);
+            AppEnv.WriteLogTraceMessage("svc:  DISH.UpdateStatus() Id {0} ({1}), from {2} to {3} -- FINISH", this.Id, this.Name, this.Status.ToString(), newStatus.ToString());
 
             return isUpdSuccess;
         }  // method UpdateStatus
@@ -765,9 +757,9 @@ namespace KDSService.AppModel
                         {
                             dbDish.DishStatusId = iStatus;
 
-                            //AppEnv.WriteLogTraceMessage("   - save to DB...");
+                            AppEnv.WriteLogTraceMessage("   - save to db DISH id {0}, status = {1} - START", this.Id, status.ToString());
                             db.SaveChanges();
-                            //AppEnv.WriteLogTraceMessage("   - save to DB... Ok");
+                            AppEnv.WriteLogTraceMessage("   - save to db DISH id {0}, status = {1} - FINISH", this.Id, status.ToString());
                         }
                         retVal = true;
                     }

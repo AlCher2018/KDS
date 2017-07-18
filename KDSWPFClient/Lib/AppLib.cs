@@ -29,31 +29,52 @@ namespace KDSWPFClient.Lib
         {
             // логгер приложения
             AppLogger = NLog.LogManager.GetLogger("appLogger");
-            // общий логгер КДС-клиента и службы
-            //_dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
         }
 
         #region app logger
+
+        // общий логгер КДС-клиента и службы
+        public static void InitDBCommandLogger()
+        {
+            // параметр берем сразу из конфига
+            string cfgValue = AppLib.GetAppSetting("SingleClientSvcLog");
+            if ((cfgValue != null) && cfgValue.ToBool())
+            {
+                _dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
+            }
+        }
         // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
-            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
-                AppLogger.Trace(msg??"null");
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
+            {
+                if (_dbCommandLogger != null)
+                    _dbCommandLogger.Info(msg);
+                else
+                    AppLogger.Trace(msg ?? "null");
+            }
         }
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
-            if (AppLib.GetAppSetting("IsWriteTraceMessages").ToBool() && AppLogger.IsTraceEnabled)
-                AppLogger.Trace(format, args);
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
+            {
+                if (_dbCommandLogger != null)
+                    _dbCommandLogger.Info(format, args);
+                else
+                    AppLogger.Trace(format, args);
+            }
         }
 
         // сообщения о действиях пользователя
         public static void WriteLogUserAction(string msg)
         {
-            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + msg);
+            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) 
+                && AppLogger.IsTraceEnabled)
+                AppLogger.Trace("userAct: " + msg);
         }
         public static void WriteLogUserAction(string format, params object[] paramArray)
         {
-            if (AppLib.GetAppSetting("IsLogUserAction").ToBool() && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
+            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
         }
 
         public static void WriteLogInfoMessage(string msg)
@@ -74,14 +95,6 @@ namespace KDSWPFClient.Lib
             if (AppLogger.IsErrorEnabled) AppLogger.Error(format, args);
         }
 
-        public static void WriteDBCommandMsg(string msg)
-        {
-            if (_dbCommandLogger != null) _dbCommandLogger.Info(msg);
-        }
-        public static void WriteDBCommandMsg(string format, params object[] args)
-        {
-            if (_dbCommandLogger != null) _dbCommandLogger.Info(format, args);
-        }
         #endregion
 
         #region system info

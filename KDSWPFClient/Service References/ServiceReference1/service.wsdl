@@ -58,6 +58,30 @@
   <wsdl:message name="IKDSService_SetExpectedTakeValue_OutputMessage">
     <wsdl:part name="parameters" element="tns:SetExpectedTakeValueResponse" />
   </wsdl:message>
+  <wsdl:message name="IKDSCommandService_LockOrder_InputMessage">
+    <wsdl:part name="parameters" element="tns:LockOrder" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_LockOrder_OutputMessage">
+    <wsdl:part name="parameters" element="tns:LockOrderResponse" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_DelockOrder_InputMessage">
+    <wsdl:part name="parameters" element="tns:DelockOrder" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_DelockOrder_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DelockOrderResponse" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_LockDish_InputMessage">
+    <wsdl:part name="parameters" element="tns:LockDish" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_LockDish_OutputMessage">
+    <wsdl:part name="parameters" element="tns:LockDishResponse" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_DelockDish_InputMessage">
+    <wsdl:part name="parameters" element="tns:DelockDish" />
+  </wsdl:message>
+  <wsdl:message name="IKDSCommandService_DelockDish_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DelockDishResponse" />
+  </wsdl:message>
   <wsdl:message name="IKDSCommandService_ChangeOrderStatus_InputMessage">
     <wsdl:part name="parameters" element="tns:ChangeOrderStatus" />
   </wsdl:message>
@@ -93,6 +117,22 @@
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:portType name="IKDSCommandService">
+    <wsdl:operation name="LockOrder">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/LockOrder" message="tns:IKDSCommandService_LockOrder_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/LockOrderResponse" message="tns:IKDSCommandService_LockOrder_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DelockOrder">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/DelockOrder" message="tns:IKDSCommandService_DelockOrder_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/DelockOrderResponse" message="tns:IKDSCommandService_DelockOrder_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="LockDish">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/LockDish" message="tns:IKDSCommandService_LockDish_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/LockDishResponse" message="tns:IKDSCommandService_LockDish_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DelockDish">
+      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/DelockDish" message="tns:IKDSCommandService_DelockDish_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/DelockDishResponse" message="tns:IKDSCommandService_DelockDish_OutputMessage" />
+    </wsdl:operation>
     <wsdl:operation name="ChangeOrderStatus">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus" message="tns:IKDSCommandService_ChangeOrderStatus_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse" message="tns:IKDSCommandService_ChangeOrderStatus_OutputMessage" />
@@ -156,6 +196,42 @@
     <wsp:PolicyReference URI="#setData_policy">
     </wsp:PolicyReference>
     <soap12:binding transport="http://schemas.microsoft.com/soap/tcp" />
+    <wsdl:operation name="LockOrder">
+      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/LockOrder" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DelockOrder">
+      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/DelockOrder" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="LockDish">
+      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/LockDish" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DelockDish">
+      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/DelockDish" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="ChangeOrderStatus">
       <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatus" style="document" />
       <wsdl:input>

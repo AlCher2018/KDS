@@ -16,7 +16,10 @@ namespace KDSService.AppModel
     // основной класс службы
     public class OrdersModel : IDisposable
     {
+        private Random rnd = new Random();
+
         private HashSet<int> allowedKDSStatuses;
+        private Dictionary<int, bool> _lockedOrders;
 
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
@@ -70,6 +73,8 @@ namespace KDSService.AppModel
                 thread.Join();
             }
 
+            AppEnv.WriteLogTraceMessage("svc: get orders from DB - START");
+
             // получить заказы из БД
             List<Order> dbOrders = null;
             try
@@ -103,12 +108,6 @@ namespace KDSService.AppModel
             {
                 lock (this)
                 {
-                    //foreach (Order item in dbOrders)
-                    //{
-                    //    Debug.Print("order Id - {0}, status - {1}", item.Id, item.OrderStatusId);
-                    //    Debug.Print("\tdish status: {0}", string.Join("; ", item.OrderDish.Select(o => string.Format("id {0}: {1}", o.Id, o.DishStatusId)).ToArray()));
-                    //}
-
                     List<Order> delOrders = new List<Order>();
 
                     // для последующих обработок удалить из заказов блюда с ненужными статусами и неотображаемые на КДСах
@@ -183,33 +182,29 @@ namespace KDSService.AppModel
                     // обновить или добавить заказы во внутр.словаре
                     foreach (Order dbOrder in dbOrders)
                     {
+                        // пропустить, если заказ заблокирован от изменений по таймеру
+                        _lockedOrders = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+                        if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id)) continue;
+
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            AppEnv.WriteDBCommandMsg("  ORDER UpdateFromDBEntity(id {0}) -- START", dbOrder.Id);
-
-                            // обновить существующий заказ
-                            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю заказ {0}...", dbOrder.Id);
                             try
                             {
+//                                AppEnv.WriteLogTraceMessage("svc:   Update ORDER {0} FromDBEntity", dbOrder.Id);
                                 _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
-                                if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю заказ {0}... Ok", dbOrder.Id);
                             }
                             catch (Exception ex)
                             {
                                 AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
                             }
-
-                            AppEnv.WriteDBCommandMsg("  ORDER UpdateFromDBEntity(id {0}) -- FINISH", dbOrder.Id);
                         }
+                        // добавление заказа в словарь
                         else
                         {
-                            // добавление заказа в словарь
-                            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   добавляю заказ {0}...", dbOrder.Id);
                             try
                             {
                                 OrderModel newOrder = new OrderModel(dbOrder);
                                 _orders.Add(dbOrder.Id, newOrder);
-                                if (_isTraceLog) AppEnv.WriteLogTraceMessage("   добавляю заказ {0}... Ok", dbOrder.Id);
                             }
                             catch (Exception ex)
                             {
@@ -227,6 +222,14 @@ namespace KDSService.AppModel
                 string ids = "";
                 if (_orders.Count > 0) ids = string.Join(",", _orders.Values.Select(o => o.Id).ToArray());
                 AppEnv.WriteLogTraceMessage("< Clients orders to: {0} (ids: {1})", _orders.Count, ids);
+            }
+
+            AppEnv.WriteLogTraceMessage("svc: get orders from DB - FINISH");
+            _lockedOrders = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+            if ((_lockedOrders != null) && (_lockedOrders.Count > 0))
+            {
+                int[] keys = _lockedOrders.Where(kv => kv.Value == true).Select(kv => kv.Key).ToArray();
+                foreach (int item in keys) _lockedOrders.Remove(item);
             }
 
             return null;
@@ -302,7 +305,7 @@ namespace KDSService.AppModel
             List<int> keys = dishesQty.Keys.ToList();
             foreach (int key in keys) dishesQty[key] = 0m;
 
-            if (_isTraceLog) AppEnv.WriteLogTraceMessage("   обновляю словарь количества готовящихся блюд по цехам...");
+            //AppEnv.WriteLogTraceMessage("   обновляю словарь количества готовящихся блюд по цехам...");
 
             decimal qnt;
             OrderStatusEnum eStatus;
@@ -336,7 +339,6 @@ namespace KDSService.AppModel
                     if (sb.Length > 0) sb.Append("; ");
                     sb.Append(string.Format("depId {0} - {1}", item.Key, item.Value));
                 }
-                
                 AppEnv.WriteLogTraceMessage("   result: " + sb.ToString());
             }
 

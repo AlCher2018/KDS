@@ -77,8 +77,9 @@ namespace KDSService
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
 
-            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = true };
+            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
+            StartTimer();
             _timerEnable = true;
 
             AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
@@ -236,11 +237,41 @@ namespace KDSService
         #endregion
 
         #region IKDSCommandService implementation
+        // заблокировать заказ от изменения по таймеру
+        public void LockOrder(int orderId)
+        {
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+            if (hs == null) hs = new Dictionary<int, bool>();
+            if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);
+            AppEnv.SetAppProperty("lockedOrders", hs);
+        }
+        // разблокировать заказ от изменения по таймеру
+        public void DelockOrder(int orderId)
+        {
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+            if ((hs != null) && hs.ContainsKey(orderId)) hs[orderId] = true;
+            AppEnv.SetAppProperty("lockedOrders", hs);
+        }
+        // заблокировать блюдо от изменения по таймеру
+        public void LockDish(int dishId)
+        {
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
+            if (hs == null) hs = new Dictionary<int, bool>();
+            if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
+            AppEnv.SetAppProperty("lockedDishes", hs);
+        }
+        // разблокировать блюдо от изменения по таймеру
+        public void DelockDish(int dishId)
+        {
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
+            if ((hs != null) && hs.ContainsKey(dishId)) hs[dishId] = true;
+            AppEnv.SetAppProperty("lockedDishes", hs);
+        }
 
         // обновление статуса заказа с КДСа
         public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
         {
-            StopTimer();
+            //StopTimer();
             _timerEnable = false;
             AppEnv.WriteLogUserAction("KDS service try to change ORDER status (Id {0}) to {1}", orderId, orderStatus.ToString());
 
@@ -249,22 +280,17 @@ namespace KDSService
                 _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
             }
 
-            StartTimer();
+            //StartTimer();
             _timerEnable = true;
         }
 
         // обновление статуса блюда с КДСа
         public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
-            StopTimer();
+            //StopTimer();
             _timerEnable = false;
-            AppEnv.SetAppProperty("UpdatingOrderId", orderId);
-            AppEnv.SetAppProperty("UpdatingDishId", orderDishId);
 
-
-            string msg = string.Format("KDS-service got the command to change DISH status (Id {0}, orderId {1}) to {2}", orderDishId, orderId, orderDishStatus.ToString());
-            AppEnv.WriteDBCommandMsg(msg + " -- START");
-            AppEnv.WriteLogUserAction(msg);
+            AppEnv.WriteLogTraceMessage(string.Format("svc: COMMAND change DISH status (Id {0}, orderId {1}) to {2} -- START", orderDishId, orderId, orderDishStatus.ToString()));
 
             bool result = false;
             if (_ordersModel.Orders.ContainsKey(orderId))
@@ -306,11 +332,9 @@ namespace KDSService
                 }
             }
 
-            AppEnv.WriteDBCommandMsg(msg + " -- FINISH");
+            AppEnv.WriteLogTraceMessage(string.Format("svc: COMMAND change DISH status (Id {0}, orderId {1}) to {2} -- FINISH", orderDishId, orderId, orderDishStatus.ToString()));
 
-            AppEnv.SetAppProperty("UpdatingOrderId", 0);
-            AppEnv.SetAppProperty("UpdatingDishId", 0);
-            StartTimer();
+            //StartTimer();
             _timerEnable = true;
         }
         #endregion

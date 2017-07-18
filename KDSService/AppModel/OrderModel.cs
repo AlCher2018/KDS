@@ -232,8 +232,13 @@ namespace KDSService.AppModel
 
                 _isUpdStatusFromDishes = false;
                 // обновить состояние или добавить блюда
+                HashSet<int> lockedDishes;
                 foreach (OrderDish dbDish in dbOrder.OrderDish)
                 {
+                    // пропустить, если блюдо находится в словаре заблокированных от изменения по таймеру
+                    lockedDishes = (HashSet<int>)AppEnv.GetAppProperty("lockedDishes");
+                    if ((lockedDishes != null) && lockedDishes.Contains(dbDish.Id)) continue;
+
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
                         // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
@@ -621,9 +626,9 @@ namespace KDSService.AppModel
                         else if (status == OrderStatusEnum.Took)
                             dbOrder.QueueStatusId = 2;
 
-                        AppEnv.WriteLogInfoMessage("   - save to DB...");
+                        AppEnv.WriteLogTraceMessage("   - save to db ORDER id {0}, status = {1} - START", this.Id, status.ToString());
                         db.SaveChanges();
-                        AppEnv.WriteLogInfoMessage("   - save to DB...");
+                        AppEnv.WriteLogTraceMessage("   - save to db ORDER id {0}, status = {1} - FINISH\n{2}", this.Id, status.ToString(), Environment.StackTrace);
                         retVal = true;
                     }
                 }

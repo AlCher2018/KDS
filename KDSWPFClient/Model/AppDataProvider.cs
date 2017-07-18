@@ -12,12 +12,13 @@ using System.ServiceModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Configuration;
+using System.Threading;
 
 namespace KDSWPFClient
 {
     public class AppDataProvider: IDisposable
     {
-        private bool _traceOrderDetails;
+        Random rnd = new Random();
 
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
@@ -42,8 +43,6 @@ namespace KDSWPFClient
 
         public AppDataProvider()
         {
-            _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
-
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
         }
@@ -190,8 +189,6 @@ namespace KDSWPFClient
 
         public List<OrderModel> GetOrders()
         {
-            AppLib.WriteLogTraceMessage("Получаю от службы заказы (состояние службы: {0})...", _getClient.State);
-
             if (_getClient.State == CommunicationState.Faulted)
             {
                 AppLib.WriteLogTraceMessage(" - restart KDSServiceClient !!!");
@@ -203,7 +200,6 @@ namespace KDSWPFClient
             try
             {
                 retVal = _getClient.GetOrders();
-                AppLib.WriteLogTraceMessage(" - получено {0} заказов", retVal.Count);
             }
             catch (Exception ex)
             {
@@ -276,18 +272,41 @@ namespace KDSWPFClient
 
         #endregion
 
+        #region изменение статуса ЗАКАЗА
+        public void LockOrder(int orderId)
+        {
+            if (_setClient == null) return;
+            checkSvcState();
+            try
+            {
+                _setClient.LockOrder(orderId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        public void DelockOrder(int orderId)
+        {
+            if (_setClient == null) return;
+            checkSvcState();
+            try
+            {
+                _setClient.DelockOrder(orderId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)
         {
             if (_setClient == null) return;
 
             AppLib.WriteLogUserAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
 
-            if (_setClient.State == CommunicationState.Faulted)
-            {
-                AppLib.WriteLogTraceMessage(" - restart KDSCommandServiceClient !!!");
-                _setClient.Close();
-                _setClient = new KDSCommandServiceClient();
-            }
+            checkSvcState();
 
             try
             {
@@ -299,29 +318,63 @@ namespace KDSWPFClient
                 throw;
             }
         }
+        #endregion
+
+        #region изменение статуса БЛЮДА
+        public void LockDish(int dishId)
+        {
+            if (_setClient == null) return;
+            checkSvcState();
+            try
+            {
+                _setClient.LockDish(dishId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        public void DelockDish(int dishId)
+        {
+            if (_setClient == null) return;
+            checkSvcState();
+            try
+            {
+                _setClient.DelockDish(dishId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
         public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
             if (_setClient == null) return;
+            checkSvcState();
 
-            AppLib.WriteLogUserAction("Установить статус блюда (id {2}) заказа (id {1}) в {3} (состояние службы: {0})...", _getClient.State, orderId, dishId, newStatus.ToString());
+            try
+            {
+                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
+                _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
+
+                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+        #endregion
+
+        private void checkSvcState()
+        {
             if (_setClient.State == CommunicationState.Faulted)
             {
                 AppLib.WriteLogUserAction(" - restart KDSCommandServiceClient !!!");
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
-            }
-
-            try
-            {
-                _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
-
-                AppLib.WriteLogUserAction(" - результат: успешно");
-            }
-            catch (Exception ex)
-            {
-                throw;
             }
         }
 

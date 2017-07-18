@@ -38,8 +38,6 @@ namespace KDSConsoleSvcHost
 
         public static string LoggerInit()
         {
-            //_dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
-            WriteDBCommandMsg("init dbCommandLogger");
             return initLogger("fileLogger");
         }
 
@@ -57,6 +55,9 @@ namespace KDSConsoleSvcHost
 
             // доступная память
             WriteLogInfoMessage("Доступная память: {0} Mb", GetAvailableRAM());
+
+            if (_props.GetBoolProperty("SingleClientSvcLog"))
+                _dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
 
             return true;
         }
@@ -96,6 +97,7 @@ namespace KDSConsoleSvcHost
             StringBuilder sb = new StringBuilder();
 
             putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
+            putCfgValueToStrBuilder(cfg, sb, "SingleClientSvcLog");
             putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
             putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
@@ -120,6 +122,8 @@ namespace KDSConsoleSvcHost
 
             if ((value = cfg["IsWriteTraceMessages"]) != null)
                 _props.SetProperty("IsWriteTraceMessages", value.ToBool());
+            if ((value = cfg["SingleClientSvcLog"]) != null)
+                _props.SetProperty("SingleClientSvcLog", value.ToBool());
             if ((value = cfg["IsLogUserAction"]) != null)
                 _props.SetProperty("IsLogUserAction", value.ToBool());
 
@@ -151,8 +155,9 @@ namespace KDSConsoleSvcHost
             }
             _props.SetProperty("UnusedDepartments", unUsed);
 
-            _props.SetProperty("UpdatingOrderId", 0);
-            _props.SetProperty("UpdatingDishId", 0);
+            // коллекции для хранения заблокированных от изменения по таймеру заказов и блюд
+            _props.SetProperty("lockedOrders", new Dictionary<int, bool>());
+            _props.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
@@ -297,11 +302,23 @@ namespace KDSConsoleSvcHost
         // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
-            if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(msg);
+            if (_props.GetBoolProperty("IsWriteTraceMessages"))
+            {
+                if (_dbCommandLogger != null)
+                    _dbCommandLogger.Info(msg);
+                else
+                    _logger.Trace(msg);
+            }
         }
         public static void WriteLogTraceMessage(string format, params object[] paramArray)
         {
-            if (_props.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(format, paramArray);
+            if (_props.GetBoolProperty("IsWriteTraceMessages"))
+            {
+                if (_dbCommandLogger != null)
+                    _dbCommandLogger.Info(format, paramArray);
+                else
+                    _logger.Trace(format, paramArray);
+            }
         }
         // сообщения о действиях пользователя
         public static void WriteLogUserAction(string msg)
@@ -339,15 +356,6 @@ namespace KDSConsoleSvcHost
                 if (value != null) msg += ". " + value;
                 WriteLogTraceMessage(msg);
             }
-        }
-
-        public static void WriteDBCommandMsg(string msg)
-        {
-            if (_dbCommandLogger != null) _dbCommandLogger.Info(msg);
-        }
-        public static void WriteDBCommandMsg(string format, params object[] args)
-        {
-            if (_dbCommandLogger != null) _dbCommandLogger.Info(format, args);
         }
 
         #endregion

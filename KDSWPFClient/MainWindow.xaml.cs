@@ -36,7 +36,7 @@ namespace KDSWPFClient
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
 
         private AppDataProvider _dataProvider;
-        private bool _isTraceLog, _traceOrderDetails;
+        private bool _traceOrderDetails;
 
         // текущая роль
         private KDSModeEnum _currentKDSMode;
@@ -84,7 +84,6 @@ namespace KDSWPFClient
 
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
-            _isTraceLog = AppLib.GetAppSetting("IsWriteTraceMessages").ToBool();
             _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
 
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -251,6 +250,8 @@ namespace KDSWPFClient
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
         {
+            AppLib.WriteLogTraceMessage("clt: get orders from SVC - START");
+
             if (_mayGetData)
             {
                 if (tblChannelErrorMessage.Visibility == Visibility.Visible)
@@ -263,11 +264,14 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
                 _pages.ClearPages();
                 if (_viewOrders.Count > 0) _viewOrders.Clear();
+                AppLib.WriteLogTraceMessage("clt: can't get orders due to service status Falted");
                 return;
             }
 
             // получить заказы от сервиса
             List<OrderModel> svcOrders = _dataProvider.GetOrders();
+            AppLib.WriteLogTraceMessage("clt: got {0} orders", ((svcOrders == null)?0:svcOrders.Count));
+
             if (svcOrders == null) return;
 
             if (_traceOrderDetails)
@@ -441,6 +445,7 @@ namespace KDSWPFClient
             if ((isViewRepaint2 == true) 
                 || ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0))) repaintOrders();
 
+            AppLib.WriteLogTraceMessage("clt: get orders from SVC - FINISH");
         }  // method
 
 
