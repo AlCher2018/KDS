@@ -439,6 +439,21 @@ namespace KDSWPFClient
             {
                 AppLib.WriteLogErrorMessage("Ошибка обновления служебной коллекции заказов для отображения на экране: {0}", ex.ToString());
             }
+            // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
+            if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
+            // проверить совпадение статусов заказа и ВСЕХ отображаемых блюд, если включена данная функциональность
+            if (!isViewRepaint2 && (bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
+            {
+                OrderStatusEnum allDishesStatus = OrderStatusEnum.None;
+                foreach (OrderViewModel viewOrder in _viewOrders)
+                {
+                    allDishesStatus = AppLib.GetStatusAllDishes(viewOrder.Dishes);
+
+                    if (!isViewRepaint2 && (allDishesStatus != OrderStatusEnum.None)
+                       && (allDishesStatus != OrderStatusEnum.WaitingCook)
+                       && ((int)allDishesStatus != (int)viewOrder.Status)) isViewRepaint2 = true;
+                }
+            }
 
             if (_traceOrderDetails)
             {
@@ -448,8 +463,7 @@ namespace KDSWPFClient
             }
 
             // перерисовать полностью
-            if ((isViewRepaint2 == true) 
-                || ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0))) repaintOrders();
+            if (isViewRepaint2 == true) repaintOrders();
 
             AppLib.WriteLogTraceMessage("clt: get orders from SVC - FINISH");
         }  // method

@@ -23,10 +23,12 @@ namespace KDSWPFClient.ViewModel
             set { _index = value; }
         }
 
-        public int DishStatusId { get; set; }
-        private OrderStatusEnum _status;
-
-        public OrderStatusEnum Status { get { return _status; } }
+        private int _status;
+        public int DishStatusId {
+            get { return _status; }
+            set { _status = value; }
+        }
+        public OrderStatusEnum Status { get { return (OrderStatusEnum)_status; } }
 
         public int DepartmentId { get; set; }
 
@@ -68,7 +70,6 @@ namespace KDSWPFClient.ViewModel
             _index = index;
             Id = svcOrderDish.Id;
             DishStatusId = svcOrderDish.DishStatusId;
-            _status = (OrderStatusEnum)DishStatusId;
             DepartmentId = svcOrderDish.DepartmentId;
             UID = svcOrderDish.Uid;
             ParentUID = svcOrderDish.ParentUid;
@@ -88,7 +89,6 @@ namespace KDSWPFClient.ViewModel
             if (DishStatusId != svcOrderDish.DishStatusId)
             {
                 DishStatusId = svcOrderDish.DishStatusId;
-                _status = (OrderStatusEnum)DishStatusId;
                 OnPropertyChanged("Status");
             }
 

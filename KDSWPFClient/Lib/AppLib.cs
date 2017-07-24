@@ -679,6 +679,7 @@ namespace KDSWPFClient.Lib
         public static OrderStatusEnum GetStatusAllDishes(List<OrderDishViewModel> dishes)
         {
             OrderStatusEnum retVal = OrderStatusEnum.None;
+            if ((dishes == null) || (dishes.Count == 0)) return retVal;
 
             int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
             int dishCount = dishes.Count;

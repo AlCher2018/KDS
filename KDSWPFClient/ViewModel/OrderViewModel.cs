@@ -30,6 +30,7 @@ namespace KDSWPFClient.ViewModel
 
         public int OrderStatusId { get; set; }
 
+        // статус заказа из БД
         private StatusEnum _status;
         public StatusEnum Status { get { return _status; } }
         public void SetStatus(StatusEnum value)

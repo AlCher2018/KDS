@@ -79,22 +79,34 @@ namespace KDSWPFClient.View
             OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
 
             // 2017-07-24 по заявке Ридченко
-            // одинаковый ли статус всех блюд? 
-            // если статус ВСЕХ блюд не равен статусу заказа, то отобразить статус заказа статусом ОТОБРАЖАЕМЫХ блюд, 
-            // т.к. на КДСе могут отображаться не ВСЕ блюда (в зависим. от настроек)
-            OrderStatusEnum allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes);
-            if ((allDishesStatus != OrderStatusEnum.None) 
-                && (allDishesStatus != OrderStatusEnum.WaitingCook) 
-                && ((int)allDishesStatus != (int)orderModel.Status) 
-                && (bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
+            if ((bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
             {
-                orderModel.SetStatus((StatusEnum)(int)allDishesStatus);
+                // одинаковый ли статус всех блюд? 
+                // если статус ВСЕХ блюд не равен статусу заказа, то отобразить статус заказа статусом ОТОБРАЖАЕМЫХ блюд, 
+                // т.к. на КДСе могут отображаться не ВСЕ блюда (в зависим. от настроек)
+                OrderStatusEnum allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes);
+                if ((allDishesStatus != OrderStatusEnum.None)
+                    && (allDishesStatus != OrderStatusEnum.WaitingCook)
+                    && ((int)allDishesStatus != (int)orderModel.Status))
+                {
+                    orderModel.SetStatus((StatusEnum)(int)allDishesStatus);
+                }
+                // также пройтись по всем блюдам и установить их статус из ингредиентов
+                //foreach (OrderDishViewModel dish in orderModel.Dishes.Where(o => o.ParentUID.IsNull()))
+                //{
+                //    // получить статус ВСЕХ ингредиентов
+                //    allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes.Where(o => (o.UID == dish.UID) && (o.ParentUID != null) && (o.ParentUID == dish.UID)).ToList());
+                //    if ((allDishesStatus != OrderStatusEnum.None) && ((int)allDishesStatus != dish.DishStatusId))
+                //    {
+                //        dish.DishStatusId = (int)allDishesStatus;
+                //    }
+                //}
             }
 
 //            DebugTimer.Init("order id " + orderModel.Id + " Header");
-            // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
-            // вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
-            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
+// СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
+// вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
+                ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
 
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
 
