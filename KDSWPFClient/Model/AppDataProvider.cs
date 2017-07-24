@@ -88,12 +88,14 @@ namespace KDSWPFClient
             bool retVal = false;
             try
             {
-                AppLib.WriteLogInfoMessage("  - получаю словарь статусов...");
+                // получить со службы статусы заказов и сохранить их в _ordStatuses
+                AppLib.WriteLogTraceMessage("  - clt: получаю словарь статусов от службы...");
                 setOrderStatusFromService();
 
                 // получить отделы со службы и сохранить их в _deps
-                AppLib.WriteLogInfoMessage("  - получаю словарь отделов...");
+                AppLib.WriteLogInfoMessage("  - clt: получаю словарь отделов от службы...");
                 setDepartmentsFromService();
+
                 // прочитать из конфига отделы для установки флажка IsViewOnKDS
                 string sBuf = ConfigurationManager.AppSettings["depUIDs"];
                 if (sBuf != null)
@@ -113,6 +115,7 @@ namespace KDSWPFClient
                 Dictionary<string, object> hostAppSettings = GetHostAppSettings();
                 if (hostAppSettings != null)
                 {
+                    string s1;
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
                         AppLib.SetAppGlobalValue(pair.Key, pair.Value);
@@ -120,20 +123,21 @@ namespace KDSWPFClient
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
 
-                    // получить сложные типы из строк
+                    // получить и преобразовать сложные типы из строк
                     //    TimeSpan
-                    sBuf = (string)AppLib.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
-                    if (!sBuf.IsNull()) AppLib.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(sBuf));
+                    s1 = (string)AppLib.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!s1.IsNull()) AppLib.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
+
                     //    HashSet<int>
-                    sBuf = (string)AppLib.GetAppGlobalValue("UnusedDepartments");
-                    if (!sBuf.IsNull())
+                    s1 = (string)AppLib.GetAppGlobalValue("UnusedDepartments");
+                    if (!s1.IsNull())
                     {
-                        int[] iArr = sBuf.Split(',').Select(s => s.ToInt()).ToArray();
+                        int[] iArr = s1.Split(',').Select(s => s.ToInt()).ToArray();
                         List<int> hsInt = new List<int>(iArr);
                         AppLib.SetAppGlobalValue("UnusedDepartments", hsInt);
                     }
                 }
-                AppLib.WriteLogInfoMessage("      получено: " + sBuf);
+                AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
 
                 retVal = true;
             }

@@ -32,6 +32,10 @@ namespace KDSWPFClient.ViewModel
 
         private StatusEnum _status;
         public StatusEnum Status { get { return _status; } }
+        public void SetStatus(StatusEnum value)
+        {
+            _status = value;
+        }
 
         public string UID { get; set; }
         public int Number { get; set; }

@@ -149,7 +149,10 @@ namespace KDSWPFClient
             cfgValue = AppLib.GetAppSetting("IngrClickable");
             AppLib.SetAppGlobalValue("IngrClickable", cfgValue.ToBool());
 
+            cfgValue = AppLib.GetAppSetting("IsShowOrderStatusByAllShownDishes");
+            AppLib.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
             
+
 
             // режим ингредиента: 
             // - подчиненный блюду, т.е. переходит из состояния в состояние только вместе с блюдом, отображается только вместе с блюдом, 
@@ -226,15 +229,15 @@ namespace KDSWPFClient
                             // изменение состояния БЛЮДА
                             if (dishModel != null)
                             {
-                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
+                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
                                 dataProvider.LockOrder(orderModel.Id);
                                 dataProvider.LockDish(dishModel.Id);
 
                                 dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
 
-                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}", orderModel.Id);
-                                dataProvider.DelockOrder(orderModel.Id);
+                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
                                 dataProvider.DelockDish(dishModel.Id);
+                                dataProvider.DelockOrder(orderModel.Id);
                             }
 
                             // изменение состояния Заказа, но изменяем все равно поблюдно

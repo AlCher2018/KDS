@@ -250,24 +250,24 @@ namespace KDSService.AppModel
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
 
                 // обновление состояния для блюда или независимого ингредиента
-                if (_isDish || (!_isDish && _isInrgIndepend))
-                {
+                //if (_isDish || (!_isDish && _isInrgIndepend))
+                //{
                     // проверяем условие автоматического перехода в режим приготовления
                     if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
                     {
                         newStatus = OrderStatusEnum.Cooking;
-                        _isUpdateDependIngr = true;
+                        if (_isDish || (!_isDish && _isInrgIndepend)) _isUpdateDependIngr = true;
                     }
 
                     // если поменялся отдел, то объект отдела взять из справочника
                     if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
                     UpdateStatus(newStatus, false);
-                }  // для БЛЮДА
-                else
-                {
-                    UpdateStatus(newStatus, false);
-                }
+                //}  // для БЛЮДА
+                //else
+                //{
+                //    UpdateStatus(newStatus, false);
+                //}
 
             }  // lock
 
@@ -821,7 +821,7 @@ namespace KDSService.AppModel
             if (retVal == true)
             {
                 Dictionary<int, decimal> dishesQtyDict = (Dictionary<int, decimal>)AppEnv.GetAppProperty("dishesQty");
-                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(DepartmentId)))
+                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(DepartmentId)) && (_department.DishQuantity > 0))
                 {
                     retVal = ((dishesQtyDict[DepartmentId] + this.Quantity) <= _department.DishQuantity);
                     // обновить кол-во в словаре, пока он не обновился из БД

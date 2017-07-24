@@ -231,21 +231,17 @@ namespace KDSService.AppModel
                 }
 
                 _isUpdStatusFromDishes = false;
+
                 // обновить состояние или добавить блюда
-                HashSet<int> lockedDishes;
+                Dictionary<int, bool> lockedDishes = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
                 foreach (OrderDish dbDish in dbOrder.OrderDish)
                 {
                     // пропустить, если блюдо находится в словаре заблокированных от изменения по таймеру
-                    lockedDishes = (HashSet<int>)AppEnv.GetAppProperty("lockedDishes");
-                    if ((lockedDishes != null) && lockedDishes.Contains(dbDish.Id)) continue;
+                    if ((lockedDishes != null) && lockedDishes.ContainsKey(dbDish.Id)) continue;
 
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
-                        // обновлять состояние только БЛЮДА, т.к. состояние ингредиентов уже должно быть обновлено из блюда
-                        //if (dbDish.ParentUid.IsNull())  // это блюдо
-                        //{
-                            this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
-                        //}
+                        this._dishesDict[dbDish.Id].UpdateFromDBEntity(dbDish);
                     }
                     // иначе - добавить блюдо/ингр
                     else

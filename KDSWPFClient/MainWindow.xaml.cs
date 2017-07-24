@@ -216,10 +216,11 @@ namespace KDSWPFClient
         }
 
         // основной таймер отображения панелей заказов
+        // запускается каждые 100 мсек
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             DateTime dt = DateTime.Now;
-            short seconds = (short)dt.Second;
+            short seconds = (short)dt.Second;  // от 0 до 59
             if ((dt.Millisecond <= 200) && (_canInvokeUpdateOrders != seconds))
             {
                 _timer.Stop();
@@ -227,8 +228,12 @@ namespace KDSWPFClient
                 _mayGetData = false;
                 try
                 {
+                    // потеря связи со службой
                     if (_dataProvider.EnableChannels == false)
+                    {
+                        AppLib.WriteLogTraceMessage("CLT: потеря связи со службой, пересоздаю каналы...");
                         _mayGetData = _dataProvider.CreateChannels();
+                    }
                     else
                         _mayGetData = true;
                 }
@@ -239,7 +244,8 @@ namespace KDSWPFClient
 
                 this.Dispatcher.Invoke(new Action(updateOrders));
             }
-            _timer.Start();
+
+            _timer.Start();  // т.к. AutoReset = false !!!
         }  // method
 
 

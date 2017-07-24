@@ -11,6 +11,7 @@ using KDSWPFClient.ViewModel;
 using System.Windows.Media;
 using System.Globalization;
 using System.Windows.Threading;
+using KDSWPFClient.ServiceReference1;
 
 namespace KDSWPFClient.View
 {
@@ -77,7 +78,20 @@ namespace KDSWPFClient.View
         {
             OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
 
-            DebugTimer.Init("order id " + orderModel.Id + " Header");
+            // 2017-07-24 по заявке Ридченко
+            // одинаковый ли статус всех блюд? 
+            // если статус ВСЕХ блюд не равен статусу заказа, то отобразить статус заказа статусом ОТОБРАЖАЕМЫХ блюд, 
+            // т.к. на КДСе могут отображаться не ВСЕ блюда (в зависим. от настроек)
+            OrderStatusEnum allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes);
+            if ((allDishesStatus != OrderStatusEnum.None) 
+                && (allDishesStatus != OrderStatusEnum.WaitingCook) 
+                && ((int)allDishesStatus != (int)orderModel.Status) 
+                && (bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
+            {
+                orderModel.SetStatus((StatusEnum)(int)allDishesStatus);
+            }
+
+//            DebugTimer.Init("order id " + orderModel.Id + " Header");
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
             // вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
             ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
@@ -89,11 +103,11 @@ namespace KDSWPFClient.View
                 setNextColumn();
                 _curTopValue = 0d;
             }
-            DebugTimer.GetInterval();
+//            DebugTimer.GetInterval();
 
             int curFiling = 0;
             // блюда
-            DebugTimer.Init("order id " + orderModel.Id + " Dishes");
+//            DebugTimer.Init("order id " + orderModel.Id + " Dishes");
             foreach (OrderDishViewModel dishModel in orderModel.Dishes)
             {
                 if (curFiling != dishModel.FilingNumber)
@@ -148,7 +162,7 @@ namespace KDSWPFClient.View
                 }
 
             }  // foreach dishes
-            DebugTimer.GetInterval();
+//            DebugTimer.GetInterval();
 
             // смещение слева по номеру тек.колонки
             ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());

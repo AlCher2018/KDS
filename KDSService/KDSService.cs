@@ -141,14 +141,12 @@ namespace KDSService
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
-
             if (_timerEnable)
             {
                 string errMsg = _ordersModel.UpdateOrders();
 
                 if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
             }
-
             StartTimer();
         }
 
@@ -159,7 +157,7 @@ namespace KDSService
         public List<OrderStatusModel> GetOrderStatuses()
         {
             string errMsg = null;
-            string userAction = "GetOrderStatuses()... ";
+            string userAction = "    - svc(GetOrderStatuses()): ";
 
             List<OrderStatusModel>  retVal = ModelDicts.GetOrderStatusesList(out errMsg);
 
@@ -170,7 +168,7 @@ namespace KDSService
                 AppEnv.WriteLogErrorMessage(errMsg);
                 userAction += errMsg;
             }
-            AppEnv.WriteLogUserAction(userAction);
+            AppEnv.WriteLogTraceMessage(userAction);
 
             return retVal;
         }
@@ -178,7 +176,7 @@ namespace KDSService
         public List<DepartmentModel> GetDepartments()
         {
             string errMsg = null;
-            string userAction = "GetDepartments()... ";
+            string userAction = "    - svc(GetDepartments()): ";
 
             List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
 
@@ -189,7 +187,7 @@ namespace KDSService
                 AppEnv.WriteLogErrorMessage(errMsg);
                 userAction += errMsg;
             }
-            AppEnv.WriteLogUserAction(userAction);
+            AppEnv.WriteLogTraceMessage(userAction);
 
             return retVal;
         }
