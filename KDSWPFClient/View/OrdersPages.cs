@@ -77,36 +77,10 @@ namespace KDSWPFClient.View
         public void AddOrderPanel(OrderViewModel orderModel)
         {
             OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
-
-            // 2017-07-24 по заявке Ридченко
-            if ((bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
-            {
-                // одинаковый ли статус всех блюд? 
-                // если статус ВСЕХ блюд не равен статусу заказа, то отобразить статус заказа статусом ОТОБРАЖАЕМЫХ блюд, 
-                // т.к. на КДСе могут отображаться не ВСЕ блюда (в зависим. от настроек)
-                OrderStatusEnum allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes);
-                if ((allDishesStatus != OrderStatusEnum.None)
-                    && (allDishesStatus != OrderStatusEnum.WaitingCook)
-                    && ((int)allDishesStatus != (int)orderModel.Status))
-                {
-                    orderModel.SetStatus((StatusEnum)(int)allDishesStatus);
-                }
-                // также пройтись по всем блюдам и установить их статус из ингредиентов
-                //foreach (OrderDishViewModel dish in orderModel.Dishes.Where(o => o.ParentUID.IsNull()))
-                //{
-                //    // получить статус ВСЕХ ингредиентов
-                //    allDishesStatus = AppLib.GetStatusAllDishes(orderModel.Dishes.Where(o => (o.UID == dish.UID) && (o.ParentUID != null) && (o.ParentUID == dish.UID)).ToList());
-                //    if ((allDishesStatus != OrderStatusEnum.None) && ((int)allDishesStatus != dish.DishStatusId))
-                //    {
-                //        dish.DishStatusId = (int)allDishesStatus;
-                //    }
-                //}
-            }
-
 //            DebugTimer.Init("order id " + orderModel.Id + " Header");
-// СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА
-// вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
-                ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
+            
+            // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
 
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
 
@@ -151,7 +125,7 @@ namespace KDSWPFClient.View
                         // 3. создать новый OrderPanel для текущего блюда с заголовком таблицы
                         ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
                     }
-                    // не разбиваем заказ, а полностью переносим новую колонку
+                    // не разбиваем заказ, а полностью переносим в новую колонку
                     else
                     {
                         if (ordPnl.HeightPanel >= _cnvHeight)
@@ -179,7 +153,6 @@ namespace KDSWPFClient.View
             // смещение слева по номеру тек.колонки
             ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
             // смещение сверху
-            //ordPnl.SetValue(Canvas.TopProperty, ordTop);
             ordPnl.SetValue(Canvas.TopProperty, _curTopValue);
             _curTopValue += ordPnl.HeightPanel;
 

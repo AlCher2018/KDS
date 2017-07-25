@@ -12,8 +12,22 @@
 
     <UserControl.Resources>
         <Style x:Key="rowBrushesStyle" TargetType="Border">
-            <Setter Property="Background" Value="{Binding Status, ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
-            <Setter Property="TextBlock.Foreground" Value="{Binding Status, ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <MultiBinding Converter="{StaticResource brushOrderHeaderConverter}" ConverterParameter="back" Mode="OneWay">
+                        <Binding Path="Status" />
+                        <Binding Path="StatusAllowedDishes" />
+                    </MultiBinding>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="TextBlock.Foreground">
+                <Setter.Value>
+                    <MultiBinding Converter="{StaticResource brushOrderHeaderConverter}" ConverterParameter="fore" Mode="OneWay">
+                        <Binding Path="Status" />
+                        <Binding Path="StatusAllowedDishes" />
+                    </MultiBinding>
+                </Setter.Value>
+            </Setter>
         </Style>
         
         

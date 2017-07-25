@@ -114,7 +114,8 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             _cfgValKeeper.AddPreValue("OrderHeaderClickable", true, cbxOrderHeaderClickable);
             _cfgValKeeper.AddPreValue("IngrClickable", true, cbxIngrClickable);
-            
+            _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
+
             // получить от службы
             //AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
             //int expTake = dataProvider.GetExpectedTakeValue();

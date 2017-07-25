@@ -37,6 +37,7 @@ namespace KDSWPFClient.ViewModel
         {
             _status = value;
         }
+        public StatusEnum StatusAllowedDishes { get; set; }
 
         public string UID { get; set; }
         public int Number { get; set; }
@@ -63,6 +64,7 @@ namespace KDSWPFClient.ViewModel
         // КОНСТРУКТОРЫ
         public OrderViewModel()
         {
+            StatusAllowedDishes = StatusEnum.None;
         }
 
         public OrderViewModel(OrderModel svcOrder, int index = 1) : this()
@@ -109,6 +111,7 @@ namespace KDSWPFClient.ViewModel
                 _status = (StatusEnum)OrderStatusId;
                 OnPropertyChanged("Status");
             }
+
             if (UID != svcOrder.Uid) UID = svcOrder.Uid;
 
             if (Number != svcOrder.Number)

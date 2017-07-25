@@ -16,6 +16,7 @@
         
 
         <locLib:BrushConverter x:Key="brushConverter" />
+        <locLib:BrushOrderHeaderConverter x:Key="brushOrderHeaderConverter" />
 
     </Application.Resources>
     

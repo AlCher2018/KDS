@@ -29,18 +29,7 @@ namespace KDSWPFClient.View
 
         private bool _isDish, _isIngrIndepend, _isTimerBrushesIndepend;
         private double _fontSize, _padd;
-
-        // поля дат состояний и временных промежутков
-        private DateTime _dtCookingStartEstimated;   // ожидаемое начало приготовления
-        private TimeSpan _tsCookingEstimated;   // время приготовления
-        private string _strCookingEstimated;
-        private string _timerString;
-
-        internal string TimerString { get { return _timerString; } }
-
-        private bool _negativeTimer;
-        private string _cookBrushesName;
-
+        private string _currentBrushKey;
         private DishPanel _parentPanel;
 
 
@@ -78,18 +67,22 @@ namespace KDSWPFClient.View
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;
+            // для блюда и независимого ингредиента
+            if (_isTimerBrushesIndepend)
+            {
+                tbDishStatusTS.FontSize = 1.2 * _fontSize;
+                tbDishStatusTS.FontWeight = FontWeights.Bold;
+            }
+            // для ЗАВИСИМОГО ИНГРЕДИЕНТА рамка зависит от одинаковости статуса ингредиента и блюда
+            else
+            {
+                tbDishStatusTS.FontSize = _fontSize;
+                tbDishStatusTS.FontWeight = FontWeights.Normal;
+            }
 
             _padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
             brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
-
-            _cookBrushesName = getCookBrushesName();
-            _negativeTimer = isTimerNegative();
-            // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
-            _dtCookingStartEstimated = _dishView.CreateDate.AddSeconds(_dishView.DelayedStartTime);
-            // время приготовления
-            _tsCookingEstimated = TimeSpan.FromSeconds(_dishView.EstimatedTime);
-            _strCookingEstimated = AppLib.GetAppStringTS(_tsCookingEstimated);
 
             // рамка вокруг таймера
             setTimerBorder();
@@ -110,211 +103,56 @@ namespace KDSWPFClient.View
             }
         }
 
-        private bool isTimerNegative()
-        {
-            string s = _timerString; // _dishView.WaitingTimerString;
-
-            return !s.IsNull() && s.StartsWith("-");
-        }
-
-        // возвращает ключ из словаря для кистей состояния, а также устанавливает значение таймера ()
-        private string getCookBrushesName()
-        {
-            string retVal = _dishView.Status.ToString();
-
-            // для ингредиента берем значение таймера от родителя, если ингредиент принадлежить этому же КДСу
-            // и у ингредиента и родителя одинаковый статус
-            //if (!_isTimerBrushesIndepend && (_parentPanel != null) 
-            //    && (_dishView.Status == _parentPanel.DishView.Status) 
-            //    && (AppLib.IsDepViewOnKDS(_dishView.DepartmentId)))
-            //{
-            //    _timerString = _parentPanel.TimerString;
-            //    _dishView.WaitingTimerString = _timerString;
-            //    return retVal;
-            //}
-
-            // текущее значение таймера
-            _timerString = _dishView.WaitingTimerString;
-
-            // состояние "Ожидание" начала готовки
-            if (_dishView.Status == OrderStatusEnum.WaitingCook)
-            {
-                // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
-                if (_dishView.DelayedStartTime != 0)
-                {
-                    TimeSpan ts = _dtCookingStartEstimated - DateTime.Now;
-                    retVal = "estimateStart";
-                    _timerString = AppLib.GetAppStringTS(ts);
-                    if (ts.Ticks < 0)
-                    {
-                        if (_dishView.EstimatedTime > 0)
-                        {
-                            retVal = "estimateCook";
-                            _timerString = _strCookingEstimated;
-                        }
-                        else
-                        {
-                            retVal = StatusEnum.WaitingCook.ToString();
-                            _timerString = "";
-                        }
-                    }
-                }
-                // если есть время приготовления, то отобразить время приготовления
-                else if (_dishView.EstimatedTime != 0)
-                {
-                    retVal = "estimateCook";
-                    _timerString = _strCookingEstimated;
-                }
-                else
-                    _timerString = "";
-
-                // отобразить таймер для состояния ожидания
-                _dishView.WaitingTimerString = _timerString;
-            }
-
-            // другие состояния
-            else
-            {
-                TimeSpan tsTimerValue = AppLib.GetTSFromString(_dishView.WaitingTimerString);
-
-                // состояние "В процессе" - отображаем время приготовления по убыванию от планого времени приготовления,
-                // если нет планового времени приготовления, то сразу отрицат.значения
-                if (_dishView.Status == OrderStatusEnum.Cooking)
-                {
-                    tsTimerValue = _tsCookingEstimated - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
-                }
-
-                // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
-                else
-                {
-                    // из глобальных настроек
-                    bool isUseReadyConfirmed = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
-                    if ((!isUseReadyConfirmed && (_dishView.Status == OrderStatusEnum.Ready))
-                        || (isUseReadyConfirmed && (_dishView.Status == OrderStatusEnum.ReadyConfirmed)))
-                    {
-                        int expTake = (int)AppLib.GetAppGlobalValue("ExpectedTake");
-                        if (expTake > 0)
-                        {
-                            tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
-                        }
-                    }
-                }
-
-                _timerString = AppLib.GetAppStringTS(tsTimerValue);
-            }
-
-            if (_dishView.WaitingTimerString != _timerString ) _dishView.WaitingTimerString = _timerString;
-
-            return retVal;
-        }
-
 
         // изменение свойств блюда - обновить кисти
         private void DishView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if ((e.PropertyName == "CreateDate") || (e.PropertyName == "DelayedStartTime"))
-                _dtCookingStartEstimated = _dishView.CreateDate.AddSeconds(_dishView.DelayedStartTime);
-
             // поменялся статус - однозначно меняем кисти
-            if (e.PropertyName == "Status")
+            if ((e.PropertyName == "Status") || (e.PropertyName == "ViewTimerString"))
             {
                 setTimerBorder();
-            }
-
-            // по значению таймера
-            else if (e.PropertyName == "WaitingTimerString")
-            {
-                string currentCookBrushesName = getCookBrushesName();
-                bool currentValue = isTimerNegative();
-
-                //if (_dishView.Id == 8) Debug.Print("_timerString={0}, _negativeTimer = {1}, currentValue={2}", _timerString, _negativeTimer, currentValue);
-
-                if (_negativeTimer != currentValue)
-                {
-                    _negativeTimer = currentValue;
-
-                    //if (_dishView.Id == 8) Debug.Print(" --- setTimerBorder();  _isTimerBrushesIndepend={0}", _isTimerBrushesIndepend);
-
-                    setTimerBorder();
-                }
-                else if (_cookBrushesName != currentCookBrushesName)
-                {
-                    _cookBrushesName = currentCookBrushesName;
-                    setTimerBorder();
-                }
             }
         }
 
         // установка рамки вокруг таймера
         private void setTimerBorder()
         {
-            // для блюда и независимого ингредиента
-            if (_isTimerBrushesIndepend)
+            string brushKey = _dishView.Status.ToString();
+            // состояние "Ожидание" начала готовки
+            if (_dishView.Status == OrderStatusEnum.WaitingCook)
             {
-                tbDishStatusTS.FontSize = 1.2 * _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Bold;
-//                setTimerBrushes();
-            }
-            // для ЗАВИСИМОГО ИНГРЕДИЕНТА рамка зависит от одинаковости статуса ингредиента и блюда
-            else
-            {
-                tbDishStatusTS.FontSize = _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Normal;
-
-                //OrderDishViewModel parentDish = (OrderDishViewModel)_parentPanel.grdDishLine.DataContext;
-                //bool isBorder = (_dishView.Status != parentDish.Status);
-                //if (isBorder)
-                //{
-  //                  setTimerBrushes();
-                //}
-                //// убрать рамку вокруг ЗАВИСИМОГО ингредиента
-                //else
-                //{
-                //    BrushesPair brPair = BrushHelper.AppBrushes["ingrLineBase"];
-                //    brdTimer.Background = brPair.Background;
-                //    tbDishStatusTS.Foreground = brPair.Foreground;
-                //}
-            }
-
-            //if (_dishView.Id == 8) Debug.Print(" --- setTimerBrushes();  _negativeTimer={0}", _negativeTimer);
-
-            setTimerBrushes();
-        }
-
-        // установка кистей при изменении состоянию блюда
-        private void setTimerBrushes()
-        {
-            Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
-            OrderStatusEnum status = _dishView.Status;
-            BrushesPair brPair = null;
-
-            if (status == OrderStatusEnum.WaitingCook)
-            {
-                brPair = appBrushes[_cookBrushesName];
+                // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
+                if (_dishView.DelayedStartTime != 0)
+                {
+                    brushKey = "estimateStart";
+                }
+                // если есть время приготовления, то отобразить время приготовления
+                else if (_dishView.EstimatedTime != 0)
+                {
+                    brushKey = "estimateCook";
+                }
             }
             else
             {
+                bool negativeTimer = (!_dishView.ViewTimerString.IsNull() && _dishView.ViewTimerString.StartsWith("-"));
                 // проверить на наличие кистей для отрицательных значений
-                if (_negativeTimer)
-                {
-                    string keyNegative = status.ToString() + "minus";
-                    if (appBrushes.ContainsKey(keyNegative)) brPair = appBrushes[keyNegative];
-                }
-                if (brPair == null)
-                {
-                    string key = status.ToString();
-                    if (appBrushes.ContainsKey(key)) brPair = appBrushes[key];
-                }
+                if (negativeTimer) brushKey += "minus";
             }
 
-            //if (_dishView.Id == 8) Debug.Print(" --- (brPair == null) = {0}", (brPair == null));
-
-            if (brPair != null)
+            if (brushKey != _currentBrushKey)
             {
-                brdTimer.Background = brPair.Background;
-                tbDishStatusTS.Foreground = brPair.Foreground;
-            }
+                _currentBrushKey = brushKey;
 
+                Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
+                BrushesPair brPair = null;
+                if (appBrushes.ContainsKey(_currentBrushKey)) brPair = appBrushes[_currentBrushKey];
+                
+                if (brPair != null)
+                {
+                    brdTimer.Background = brPair.Background;
+                    tbDishStatusTS.Foreground = brPair.Foreground;
+                }
+            }
         }
 
         // клик по строке блюда/ингредиента

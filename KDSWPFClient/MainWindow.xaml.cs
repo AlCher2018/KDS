@@ -49,14 +49,20 @@ namespace KDSWPFClient
 
         // страницы заказов
         private OrdersPages _pages;
-        // фильтр заказов на данном КДС. Может быть статическим (отделы из config-файла) или динамическим (статус заказов) 
+
+        // ФИЛЬТР ЗАКАЗОВ на данном КДС. Может быть статическим (отделы из config-файла) или динамическим (статус заказов) 
         private ValueChecker<OrderDishModel> _valueDishChecker;
-        private Dictionary<int, List<int>> _dependDeps; // словарь (по Id) для хранения Ид отделов (для блюд - дочерних ингредиентов, для ингредиента - родительского блюда)
+        // словарь (по Id) для хранения значений фильтрации блюд: Ид отделов, Ид статусов (для блюд - дочерних ингредиентов, для ингредиента - родительского блюда)
+        // т.е. зависимые и зависящие блюда/ингредиенты
+        private Dictionary<int, List<OrderFilterValue>> _dependentDishes;
+        private List<int> _allowedStatuses;
+
         private List<int> _preOrdersId;
         private List<OrderViewModel> _viewOrders;  // для отображения на экране
 
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;
+        private List<OrderViewModel> _delOrderViewIds;
         private List<int> _delDishIds;  
 
         // переменные для опеределения условий отображения окна настройки
@@ -109,10 +115,14 @@ namespace KDSWPFClient
             _timerBackToFirstPage.Elapsed += (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_timerBackToFirstPageDelegate);
 
             // условия отбора блюд
+            _allowedStatuses = new List<int>();
+            updCheckerDishState();
+            _dependentDishes = new Dictionary<int, List<OrderFilterValue>>();
             _valueDishChecker = new ValueChecker<OrderDishModel>();
             // добавить в фильтр отделы, разрешенные на данном КДС
-            _valueDishChecker.Update("depId", checkAllowDepertment);
-            updCheckerDishState();  // и состояния
+            _valueDishChecker.Update("depId", checkAllowDepartment);
+            // ... и статусы, разрешенные на данном КДС
+            _valueDishChecker.Update("dishStates", checkAllowStatus);
 
             // класс для циклического перебора группировки заказов
             // в коде используется ТЕКУЩИЙ объект, но на вкладках отображается СЛЕДУЮЩИЙ !!!
@@ -124,9 +134,6 @@ namespace KDSWPFClient
 
             _preOrdersId = new List<int>();
             _viewOrders = new List<OrderViewModel>();
-            _dependDeps = new Dictionary<int, List<int>>();
-            // debug test data
-            //Button_Click(null,null);
 
             // основной таймер опроса сервиса
             _timer = new Timer(100) { AutoReset = false };
@@ -139,7 +146,9 @@ namespace KDSWPFClient
             btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
             btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
 
-            _delOrderIds = new List<OrderModel>(); _delDishIds = new List<int>();
+            _delOrderIds = new List<OrderModel>();
+            _delOrderViewIds = new List<OrderViewModel>();
+            _delDishIds = new List<int>();
 
             _adminTimer = new Timer() { Interval = 3000d, AutoReset = false };
             _adminTimer.Elapsed += _adminTimer_Elapsed;
@@ -229,10 +238,10 @@ namespace KDSWPFClient
                 try
                 {
                     // потеря связи со службой
-                    if (_dataProvider.EnableChannels == false)
+                    if (_dataProvider.EnableGetChannel == false)
                     {
-                        AppLib.WriteLogTraceMessage("CLT: потеря связи со службой, пересоздаю каналы...");
-                        _mayGetData = _dataProvider.CreateChannels();
+                        AppLib.WriteLogTraceMessage("CLT: потеря связи со службой получения данных, пересоздаю get-канал...");
+                        _mayGetData = _dataProvider.CreateGetChannel();
                     }
                     else
                         _mayGetData = true;
@@ -304,16 +313,30 @@ namespace KDSWPFClient
             if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - фильтрация блюд (цеха и статусы данного КДС)...");
             try
             {
+                OrderDishModel curDish;
                 _delOrderIds.Clear(); _delDishIds.Clear();
                 foreach (OrderModel orderModel in svcOrders)
                 {
                     // собрать Id блюд для удаления, т.е. не прошедшие фильтры по отделам и состояниям
-                    foreach (KeyValuePair<int, OrderDishModel> item in orderModel.Dishes)
+                    foreach (KeyValuePair<int, OrderDishModel> item in orderModel.Dishes.Where(d => d.Value.ParentUid.IsNull()))
                     {
-                        if (_valueDishChecker.Checked(item.Value) == false) _delDishIds.Add(item.Key);
+                        curDish = item.Value;
+                        bool checkDish = _valueDishChecker.Checked(curDish);
+                        bool checkIngrs = false;
+                        // ингредиенты
+                        foreach (var ingr in orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid) && (d.Value.Uid == curDish.Uid)))
+                        {
+                            if (_valueDishChecker.Checked(ingr.Value))
+                                checkIngrs = true;
+                            else
+                                _delDishIds.Add(ingr.Key); // позицию-ингредиент удалить
+                        }
+                        // если блюдо не прошло проверку и нет разрешенных ингредиентов, то блюдо удалить
+                        if (!checkDish && !checkIngrs) _delDishIds.Add(item.Key);
                     }
 
-                    _delDishIds.ForEach(key => orderModel.Dishes.Remove(key)); // удалить неразрешенные блюда
+                    // удалить неразрешенные блюда
+                    _delDishIds.ForEach(key => orderModel.Dishes.Remove(key)); 
 
                     if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
                 }
@@ -439,21 +462,31 @@ namespace KDSWPFClient
             {
                 AppLib.WriteLogErrorMessage("Ошибка обновления служебной коллекции заказов для отображения на экране: {0}", ex.ToString());
             }
-            // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
-            if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
-            // проверить совпадение статусов заказа и ВСЕХ отображаемых блюд, если включена данная функциональность
-            if (!isViewRepaint2 && (bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
-            {
-                OrderStatusEnum allDishesStatus = OrderStatusEnum.None;
-                foreach (OrderViewModel viewOrder in _viewOrders)
-                {
-                    allDishesStatus = AppLib.GetStatusAllDishes(viewOrder.Dishes);
 
-                    if (!isViewRepaint2 && (allDishesStatus != OrderStatusEnum.None)
-                       && (allDishesStatus != OrderStatusEnum.WaitingCook)
-                       && ((int)allDishesStatus != (int)viewOrder.Status)) isViewRepaint2 = true;
+            // 2017-07-24 по заявке Ридченко
+            // удалить заказы, у которых StatusAllowedDishes не входит в отображаемые состояния
+            _delOrderViewIds.Clear();
+            StatusEnum allDishesStatus = StatusEnum.None;
+            foreach (OrderViewModel item in _viewOrders)
+            {
+                allDishesStatus = AppLib.GetStatusAllDishesOwnDeps(item.Dishes);
+                if (item.StatusAllowedDishes != allDishesStatus)
+                {
+                    item.StatusAllowedDishes = allDishesStatus;
+                    isViewRepaint2 = true;
+                }
+
+                if ((item.StatusAllowedDishes != StatusEnum.None) 
+                    && (!_allowedStatuses.Contains((int)item.StatusAllowedDishes)))
+                {
+                    _delOrderViewIds.Add(item);
+                    isViewRepaint2 = true;
                 }
             }
+            _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
+
+            // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
+            if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
 
             if (_traceOrderDetails)
             {
@@ -473,22 +506,31 @@ namespace KDSWPFClient
         // словарь будет уровня класса, чтобы не нарушать работу вложенного класса ValueChecker для отделов
         private void updateDependDepsDict(List<OrderModel> svcOrders)
         {
-            _dependDeps.Clear();
+            _dependentDishes.Clear();
             foreach (OrderModel orderModel in svcOrders)
             {
                 // отобрать только блюда
                 List<OrderDishModel> v1 = orderModel.Dishes.Values.Where(d => d.ParentUid.IsNull()).ToList();
                 foreach (OrderDishModel dish in v1)
                 {
-                    List<int> dd = new List<int>();
-                    _dependDeps.Add(dish.Id, dd);
+                    List<OrderFilterValue> dd = new List<OrderFilterValue>();
+                    _dependentDishes.Add(dish.Id, dd);
                     // ингредиенты к блюду
                     List<OrderDishModel> v2 = orderModel.Dishes.Values.Where(d => d.ParentUid == dish.Uid).ToList();
                     foreach (OrderDishModel ingr in v2)
                     {
-                        dd.Add(ingr.DepartmentId);
-                        if (_dependDeps.ContainsKey(ingr.Id) == false)
-                            _dependDeps.Add(ingr.Id, new List<int>() { dish.DepartmentId });  // а для ингредиента - Ид отдела родит.блюда
+                        dd.Add(new OrderFilterValue()
+                            { DepartmentId = ingr.DepartmentId, StatusId = ingr.DishStatusId }
+                        );
+
+                        // а для ингредиента - поля родит.блюда
+                        if (_dependentDishes.ContainsKey(ingr.Id) == false)
+                        {
+                            _dependentDishes.Add(ingr.Id, 
+                                new List<OrderFilterValue>()
+                                    { new OrderFilterValue() { DepartmentId = dish.DepartmentId, StatusId = dish.DishStatusId } }
+                            );
+                        }
                     }
                 }  // foreach dish
             }  // foreach order
@@ -701,6 +743,11 @@ namespace KDSWPFClient
                     updCheckerDishState();
                 }
 
+                if (cfgEdit.AppNewSettings.ContainsKey("IsShowOrderStatusByAllShownDishes"))
+                {
+                    repaintOrders();
+                }
+
                 // масштаб шрифта
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
@@ -776,42 +823,30 @@ namespace KDSWPFClient
         }
 
         // в _dataProvider.Departments, поле IsViewOnKDS = true, если отдел разрешен для показа на этом КДСе
-        // а в _dependDeps - для каждого Id блюда/ингр список зависимых Id отделов
-        private bool checkAllowDepertment(OrderDishModel dishModel)
+        private bool checkAllowDepartment(OrderDishModel dishModel)
         {
-            // проверка в разрешенных самого блюда
-            if (isDepIdAllow(dishModel.DepartmentId)) return true;
-
-            // проверка зависимых ингредиентов
-            if (_dependDeps.ContainsKey(dishModel.Id) && _dependDeps[dishModel.Id] != null)
-            {
-                foreach (int ddId in _dependDeps[dishModel.Id])
-                    if (isDepIdAllow(ddId)) return true;
-            }
-
-            return false;
+            return AppLib.IsDepViewOnKDS(dishModel.DepartmentId, _dataProvider);
         }
-        private bool isDepIdAllow(int depId)
+
+        private bool checkAllowStatus(OrderDishModel dish)
         {
-            return AppLib.IsDepViewOnKDS(depId, _dataProvider);
+            return _allowedStatuses.Contains(dish.DishStatusId);
         }
 
         // обновить фильтр состояний блюд
         private void updCheckerDishState()
         {
-            List<int> ids;
+            _allowedStatuses.Clear();
             // если нет пользовательского фильтра состояний, то взять фильтр роли
             if ((_currentKDSStates.StateSets == null) || (_currentKDSStates.StateSets.Count == 0))
             {
                 // применить фильтр роли
                 if ((_currentKDSStates.AllowedStates == null) || (_currentKDSStates.AllowedStates.Count == 0))
                 {
-                    _valueDishChecker.Update("dishStates", (OrderDishModel dish) => false);
                 }
                 else
                 {
-                    ids = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
-                    _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
+                    _allowedStatuses = _currentKDSStates.AllowedStates.Select(statEnum => (int)statEnum).ToList();
                 }
 
                 // уничтожить объект перебора значений
@@ -847,14 +882,14 @@ namespace KDSWPFClient
                 // текущий набор состояний
                 KDSUserStatesSet statesSet = _userStatesLooper.Current;
                 // для фильтра берем список Ид состояний
-                ids = statesSet.States.Select(s => (int)s).ToList();
-                _valueDishChecker.Update("dishStates", (OrderDishModel dish) => ids.Contains(dish.DishStatusId));
+                _allowedStatuses = statesSet.States.Select(s => (int)s).ToList();
 
                 // вкладка перебора фильтров состояний
                 if (btnDishStatusFilter.Visibility == Visibility.Hidden) btnDishStatusFilter.Visibility = Visibility.Visible;
                 setUserStatesTab();  // отобразить на вкладке текущий набор
             }
         }
+
         #endregion
 
         #region Настройка приложения боковыми кнопками
@@ -1033,6 +1068,13 @@ namespace KDSWPFClient
             public DateTime DishDate { get; set; }
             public int Number { get; set; }
             public OrderModel Order { get; set; }
+        }
+
+        // структура для хранения полей заказа, необходимых для фильтрации блюд
+        private struct OrderFilterValue
+        {
+            public int DepartmentId { get; set; }
+            public int StatusId { get; set; }
         }
 
         #endregion

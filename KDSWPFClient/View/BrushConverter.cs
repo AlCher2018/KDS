@@ -26,7 +26,7 @@ namespace KDSWPFClient.View
             Brush retVal = null;
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
 
-            string key=null;
+            string key = null;
 
             if (value is string)
                 key = value.ToString();
@@ -51,4 +51,42 @@ namespace KDSWPFClient.View
             throw new NotImplementedException();
         }
     }
+
+
+    public class BrushOrderHeaderConverter : IMultiValueConverter
+    {
+        private static Brush _defaultBrush = Brushes.White;
+
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            StatusEnum status1 = (StatusEnum)values[0]; // статус заказа из БД
+            StatusEnum status2 = (StatusEnum)values[1]; // статус заказа по блюдам, разрешенным на КДСе
+                                                        
+            Brush retVal = null;
+            Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
+            string key = null;
+            
+            if (((bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes")) 
+                && (status2 != StatusEnum.None) && (status2 != StatusEnum.WaitingCook) && (status2 != status1))
+                key = status2.ToString();
+            else
+                key = status1.ToString();
+
+            if (!key.IsNull() && appBrushes.ContainsKey(key) && (parameter != null))
+            {
+                string[] aParam = parameter.ToString().Split(';');
+                BrushesPair brPair = appBrushes[key];
+
+                retVal = (aParam[0] == "fore") ? brPair.Foreground : brPair.Background;
+            }
+
+            return (retVal == null) ? _defaultBrush : retVal;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }

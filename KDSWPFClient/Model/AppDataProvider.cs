@@ -34,12 +34,20 @@ namespace KDSWPFClient
         private string _errMsg;
         public string ErrorMessage { get { return _errMsg; } }
 
-        public bool EnableChannels { get
-            { return (_getClient != null) && (_setClient != null) 
-                    && ((_getClient.State == CommunicationState.Created) || (_getClient.State== CommunicationState.Opened))
-                    && ((_setClient.State == CommunicationState.Created) || (_setClient.State == CommunicationState.Opened));
+        public bool EnableGetChannel { get
+            { return (_getClient != null)
+                    && ((_getClient.State == CommunicationState.Created) || (_getClient.State== CommunicationState.Opened));
             }
         }
+        public bool EnableSetChannel
+        {
+            get
+            {
+                return (_setClient != null)
+                      && ((_setClient.State == CommunicationState.Created) || (_setClient.State == CommunicationState.Opened));
+            }
+        }
+
 
         public AppDataProvider()
         {
@@ -47,7 +55,7 @@ namespace KDSWPFClient
             _deps = new Dictionary<int, DepartmentViewModel>();
         }
 
-        public bool CreateChannels()
+        public bool CreateGetChannel()
         {
             bool retVal = false;
 
@@ -60,10 +68,28 @@ namespace KDSWPFClient
                 logClientInfo(_getClient);
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
 
-                if (_setClient != null) _setClient.Close();
+                retVal = true;
+            }
+            catch (Exception ex)
+            {
+                _errMsg = ex.Message;
+                throw;
+            }
+
+            return retVal;
+        }
+        public bool CreateSetChannel()
+        {
+            bool retVal = false;
+
+            _errMsg = null;
+            try
+            {
+                if ((_setClient != null) && (_setClient.State != CommunicationState.Faulted)) _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
                 _setClient.Open();
                 logClientInfo(_setClient);
+
                 retVal = true;
             }
             catch (Exception ex)

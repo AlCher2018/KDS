@@ -4,6 +4,7 @@ using KDSWPFClient.View;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -54,6 +55,15 @@ namespace KDSWPFClient.ViewModel
 
         public string WaitingTimerString { get; set; }
 
+        public string ViewTimerString { get; set; }
+
+        // поля дат состояний и временных промежутков
+        // - ожидаемое начало приготовления
+        private DateTime _dtCookingStartEstimated;
+        // - время приготовления
+        private TimeSpan _tsCookingEstimated;
+        private string _strCookingEstimated;
+
 
         // CONSTRUCTORS
         public OrderDishViewModel()
@@ -82,6 +92,17 @@ namespace KDSWPFClient.ViewModel
             EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
             WaitingTimerString = svcOrderDish.WaitingTimerString;
+
+            setLocalDTFields();
+        }
+
+        private void setLocalDTFields()
+        {
+            // ожидаемое время начала приготовления для автоматического перехода в состояние приготовления
+            _dtCookingStartEstimated = this.CreateDate.AddSeconds(this.DelayedStartTime);
+            // время приготовления
+            _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
+            _strCookingEstimated = AppLib.GetAppStringTS(_tsCookingEstimated);
         }
 
         public void UpdateFromSvc(OrderDishModel svcOrderDish)
@@ -138,17 +159,88 @@ namespace KDSWPFClient.ViewModel
                 OnPropertyChanged("EstimatedTime");
             }
 
-
             if (ServiceErrorMessage != svcOrderDish.ServiceErrorMessage) ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
 
+            setLocalDTFields();
 
             if (WaitingTimerString != svcOrderDish.WaitingTimerString)
             {
                 WaitingTimerString = svcOrderDish.WaitingTimerString;
                 OnPropertyChanged("WaitingTimerString");
+
+                string viewTimer = getViewTimerString();
+                if (viewTimer != this.ViewTimerString)
+                {
+                    this.ViewTimerString = viewTimer;
+                    OnPropertyChanged("ViewTimerString");
+                }
             }
         }
 
+        private string getViewTimerString()
+        {
+            // текущее значение таймера
+            string timerString = this.WaitingTimerString;
+            // состояние "Ожидание" начала готовки
+            if (this.Status == OrderStatusEnum.WaitingCook)
+            {
+                // если есть "Готовить через" - отображаем время начала автомат.перехода в сост."В процессе" по убыванию
+                if (this.DelayedStartTime != 0)
+                {
+                    TimeSpan ts = _dtCookingStartEstimated - DateTime.Now;
+                    timerString = AppLib.GetAppStringTS(ts);
+                    if (ts.Ticks < 0)
+                    {
+                        if (this.EstimatedTime > 0)
+                            timerString = _strCookingEstimated;
+                        else
+                            timerString = "";
+                    }
+                }
+                // если есть время приготовления, то отобразить время приготовления
+                else if (this.EstimatedTime != 0)
+                {
+                    timerString = _strCookingEstimated;
+                }
+                else
+                    timerString = "";
+            }
+
+            // другие состояния
+            else
+            {
+                if (this.Id == 482) Debug.Print("tmr, from svc: " + this.WaitingTimerString);
+                TimeSpan tsTimerValue = AppLib.GetTSFromString(this.WaitingTimerString);
+
+                // состояние "В процессе" - отображаем время приготовления по убыванию от планого времени приготовления,
+                // если нет планового времени приготовления, то сразу отрицат.значения
+                if (this.Status == OrderStatusEnum.Cooking)
+                {
+                    tsTimerValue = _tsCookingEstimated - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
+                }
+
+                // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
+                else
+                {
+                    // из глобальных настроек
+                    bool isUseReadyConfirmed = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+                    if ((!isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready))
+                        || (isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed)))
+                    {
+                        int expTake = (int)AppLib.GetAppGlobalValue("ExpectedTake");
+                        if (expTake > 0)
+                        {
+                            tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
+                            if (this.Id == 482) Debug.Print("tmr, expected: " + tsTimerValue.ToString());
+                        }
+                    }
+                }
+
+                timerString = AppLib.GetAppStringTS(tsTimerValue);
+            }
+
+            return timerString;
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged([CallerMemberName]string prop = "")

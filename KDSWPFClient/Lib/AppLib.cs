@@ -701,6 +701,25 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
+        // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа отображаемых на данном КДСе цехов
+        public static StatusEnum GetStatusAllDishesOwnDeps(List<OrderDishViewModel> dishes)
+        {
+            if ((dishes == null) || (dishes.Count == 0)) return StatusEnum.None;
+
+            int statId = -1;
+            AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            foreach (OrderDishViewModel modelDish in dishes)
+            {
+                if (dataProvider.Departments[modelDish.DepartmentId].IsViewOnKDS)
+                {
+                    if (statId == -1) statId = modelDish.DishStatusId;
+                    else if (statId != modelDish.DishStatusId) return StatusEnum.None;
+                }
+            }
+
+            return (StatusEnum)statId;
+        }
+
         // принадлежит ли переданный Ид цеха разрешенным цехам на этом КДСе
         internal static bool IsDepViewOnKDS(int depId, AppDataProvider dataProvider = null)
         {

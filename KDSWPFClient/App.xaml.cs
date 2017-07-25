@@ -54,7 +54,8 @@ namespace KDSWPFClient
             AppDataProvider dataProvider = new AppDataProvider();
             try
             {
-                dataProvider.CreateChannels();
+                dataProvider.CreateGetChannel();
+                dataProvider.CreateSetChannel();
                 AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService... Ok");
             }
             catch (Exception ex)
@@ -188,8 +189,8 @@ namespace KDSWPFClient
                 // при клике по ЗАКАЗУ проверить статус отображаемых на данном КДСе позиций
                 if (dishModel == null)
                 {
-                    OrderStatusEnum statAllDishes = AppLib.GetStatusAllDishes(orderModel.Dishes);
-                    if (statAllDishes != OrderStatusEnum.None)
+                    OrderStatusEnum statAllDishes = (OrderStatusEnum)(int)orderModel.StatusAllowedDishes;  //AppLib.GetStatusAllDishes(orderModel.Dishes);
+                    if (orderModel.StatusAllowedDishes != StatusEnum.None)
                     {
                         currentState = statAllDishes;  // текущее состояние - по блюдам!
                         // и, если в разрешенных переходах есть пары с таким ключем, т.е. ВСЕ блюда находятся в состоянии, которое есть в разрешенных переходах
@@ -226,6 +227,9 @@ namespace KDSWPFClient
                     {
                         try
                         {
+                            // проверить set-канал
+                            if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
+
                             // изменение состояния БЛЮДА
                             if (dishModel != null)
                             {
@@ -266,6 +270,7 @@ namespace KDSWPFClient
                         catch (Exception ex)
                         {
                             AppLib.WriteLogErrorMessage(ex.ToString());
+                            MessageBox.Show("Ошибка изменения состояния. Попробуйте еще раз.", "Ошибка записи нового состояния",MessageBoxButton.OK);
                         }
 
                     } // if

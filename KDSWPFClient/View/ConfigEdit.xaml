@@ -155,8 +155,10 @@
 
             <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (независимо от блюда) или блюда на допнаправлении кликом по строке блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 
+            <CheckBox x:Name="cbxShowOrderStatusByAllShownDishes" Content="отображать ли заголовок ЗАКАЗА тем же статусом, что и все, ОТОБРАЖАЕМЫЕ на данном КДС-е, блюда/ингредиенты" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+
             <!-- интервал таймера автоматического перехода группировки заказов из "По номерам" в "По времени" -->
-            <StackPanel  Margin="0,5" Orientation="Horizontal">
+            <StackPanel  Margin="0,15,0,5" Orientation="Horizontal">
                 <TextBlock Text="интервал таймера автоматического перехода группировки заказов из 'По номерам' в 'По времени':  "/>
                 <cavCtl:NumericUpDown x:Name="tbTimerIntervalToOrderGroupByTime" Minimum="2" Maximum="30" Value="10" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
                 <TextBlock Text="сек"/>
