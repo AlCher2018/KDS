@@ -85,8 +85,7 @@ namespace KDSWPFClient
             AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
-            // после открытия канала к сервису, т.к. здесь используются значения, полученные от службы и сохраненные в св-вах приложения
-            KDSModeHelper.PutCfgKDSModeToAppProps();
+            KDSModeHelper.Init();
 
             // основное окно приложения
             MainWindow mainWindow = new MainWindow();
@@ -147,8 +146,8 @@ namespace KDSWPFClient
 
             cfgValue = AppLib.GetAppSetting("OrderHeaderClickable");
             AppLib.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
-            cfgValue = AppLib.GetAppSetting("IngrClickable");
-            AppLib.SetAppGlobalValue("IngrClickable", cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("IsIngredientsIndependent");
+            AppLib.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
 
             cfgValue = AppLib.GetAppSetting("IsShowOrderStatusByAllShownDishes");
             AppLib.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
@@ -161,9 +160,6 @@ namespace KDSWPFClient
             // - самостоятельный(независимый), т.е. ведет себя как блюдо (может отображаться на разных КДС-ах, 
             //         иметь собственные таймеры, переходить из состояния в состояние), кроме перехода в состояние ВЫДАНО, 
             //         в это состояние незав.ингредиент может быть переведен только вместе с блюдом, т.е. как зависимый ингредиент
-            // Режим находится в службе, а клиентом только читается оттуда: AppDataProvider.SetDictDataFromService()
-            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false); // for Copy/Paste
-
         }
 
         internal static void OpenColorLegendWindow()
@@ -180,7 +176,7 @@ namespace KDSWPFClient
 
             // из РАЗРЕШЕННЫХ переходов выбрать переходы, ДОСТУПНЫЕ для текущего состояния
             OrderStatusEnum currentState = (OrderStatusEnum)((dishModel == null) ? orderModel.OrderStatusId : dishModel.DishStatusId);
-            KDSModeEnum kdsMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");  // текущий режим КДС
+            KDSModeEnum kdsMode = KDSModeHelper.CurrentKDSMode;  // текущий режим КДС
 
             List<KeyValuePair<OrderStatusEnum, OrderStatusEnum>> allowedActions = KDSModeHelper.DefinedKDSModes[kdsMode].AllowedActions;
             if (allowedActions != null)
@@ -230,17 +226,28 @@ namespace KDSWPFClient
                             // проверить set-канал
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
 
-                            // изменение состояния БЛЮДА
+                            bool isIngrIndep = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+
+                            // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)
                             if (dishModel != null)
                             {
                                 AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
                                 dataProvider.LockOrder(orderModel.Id);
-                                dataProvider.LockDish(dishModel.Id);
 
                                 dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
 
+                                OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
+                                if (ingrs.Length > 0)
+                                {
+                                    foreach (OrderDishViewModel ingr in ingrs)
+                                    {
+                                        // если ингредиент зависимый и разрешенный на данном КДСе, то меняем его статус
+                                        if (DishesFilter.Instance.Checked(ingr))
+                                            dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                                    }
+                                }
+
                                 AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
-                                dataProvider.DelockDish(dishModel.Id);
                                 dataProvider.DelockOrder(orderModel.Id);
                             }
 
@@ -254,9 +261,7 @@ namespace KDSWPFClient
                                 // меняем статус блюд в заказе, если блюдо разрешено для данного КДСа
                                 foreach (OrderDishViewModel item in orderModel.Dishes)
                                 {
-                                    bool isDepAllowed = AppLib.IsDepViewOnKDS(item.DepartmentId, dataProvider);
-                                    AppLib.WriteLogTraceMessage("clt: DISH set status {4} dishId {0} ({1}), dpmt {2} is {3}", item.Id, item.DishName, item.DepartmentId, (isDepAllowed?"allowed":"NOT allowed"), newState.ToString());
-                                    if (isDepAllowed)
+                                    if (DishesFilter.Instance.Checked(item))
                                     {
                                         dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
                                     }

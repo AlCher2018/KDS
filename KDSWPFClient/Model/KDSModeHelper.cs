@@ -15,15 +15,40 @@ namespace KDSWPFClient.Model
         // разрешенные состояния (видимые на КДС) и разрешенные действия предопределенных ролей КДС
         // заполняется в статическом конструкторе
         private static Dictionary<KDSModeEnum, KDSModeStates> _definedKDSModes;
+        public static Dictionary<KDSModeEnum, KDSModeStates> DefinedKDSModes
+        {
+            get { return _definedKDSModes; }
+        }
 
+        // текущая роль
+        public static KDSModeEnum CurrentKDSMode { get; set; }
+        //  и текущие разрешения
+        public static KDSModeStates CurrentKDSStates {
+            get {
+                if ((DefinedKDSModes != null) && DefinedKDSModes.ContainsKey(CurrentKDSMode))
+                    return DefinedKDSModes[CurrentKDSMode];
+                else
+                    return null;
+            }
+        }
+
+        // конструктор
         static KDSModeHelper()
+        { }
+
+        public static void Init()
+        {
+            initDefinedKDSModes();
+            initFromCfgFile();
+        }
+        private static void initDefinedKDSModes()
         {
             bool useReadyConfirmedState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
 
             // повар
             #region Повар
             KDSModeStates modeCook = new KDSModeStates() { KDSMode = KDSModeEnum.Cook };
-            modeCook.AllowedStates.AddRange(new OrderStatusEnum[] 
+            modeCook.AllowedStates.AddRange(new OrderStatusEnum[]
             {
                 OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking, OrderStatusEnum.Cancelled
             });
@@ -117,12 +142,32 @@ namespace KDSWPFClient.Model
                 { KDSModeEnum.Special, modeSpecial }
             };
         }
-
-        public static Dictionary<KDSModeEnum, KDSModeStates> DefinedKDSModes
+        // если в config-е режим не задан или задан неверно, то по умолчанию - Cook
+        private static void initFromCfgFile()
         {
-            get { return _definedKDSModes; }
-        }
+            KDSModeEnum mode;
+            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            if (cfgValue.IsNull())
+                mode = KDSModeEnum.Cook;  // нет такого элемента
+            else if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false)
+                mode = KDSModeEnum.Cook;  // не смогли распарсить
+            // сохранить в свойствах класса
+            KDSModeHelper.CurrentKDSMode = mode;
 
+            // особая роль, читаем доп.элементы в config и заполняем четвертый элемент в _definedKDSModes
+            if (mode == KDSModeEnum.Special)
+            {
+                KDSModeStates modeStates = _definedKDSModes[KDSModeEnum.Special];
+
+                string cfgVal = AppLib.GetAppSetting("KDSModeSpecialStates");
+                modeStates.StringToAllowedStates(cfgVal);
+                cfgVal = AppLib.GetAppSetting("KDSModeSpecialActions");
+                modeStates.StringToAllowedActions(cfgVal);
+                modeStates.CreateUserStateSets();
+            }
+
+
+        }  // method
 
         // пользовательские наборы состояний для их фильтрации
         public static List<KDSUserStatesSet> CreateUserStatesList(List<OrderStatusEnum> statesList)
@@ -281,33 +326,6 @@ namespace KDSWPFClient.Model
             return retVal;
 
         }
-
-        // если в config-е режим не задан или задан неверно, то по умолчанию - Cook
-        public static void PutCfgKDSModeToAppProps()
-        {
-            KDSModeEnum mode;
-
-            string cfgValue = AppLib.GetAppSetting("KDSMode");
-            if (cfgValue.IsNull())
-                mode = KDSModeEnum.Cook;  // нет такого элемента
-            else if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false)
-                mode = KDSModeEnum.Cook;  // не смогли распарсить
-
-            AppLib.SetAppGlobalValue("KDSMode", mode);
-
-            // особая роль, читаем доп.элементы в config и заполняем четвертый элемент в _definedKDSModes
-            if (mode == KDSModeEnum.Special)
-            {
-                KDSModeStates modeStates = _definedKDSModes[KDSModeEnum.Special];
-
-                string cfgVal = AppLib.GetAppSetting("KDSModeSpecialStates");
-                modeStates.StringToAllowedStates(cfgVal);
-                cfgVal = AppLib.GetAppSetting("KDSModeSpecialActions");
-                modeStates.StringToAllowedActions(cfgVal);
-                modeStates.CreateUserStateSets();
-            }
-        }  // method
-
 
     }  // class
 

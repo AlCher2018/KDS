@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Lib\DebugTimer.cs" />
+    <Compile Include="Model\DishesFilter.cs" />
     <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />

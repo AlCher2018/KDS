@@ -113,7 +113,7 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
             _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             _cfgValKeeper.AddPreValue("OrderHeaderClickable", true, cbxOrderHeaderClickable);
-            _cfgValKeeper.AddPreValue("IngrClickable", true, cbxIngrClickable);
+            _cfgValKeeper.AddPreValue("IsIngredientsIndependent", true, cbxIngrClickable);
             _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
 
             // получить от службы
@@ -122,43 +122,40 @@ namespace KDSWPFClient.View
             //_cfgValKeeper.AddPreValueDirectly("ExpectedTake", expTake.ToString(), tbTimerExpectedTake);
 
             bool isDefault = true;
-            if (AppLib.GetAppGlobalValue("KDSMode") != null)
+            KDSModeEnum eMode = KDSModeHelper.CurrentKDSMode;
+            _cfgValKeeper.AddPreValueDirectly("KDSMode", eMode.ToString());  // прямое сохранение только в символьном виде
+
+            if (KDSModeHelper.DefinedKDSModes.ContainsKey(eMode))
             {
-                KDSModeEnum eMode = (KDSModeEnum)AppLib.GetAppGlobalValue("KDSMode");
-                _cfgValKeeper.AddPreValueDirectly("KDSMode", eMode.ToString());  // прямое сохранение только в символьном виде
-
-                if (KDSModeHelper.DefinedKDSModes.ContainsKey(eMode))
+                string sStates, sActions;
+                if (eMode == KDSModeEnum.Special)
                 {
-                    string sStates, sActions;
-                    if (eMode == KDSModeEnum.Special)
-                    {
-                        KDSModeStates modeStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
-                        sStates = modeStates.AllowedStatesToString();
-                        sActions = modeStates.AllowedActionsToString();
-                    }
-                    else
-                    {
-                        sStates = ""; sActions = "";
-                    }
-                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", sStates);
-                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", sActions);
-
-                    isDefault = false;
-
-                    // чекнуть нужную кнопку
-                    foreach (RadioButton item in lbxKDSMode.Children.OfType<RadioButton>())
-                    {
-                        if ((item.Tag != null) && (Convert.ToInt32(item.Tag) == (int)eMode))
-                            item.IsChecked = true;
-                        else
-                            item.IsChecked = false;
-                    }
+                    KDSModeStates modeStates = KDSModeHelper.DefinedKDSModes[KDSModeEnum.Special];
+                    sStates = modeStates.AllowedStatesToString();
+                    sActions = modeStates.AllowedActionsToString();
                 }
                 else
                 {
-                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", "");
-                    _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", "");
+                    sStates = ""; sActions = "";
                 }
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", sStates);
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", sActions);
+
+                isDefault = false;
+
+                // чекнуть нужную кнопку
+                foreach (RadioButton item in lbxKDSMode.Children.OfType<RadioButton>())
+                {
+                    if ((item.Tag != null) && (Convert.ToInt32(item.Tag) == (int)eMode))
+                        item.IsChecked = true;
+                    else
+                        item.IsChecked = false;
+                }
+            }
+            else
+            {
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialStates", "");
+                _cfgValKeeper.AddPreValueDirectly("KDSModeSpecialActions", "");
             }
 
             // роль КДС по умолчанию
@@ -260,7 +257,8 @@ namespace KDSWPFClient.View
                     // для некоторых значений может понадобиться преобразование типов для сохранения в App.Properties
                     if (_appNewSettings.ContainsKey("KDSMode") && (_appNewSettings["KDSMode"].IsNull() == false))
                     {
-                        if (Enum.TryParse<KDSModeEnum>(_appNewSettings["KDSMode"], out eMode)) AppLib.SetAppGlobalValue("KDSMode", eMode); 
+                        if (Enum.TryParse<KDSModeEnum>(_appNewSettings["KDSMode"], out eMode))
+                            KDSModeHelper.CurrentKDSMode = eMode; 
                     }
                     // особые состояния и действия хранятся не в App.Properties, а в четвертом элементе KDSModeStates и в config-e !!
                     if (_appNewSettings.ContainsKey("KDSModeSpecialStates"))

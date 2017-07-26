@@ -309,7 +309,7 @@ namespace KDSService.AppModel
                             if (modelDish.ParentUid.IsNull())
                             {
                                 // дату входа в состояние берем из заказа, а время нахожд.в предыд.состоянии из самого блюда
-                                dishUpdSuccess &= modelDish.UpdateStatus(newStatus, false, statusDTS.DateEntered);
+                                dishUpdSuccess &= modelDish.UpdateStatus(newStatus, statusDTS.DateEntered);
                             }
                         }
                     }

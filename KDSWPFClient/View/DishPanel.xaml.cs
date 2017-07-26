@@ -166,7 +166,7 @@ namespace KDSWPFClient.View
             else
             {
                 bool b1 = _isTimerBrushesIndepend;
-                bool b2 = (bool)AppLib.GetAppGlobalValue("IngrClickable", false);
+                bool b2 = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
                 if ((b1 == false) && (b2 == false)) return;
             }
 

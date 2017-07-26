@@ -100,7 +100,6 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "SingleClientSvcLog");
             putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
-            putCfgValueToStrBuilder(cfg, sb, "IsIngredientsIndependent");
             putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
             putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
             putCfgValueToStrBuilder(cfg, sb, "TimeOfAutoCloseYesterdayOrders");
@@ -126,9 +125,6 @@ namespace KDSConsoleSvcHost
                 _props.SetProperty("SingleClientSvcLog", value.ToBool());
             if ((value = cfg["IsLogUserAction"]) != null)
                 _props.SetProperty("IsLogUserAction", value.ToBool());
-
-            // IsIngredientsIndependent - режим ингредиента: зависимый от блюда или независимый
-            _props.SetProperty("IsIngredientsIndependent", cfg["IsIngredientsIndependent"].ToBool());
 
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
             _props.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());

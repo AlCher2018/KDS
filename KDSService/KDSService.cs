@@ -212,7 +212,6 @@ namespace KDSService
 
             Dictionary<string, object> retval = new Dictionary<string, object>()
             {
-                { "IsIngredientsIndependent", (bool)AppEnv.GetAppProperty("IsIngredientsIndependent", false)},
                 { "ExpectedTake", (int)AppEnv.GetAppProperty("ExpectedTake", 0)},
                 { "UseReadyConfirmedState", (bool)AppEnv.GetAppProperty("UseReadyConfirmedState", false)},
                 { "TakeCancelledInAutostartCooking", (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false)},
@@ -298,7 +297,7 @@ namespace KDSService
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
 
-                    result = modelDish.UpdateStatus(orderDishStatus, true);
+                    result = modelDish.UpdateStatus(orderDishStatus);
                 }
             }
 
