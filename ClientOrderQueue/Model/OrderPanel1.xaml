@@ -36,7 +36,7 @@
             <!-- НОМЕР ЗАКАЗА -->
             <Grid x:Name="grdRow1" Grid.Row="0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="1.5*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="0.3*"/>
                 </Grid.RowDefinitions>
@@ -51,6 +51,7 @@
                 <Viewbox x:Name="cntCookingTimer" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Collapsed">
                     <TextBlock Margin="5,0">
                         <Run x:Name="tbCookingTimerTitle" FontSize="12"/>
+                        <Run Text=" "/>
                         <Run x:Name="tbCookingTimer" FontSize="14" FontWeight="Bold"/>
                     </TextBlock>
                 </Viewbox>

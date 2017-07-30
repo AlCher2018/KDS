@@ -51,9 +51,9 @@ namespace ClientOrderQueue
             this.Loaded += MainWindow_Loaded;
             setAppLayout();
 
-            _updateTimer = new System.Timers.Timer();
+            _updateTimer = new System.Timers.Timer(1000d);
+            _updateTimer.AutoReset = true;
             _updateTimer.Elapsed += updateTimer_Tick;
-            _updateTimer.Interval = 1000d;
             _updateTimer.Start();
         }
 
@@ -72,8 +72,6 @@ namespace ClientOrderQueue
             int rowsCount = grid.RowDefinitions.Count, colsCount = grid.ColumnDefinitions.Count;
 
             string stateReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile");
-            System.Windows.Media.Imaging.BitmapImage stateReadyImage = null;
-            if (stateReadyImageFile != null) stateReadyImage = new System.Windows.Media.Imaging.BitmapImage(new Uri("statusReadyImage.png", UriKind.RelativeOrAbsolute));
 
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
@@ -84,8 +82,9 @@ namespace ClientOrderQueue
                     // постоянные свойства панели
                     OrderPanel1 cc = new OrderPanel1()
                     {
+                        Visibility = Visibility.Hidden,
                         BackBrushes = _cellBrushes,
-                        MarginKoefStr = "0.6",
+                        MarginKoefStr = "0.05,0.05",
                         IsShowClientName = _isShowClientName,
                         IsShowCookingTime = _isShowCookingTime,
 
@@ -95,7 +94,7 @@ namespace ClientOrderQueue
                         Status2Langs = (string)AppLib.GetAppGlobalValue("Status2Langs"),
                         Status3Langs = (string)AppLib.GetAppGlobalValue("Status3Langs")
                     };
-                    if (stateReadyImage != null) cc.StateReadyImage = stateReadyImage;
+                    if (stateReadyImageFile != null) cc.StateReadyImagePath = stateReadyImageFile;
 
                     //CellContainer cc = new CellContainer(cellWidth, cellHeight)
                     //{
@@ -146,7 +145,7 @@ namespace ClientOrderQueue
             {
                 fillCells(G15);
                 setGridVisibility(G24, Visibility.Collapsed);
-                setGridVisibility(G15 , Visibility.Visible);
+                setGridVisibility(G15, Visibility.Visible);
             }
             else
             {
@@ -223,7 +222,7 @@ namespace ClientOrderQueue
                     if (listIndex < _appOrders.Count)
                     {
                         cc.OrderNumber = _appOrders[listIndex].Order.Number.ToString();
-                        cc.OrderStatus = _appOrders[listIndex].Order.QueueStatusId;
+                        cc.OrderStatus = _appOrders[listIndex].Order.QueueStatusId + 1;
                         cc.OrderLang = _appOrders[listIndex].Order.LanguageTypeId;
                         if (_isShowClientName) cc.ClientName = _appOrders[listIndex].Order.ClientName;
                         if (_isShowCookingTime)
@@ -231,6 +230,7 @@ namespace ClientOrderQueue
                             cc.OrderCreateDate = _appOrders[listIndex].Order.CreateDate;
                             cc.CookingEstMinutes = _cookingEstMinutes;
                         }
+                        if (cc.Visibility != Visibility.Visible) cc.Visibility = Visibility.Visible;
                     }
                     else if (cc.Visibility == Visibility.Visible) cc.Visibility = Visibility.Hidden;
 

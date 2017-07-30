@@ -91,7 +91,7 @@ namespace ClientOrderQueue.Model
         }
 
         // статус заказа: 1-готовится, 2-приготовлен, 3-забран
-        // на 3-х языках: 0-русский, 1-украинский, 2-английский
+        // на 3-х языках: 1-русский, 2-украинский, 3-английский
         private string[][] _statusLangs;
         public string Status1Langs
         {
@@ -109,7 +109,7 @@ namespace ClientOrderQueue.Model
             set { parseLangStrToArray(value, ref _statusLangs[2]); }
         }
 
-        private int _orderStatus, _orderLang;
+        private int _orderStatus, _orderLang = 1;
         public int OrderStatus
         {
             get { return _orderStatus; }
@@ -125,8 +125,12 @@ namespace ClientOrderQueue.Model
             get { return _orderLang; }
             set
             {
-                _orderLang = value;
-                setLang();
+                if ((value < 1) || (value > 3)) return;
+                if (_orderLang != value)
+                {
+                    _orderLang = value;
+                    setLang();
+                }
             }
         }
 
@@ -196,8 +200,7 @@ namespace ClientOrderQueue.Model
                 Grid.SetRowSpan(this.cntOrderNumber, 1);
                 this.grdMain.RowDefinitions[0].Height = new GridLength(1.2d, GridUnitType.Star);
                 this.cntCookingTimer.Visibility = Visibility.Visible;
-                this.tbCookingTimer.Text = "00:00:00";
-                //this.tbCookingTimer.Foreground = Brushes.Transparent;
+//                this.tbCookingTimer.Text = "00:00:00";
                 setLang();
             }
             else
@@ -240,7 +243,7 @@ namespace ClientOrderQueue.Model
         {
             if (_cookingTimer == null)
             {
-                _cookingTimer = new Timer(500d);
+                _cookingTimer = new Timer(200d);
                 _cookingTimer.AutoReset = true;
                 _cookingTimer.Elapsed += _cookingTimer_Elapsed;
             }
@@ -268,8 +271,9 @@ namespace ClientOrderQueue.Model
             TimeSpan ts = (_cookingEstMinutes == 0 ? DateTime.Now - _cookingEstDate : _cookingEstDate - DateTime.Now);
 
             ts = getRoundedTimeSpan(ts, 1d);
+            string tss = ts.ToStringExt();
 
-            this.tbCookingTimer.Text = ts.ToStringExt();
+            if (this.tbCookingTimer.Text != tss) this.tbCookingTimer.Text = tss;
         }
 
         private TimeSpan getRoundedTimeSpan(TimeSpan ts, double divider)
@@ -301,8 +305,9 @@ namespace ClientOrderQueue.Model
                     {
                         this.imgStat2.Source = new BitmapImage(new Uri(_stateReadyImagePath, UriKind.RelativeOrAbsolute));
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        MessageBox.Show(ex.Message);
                     }
                 }
             }
@@ -370,18 +375,20 @@ namespace ClientOrderQueue.Model
         // язык: 0-русский, 1-украинский, 2-английский
         private void setLang()
         {
+            if ((_orderLang < 1) || (_orderLang > 3)) _orderLang = 1;
+
             if ((_orderStatus >= 1) && (_orderStatus <= 3))
-                this.tbStatText.Text = _statusLangs[_orderStatus-1][_orderLang];
+                this.tbStatText.Text = _statusLangs[_orderStatus-1][_orderLang-1];
             else
                 this.tbStatText.Text = "Unknown status";
 
             if (this.IsShowClientName)
                 this.tbStatTitle.Text = _clientName;
             else
-                this.tbStatTitle.Text = _titleLangs[_orderLang];
+                this.tbStatTitle.Text = _titleLangs[_orderLang-1];
 
             if (this.IsShowCookingTime)
-                this.tbCookingTimerTitle.Text = _cookingTimeTitleLangs[_orderLang];
+                this.tbCookingTimerTitle.Text = _cookingTimeTitleLangs[_orderLang-1];
         }
 
     } // class

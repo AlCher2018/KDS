@@ -139,7 +139,9 @@ namespace ClientOrderQueue.Lib
 
             if (string.IsNullOrEmpty(values[2].ToString())) return new Thickness(0);
 
-            string[] aKoefStr = values[2].ToString().Split(';');
+            string sMargs = values[2].ToString();
+            if (sMargs.Contains(';')) sMargs = sMargs.Replace(';', ',');
+            string[] aKoefStr = sMargs.Split(',');
             double[] aKoefDbl = new double[aKoefStr.Length];
             for (int i = 0; i < aKoefStr.Length; i++)
             {
