@@ -22,8 +22,8 @@ namespace ClientOrderQueue.Model
 
         private double _width, _height;
 
-        private CellBrushes[] _brushes;
-        public CellBrushes[] PanelBrushes { set { _brushes = value; } }
+        private Brush[] _brushes;
+        public Brush[] PanelBrushes { set { _brushes = value; } }
 
         private string[] _titleLangs;
         public string[] TitleLangs { set { _titleLangs = value; } }
@@ -239,8 +239,11 @@ namespace ClientOrderQueue.Model
             _tbNumber.Text = _appOrder.Order.Number.ToString();
             if (_tbNumber.FontSize != _orderNumberFontSize) _tbNumber.FontSize = _orderNumberFontSize;
 
-            base.Background = _brushes[statusId].Background;
-            _delimLine.Stroke = _brushes[statusId].DelimLine;
+            if (base.Background != _brushes[statusId])
+            {
+                base.Background = _brushes[statusId];
+                _delimLine.Stroke = getDarkerBrush(_brushes[statusId]);
+            }
 
             int acceptLang = (langId == 1) ? 1 : (langId == 2) ? 0 : 2;
 
@@ -268,6 +271,19 @@ namespace ClientOrderQueue.Model
                 base.Visibility = Visibility.Visible;
             }
 
+        }
+
+        private Brush getDarkerBrush(Brush brush)
+        {
+            if (brush is SolidColorBrush)
+            {
+                float darkKoef = 0.6f; // the less the darker
+                Color col = (brush as SolidColorBrush).Color;
+                Color col1 = Color.Multiply(col, darkKoef); col1.A = 255;
+                return new SolidColorBrush(col1);
+            }
+            else
+                return Brushes.Gray;
         }
 
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)

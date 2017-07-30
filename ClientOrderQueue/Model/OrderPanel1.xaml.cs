@@ -134,7 +134,13 @@ namespace ClientOrderQueue.Model
         private Brush[] _backBrushes;
         public Brush[] BackBrushes
         {
-            set { _backBrushes = value; setStatus(); }
+            set
+            {
+                _backBrushes = value;
+                int minLen = Math.Min(_backBrushes.Length, value.Length);
+                for (int i = 0; i < minLen; i++) _backBrushes[i] = value[i];
+                setStatus();
+            }
         }
 
         #endregion

@@ -20,7 +20,8 @@ namespace ClientOrderQueue
         private System.Timers.Timer _updateTimer;
 
         private Brush[] _cellBrushes;
-
+        private bool _isShowClientName, _isShowCookingTime;
+        private double _cookingEstMinutes;
         private HashSet<int> _unUsedDeps;
 
         public MainWindow()
@@ -42,6 +43,10 @@ namespace ClientOrderQueue
             {
                 simpleSound = new System.Media.SoundPlayer(statusReadyAudioFile);
             }
+
+            _isShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName");
+            _isShowCookingTime = (bool)AppLib.GetAppGlobalValue("IsShowOrderEstimateTime");
+            _cookingEstMinutes = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
 
             this.Loaded += MainWindow_Loaded;
             setAppLayout();
@@ -66,22 +71,42 @@ namespace ClientOrderQueue
             Size mainGridSize = getMainGridSize();
             int rowsCount = grid.RowDefinitions.Count, colsCount = grid.ColumnDefinitions.Count;
 
+            string stateReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile");
+            System.Windows.Media.Imaging.BitmapImage stateReadyImage = null;
+            if (stateReadyImageFile != null) stateReadyImage = new System.Windows.Media.Imaging.BitmapImage(new Uri("statusReadyImage.png", UriKind.RelativeOrAbsolute));
+
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
 
             for (int i = 0; i < rowsCount; i++)
                 for (int j = 0; j < colsCount; j++)
                 {
-                    CellContainer cc = new CellContainer(cellWidth, cellHeight)
+                    // постоянные свойства панели
+                    OrderPanel1 cc = new OrderPanel1()
                     {
-                        PanelBrushes = _cellBrushes,
-                        TitleLangs = (string[])AppLib.GetAppGlobalValue("StatusTitle"),
-                        StatusLangs = (string[][])AppLib.GetAppGlobalValue("StatusLang"),
-                        IsShowOrderEstimateTime = (bool)AppLib.GetAppGlobalValue("IsShowOrderEstimateTime"),
-                        IsShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName"),
-                        OrderNumberFontSize = (double)AppLib.GetAppGlobalValue("OrderNumberFontSize", 0),
-                        StatusReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile")
+                        BackBrushes = _cellBrushes,
+                        MarginKoefStr = "0.6",
+                        IsShowClientName = _isShowClientName,
+                        IsShowCookingTime = _isShowCookingTime,
+
+                        TitleLangs = (string)AppLib.GetAppGlobalValue("StatusTitle"),
+                        CookingTimeTitleLangs = (string)AppLib.GetAppGlobalValue("PanelWaitText"),
+                        Status1Langs = (string)AppLib.GetAppGlobalValue("Status1Langs"),
+                        Status2Langs = (string)AppLib.GetAppGlobalValue("Status2Langs"),
+                        Status3Langs = (string)AppLib.GetAppGlobalValue("Status3Langs")
                     };
+                    if (stateReadyImage != null) cc.StateReadyImage = stateReadyImage;
+
+                    //CellContainer cc = new CellContainer(cellWidth, cellHeight)
+                    //{
+                    //    PanelBrushes = _cellBrushes,
+                    //    TitleLangs = (string[])AppLib.GetAppGlobalValue("StatusTitle"),
+                    //    StatusLangs = (string[][])AppLib.GetAppGlobalValue("StatusLang"),
+                    //    IsShowOrderEstimateTime = (bool)AppLib.GetAppGlobalValue("IsShowOrderEstimateTime"),
+                    //    IsShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName"),
+                    //    OrderNumberFontSize = (double)AppLib.GetAppGlobalValue("OrderNumberFontSize", 0),
+                    //    StatusReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile")
+                    //};
 
                     Grid.SetRow(cc, i); Grid.SetColumn(cc, j);
                     grid.Children.Add(cc);
@@ -149,8 +174,8 @@ namespace ClientOrderQueue
                 if (curAppOrd == null)
                 {
                     AppOrder newAppOrder = new AppOrder() { Id = dbOrd.Id, Order = dbOrd };
-                    newAppOrder.IsExistOrderEstimateDT = (estDT != 0d);
-                    newAppOrder.OrderCookingBaseDT = (estDT == 0d) ? dbOrd.CreateDate : dbOrd.CreateDate.AddMinutes(estDT);
+                    //newAppOrder.IsExistOrderEstimateDT = (estDT != 0d);
+                    //newAppOrder.OrderCookingBaseDT = (estDT == 0d) ? dbOrd.CreateDate : dbOrd.CreateDate.AddMinutes(estDT);
                     // новый заказ сразу в статусе ГОТОВ
                     if (dbOrd.QueueStatusId == 1) isCooked = true;
 
@@ -172,11 +197,14 @@ namespace ClientOrderQueue
 
         private void hideCells(Grid grid)
         {
-            CellContainer cc;
+            //CellContainer cc;
+            OrderPanel1 cc;
             for (int i = 0; i < grid.Children.Count; i++)
             {
-                cc = (CellContainer)G15.Children[i];
-                if (cc.CellVisible) cc.Clear();
+                //cc = (CellContainer)G15.Children[i];
+                //if (cc.CellVisible) cc.Clear();
+                cc = (OrderPanel1)G15.Children[i];
+                if (cc.Visibility == Visibility.Visible) cc.Visibility = Visibility.Hidden;
                 else break;
             }
         }
@@ -191,12 +219,27 @@ namespace ClientOrderQueue
                 for (int j = 0; j < colCount; j++)
                 {
                     listIndex = (i * colCount) + j;
-                    CellContainer cc = (CellContainer)grid.Children[listIndex];
+                    OrderPanel1 cc = (OrderPanel1)grid.Children[listIndex];
                     if (listIndex < _appOrders.Count)
                     {
-                        cc.SetOrderData(_appOrders[listIndex]);
+                        cc.OrderNumber = _appOrders[listIndex].Order.Number.ToString();
+                        cc.OrderStatus = _appOrders[listIndex].Order.QueueStatusId;
+                        cc.OrderLang = _appOrders[listIndex].Order.LanguageTypeId;
+                        if (_isShowClientName) cc.ClientName = _appOrders[listIndex].Order.ClientName;
+                        if (_isShowCookingTime)
+                        {
+                            cc.OrderCreateDate = _appOrders[listIndex].Order.CreateDate;
+                            cc.CookingEstMinutes = _cookingEstMinutes;
+                        }
                     }
-                    else if (cc.AppOrder != null) cc.Clear();
+                    else if (cc.Visibility == Visibility.Visible) cc.Visibility = Visibility.Hidden;
+
+                    //CellContainer cc = (CellContainer)grid.Children[listIndex];
+                    //if (listIndex < _appOrders.Count)
+                    //{
+                    //    cc.SetOrderData(_appOrders[listIndex]);
+                    //}
+                    //else if (cc.AppOrder != null) cc.Clear();
                 }
             }
         }
