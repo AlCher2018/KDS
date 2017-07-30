@@ -343,34 +343,35 @@ namespace KDSService.AppModel
         // установить сост.заказа в 1, если ХОТЬ одно блюдо наход.в сост. 1
         public void UpdateStatusByVerificationDishes(OrderStatusEnum preStatus, OrderStatusEnum newStatus)
         {
-            int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
-            int[] statArray = new int[iLen];
+            int iStat = -1;
+            HashSet<int> unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
 
-            int iStatus, iDishesCount = _dishesDict.Count;
-            foreach (OrderDishModel modelDish in _dishesDict.Values)
+            foreach (OrderDishModel dish in _dishesDict.Values)
             {
-                iStatus = modelDish.DishStatusId;
-                statArray[iStatus]++;
+                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId))) { }
+                else
+                {
+                    // первое доступное блюдо
+                    if (iStat == -1) iStat = dish.DishStatusId;
+
+                    // если хотя бы одно блюдо в состояние Готовится, то и заказ переводим в это состояние, если он был не в этом состоянии
+                    if ((dish.DishStatusId == (int)OrderStatusEnum.Cooking) && (this.OrderStatusId != (int)OrderStatusEnum.Cooking))
+                    {
+                        UpdateStatus(OrderStatusEnum.Cooking, false);
+                        _isUpdStatusFromDishes = true;
+                        return;
+                    }
+
+                    // есть неодинаковый статус - выйти
+                    if (iStat != dish.DishStatusId) return;
+                }
             }
 
-            // в состояние 0 заказ автоматом переходить не должен
-            for(int i=1; i < iLen; i++)
+            if ((iStat != -1) && (this.OrderStatusId != iStat))
             {
-                if ((i == 1) && (statArray[i] > 0))
-                {
-                    UpdateStatus(OrderStatusEnum.Cooking, false);
-                    _isUpdStatusFromDishes = true;
-                }
-                else if (statArray[i] == iDishesCount)
-                {
-                    OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
-                    if (this.Status != statDishes)
-                    {
-                        UpdateStatus(statDishes, false);
-                        _isUpdStatusFromDishes = true;
-                    }
-                    break;
-                }
+                OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(iStat);
+                UpdateStatus(statDishes, false);
+                _isUpdStatusFromDishes = true;
             }
         }  // method
 

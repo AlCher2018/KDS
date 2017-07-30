@@ -6,8 +6,7 @@
         xmlns:local="clr-namespace:KDSWPFClient"
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
-        Title="KDS" Height="720" Width="1024"
-        WindowStyle="ToolWindow" 
+        Title="KDS" Height="720" Width="1024" ShowInTaskbar="True"
         ResizeMode="NoResize" Icon="monitor7.ico">
 
     <Window.Resources>

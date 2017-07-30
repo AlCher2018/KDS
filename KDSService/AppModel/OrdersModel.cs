@@ -33,8 +33,10 @@ namespace KDSService.AppModel
         private bool _isTraceLog;
         private bool _changeStatusYesterdayOrders;
 
+        List<Order> _delOrders;
+        List<OrderDish> _delDishes;
+        List<string> _dishUIDs;
         private HashSet<int> _unUsedDeps;
-
 
         // CONSTRUCTOR
         public OrdersModel()
@@ -56,6 +58,9 @@ namespace KDSService.AppModel
             _isTraceLog = (bool)AppEnv.GetAppProperty("IsWriteTraceMessages", false);
             _changeStatusYesterdayOrders = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
 
+            _delOrders = new List<Order>();
+            _delDishes = new List<OrderDish>();
+            _dishUIDs = new List<string>();
             _unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
         }
 
@@ -108,7 +113,7 @@ namespace KDSService.AppModel
             {
                 lock (this)
                 {
-                    List<Order> delOrders = new List<Order>();
+                    _delOrders.Clear();
 
                     // для последующих обработок удалить из заказов блюда с ненужными статусами и неотображаемые на КДСах
                     foreach (Order dbOrder in dbOrders)
@@ -138,16 +143,44 @@ namespace KDSService.AppModel
                             }
                         }
 
-                        // массив блюд для удаления
-                        OrderDish[] dishesForDel = dbOrder.OrderDish.Where(d => isProcessingDishStatusId(d)==false).ToArray();
-                        // удаление ненужных блюд
-                        foreach (OrderDish delDish in dishesForDel) dbOrder.OrderDish.Remove(delDish);
+                        // фильтр БЛЮД: разрешенные статусы И количество != 0 (положительные - готовятся, отрицательные - отмененные)
+                        // И цех (напр.печати) - отображаемый
+                        //bool retVal = allowedKDSStatuses.Contains(dish.DishStatusId??-1)
+                        //    && (dish.Quantity != 0m)
+                        //    && (!_unUsedDeps.Contains(dish.DepartmentId));
+                        _delDishes.Clear();
+                        _delDishes = dbOrder.OrderDish.Where(
+                            d =>
+                            {
+                                bool result = false;
+                                if (_unUsedDeps == null)
+                                    result = allowedKDSStatuses.Contains(d.DishStatusId ?? -1) && (d.Quantity != 0m);
+                                else
+                                    result = allowedKDSStatuses.Contains(d.DishStatusId ?? -1) && (d.Quantity != 0m) 
+                                    && (!_unUsedDeps.Contains(d.DepartmentId));
+
+                                return !result;
+                            }
+                        ).ToList();
+                        // удалить ненужные блюда
+                        foreach (OrderDish delDish in _delDishes) dbOrder.OrderDish.Remove(delDish);
+
+                        // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
+                        _delDishes.Clear();
+                        _dishUIDs = dbOrder.OrderDish.Where(d => d.ParentUid.IsNull()).Select(d => d.UID).ToList();
+                        _delDishes = dbOrder.OrderDish.Where(d => (!d.ParentUid.IsNull() && (!_dishUIDs.Contains(d.ParentUid)))).ToList();
+                        if (_delDishes.Count > 0)
+                        {
+                            // удалить ненужные блюда
+                            foreach (OrderDish delDish in _delDishes) dbOrder.OrderDish.Remove(delDish);
+                        }
 
                         // коллекция заказов с нулевым количеством блюд - клиентам не передавать
-                        if (dbOrder.OrderDish.Count == 0) delOrders.Add(dbOrder);
+                        if (dbOrder.OrderDish.Count == 0) _delOrders.Add(dbOrder);
                     }
+                    
                     // удалить заказы, у которых нет разрешенных блюд
-                    delOrders.ForEach(o => dbOrders.Remove(o));
+                    _delOrders.ForEach(o => dbOrders.Remove(o));
 
                     // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
                     try
@@ -276,17 +309,6 @@ namespace KDSService.AppModel
         {
             bool retVal = allowedKDSStatuses.Contains(order.OrderStatusId) 
                 && order.CreateDate.Date.Equals(DateTime.Today.Date);
-            return retVal;
-        }
-        // фильтр БЛЮД
-        // и количество != 0 (положительные - готовятся, отрицательные - отмененные)
-        // и цех (напр.печати) - отображаемый
-        private bool isProcessingDishStatusId(OrderDish dish)
-        {
-            bool retVal = allowedKDSStatuses.Contains(dish.DishStatusId??-1)
-                && (dish.Quantity != 0m)
-                && (!_unUsedDeps.Contains(dish.DepartmentId));
-
             return retVal;
         }
 

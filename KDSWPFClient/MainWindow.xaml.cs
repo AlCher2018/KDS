@@ -78,7 +78,6 @@ namespace KDSWPFClient
         {
             InitializeComponent();
 
-            _dishesFilter.mainWindow = this;
             this.Loaded += MainWindow_Loaded;
 
             _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");

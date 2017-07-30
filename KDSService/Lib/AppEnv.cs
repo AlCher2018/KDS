@@ -141,15 +141,22 @@ namespace KDSConsoleSvcHost
             _props.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
 
             // неиспользуемые цеха
-            HashSet<int> unUsed = new HashSet<int>();
             value = cfg["UnusedDepartments"];
-            if (value != null)
+            if (!value.IsNull())  // не Null и не пусто
             {
+                HashSet<int> unUsed = new HashSet<int>();
                 if (value.Contains(',')) value = value.Replace(',', ';');
-                var ids = value.Split(';').Select(s => s.ToInt());
-                foreach (int item in ids) if (!unUsed.Contains(item)) unUsed.Add(item);
+                int[] ids = value.Split(';').Select(s => s.Trim().ToInt()).ToArray();
+                foreach (int item in ids)
+                    if ((item != 0) && !unUsed.Contains(item)) unUsed.Add(item);
+
+                if (unUsed.Count == 0)
+                    _props.SetProperty("UnusedDepartments", null);
+                else
+                    _props.SetProperty("UnusedDepartments", unUsed);
             }
-            _props.SetProperty("UnusedDepartments", unUsed);
+            else
+                _props.SetProperty("UnusedDepartments", null);
 
             // коллекции для хранения заблокированных от изменения по таймеру заказов и блюд
             _props.SetProperty("lockedOrders", new Dictionary<int, bool>());
@@ -403,8 +410,10 @@ namespace KDSConsoleSvcHost
 
         #region для конкретного приложения
         // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
-        public static OrderStatusEnum GetStatusAllDishes(IEnumerable<OrderDish> dishes)
+        public static OrderStatusEnum oldGetStatusAllDishes(IEnumerable<OrderDish> dishes)
         {
+            if ((dishes == null) || (dishes.Count() == 0)) return OrderStatusEnum.None;
+
             OrderStatusEnum retVal = OrderStatusEnum.None;
 
             int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
@@ -433,6 +442,29 @@ namespace KDSConsoleSvcHost
             }
 
             return retVal;
+        }
+
+        public static OrderStatusEnum GetStatusAllDishes(IEnumerable<OrderDish> dishes)
+        {
+            if ((dishes == null) || (dishes.Count() == 0)) return OrderStatusEnum.None;
+
+            int statId = -1, curStat;
+            HashSet<int> unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
+
+            foreach (OrderDish dish in dishes)
+            {
+                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId)))
+                {
+                }
+                else
+                {
+                    curStat = dish.DishStatusId ?? -1;
+                    if (statId == -1) statId = curStat;
+                    else if (statId != dish.DishStatusId) return OrderStatusEnum.None;
+                }
+            }
+
+            return (OrderStatusEnum)statId;
         }
 
         #endregion

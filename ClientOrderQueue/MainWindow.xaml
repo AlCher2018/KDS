@@ -44,7 +44,7 @@
             </Grid.ColumnDefinitions>
         </Grid>
         <!-- grid 6x4 -->
-        <Grid x:Name="G24" Grid.Row="1" Visibility="Collapsed" Margin="10">
+        <Grid x:Name="G24" Grid.Row="1" Visibility="Hidden" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition/>
                 <RowDefinition/>

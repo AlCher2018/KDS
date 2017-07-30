@@ -88,6 +88,22 @@ namespace ClientOrderQueue.Lib
         }
     }
 
+    public static class TimeSpanExtension
+    {
+        public static string ToStringExt(this TimeSpan source)
+        {
+            string sFormat = (source.Days != 0d)
+                ? @"d\.hh\:mm\:ss"
+                : ((source.Hours != 0d) ? @"hh\:mm\:ss" : @"mm\:ss");
+
+            string retVal = source.ToString(sFormat);
+            // отрицательное время
+            if (source.Ticks < 0) retVal = "-" + retVal;
+
+            return retVal;
+        }
+    }
+
     public static class UIElementExtensions
     {
         private static Action EmptyDelegate = delegate () { };

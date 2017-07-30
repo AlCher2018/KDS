@@ -19,7 +19,7 @@ namespace ClientOrderQueue
         private System.Media.SoundPlayer simpleSound = null;
         private System.Timers.Timer _updateTimer;
 
-        private CellBrushes[] _cellBrushes;
+        private Brush[] _cellBrushes;
 
         private HashSet<int> _unUsedDeps;
 
@@ -35,7 +35,7 @@ namespace ClientOrderQueue
             tbMainTitle.Foreground = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleForeground");
 
             // кисти для панелей заказов
-            _cellBrushes = (CellBrushes[])AppLib.GetAppGlobalValue("PanelBackgroundBrushes");
+            _cellBrushes = (Brush[])AppLib.GetAppGlobalValue("PanelBackgroundBrushes");
 
             string statusReadyAudioFile = AppLib.GetFullFileName(AppLib.GetAppSetting("AudioPath"), AppLib.GetAppSetting("StatusReadyAudioFile"));
             if (System.IO.File.Exists(statusReadyAudioFile))
@@ -46,9 +46,6 @@ namespace ClientOrderQueue
             this.Loaded += MainWindow_Loaded;
             setAppLayout();
 
-            createGridContainers(G15);
-            createGridContainers(G24);
-
             _updateTimer = new System.Timers.Timer();
             _updateTimer.Elapsed += updateTimer_Tick;
             _updateTimer.Interval = 1000d;
@@ -58,6 +55,9 @@ namespace ClientOrderQueue
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             setLayoutAfterLoaded(); // Logo image
+
+            createGridContainers(G15);
+            createGridContainers(G24);
         }
 
 

@@ -151,15 +151,6 @@ namespace KDSWPFClient
 
             cfgValue = AppLib.GetAppSetting("IsShowOrderStatusByAllShownDishes");
             AppLib.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
-            
-
-
-            // режим ингредиента: 
-            // - подчиненный блюду, т.е. переходит из состояния в состояние только вместе с блюдом, отображается только вместе с блюдом, 
-            //         имеет такие же значения в runTimeRecords
-            // - самостоятельный(независимый), т.е. ведет себя как блюдо (может отображаться на разных КДС-ах, 
-            //         иметь собственные таймеры, переходить из состояния в состояние), кроме перехода в состояние ВЫДАНО, 
-            //         в это состояние незав.ингредиент может быть переведен только вместе с блюдом, т.е. как зависимый ингредиент
         }
 
         internal static void OpenColorLegendWindow()
@@ -227,6 +218,8 @@ namespace KDSWPFClient
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
 
                             bool isIngrIndep = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+                            // эта настройка от КДС-сервиса
+                            bool isConfirmedReadyState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
 
                             // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)
                             if (dishModel != null)
@@ -241,8 +234,13 @@ namespace KDSWPFClient
                                 {
                                     foreach (OrderDishViewModel ingr in ingrs)
                                     {
-                                        // если ингредиент зависимый и разрешенный на данном КДСе, то меняем его статус
-                                        if (DishesFilter.Instance.Checked(ingr))
+                                        // меняем статус ингредиента, если он разрешен на данном КДСе или блюдо переходит в статус
+                                        // Готово, Выдан или ПодтвОтмены
+                                        if (DishesFilter.Instance.Checked(ingr) 
+                                            || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready)) 
+                                            || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
+                                            || (newState == OrderStatusEnum.Took)
+                                            || (newState == OrderStatusEnum.CancelConfirmed))
                                             dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
                                     }
                                 }
@@ -251,7 +249,7 @@ namespace KDSWPFClient
                                 dataProvider.DelockOrder(orderModel.Id);
                             }
 
-                            // изменение состояния Заказа, но изменяем все равно поблюдно
+                            // изменение состояния Заказа, то изменяем все равно поблюдно
                             else if (dishModel == null)
                             {
                                 AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
