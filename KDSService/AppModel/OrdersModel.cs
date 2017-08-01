@@ -38,6 +38,7 @@ namespace KDSService.AppModel
         List<string> _dishUIDs;
         private HashSet<int> _unUsedDeps;
 
+        
         // CONSTRUCTOR
         public OrdersModel()
         {
@@ -271,45 +272,61 @@ namespace KDSService.AppModel
 
         private void updateYesterdayOrdersStatus()
         {
-                DateTime dt = DateTime.Today;
-                // промежуток времени в течение 5 сек
-                int secs = dt.Second - AppEnv.TimeOfAutoCloseYesterdayOrders.Seconds;
-                //if ((AppEnv.TimeOfAutoCloseYesterdayOrders.Hours == dt.Hour)
-                //    && (AppEnv.TimeOfAutoCloseYesterdayOrders.Minutes == dt.Minute)
-                //    && (secs >= 0) && (secs <= 5))
-                //{
-                AppEnv.WriteLogInfoMessage("Обновить статус вчерашних заказов...");
-                DateTime dtEstEndDay = new DateTime(dt.Year, dt.Month, dt.Day);
-                using (KDSEntities db = new KDSEntities())
-                {
-                    List<Order> yesterdayOrders = db.Order.Where(o => (o.OrderStatusId < 3) && (o.CreateDate < dtEstEndDay)).ToList();
-                    foreach (Order item in yesterdayOrders)
-                    {
-                        item.OrderStatusId = (int)OrderStatusEnum.YesterdayNotTook;
-                    }
-                    try
-                    {
-                        int processed = db.SaveChanges();
-                        AppEnv.WriteLogInfoMessage(" - обновлено заказов {0}", processed.ToString());
-                    }
-                    catch (Exception ex)
-                    {
-                        AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0}", ex.Message + (ex.InnerException == null ? "" : " Inner exception: " + ex.InnerException.Message));
-                    }
-                }
-                _changeStatusYesterdayOrders = false;
-            //            }
+            // дата/время, когда необходимо обновить статус вчерашних заказов
+            DateTime dtUpdate = DateTime.Today.Add(AppEnv.TimeOfAutoCloseYesterdayOrders);
+            if (DateTime.Now < dtUpdate) return;
 
+            AppEnv.WriteLogInfoMessage("svc: Обновить статус вчерашних заказов...");
+            using (KDSEntities db = new KDSEntities())
+            {
+                // вчерашние заказы, точнее заказы, у которых CreateDate меньше начала текущего дня (полночь)
+                // с учетом смещения от полуночи назад, созданные в течение которого вчерашние заказы будут отображаться на КДСе
+                double d1 = (double)AppEnv.GetAppProperty("MidnightShiftShowYesterdayOrders", 0);
+                dtUpdate = DateTime.Today.AddHours(-d1);
+                List<Order> yesterdayOrders = db.Order
+                    .Where(o => (o.OrderStatusId < 3) && (o.CreateDate < dtUpdate))
+                    .ToList();
+                foreach (Order item in yesterdayOrders)
+                {
+                    item.OrderStatusId = (int)OrderStatusEnum.YesterdayNotTook;
+                }
+                try
+                {
+                    int processed = db.SaveChanges();
+                    AppEnv.WriteLogInfoMessage(" - обновлено заказов {0}", processed.ToString());
+                }
+                catch (Exception ex)
+                {
+                    AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0}", ex.Message + (ex.InnerException == null ? "" : " Inner exception: " + ex.InnerException.Message));
+                }
+            }
+            // для одноразового прохода в течение дня
+            _changeStatusYesterdayOrders = false;
         }
-        
+
         // процедуры проверки числ.значения статуса ЗАКАЗА (из БД) на обработку в КДС
         // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
         // дата создания: только текущая!
         private bool isProcessingOrderStatusId(Order order)
         {
-            bool retVal = allowedKDSStatuses.Contains(order.OrderStatusId) 
-                && order.CreateDate.Date.Equals(DateTime.Today.Date);
-            return retVal;
+            bool retVal = allowedKDSStatuses.Contains(order.OrderStatusId);
+            if (retVal == false) return false;
+
+            // заказ вчерашний?
+            double days = (DateTime.Today.Date - order.CreateDate.Date).TotalDays;
+            if (days == 0d) return true;  // сегодняшний
+            
+            // дата/время, после которого вчерашние заказы будут отображаться на КДСе
+            double d1 = (double)AppEnv.GetAppProperty("MidnightShiftShowYesterdayOrders", 0);
+            if (order.CreateDate >= (DateTime.Today.AddHours(-d1)))
+                return true;
+            else
+            {
+                // включить автообновление статуса вчерашних заказов при следующем проходе
+                _changeStatusYesterdayOrders = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
+
+                return false;
+            }
         }
 
 

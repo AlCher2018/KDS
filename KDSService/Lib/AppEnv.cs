@@ -30,10 +30,7 @@ namespace KDSConsoleSvcHost
 
         public static TimeSpan TimeOfAutoCloseYesterdayOrders
         {
-            get {
-                var v = _props.GetProperty("TimeOfAutoCloseYesterdayOrders");
-                return (v == null) ? TimeSpan.Zero : (TimeSpan)v;
-            }
+            get { return (TimeSpan)AppEnv.GetAppProperty("TimeOfAutoCloseYesterdayOrders", TimeSpan.Zero); }
         }
 
         public static string LoggerInit()
@@ -102,7 +99,10 @@ namespace KDSConsoleSvcHost
             putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
             putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
             putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
+
             putCfgValueToStrBuilder(cfg, sb, "TimeOfAutoCloseYesterdayOrders");
+            putCfgValueToStrBuilder(cfg, sb, "MidnightShiftShowYesterdayOrders");
+            
             putCfgValueToStrBuilder(cfg, sb, "UnusedDepartments");
 
             return sb.ToString();
@@ -137,8 +137,14 @@ namespace KDSConsoleSvcHost
 
             value = cfg["TimeOfAutoCloseYesterdayOrders"];
             TimeSpan ts = TimeSpan.Zero;
-            if (value != null) TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts);
+            if (value != null)
+            {
+                if (!TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts)) ts = TimeSpan.Zero;
+            }
             _props.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
+
+            value = cfg["MidnightShiftShowYesterdayOrders"];
+            _props.SetProperty("MidnightShiftShowYesterdayOrders", value.ToDouble());
 
             // неиспользуемые цеха
             value = cfg["UnusedDepartments"];
