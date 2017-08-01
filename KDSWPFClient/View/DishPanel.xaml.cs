@@ -27,7 +27,7 @@ namespace KDSWPFClient.View
         private OrderDishViewModel _dishView;
         internal OrderDishViewModel DishView { get { return _dishView; } }
 
-        private bool _isDish, _isIngrIndepend, _isTimerBrushesIndepend;
+        private bool _isDish, _isIngrIndepend;
         private double _fontSize, _padd;
         private string _currentBrushKey;
         private DishPanel _parentPanel;
@@ -43,8 +43,6 @@ namespace KDSWPFClient.View
 
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-            // признак изменения рамки таймера
-            _isTimerBrushesIndepend = (_isDish || (!_isDish && _isIngrIndepend));
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
@@ -67,18 +65,9 @@ namespace KDSWPFClient.View
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;
-            // для блюда и независимого ингредиента
-            if (_isTimerBrushesIndepend)
-            {
-                tbDishStatusTS.FontSize = 1.2 * _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Bold;
-            }
-            // для ЗАВИСИМОГО ИНГРЕДИЕНТА рамка зависит от одинаковости статуса ингредиента и блюда
-            else
-            {
-                tbDishStatusTS.FontSize = _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Normal;
-            }
+
+            tbDishStatusTS.FontSize = _fontSize;
+            tbDishStatusTS.FontWeight = FontWeights.Bold;
 
             _padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
@@ -163,11 +152,11 @@ namespace KDSWPFClient.View
             if (AppLib.IsDepViewOnKDS(_dishView.DepartmentId) == false)
                 return;
             // 2. условие кликабельности ингредиента (независимо от блюда) или блюда на допнаправлении
-            else
+            else if (!_isDish)
             {
-                bool b1 = _isTimerBrushesIndepend;
-                bool b2 = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-                if ((b1 == false) && (b2 == false)) return;
+                // IsIngredientsIndependent может меняться динамически, поэтому проверяем каждый раз
+                bool b1 = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+                if (!b1) return;
             }
 
             OrderViewModel orderView = null;

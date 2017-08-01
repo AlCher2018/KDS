@@ -217,51 +217,33 @@ namespace KDSWPFClient
                             // проверить set-канал
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
 
-                            bool isIngrIndep = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-                            // эта настройка от КДС-сервиса
-                            bool isConfirmedReadyState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
-
                             // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)
                             if (dishModel != null)
                             {
                                 AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
                                 dataProvider.LockOrder(orderModel.Id);
 
-                                dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
-
-                                OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
-                                if (ingrs.Length > 0)
-                                {
-                                    foreach (OrderDishViewModel ingr in ingrs)
-                                    {
-                                        // меняем статус ингредиента, если он разрешен на данном КДСе или блюдо переходит в статус
-                                        // Готово, Выдан или ПодтвОтмены
-                                        if (DishesFilter.Instance.Checked(ingr) 
-                                            || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready)) 
-                                            || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
-                                            || (newState == OrderStatusEnum.Took)
-                                            || (newState == OrderStatusEnum.CancelConfirmed))
-                                            dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
-                                    }
-                                }
+                                // изменить статус блюда с ингредиентами
+                                changeAStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
 
                                 AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
                                 dataProvider.DelockOrder(orderModel.Id);
                             }
 
-                            // изменение состояния Заказа, то изменяем все равно поблюдно
+                            // изменение состояния ЗАКАЗА, то изменяем все равно поблюдно
                             else if (dishModel == null)
                             {
                                 AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
                                 dataProvider.LockOrder(orderModel.Id);
 
                                 AppLib.WriteLogUserAction("Set new ORDER status to {0} by each dish...", newState.ToString());
-                                // меняем статус блюд в заказе, если блюдо разрешено для данного КДСа
-                                foreach (OrderDishViewModel item in orderModel.Dishes)
+                                // меняем статус БЛЮД в заказе, если блюдо разрешено для данного КДСа
+                                foreach (OrderDishViewModel item in orderModel.Dishes.Where(d => d.ParentUID.IsNull()))
                                 {
                                     if (DishesFilter.Instance.Checked(item))
                                     {
-                                        dataProvider.SetNewDishStatus(orderModel.Id, item.Id, newState);
+                                        // изменить статус блюда с ингредиентами
+                                        changeAStatusDishWithIngrs(dataProvider, orderModel, item, newState);
                                     }
                                 }  // foreach
 
@@ -282,6 +264,34 @@ namespace KDSWPFClient
             } // if (allowedActions != null)
 
         }  // method
+
+        // изменение статуса блюда с ингредиентами
+        private static void changeAStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
+        {
+            // эта настройка от КДС-сервиса
+            bool isConfirmedReadyState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+
+            // изменить статус блюда
+            dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+
+            // изменить статус ингредиентов при условиях: 
+            // - разрешен на данном КДСе 
+            // - блюдо переходит в статус Готово, Выдан или ПодтвОтмены
+            OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
+            if (ingrs.Length > 0)
+            {
+                foreach (OrderDishViewModel ingr in ingrs)
+                {
+                    if (DishesFilter.Instance.Checked(ingr)
+                        || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready))
+                        || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
+                        || (newState == OrderStatusEnum.Took)
+                        || (newState == OrderStatusEnum.CancelConfirmed))
+                        dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                }
+            }
+        }
+
 
     }  // class App
 }
