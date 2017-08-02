@@ -173,6 +173,8 @@ namespace ClientOrderQueue
                 if (curAppOrd == null)
                 {
                     AppOrder newAppOrder = new AppOrder() { Id = dbOrd.Id, Order = dbOrd };
+                    // удалить граничные пробелы из имени клиента
+                    if (!newAppOrder.Order.ClientName.IsNull()) newAppOrder.Order.ClientName = newAppOrder.Order.ClientName.Trim();
                     //newAppOrder.IsExistOrderEstimateDT = (estDT != 0d);
                     //newAppOrder.OrderCookingBaseDT = (estDT == 0d) ? dbOrd.CreateDate : dbOrd.CreateDate.AddMinutes(estDT);
                     // новый заказ сразу в статусе ГОТОВ
@@ -224,7 +226,10 @@ namespace ClientOrderQueue
                         cc.OrderNumber = _appOrders[listIndex].Order.Number.ToString();
                         cc.OrderStatus = _appOrders[listIndex].Order.QueueStatusId + 1;
                         cc.OrderLang = _appOrders[listIndex].Order.LanguageTypeId;
-                        if (_isShowClientName) cc.ClientName = _appOrders[listIndex].Order.ClientName;
+                        if (_isShowClientName)
+                        {
+                            cc.ClientName = (_appOrders[listIndex].Order.ClientName.IsNull()) ? null :_appOrders[listIndex].Order.ClientName.Trim();
+                        }
                         if (_isShowCookingTime)
                         {
                             cc.OrderCreateDate = _appOrders[listIndex].Order.CreateDate;
