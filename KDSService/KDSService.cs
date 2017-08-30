@@ -154,140 +154,188 @@ namespace KDSService
         // ****  SERVICE CONTRACT  *****
         #region IKDSService inplementation
 
-        public List<OrderStatusModel> GetOrderStatuses()
+        public List<OrderStatusModel> GetOrderStatuses(string machineName)
         {
             string errMsg = null;
-            string userAction = "    - svc(GetOrderStatuses()): ";
+            string logMsg = "GetOrderStatuses(): ";
 
-            List<OrderStatusModel>  retVal = ModelDicts.GetOrderStatusesList(out errMsg);
+            List<OrderStatusModel> retVal = ModelDicts.GetOrderStatusesList(out errMsg);
 
             if (errMsg.IsNull())
-                userAction += string.Format("Ok ({0} records)",retVal.Count);
+                logMsg += string.Format("Ok ({0} records)",retVal.Count);
             else
             {
-                AppEnv.WriteLogErrorMessage(errMsg);
-                userAction += errMsg;
+                AppEnv.WriteLogClientAction(machineName, errMsg);
+                logMsg += errMsg;
             }
-            AppEnv.WriteLogTraceMessage(userAction);
+
+            AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
 
-        public List<DepartmentModel> GetDepartments()
+        public List<DepartmentModel> GetDepartments(string machineName)
         {
             string errMsg = null;
-            string userAction = "    - svc(GetDepartments()): ";
+            string logMsg = "GetDepartments(): ";
 
             List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
 
             if (errMsg.IsNull())
-                userAction += string.Format("Ok ({0} records)", retVal.Count);
+                logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
             {
                 AppEnv.WriteLogErrorMessage(errMsg);
-                userAction += errMsg;
+                logMsg += errMsg;
             }
-            AppEnv.WriteLogTraceMessage(userAction);
+            AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
 
         // все заказы
-        public List<OrderModel> GetOrders()
+        public List<OrderModel> GetOrders(string machineName)
         {
             List<OrderModel> retVal = null;
             retVal = _ordersModel.Orders.Values.ToList();
+
+            string logMsg = string.Format("GetOrders(): {0} orders", retVal.Count);
+            AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
 
         // **** настройки из config-файла хоста
-        public Dictionary<string, object> GetHostAppSettings()
+        public Dictionary<string, object> GetHostAppSettings(string machineName)
         {
-            // сложные типы передаем клиенту, как строки
-            string s1 = ((TimeSpan)AppEnv.GetAppProperty("TimeOfAutoCloseYesterdayOrders", TimeSpan.Zero)).ToString();
-            var v1 = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
-            string s2;
-            if (v1 == null) s2 = ""; else s2 = string.Join(",", v1);
-
-            Dictionary<string, object> retval = new Dictionary<string, object>()
+            string logMsg = "GetHostAppSettings(): ";
+            Dictionary<string, object> retval = new Dictionary<string, object>();
+            try
             {
-                { "ExpectedTake", (int)AppEnv.GetAppProperty("ExpectedTake", 0)},
-                { "UseReadyConfirmedState", (bool)AppEnv.GetAppProperty("UseReadyConfirmedState", false)},
-                { "TakeCancelledInAutostartCooking", (bool)AppEnv.GetAppProperty("TakeCancelledInAutostartCooking", false)},
-                { "TimeOfAutoCloseYesterdayOrders", s1},
-                { "UnusedDepartments", s2}
-            };
+                // сложные типы передаем клиенту, как строки
+                var v1 = AppProperties.GetProperty("TimeOfAutoCloseYesterdayOrders");
+                TimeSpan ts1 = ((v1 == null) ? TimeSpan.Zero : (TimeSpan)v1);
+                v1 = AppProperties.GetProperty("UnusedDepartments");
+                string s2 = ((v1 == null) ? "" : string.Join(",", (HashSet<int>)v1));
+
+                retval.Add("ExpectedTake", AppProperties.GetIntProperty("ExpectedTake"));
+                retval.Add("UseReadyConfirmedState", AppProperties.GetBoolProperty("UseReadyConfirmedState"));
+                retval.Add("TakeCancelledInAutostartCooking", AppProperties.GetBoolProperty("TakeCancelledInAutostartCooking"));
+                retval.Add("TimeOfAutoCloseYesterdayOrders", ts1.ToString());
+                retval.Add("UnusedDepartments", s2);
+
+                logMsg += "Ok";
+            }
+            catch (Exception ex)
+            {
+                logMsg += ex.Message;
+            }
+            AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retval;
         }
 
-
-        public void SetExpectedTakeValue(int value)
+        public void SetExpectedTakeValue(string machineName, int value)
         {
-            AppEnv.SetAppProperty("ExpectedTake", value);
+            string logMsg = string.Format("SetExpectedTakeValue({0}): ", value);
+
+            AppProperties.SetProperty("ExpectedTake", value);
 
             string errMsg;
-            AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg);
+            if (AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg))
+                logMsg += "Ok";
+            else
+                logMsg += errMsg;
+            AppEnv.WriteLogClientAction(machineName, logMsg);
         }
 
         #endregion
 
         #region IKDSCommandService implementation
         // заблокировать заказ от изменения по таймеру
-        public void LockOrder(int orderId)
+        public void LockOrder(string machineName, int orderId)
         {
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+            string logMsg = string.Format("LockOrder({0}): ", orderId);
+
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
             if (hs == null) hs = new Dictionary<int, bool>();
-            if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);
-            AppEnv.SetAppProperty("lockedOrders", hs);
+            if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
+            // TODO проверить необходимость этого шага
+            AppProperties.SetProperty("lockedOrders", hs);              // сохранить, а надо??  
+
+            logMsg += "Ok";
+            AppEnv.WriteLogClientAction(machineName, logMsg);
         }
         // разблокировать заказ от изменения по таймеру
-        public void DelockOrder(int orderId)
+        public void DelockOrder(string machineName, int orderId)
         {
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedOrders");
+            string logMsg = string.Format("DelockOrder({0}): ", orderId);
+
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
             if ((hs != null) && hs.ContainsKey(orderId)) hs[orderId] = true;
-            AppEnv.SetAppProperty("lockedOrders", hs);
+            AppProperties.SetProperty("lockedOrders", hs);
+
+            logMsg += "Ok";
+            AppEnv.WriteLogClientAction(machineName, logMsg);
         }
+
         // заблокировать блюдо от изменения по таймеру
-        public void LockDish(int dishId)
+        public void LockDish(string machineName, int dishId)
         {
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
+            string logMsg = string.Format("LockDish({0}): ", dishId);
+
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
             if (hs == null) hs = new Dictionary<int, bool>();
             if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
-            AppEnv.SetAppProperty("lockedDishes", hs);
+            AppProperties.SetProperty("lockedDishes", hs);
+
+            logMsg += "Ok";
+            AppEnv.WriteLogClientAction(machineName, logMsg);
         }
         // разблокировать блюдо от изменения по таймеру
-        public void DelockDish(int dishId)
+        public void DelockDish(string machineName, int dishId)
         {
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
+            string logMsg = string.Format("DelockDish({0}): ", dishId);
+
+            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
             if ((hs != null) && hs.ContainsKey(dishId)) hs[dishId] = true;
-            AppEnv.SetAppProperty("lockedDishes", hs);
+            AppProperties.SetProperty("lockedDishes", hs);
+
+            logMsg += "Ok";
+            AppEnv.WriteLogClientAction(machineName, logMsg);
         }
 
         // обновление статуса заказа с КДСа
-        public void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus)
+        public void ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
         {
+            string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
             //StopTimer();
             _timerEnable = false;
-            AppEnv.WriteLogUserAction("KDS service try to change ORDER status (Id {0}) to {1}", orderId, orderStatus.ToString());
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true);
+                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true, machineName);
+                logMsg += "Ok";
+            }
+            else
+            {
+                logMsg += "order not found in the Model";
             }
 
             //StartTimer();
             _timerEnable = true;
+
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH");
         }
 
         // обновление статуса блюда с КДСа
-        public void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
+            string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
             //StopTimer();
             _timerEnable = false;
-
-            AppEnv.WriteLogTraceMessage(string.Format("svc: COMMAND change DISH status (Id {0}, orderId {1}) to {2} -- START", orderDishId, orderId, orderDishStatus.ToString()));
 
             bool result = false;
             if (_ordersModel.Orders.ContainsKey(orderId))
@@ -297,7 +345,7 @@ namespace KDSService
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
 
-                    result = modelDish.UpdateStatus(orderDishStatus);
+                    result = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
                 }
             }
 
@@ -325,11 +373,11 @@ namespace KDSService
                 // истекло время ожидания записи в БД
                 if (!chkStat)
                 {
-                    AppEnv.WriteLogErrorMessage("Истекло время ожидания проверочного чтения после записи нового состояния.");
+                    AppEnv.WriteLogErrorMessage("Истекло время ожидания (2 сек) проверочного чтения после записи нового состояния.");
                 }
             }
 
-            AppEnv.WriteLogTraceMessage(string.Format("svc: COMMAND change DISH status (Id {0}, orderId {1}) to {2} -- FINISH", orderDishId, orderId, orderDishStatus.ToString()));
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH");
 
             //StartTimer();
             _timerEnable = true;

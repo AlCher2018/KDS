@@ -74,7 +74,7 @@ namespace KDSWPFClient
         System.Media.SoundPlayer _wavPlayer;
 
         // CONSTRUCTOR
-        public MainWindow()
+        public MainWindow(string[] args)
         {
             InitializeComponent();
 
@@ -87,7 +87,8 @@ namespace KDSWPFClient
             this.Width = _screenWidth; this.Height = _screenHeight;
 
             // админ-кнопка для открытия окна конфигурации
-            btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
+            btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
+
             _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
 
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -234,7 +235,7 @@ namespace KDSWPFClient
                     // потеря связи со службой
                     if (_dataProvider.EnableGetChannel == false)
                     {
-                        AppLib.WriteLogTraceMessage("CLT: потеря связи со службой получения данных, пересоздаю get-канал...");
+                        AppLib.WriteLogTraceMessage("clt: потеря связи со службой получения данных, пересоздаю get-канал...");
                         _mayGetData = _dataProvider.CreateGetChannel();
                     }
                     else

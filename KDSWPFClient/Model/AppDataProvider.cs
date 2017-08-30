@@ -20,6 +20,7 @@ namespace KDSWPFClient
     {
         Random rnd = new Random();
 
+        private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
 
@@ -179,7 +180,7 @@ namespace KDSWPFClient
             _ordStatuses.Clear();
             try
             {
-                List<OrderStatusModel> svcList = _getClient.GetOrderStatuses();
+                List<OrderStatusModel> svcList = _getClient.GetOrderStatuses(_machineName);
                 svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
                     new OrderStatusViewModel() { Id = o.Id, Name = o.Name, AppName = o.AppName, Description = o.Description }
                     ));
@@ -195,7 +196,7 @@ namespace KDSWPFClient
             _deps.Clear();
             try
             {
-                List<DepartmentModel> svcDict = _getClient.GetDepartments();
+                List<DepartmentModel> svcDict = _getClient.GetDepartments(_machineName);
                 foreach (DepartmentModel dep in svcDict)
                 {
                     DepartmentViewModel newDep = new DepartmentViewModel()
@@ -229,7 +230,7 @@ namespace KDSWPFClient
             List<OrderModel> retVal = null;
             try
             {
-                retVal = _getClient.GetOrders();
+                retVal = _getClient.GetOrders(_machineName);
             }
             catch (Exception ex)
             {
@@ -275,7 +276,7 @@ namespace KDSWPFClient
             Dictionary<string, object> retVal = null;
             try
             {
-                retVal = _getClient.GetHostAppSettings();
+                retVal = _getClient.GetHostAppSettings(_machineName);
             }
             catch (Exception ex)
             {
@@ -290,7 +291,7 @@ namespace KDSWPFClient
         {
             try
             {
-                _getClient.SetExpectedTakeValue(value);
+                _getClient.SetExpectedTakeValue(_machineName, value);
                 AppLib.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
@@ -309,7 +310,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.LockOrder(orderId);
+                _setClient.LockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
@@ -322,7 +323,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.DelockOrder(orderId);
+                _setClient.DelockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
@@ -340,7 +341,7 @@ namespace KDSWPFClient
 
             try
             {
-                _setClient.ChangeOrderStatus(orderId, newStatus);
+                _setClient.ChangeOrderStatus(_machineName, orderId, newStatus);
                 AppLib.WriteLogTraceMessage(" - результат: успешно");
             }
             catch (Exception)
@@ -357,7 +358,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.LockDish(dishId);
+                _setClient.LockDish(_machineName, dishId);
             }
             catch (Exception)
             {
@@ -370,7 +371,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.DelockDish(dishId);
+                _setClient.DelockDish(_machineName, dishId);
             }
             catch (Exception)
             {
@@ -387,11 +388,11 @@ namespace KDSWPFClient
             {
                 AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
-                _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
+                _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
                 AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

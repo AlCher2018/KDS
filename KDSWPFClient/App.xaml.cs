@@ -27,17 +27,20 @@ namespace KDSWPFClient
         [System.STAThreadAttribute()]
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
-        public static void Main()
+        public static void Main(string[] args)
         {
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
             AppLib.WriteLogInfoMessage(AppLib.GetEnvironmentString());
+
+            // check registration
+            if (ProtectedProgramm() == false) Environment.Exit(1);
 
             KDSWPFClient.App app = new KDSWPFClient.App();
 
             getAppLayout();
             // splash
-            string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            SplashScreen splashScreen = null;
+            //string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
+            //SplashScreen splashScreen = null;
             //SplashScreen splashScreen = new SplashScreen(fileName);
             //splashScreen.Show(true);
 
@@ -58,7 +61,7 @@ namespace KDSWPFClient
                 dataProvider.CreateSetChannel();
                 AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService... Ok");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // КДСы могут быть уже запущены, а служба еще нет!
                 AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
@@ -88,11 +91,12 @@ namespace KDSWPFClient
             KDSModeHelper.Init();
 
             // основное окно приложения
-            MainWindow mainWindow = new MainWindow();
+            MainWindow mainWindow = new MainWindow(args);
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
             AppLib.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
             // окно изменения статуса
             AppLib.SetAppGlobalValue("StateChangeWindow", new StateChange());
+
 
             app.Run(mainWindow);
 
@@ -101,13 +105,33 @@ namespace KDSWPFClient
         }  // Main()
 
 
+        private static bool ProtectedProgramm()
+        {
+            string cpuid = Hardware.getCPUID();
+            byte[] bt = new byte[] { 0x30, 0x32, 0x30, 0x36, 0x31, 0x39, 0x36, 0x37 };
+            if (Hardware.SeeHardware(cpuid, new string(bt.Select(b => Convert.ToChar(b)).ToArray())))
+            {
+                return true;
+            }
+
+            AppLib.WriteLogErrorMessage("Софт не прошел проверку в ProtectedProgramm()");
+            Clipboard.Clear();
+            Clipboard.SetText(cpuid, TextDataFormat.Text);
+
+            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот номер службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
+            MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+
+            return false;
+        }
+
+
         private static void getAppLayout()
         {
             AppLib.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
             AppLib.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
         }
 
-
+        
         private static void setAppGlobalValues()
         {
             string cfgValue;
@@ -215,6 +239,7 @@ namespace KDSWPFClient
                         try
                         {
                             // проверить set-канал
+                            if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
 
                             // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)

@@ -732,5 +732,14 @@ namespace KDSWPFClient.View
         } // class CfgValue
         #endregion
 
+        private void btnRestartWithArgs_Click(object sender, RoutedEventArgs e)
+        {
+            AppLib.RestartApplication("-adm");
+        }
+
+        private void btnRestartWithoutArgs_Click(object sender, RoutedEventArgs e)
+        {
+            AppLib.RestartApplication();
+        }
     }  // class ConfigEdit
 }

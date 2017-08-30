@@ -31,6 +31,21 @@ namespace KDSWPFClient.Lib
             AppLogger = NLog.LogManager.GetLogger("appLogger");
         }
 
+        public static void RestartApplication(string args = null)
+        {
+            System.Diagnostics.Process curProcess = System.Diagnostics.Process.GetCurrentProcess();
+
+            System.Diagnostics.ProcessStartInfo pInfo = new System.Diagnostics.ProcessStartInfo();
+            //pInfo.Arguments = string.Format("/C \"{0}\"", System.Reflection.Assembly.GetExecutingAssembly().Location);
+            //pInfo.FileName = "cmd.exe";
+            pInfo.FileName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            if (args.IsNull() == false) pInfo.Arguments = args;
+
+            System.Diagnostics.Process.Start(pInfo);
+
+            curProcess.Kill();
+        }
+
         #region app logger
 
         // общий логгер КДС-клиента и службы

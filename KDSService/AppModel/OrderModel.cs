@@ -108,7 +108,7 @@ namespace KDSService.AppModel
             OrderStatusId = dbOrder.OrderStatusId;
             Status = (OrderStatusEnum)dbOrder.OrderStatusId; //AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
-            _isUseReadyConfirmed = (bool)AppEnv.GetAppProperty("UseReadyConfirmedState");
+            _isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
 
             _dishesDict = new Dictionary<int, OrderDishModel>();
             // получить отсоединенную RunTime запись из таблицы состояний
@@ -233,7 +233,7 @@ namespace KDSService.AppModel
                 _isUpdStatusFromDishes = false;
 
                 // обновить состояние или добавить блюда
-                Dictionary<int, bool> lockedDishes = (Dictionary<int, bool>)AppEnv.GetAppProperty("lockedDishes");
+                Dictionary<int, bool> lockedDishes = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
                 foreach (OrderDish dbDish in dbOrder.OrderDish)
                 {
                     // пропустить, если блюдо находится в словаре заблокированных от изменения по таймеру
@@ -258,10 +258,14 @@ namespace KDSService.AppModel
         // внешнее обновление СОСТОЯНИЯ заказа
         // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ (из БД/КДС), то в этом случае дату входа в новое состояние для блюд берем из заказа
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
-        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus)
+        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus, string machineName = null)
         {
             // если статус не поменялся, то попытаться обновить только статус блюд
             if (this.Status == newStatus) return;
+
+            string sLogMsg = string.Format(" - ORDER.UpdateStatus() Id/Num {0}/{1}, from {2} to {3}", this.Id, this.Number, this.Status.ToString(), newStatus.ToString());
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - START");
 
             // время нахождения в ПРЕДЫДУЩЕМ состоянии, в секундах
             int secondsInPrevState = 0;
@@ -279,7 +283,7 @@ namespace KDSService.AppModel
 
 
             // сохранить новый статус ОБЪЕКТА в БД
-            if (saveStatusToDB(newStatus))
+            if (saveStatusToDB(newStatus, machineName))
             {
                 // изменить статус в ОБЪЕКТЕ
                 OrderStatusEnum preStatus = this.Status;
@@ -315,7 +319,7 @@ namespace KDSService.AppModel
                     }
                     catch (Exception ex)
                     {
-                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0} с {1} на {2}: {3}", this.Id, this.Status, newStatus, ex.ToString());
+                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0}/{1} с {2} на {3}: {4}", this.Id, this.Number, this.Status, newStatus, ex.ToString());
                         dishUpdSuccess = false;
                     }
                 }
@@ -344,7 +348,7 @@ namespace KDSService.AppModel
         public void UpdateStatusByVerificationDishes(OrderStatusEnum preStatus, OrderStatusEnum newStatus)
         {
             int iStat = -1;
-            HashSet<int> unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
+            HashSet<int> unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
 
             foreach (OrderDishModel dish in _dishesDict.Values)
             {
@@ -600,7 +604,7 @@ namespace KDSService.AppModel
                 && ((dbRec.ReadyConfirmedDate.Value.Ticks == 0) || (dbRec.ReadyConfirmedDate.Value < sqlMinDate))) dbRec.ReadyConfirmedDate = null;
         }
 
-        private bool saveStatusToDB(OrderStatusEnum status)
+        private bool saveStatusToDB(OrderStatusEnum status, string machineName = null)
         {
             bool retVal = false;
             using (KDSEntities db = new KDSEntities())
@@ -623,9 +627,15 @@ namespace KDSService.AppModel
                         else if (status == OrderStatusEnum.Took)
                             dbOrder.QueueStatusId = 2;
 
-                        AppEnv.WriteLogTraceMessage("   - save to db ORDER id {0}, status = {1} - START", this.Id, status.ToString());
+                        string sMsg = string.Format("   - save order {0}/{1}, status = {2}", this.Id, this.Number, status.ToString());
+                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg + " - START");
+                        else AppEnv.WriteLogClientAction(machineName, sMsg + " - START");
+
                         db.SaveChanges();
-                        AppEnv.WriteLogTraceMessage("   - save to db ORDER id {0}, status = {1} - FINISH\n{2}", this.Id, status.ToString(), Environment.StackTrace);
+
+                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg + " - FINISH");
+                        else AppEnv.WriteLogClientAction(machineName, sMsg + " - FINISH");
+
                         retVal = true;
                     }
                 }
