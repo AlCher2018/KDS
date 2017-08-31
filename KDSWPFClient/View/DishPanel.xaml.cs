@@ -147,27 +147,37 @@ namespace KDSWPFClient.View
         // клик по строке блюда/ингредиента
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            string sLogMsg = "click on order ITEM";
+
             // КЛИКАБЕЛЬНОСТЬ (условия отсутствия)
             // 1. не входит в отображаемые отделы
             if (AppLib.IsDepViewOnKDS(_dishView.DepartmentId) == false)
+            {
+                AppLib.WriteLogClientAction(sLogMsg + " - NO action (dep not view)");
                 return;
+            }
+                
             // 2. условие кликабельности ингредиента (независимо от блюда) или блюда на допнаправлении
             else if (!_isDish)
             {
                 // IsIngredientsIndependent может меняться динамически, поэтому проверяем каждый раз
                 bool b1 = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-                if (!b1) return;
+                if (!b1)
+                {
+                    AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по ингр/допНП не разрешен в IsIngredientsIndependent)");
+                    return;
+                }
             }
 
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
+            AppLib.WriteLogClientAction("{0} - open StateChange window for dishId {1} ({2})", sLogMsg, _dishView.Id, _dishView.DishName);
+
             App.OpenStateChangeWindow(orderView, _dishView);
 
             e.Handled = true;
-
-        //    MessageBox.Show(string.Format("dish id {0} - {1}, state {2}",dishView.Id, dishView.DishName, dishView.Status));
         }
 
     }  // class

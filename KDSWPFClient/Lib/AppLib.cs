@@ -22,13 +22,16 @@ namespace KDSWPFClient.Lib
     public static class AppLib
     {
         // общий логгер
-        public static NLog.Logger AppLogger;
-        public static NLog.Logger _dbCommandLogger = null;
+        public static NLog.Logger _appLogger;
 
         static AppLib()
         {
+        }
+
+        public static void InitAppLogger()
+        {
             // логгер приложения
-            AppLogger = NLog.LogManager.GetLogger("appLogger");
+            _appLogger = NLog.LogManager.GetLogger("appLogger");
         }
 
         public static void RestartApplication(string args = null)
@@ -47,67 +50,62 @@ namespace KDSWPFClient.Lib
         }
 
         #region app logger
-
-        // общий логгер КДС-клиента и службы
-        public static void InitDBCommandLogger()
-        {
-            // параметр берем сразу из конфига
-            string cfgValue = AppLib.GetAppSetting("SingleClientSvcLog");
-            if ((cfgValue != null) && cfgValue.ToBool())
-            {
-                _dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
-            }
-        }
         // отладочные сообщения
+        // стандартные действия службы
         public static void WriteLogTraceMessage(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
-            {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(msg);
-                else
-                    AppLogger.Trace(msg ?? "null");
-            }
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false) && !msg.IsNull()) _appLogger.Trace(msg);
         }
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false)) _appLogger.Trace(format, args);
+        }
+
+        // подробная информация о преобразованиях списка заказов, полученных клиентом от службы
+        public static void WriteLogOrderDetails(string msg)
+        {
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false) 
+                && (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails", false))
+                _appLogger.Trace("cltDtl|" + msg);
+        }
+        public static void WriteLogOrderDetails(string format, params object[] paramArray)
+        {
+            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false)
+                && (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails", false))
             {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(format, args);
-                else
-                    AppLogger.Trace(format, args);
+                string msg = string.Format(format, paramArray);
+                _appLogger.Trace("cltDtl|" + msg);
             }
         }
 
-        // сообщения о действиях пользователя
-        public static void WriteLogUserAction(string msg)
+        // сообщения о действиях клиента
+        public static void WriteLogClientAction(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) 
-                && AppLogger.IsTraceEnabled)
-                AppLogger.Trace("userAct: " + msg);
+            if ((bool)AppLib.GetAppGlobalValue("IsLogClientAction", false))
+                _appLogger.Trace("cltAct|" + msg);
         }
-        public static void WriteLogUserAction(string format, params object[] paramArray)
+        public static void WriteLogClientAction(string format, params object[] paramArray)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
+            if ((bool)AppLib.GetAppGlobalValue("IsLogClientAction", false))
+                _appLogger.Trace("cltAct|" + string.Format(format, paramArray));
         }
 
         public static void WriteLogInfoMessage(string msg)
         {
-            if (AppLogger.IsInfoEnabled) AppLogger.Info(msg??"null");
+            if (_appLogger.IsInfoEnabled && !msg.IsNull()) _appLogger.Info(msg);
         }
         public static void WriteLogInfoMessage(string format, params object[] args)
         {
-            if (AppLogger.IsInfoEnabled) AppLogger.Info(format, args);
+            if (_appLogger.IsInfoEnabled) _appLogger.Info(format, args);
         }
 
         public static void WriteLogErrorMessage(string msg)
         {
-            if (AppLogger.IsErrorEnabled) AppLogger.Error(msg??"null");
+            if (_appLogger.IsErrorEnabled && !msg.IsNull()) _appLogger.Error(msg);
         }
         public static void WriteLogErrorMessage(string format, params object[] args)
         {
-            if (AppLogger.IsErrorEnabled) AppLogger.Error(format, args);
+            if (_appLogger.IsErrorEnabled) _appLogger.Error(format, args);
         }
 
         #endregion

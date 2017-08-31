@@ -89,7 +89,7 @@ namespace KDSWPFClient
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
-            _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
+            _traceOrderDetails = (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails");
 
             _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
@@ -235,7 +235,7 @@ namespace KDSWPFClient
                     // потеря связи со службой
                     if (_dataProvider.EnableGetChannel == false)
                     {
-                        AppLib.WriteLogTraceMessage("clt: потеря связи со службой получения данных, пересоздаю get-канал...");
+                        AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
                         _mayGetData = _dataProvider.CreateGetChannel();
                     }
                     else
@@ -260,7 +260,7 @@ namespace KDSWPFClient
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
         {
-            AppLib.WriteLogTraceMessage("clt: get orders from SVC - START");
+            AppLib.WriteLogOrderDetails("get orders from SVC - START");
 
             if (_mayGetData)
             {
@@ -274,30 +274,31 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
                 _pages.ClearPages();
                 if (_viewOrders.Count > 0) _viewOrders.Clear();
-                AppLib.WriteLogTraceMessage("clt: can't get orders due to service status Falted");
+                AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
                 return;
             }
 
             // получить заказы от сервиса
             List<OrderModel> svcOrders = _dataProvider.GetOrders();
-            AppLib.WriteLogTraceMessage("clt: got {0} orders", ((svcOrders == null)?0:svcOrders.Count));
+            if (_traceOrderDetails)
+            {
+                if (svcOrders == null)
+                    AppLib.WriteLogOrderDetails(" - от службы получено 0 заказов");
+                else
+                {
+                    AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
+                    AppLib.WriteLogOrderDetails(" - отображаемые отделы: {0}", getDepsFilter());
+                }
+            }
 
             if (svcOrders == null) return;
 
-            if (_traceOrderDetails)
-            {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд "+o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage(" - от службы получено заказов: {0} (ids: {1})", svcOrders.Count, s1);
-                AppLib.WriteLogTraceMessage(" - отображаемые отделы: {0}", getDepsFilter());
-            }
-
             //обновить словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - обновляю служебный словарь _dependDeps...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - обновляю служебный словарь _dependDeps...");
             try
             {
                 updateDependDepsDict(svcOrders);
-                if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   словарь _dependDeps обновлен успешно");
+                if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   словарь _dependDeps обновлен успешно");
             }
             catch (Exception ex1)
             {
@@ -305,7 +306,7 @@ namespace KDSWPFClient
             }
 
             // ФИЛЬТРАЦИЯ блюд в svcOrders
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - фильтрация блюд (цеха и статусы данного КДС)...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - фильтрация блюд (цеха и статусы данного КДС)...");
             try
             {
                 OrderDishModel curDish;
@@ -377,9 +378,7 @@ namespace KDSWPFClient
 
             if (_traceOrderDetails)
             {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   после фильтрации заказов {0}, (ids: {1})", svcOrders.Count, s1);
+                AppLib.WriteLogOrderDetails("   после фильтрации заказов {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
             }
 
             // условие проигрывания мелодии при появлении нового заказа
@@ -398,7 +397,7 @@ namespace KDSWPFClient
 
 
             // *** СОРТИРОВКА ЗАКАЗОВ  ***
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
             // группировка и сортировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
             {
@@ -454,12 +453,7 @@ namespace KDSWPFClient
                 svcOrders = sortOrders.Select(s => s.Order).ToList();
             }
 
-            if (_traceOrderDetails)
-            {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, (ids: {1})", svcOrders.Count, s1);
-            }
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
 
             // после реорганизации списка блюд
             // группировка по подачам если надо
@@ -479,7 +473,7 @@ namespace KDSWPFClient
             // в случае с группировкой по времени и разбивкой заказов на несколько панелей AppLib.JoinSortedLists() работает НЕПРАВИЛЬНО!!!
             //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
             // поэтому сделано уникальной процедурой
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   обновление служебной коллекции заказов (для отображения на экране)...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
             bool isViewRepaint2 = false;
             try
             {
@@ -517,16 +511,30 @@ namespace KDSWPFClient
 
             if (_traceOrderDetails)
             {
-                string s1 = "";
-                if (_viewOrders.Count > 0) s1 = string.Join("; ", _viewOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   для отображения на экране заказов: {0}, (ids: {1}) - {2}", _viewOrders.Count, s1, (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+                AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
             }
 
             // перерисовать полностью
-            if (isViewRepaint2 == true) repaintOrders();
+            if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
 
-            AppLib.WriteLogTraceMessage("clt: get orders from SVC - FINISH");
+            AppLib.WriteLogOrderDetails("get orders from SVC - FINISH");
+
         }  // method
+
+        private string _logOrderInfo(List<OrderModel> orders)
+        {
+            string retVal = "id/Num/dishes: ";
+            if (orders.Count > 0) retVal += string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
+
+            return retVal;
+        }
+        private string _logOrderInfo(List<OrderViewModel> orders)
+        {
+            string retVal = "id/Num/dishes: ";
+            if (orders.Count > 0) retVal += string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
+
+            return retVal;
+        }
 
 
         //создать словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
@@ -677,10 +685,12 @@ namespace KDSWPFClient
             return retVal;
         }
 
-        private void repaintOrders()
+        private void repaintOrders(string reason)
         {
             if (_pages == null) return;
 
+            string sLogMsg = string.Format(" - redraw reason: {0}", reason);
+            AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             _pages.ClearPages(); // очистить панели заказов
 
             // добавить заказы
@@ -689,6 +699,7 @@ namespace KDSWPFClient
             //DebugTimer.GetInterval();
 
             setCurrentPage();
+            AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH");
         }
 
         #region change page
@@ -742,9 +753,13 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
+            AppLib.WriteLogClientAction("Open ConfigEdit window...");
+
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
+            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + ":" + s.Value));
+            AppLib.WriteLogClientAction("   changed: " + sLogMsg);
 
             //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
             if (cfgEdit.AppNewSettings.Count > 0)
@@ -772,13 +787,14 @@ namespace KDSWPFClient
 
                 if (cfgEdit.AppNewSettings.ContainsKey("IsShowOrderStatusByAllShownDishes"))
                 {
-                    repaintOrders();
+                    repaintOrders("change config parameter IsShowOrderStatusByAllShownDishes");
                 }
 
                 // масштаб шрифта
+                // перерисовать полностью, т.к. по таймеру может все не обновиться
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
-                    repaintOrders();  // перерисовать полностью, т.к. по таймеру может все не обновиться
+                    repaintOrders("change config parameter AppFontScale");  
                 }
 
                 // кол-во колонок заказов
@@ -787,7 +803,8 @@ namespace KDSWPFClient
                     _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
                     AppLib.RecalcOrderPanelsLayot();
                     _pages.ResetOrderPanelSize();
-                    repaintOrders();  // перерисовать заказы
+
+                    repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
                 }
 
                 // интервал таймера сброса группировки заказов по номерам
@@ -898,7 +915,9 @@ namespace KDSWPFClient
         {
             // сдвинуть текущий элемент
             _orderGroupLooper.SetNextIndex();
+
             // и отобразить следующий
+            AppLib.WriteLogClientAction("Change Order group to " + _orderGroupLooper.Current.ToString());
             setOrderGroupTab();
         }
 
@@ -933,6 +952,8 @@ namespace KDSWPFClient
 
             // сдвинуть фильтр
             _orderStatesLooper.SetNextIndex();
+
+            AppLib.WriteLogClientAction("Change Status Filter to " + _orderStatesLooper.Current.Name);
 
             // обновить пользовательский фильтр текущим набором
             setOrderStatusFilterTab();

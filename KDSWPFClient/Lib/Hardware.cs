@@ -38,7 +38,7 @@ namespace KDSWPFClient.Lib
 				}
 				str = cpuid;
 			}
-			catch (Exception exception)
+			catch (Exception)
 			{
 				str = cpuid;
 			}

@@ -335,7 +335,7 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
-            AppLib.WriteLogUserAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
+            AppLib.WriteLogClientAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
 
             checkSvcState();
 
@@ -386,11 +386,11 @@ namespace KDSWPFClient
 
             try
             {
-                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
+                AppLib.WriteLogClientAction(" - ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
                 _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
-                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
+                AppLib.WriteLogClientAction(" - ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
             }
             catch (Exception)
             {
@@ -403,7 +403,7 @@ namespace KDSWPFClient
         {
             if (_setClient.State == CommunicationState.Faulted)
             {
-                AppLib.WriteLogUserAction(" - restart KDSCommandServiceClient !!!");
+                AppLib.WriteLogClientAction(" - restart KDSCommandServiceClient !!!");
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }

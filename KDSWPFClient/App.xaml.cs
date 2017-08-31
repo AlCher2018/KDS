@@ -29,6 +29,8 @@ namespace KDSWPFClient
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            AppLib.InitAppLogger();
+
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
             AppLib.WriteLogInfoMessage(AppLib.GetEnvironmentString());
 
@@ -46,8 +48,8 @@ namespace KDSWPFClient
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
+
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
-            AppLib.InitDBCommandLogger();
             AppLib.WriteLogInfoMessage("App settings from config file: " + AppLib.GetAppSettingsFromConfigFile());
 
             // создать каналы
@@ -97,7 +99,6 @@ namespace KDSWPFClient
             // окно изменения статуса
             AppLib.SetAppGlobalValue("StateChangeWindow", new StateChange());
 
-
             app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
@@ -138,8 +139,10 @@ namespace KDSWPFClient
 
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
-            cfgValue = AppLib.GetAppSetting("IsLogUserAction");
-            AppLib.SetAppGlobalValue("IsLogUserAction", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("TraceOrdersDetails");
+            AppLib.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = AppLib.GetAppSetting("IsLogClientAction");
+            AppLib.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
             // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
             AppLib.RecalcOrderPanelsLayot();
@@ -216,7 +219,7 @@ namespace KDSWPFClient
 
                 StringBuilder sb = new StringBuilder();
                 allowedStates.ForEach(status => sb.Append(status.ToString()));
-                AppLib.WriteLogUserAction("Open StateChange win, allowedStates: " + sb.ToString());
+                AppLib.WriteLogClientAction("Open StateChange win, allowedStates: " + sb.ToString());
 
                 // открываем окно изменения статуса
                 if (allowedStates.Count != 0)
@@ -229,13 +232,14 @@ namespace KDSWPFClient
                     AppLib.SetWinSizeToMainWinSize(win);
 
                     win.ShowDialog();
-                    AppLib.WriteLogUserAction("Close StateChange win, result: {0}", win.CurrentState.ToString());
+                    AppLib.WriteLogClientAction("Close StateChange win, result: {0}", win.CurrentState.ToString());
 
                     // изменить статус
                     AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
                     OrderStatusEnum newState = win.CurrentState;
                     if ((newState != OrderStatusEnum.None) && (newState != currentState) && (dataProvider != null))
                     {
+                        string sLogMsg;
                         try
                         {
                             // проверить set-канал
@@ -245,34 +249,35 @@ namespace KDSWPFClient
                             // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)
                             if (dishModel != null)
                             {
-                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
+                                sLogMsg = string.Format("orderId {0} (num {1}) for change status dishId {2} ({3}) to {4}", orderModel.Id, orderModel.Number, dishModel.Id, dishModel.DishName, newState.ToString());
+                                AppLib.WriteLogClientAction("lock " + sLogMsg);
                                 dataProvider.LockOrder(orderModel.Id);
 
                                 // изменить статус блюда с ингредиентами
-                                changeAStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
+                                changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
 
-                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}, блюдо {1}", orderModel.Id, dishModel.Id);
+                                AppLib.WriteLogClientAction("delock " + sLogMsg);
                                 dataProvider.DelockOrder(orderModel.Id);
                             }
 
                             // изменение состояния ЗАКАЗА, то изменяем все равно поблюдно
                             else if (dishModel == null)
                             {
-                                AppLib.WriteLogTraceMessage("clt: заблокировать заказ {0}", orderModel.Id);
+                                sLogMsg = string.Format("orderId {0} (num {1}) for change order status to {2}", orderModel.Id, orderModel.Number, newState.ToString());
+                                AppLib.WriteLogClientAction("lock " + sLogMsg);
                                 dataProvider.LockOrder(orderModel.Id);
 
-                                AppLib.WriteLogUserAction("Set new ORDER status to {0} by each dish...", newState.ToString());
                                 // меняем статус БЛЮД в заказе, если блюдо разрешено для данного КДСа
                                 foreach (OrderDishViewModel item in orderModel.Dishes.Where(d => d.ParentUID.IsNull()))
                                 {
                                     if (DishesFilter.Instance.Checked(item))
                                     {
                                         // изменить статус блюда с ингредиентами
-                                        changeAStatusDishWithIngrs(dataProvider, orderModel, item, newState);
+                                        changeStatusDishWithIngrs(dataProvider, orderModel, item, newState);
                                     }
                                 }  // foreach
 
-                                AppLib.WriteLogTraceMessage("clt: разблокировать заказ {0}", orderModel.Id);
+                                AppLib.WriteLogClientAction("delock orderId {0} (num {1})", orderModel.Id, orderModel.Number);
                                 dataProvider.DelockOrder(orderModel.Id);
 
                             }  // order status
@@ -291,7 +296,7 @@ namespace KDSWPFClient
         }  // method
 
         // изменение статуса блюда с ингредиентами
-        private static void changeAStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
+        private static void changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
             // эта настройка от КДС-сервиса
             bool isConfirmedReadyState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);

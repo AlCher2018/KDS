@@ -71,9 +71,6 @@ namespace KDSWPFClient.View
 
         #endregion
 
-        private Brush _divisionMarkBrush = null;
-
-
         public OrderPanelHeader(OrderViewModel order)
         {
             InitializeComponent();
@@ -104,10 +101,19 @@ namespace KDSWPFClient.View
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            string sLogMsg = "click on order HEADER";
+
             // 1. настройка в config-файле для заголовка заказа
-            if ((bool)AppLib.GetAppGlobalValue("OrderHeaderClickable", false) == false) return;
+            if ((bool)AppLib.GetAppGlobalValue("OrderHeaderClickable", false) == false)
+            {
+                AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по заголовку не разрешен в OrderHeaderClickable)");
+                return;
+            }
 
             OrderViewModel orderView = (OrderViewModel)grdHeader.DataContext;
+
+            AppLib.WriteLogClientAction("{0} - open StateChange window for orderId {1} (№ {2})", sLogMsg, orderView.Id, orderView.Number);
+
             App.OpenStateChangeWindow(orderView, null);
 
             e.Handled = true;

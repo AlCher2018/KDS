@@ -260,8 +260,7 @@ namespace KDSService
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
             if (hs == null) hs = new Dictionary<int, bool>();
             if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
-            // TODO проверить необходимость этого шага
-            AppProperties.SetProperty("lockedOrders", hs);              // сохранить, а надо??  
+            else hs[orderId] = false;
 
             logMsg += "Ok";
             AppEnv.WriteLogClientAction(machineName, logMsg);
@@ -273,7 +272,6 @@ namespace KDSService
 
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
             if ((hs != null) && hs.ContainsKey(orderId)) hs[orderId] = true;
-            AppProperties.SetProperty("lockedOrders", hs);
 
             logMsg += "Ok";
             AppEnv.WriteLogClientAction(machineName, logMsg);
