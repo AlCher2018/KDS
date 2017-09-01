@@ -264,6 +264,7 @@ namespace KDSService.AppModel
             if (this.Status == newStatus) return;
 
             string sLogMsg = string.Format(" - ORDER.UpdateStatus() Id/Num {0}/{1}, from {2} to {3}", this.Id, this.Number, this.Status.ToString(), newStatus.ToString());
+            DateTime dtTmr = DateTime.Now;
             if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
             else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - START");
 
@@ -324,6 +325,10 @@ namespace KDSService.AppModel
                     }
                 }
             }
+
+            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
 
         }  // method
 
@@ -628,13 +633,15 @@ namespace KDSService.AppModel
                             dbOrder.QueueStatusId = 2;
 
                         string sMsg = string.Format("   - save order {0}/{1}, status = {2}", this.Id, this.Number, status.ToString());
+                        DateTime dtTmr = DateTime.Now;
                         if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg + " - START");
                         else AppEnv.WriteLogClientAction(machineName, sMsg + " - START");
 
                         db.SaveChanges();
 
-                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg + " - FINISH");
-                        else AppEnv.WriteLogClientAction(machineName, sMsg + " - FINISH");
+                        sMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg);
+                        else AppEnv.WriteLogClientAction(machineName, sMsg);
 
                         retVal = true;
                     }

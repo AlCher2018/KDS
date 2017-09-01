@@ -38,11 +38,11 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="1.5*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.2*"/>
                 </Grid.RowDefinitions>
                 <Viewbox x:Name="cntOrderNumber" Grid.Row="0" Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Left" Stretch="Uniform">
-                    <TextBlock Margin="5,0">
-                    <Run Text="№" FontSize="14" FontFamily="Arial"/>
+                    <TextBlock Margin="3,0,2,0">
+                    <Run Text="№" FontSize="12" FontFamily="Arial" FontWeight="Normal"/>
                     <Run Text="{Binding ElementName=ucOrderPanel, Path=OrderNumber}" FontSize="18" FontFamily="Impact"/>
                     <Run Text="{Binding ElementName=ucOrderPanel, Path=OrderNumberTail}" FontSize="18" FontFamily="Impact" Foreground="Transparent"/>
                     </TextBlock>

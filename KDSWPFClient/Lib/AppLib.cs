@@ -66,7 +66,7 @@ namespace KDSWPFClient.Lib
         {
             if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false) 
                 && (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails", false))
-                _appLogger.Trace("cltDtl|" + msg);
+                _appLogger.Trace(msg);
         }
         public static void WriteLogOrderDetails(string format, params object[] paramArray)
         {
@@ -74,7 +74,7 @@ namespace KDSWPFClient.Lib
                 && (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails", false))
             {
                 string msg = string.Format(format, paramArray);
-                _appLogger.Trace("cltDtl|" + msg);
+                _appLogger.Trace(msg);
             }
         }
 

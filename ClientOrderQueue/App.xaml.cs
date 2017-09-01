@@ -38,6 +38,7 @@ namespace ClientOrderQueue
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
+
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
 
             MainWindow mWindow = new MainWindow();

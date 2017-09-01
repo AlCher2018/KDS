@@ -278,7 +278,7 @@ namespace KDSService.AppModel
 
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            sLog = string.Format("   appModel: update id {0}, num {1}", dbOrder.Id, dbOrder.Number);
+                            sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
                             AppEnv.WriteLogOrderDetails(sLog + " - START");
                             try
                             {
@@ -293,7 +293,7 @@ namespace KDSService.AppModel
                         // добавление заказа в словарь
                         else
                         {
-                            sLog = string.Format("   appModel: add order id {0}, num {1}", dbOrder.Id, dbOrder.Number);
+                            sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
                             AppEnv.WriteLogOrderDetails(sLog + " - START");
                             try
                             {
@@ -395,7 +395,9 @@ namespace KDSService.AppModel
                     if ((iDishStatus == 0) || (iDishStatus == 1))
                     {
                         _returnedOrderIds += ((_returnedOrderIds.Length == 0) ? "" : "; ") + order.Id.ToString() + "/" + order.Number;
-                        bStatus = true; order.OrderStatusId = 1; break;
+                        bStatus = true;
+                        order.OrderStatusId = 1; order.QueueStatusId = 0;
+                        break;
                     }
                 }
             }

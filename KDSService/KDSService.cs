@@ -307,6 +307,7 @@ namespace KDSService
         public void ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
         {
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
+            DateTime dtTmr = DateTime.Now;
             AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
             //StopTimer();
             _timerEnable = false;
@@ -324,13 +325,14 @@ namespace KDSService
             //StartTimer();
             _timerEnable = true;
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH");
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
         }
 
         // обновление статуса блюда с КДСа
         public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
             string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
+            DateTime dtTmr = DateTime.Now;
             AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
             //StopTimer();
             _timerEnable = false;
@@ -375,7 +377,7 @@ namespace KDSService
                 }
             }
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH");
+            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
 
             //StartTimer();
             _timerEnable = true;

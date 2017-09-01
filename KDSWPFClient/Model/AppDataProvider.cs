@@ -335,14 +335,17 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
-            AppLib.WriteLogClientAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
-
+            AppLib.WriteLogClientAction("Установить статус ЗАКАЗА, состояние службы: {0}", _getClient.State);
             checkSvcState();
 
             try
             {
+                DateTime dtTmr = DateTime.Now;
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - START", orderId, newStatus);
+
                 _setClient.ChangeOrderStatus(_machineName, orderId, newStatus);
-                AppLib.WriteLogTraceMessage(" - результат: успешно");
+
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - FINISH - {2}", orderId, newStatus, (DateTime.Now - dtTmr).ToString());
             }
             catch (Exception)
             {
@@ -382,15 +385,18 @@ namespace KDSWPFClient
         public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
             if (_setClient == null) return;
+
+            AppLib.WriteLogClientAction("Установить статус БЛЮДА, состояние службы: {0}", _getClient.State);
             checkSvcState();
 
             try
             {
-                AppLib.WriteLogClientAction(" - ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
+                DateTime dtTmr = DateTime.Now;
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
                 _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
-                AppLib.WriteLogClientAction(" - ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - FINISH - {3}", orderId, dishId, newStatus, (DateTime.Now - dtTmr).ToString());
             }
             catch (Exception)
             {

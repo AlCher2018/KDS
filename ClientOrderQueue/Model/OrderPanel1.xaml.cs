@@ -57,7 +57,7 @@ namespace ClientOrderQueue.Model
         {
             OrderPanel1 op = (OrderPanel1)sender;
             string num = op.OrderNumber;
-            if (num.Length < 6) op.OrderNumberTail = new string('4', 6 - num.Length);
+            if (num.Length < 5) op.OrderNumberTail = new string('4', 5 - num.Length);
             else op.OrderNumberTail = "";
         }
 

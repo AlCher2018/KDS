@@ -260,6 +260,7 @@ namespace KDSWPFClient
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
         {
+            DateTime dtTmr1 = DateTime.Now;
             AppLib.WriteLogOrderDetails("get orders from SVC - START");
 
             if (_mayGetData)
@@ -517,7 +518,7 @@ namespace KDSWPFClient
             // перерисовать полностью
             if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
 
-            AppLib.WriteLogOrderDetails("get orders from SVC - FINISH");
+            AppLib.WriteLogOrderDetails("get orders from SVC - FINISH - " + (DateTime.Now - dtTmr1).ToString());
 
         }  // method
 
@@ -690,6 +691,7 @@ namespace KDSWPFClient
             if (_pages == null) return;
 
             string sLogMsg = string.Format(" - redraw reason: {0}", reason);
+            DateTime dtTmr = DateTime.Now;
             AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             _pages.ClearPages(); // очистить панели заказов
 
@@ -699,7 +701,7 @@ namespace KDSWPFClient
             //DebugTimer.GetInterval();
 
             setCurrentPage();
-            AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH");
+            AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
         }
 
         #region change page

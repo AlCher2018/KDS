@@ -325,7 +325,7 @@ namespace ClientOrderQueue
 
 #endregion
 
-#region set elements
+        #region set elements
 
         private void setAppLayout()
         {

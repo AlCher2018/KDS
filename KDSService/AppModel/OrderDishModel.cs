@@ -272,6 +272,7 @@ namespace KDSService.AppModel
             }
 
             string sLogMsg = string.Format(" - DISH.UpdateStatus() Id {0}/{1}, from {2} to {3}", this.Id, this.Name, this.Status.ToString(), newStatus.ToString());
+            DateTime dtTmr = DateTime.Now; 
             if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
             else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - START");
 
@@ -341,8 +342,9 @@ namespace KDSService.AppModel
                 }
             }
 
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - FINISH");
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - FINISH");
+            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
 
             return isUpdSuccess;
         }  // method UpdateStatus
@@ -730,12 +732,14 @@ namespace KDSService.AppModel
                             dbDish.DishStatusId = iStatus;
 
                             string sLogMsg = string.Format("   - save DISH {0}/{1}, status = {2}", this.Id, this.Name, status.ToString());
+                            DateTime dtTmr = DateTime.Now;
                             if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
                             else AppEnv.WriteLogClientAction(machineName, sLogMsg);
 
                             db.SaveChanges();
 
-                            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - FINISH");
+                            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+                            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
                             else AppEnv.WriteLogClientAction(machineName, sLogMsg);
                         }
                         retVal = true;
