@@ -94,6 +94,11 @@ namespace KDSService.Lib
             return source.Equals(DateTime.MinValue);
         }
 
+        public static string ToSQLExpr(this DateTime source)
+        {
+            return string.Format("CONVERT(datetime, '{0}', 20)", source.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+        }
+
     } // class
 
     public static class TimeSpanExtension

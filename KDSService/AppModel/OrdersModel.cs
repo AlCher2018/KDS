@@ -100,7 +100,8 @@ namespace KDSService.AppModel
             }
 
             AppEnv.WriteLogOrderDetails("GET ORDERS FROM DB - START");
-            Console.WriteLine("getting orders ..."); DebugTimer.Init(" - get orders from DB");
+            Console.WriteLine("getting orders ...");
+            DebugTimer.Init(" - get orders from DB", false);
 
             // получить заказы из БД
             List<Order> dbOrders = null;
@@ -151,20 +152,19 @@ namespace KDSService.AppModel
                     foreach (Order dbOrder in dbOrders)
                     {
                         OrderStatusEnum dishesStatus = AppEnv.GetStatusAllDishes(dbOrder.OrderDish);
+
                         // все блюда (активных НП) Выданы, а заказ - не выдан, изменить статус заказа
                         if ((dishesStatus != OrderStatusEnum.None) 
                             && ((int)dishesStatus != dbOrder.OrderStatusId) && (dishesStatus == OrderStatusEnum.Took))
                         {
                             dbOrder.OrderStatusId = 3;
                             dbOrder.QueueStatusId = 2;
-                            sLog = string.Format("   изменен статус заказа {0}/{1} на {2} согласно общему статусу всех блюд - ", dbOrder.Id, dbOrder.Number, dbOrder.OrderStatusId);
+                            sLog = string.Format("   изменен статус заказа {0}/{1} на {2} согласно общему статусу всех блюд в ЦИКЛЕ ЧТЕНИЯ ДАННЫХ - ", dbOrder.Id, dbOrder.Number, dbOrder.OrderStatusId);
                             using (KDSEntities db = new KDSEntities())
                             {
                                 try
                                 {
                                     db.Order.Attach(dbOrder);
-                                    //var manager = ((System.Data.Entity.Infrastructure.IObjectContextAdapter)db).ObjectContext.ObjectStateManager;
-                                    //manager.ChangeObjectState(dbOrder, System.Data.Entity.EntityState.Modified);
                                     db.Entry(dbOrder).State = System.Data.Entity.EntityState.Modified;
                                     db.SaveChanges();
 

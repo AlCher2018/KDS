@@ -10,6 +10,8 @@ using KDSWPFClient.View;
 using System.Windows.Media;
 using System.Linq;
 using System.Text;
+using System.IO;
+using System.IO.Compression;
 
 namespace KDSWPFClient
 {
@@ -33,6 +35,14 @@ namespace KDSWPFClient
 
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
             AppLib.WriteLogInfoMessage(AppLib.GetEnvironmentString());
+
+            // установить текущий каталог на папку с приложением
+            string appDir = AppLib.GetAppDirectory();
+            if (System.IO.Directory.GetCurrentDirectory() != appDir)
+            {
+                AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
+                System.IO.Directory.SetCurrentDirectory(appDir);
+            }
 
             // check registration
             if (ProtectedProgramm() == false) Environment.Exit(1);
@@ -108,9 +118,19 @@ namespace KDSWPFClient
 
         private static bool ProtectedProgramm()
         {
+            // файл E_init.PSW должен находиться в папке приложения
+            string fileName = AppLib.GetAppDirectory() + "E_init.PSW";
+
+            if (File.Exists(fileName) == false)
+            {
+                AppLib.WriteLogErrorMessage("Не найден файл: " + fileName);
+                MessageBox.Show("Не найден файл\n" + fileName, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return false;
+            }
+
             string cpuid = Hardware.getCPUID();
-            byte[] bt = new byte[] { 0x30, 0x32, 0x30, 0x36, 0x31, 0x39, 0x36, 0x37 };
-            if (Hardware.SeeHardware(cpuid, new string(bt.Select(b => Convert.ToChar(b)).ToArray())))
+
+            if (Hardware.SeeHardware(fileName, cpuid))
             {
                 return true;
             }
@@ -119,7 +139,7 @@ namespace KDSWPFClient
             Clipboard.Clear();
             Clipboard.SetText(cpuid, TextDataFormat.Text);
 
-            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот номер службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
+            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот код службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
             MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 
             return false;

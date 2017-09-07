@@ -378,6 +378,9 @@ namespace KDSService.AppModel
 
             if ((iStat != -1) && (this.OrderStatusId != iStat))
             {
+                string sLog = string.Format("   изменение статуса заказа {0}/{1} на {2} согласно общему статусу всех блюд ПРИ ОБНОВЛЕНИИ БЛЮДА...", this.Id, this.Number, iStat);
+                AppEnv.WriteLogOrderDetails(sLog);
+
                 OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(iStat);
                 UpdateStatus(statDishes, false);
                 _isUpdStatusFromDishes = true;
