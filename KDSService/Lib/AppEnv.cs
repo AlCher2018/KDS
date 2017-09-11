@@ -148,6 +148,11 @@ namespace KDSConsoleSvcHost
             else
                 AppProperties.SetProperty("UnusedDepartments", null);
 
+            // ВНУТРЕННИЕ КОЛЛЕКЦИИ
+
+            // коллекция для хранения готовящегося количества блюд по цехам (направлениям печати)
+            AppProperties.SetProperty("dishesQty", new Dictionary<int, decimal>());
+
             // коллекции для хранения заблокированных от изменения по таймеру заказов и блюд
             AppProperties.SetProperty("lockedOrders", new Dictionary<int, bool>());
             AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());

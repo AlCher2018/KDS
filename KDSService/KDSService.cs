@@ -258,7 +258,6 @@ namespace KDSService
             string logMsg = string.Format("LockOrder({0}): ", orderId);
 
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
-            if (hs == null) hs = new Dictionary<int, bool>();
             if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
             else hs[orderId] = false;
 
@@ -271,7 +270,7 @@ namespace KDSService
             string logMsg = string.Format("DelockOrder({0}): ", orderId);
 
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-            if ((hs != null) && hs.ContainsKey(orderId)) hs[orderId] = true;
+            if (hs.ContainsKey(orderId)) hs[orderId] = true;
 
             logMsg += "Ok";
             AppEnv.WriteLogClientAction(machineName, logMsg);
@@ -283,7 +282,6 @@ namespace KDSService
             string logMsg = string.Format("LockDish({0}): ", dishId);
 
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if (hs == null) hs = new Dictionary<int, bool>();
             if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
             AppProperties.SetProperty("lockedDishes", hs);
 
@@ -296,7 +294,7 @@ namespace KDSService
             string logMsg = string.Format("DelockDish({0}): ", dishId);
 
             Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if ((hs != null) && hs.ContainsKey(dishId)) hs[dishId] = true;
+            if (hs.ContainsKey(dishId)) hs[dishId] = true;
             AppProperties.SetProperty("lockedDishes", hs);
 
             logMsg += "Ok";

@@ -58,60 +58,67 @@ namespace KDSService.DataSource
                 {
                     tmpDishes.Clear();
 
-                    // ПРОВЕРКА ПО СТАТУСУ
+                    // ПРОВЕРКА ЗАКАЗА 
+                    //      ПО СТАТУСУ
                     bool bStatus = allowedKDSStatuses.Contains(subOrd.OrderStatusId);
-                    // статус заказа не разрешен - проверяем по блюдам
-                    if (bStatus == false)
-                    {
-                        if (tmpDishes.Count == 0) getDishes(db, subOrd.Id);
-
-                        foreach (subDish1 dishItem in tmpDishes)
-                        {
-                            // заказ уже не разрешен для показа на КДСе по статусу, но в нем есть разрешенные блюда
-                            // со статусом Ожидает или Готовится - заказ переводим в статус Готовится
-                            if ((dishItem.DishStatusId == 0) || (dishItem.DishStatusId == 1))
-                            {
-                                AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. блюдо id {4} имеет статус {5}", subOrd.Id, subOrd.Number, subOrd.OrderStatusId, "1", dishItem.Id, dishItem.DishStatusId);
-                                db.Database.ExecuteSqlCommand(string.Format("UPDATE [Order] SET OrderStatusId=1, QueueStatusId=0 WHERE (Id={0})", subOrd.Id));
-
-                                bStatus = true;
-                                break;
-                            }
-                        }
-                    }
-                    // 1. заказ не прошел по статусу - удалить из полученных от БД
-                    if (bStatus == false) { tmpSubOrd.Add(subOrd); continue; }
-
-                    // ПРОВЕРКА ПО ДАТЕ
-                    // заказ сегодняшний?
+                    //      ПО ДАТЕ
                     bool bDate = (DateTime.Today == subOrd.CreateDate.Date);
-                    // вчерашний заказ, проверить дату/время, после которого вчерашние заказы будут отображаться на КДСе
-                    // 2017-08-31 проверка и по заказу, и по БЛЮДАМ
-                    if (bDate == false)
+
+                    // проверка по БЛЮДАМ
+                    if ((bStatus == false) && (bDate == false))
                     {
-                        double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
-                        DateTime dtWider = DateTime.Today.AddHours(-d1);
-                        if (subOrd.CreateDate >= dtWider) bDate = true;
-
-                        // по блюдам
-                        if (bDate == false)
+                        if (tmpDishes.Count == 0) getDishes(db, subOrd.Id, false);
+                        // статус заказа не разрешен - проверяем по блюдам
+                        if (bStatus == false)
                         {
-                            if (tmpDishes.Count == 0) getDishes(db, subOrd.Id);
-
                             foreach (subDish1 dishItem in tmpDishes)
                             {
-                                if (dishItem.CreateDate >= dtWider) { bDate = true; break; }
+                                // заказ уже не разрешен для показа на КДСе по статусу, но в нем есть разрешенные блюда
+                                // со статусом Ожидает или Готовится - заказ переводим в статус Готовится
+                                if ((dishItem.DishStatusId == 0) || (dishItem.DishStatusId == 1))
+                                {
+                                    AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. блюдо id {4} имеет статус {5}", subOrd.Id, subOrd.Number, subOrd.OrderStatusId, "1", dishItem.Id, dishItem.DishStatusId);
+                                    db.Database.ExecuteSqlCommand(string.Format("UPDATE [Order] SET OrderStatusId=1, QueueStatusId=0 WHERE (Id={0})", subOrd.Id));
+
+                                    bStatus = true;
+                                }
+                            }
+                        }
+
+                        // если заказ вчерашний, то проверить дату/время, после которого вчерашние заказы будут отображаться на КДСе
+                        if ((bStatus == false) && (bDate == false))
+                        {
+                            double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
+                            DateTime dtWider = DateTime.Today.AddHours(-d1);
+
+                            if (subOrd.CreateDate >= dtWider)
+                                bDate = true;
+
+                            // по блюдам
+                            if (bDate == false)
+                            {
+                                if (tmpDishes.Count == 0) getDishes(db, subOrd.Id, false);
+
+                                foreach (subDish1 dishItem in tmpDishes)
+                                {
+                                    if (dishItem.CreateDate >= dtWider) { bDate = true; break; }
+                                }
                             }
                         }
                     }
 
-                    // 2. заказ не прошел по дате - удалить из полученных
-                    if (bDate == false) { tmpSubOrd.Add(subOrd); continue; }
+                    // заказ/блюда не прошли ни по статусу, ни по дате - удалить из полученных
+                    if ((bStatus == false) && (bDate == false)) { tmpSubOrd.Add(subOrd); continue; }
 
-
-                    if (tmpDishes.Count == 0) getDishes(db, subOrd.Id);
-                    // блюд нет - заказ удалить
-                    if (tmpDishes.Count == 0) { tmpSubOrd.Add(subOrd); continue; }
+                    // заказ прошел проверку по статусу или по дате - проверка блюд
+                    if (tmpDishes.Count == 0) getDishes(db, subOrd.Id, true);
+                    // TODO блюд нет - заказ удалить
+                    if (tmpDishes.Count == 0)
+                    {
+                        tmpSubOrd.Add(subOrd);
+                        AppEnv.WriteLogOrderDetails("   - order id {0} hasn't allowed dished - remove", subOrd.Id.ToString());
+                        continue;
+                    }
 
                     // узнать общий статус всех (оставшихся) блюд
                     int idStatus = getStatusAllDishesInt();
@@ -134,28 +141,51 @@ namespace KDSService.DataSource
         }
 
         // получить блюда для заказа
-        private static void getDishes(KDSEntities db, int id)
+        private static void getDishes(KDSEntities db, int id, bool isLog)
         {
             string sqlText = string.Format("SELECT Id, DishStatusId, CreateDate, DepartmentId, Quantity, UID, ParentUid FROM OrderDish WHERE (OrderId={0})", id);
 
             // блюда заказа
             tmpDishes.AddRange(db.Database.SqlQuery<subDish1>(sqlText));
 
-            // удалить блюда с неотображаемым статусом или с нулевым количеством
-            tmpDishes.RemoveAll(d => (allowedKDSStatuses.Contains(d.DishStatusId) == false)|| (d.Quantity == 0m));
+            // TODO удалить блюда с неотображаемым статусом или с нулевым количеством
+            int iCnt = 0;
+            tmpDishes.RemoveAll(d =>
+            {
+                if ((allowedKDSStatuses.Contains(d.DishStatusId) == false) || (d.Quantity == 0m))
+                { iCnt++; return true; }
+                else
+                    return false;
+            });
+            if (isLog && (iCnt != 0)) AppEnv.WriteLogOrderDetails("   - order id {2}: remove dishes: {0} ({1})", iCnt.ToString(), "unview status or Quantity=0", id.ToString());
 
-            // удалить блюда, у которых неотображаемый цех
-            if (unUsedDeps != null) tmpDishes.RemoveAll(d => unUsedDeps.Contains(d.DepartmentId));
+            // TODO удалить блюда, у которых неотображаемый цех
+            iCnt = 0;
+            if (unUsedDeps != null) tmpDishes.RemoveAll(d =>
+            {
+                if (unUsedDeps.Contains(d.DepartmentId))
+                { iCnt++; return true; }
+                else
+                    return false;
+            });
+            if (isLog && (iCnt != 0)) AppEnv.WriteLogOrderDetails("   - order id {2}: remove dishes: {0} ({1})", iCnt.ToString(), "unused deps", id.ToString());
 
-            // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
+            // TODO поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
             if (tmpDishes.Count > 0)
             {
                 _dishUIDs.Clear();
                 _dishUIDs.AddRange(tmpDishes.Where(d => d.ParentUid.IsNull()).Select(d => d.UID));
 
-                // удалить "висячие" ингредиенты
-                if (_dishUIDs.Count > 0) tmpDishes.RemoveAll(
-                    d => (d.ParentUid.IsNull() == false) && (_dishUIDs.Contains(d.ParentUid) == false));
+                // TODO удалить "висячие" ингредиенты
+                iCnt = 0;
+                if (_dishUIDs.Count > 0) tmpDishes.RemoveAll(d =>
+                {
+                    if ((d.ParentUid.IsNull() == false) && (_dishUIDs.Contains(d.ParentUid) == false))
+                        { iCnt++; return true; }
+                    else
+                        return false;
+                });
+                if (isLog && (iCnt != 0)) AppEnv.WriteLogOrderDetails("   - order id {2}: remove dishes: {0} ({1})", iCnt.ToString(), "lost ingr", id.ToString());
             }
         }
 

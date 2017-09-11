@@ -31,7 +31,6 @@ namespace KDSService.AppModel
         /// учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
         /// </summary>
         private bool _takeCancelledInAutostartCooking;
-        private string _errorMsg;
 
         private bool _isLogOrderDetails;
         private bool _changeStatusYesterdayOrdersCfg, _changeStatusYesterdayOrdersCurrent;
@@ -83,7 +82,7 @@ namespace KDSService.AppModel
         {
             string sLog;
 
-            // автосброс вчерашних заказов
+            #region автосброс вчерашних заказов
             if (_changeStatusYesterdayOrdersCfg)
             {
                 if (_changeStatusYesterdayOrdersCurrent)
@@ -102,6 +101,7 @@ namespace KDSService.AppModel
                     _changeStatusYesterdayOrdersCurrent = true;
                 }
             }
+            #endregion
 
             AppEnv.WriteLogOrderDetails("GET ORDERS FROM DB - START");
             Console.WriteLine("getting orders ...");
@@ -111,10 +111,7 @@ namespace KDSService.AppModel
             _dbOrders.Clear();
             try
             {
-//                DateTime dt1 = DateTime.Now;
                 DBOrderHelper.LoadDBOrders();
-                //DateTime dt1 = DateTime.Now;
-                //Debug.Print(" -- load orders: " + (DateTime.Now - dt1).ToString());
             }
             catch (Exception ex)
             {
@@ -131,98 +128,94 @@ namespace KDSService.AppModel
             // цикл по полученным из БД заказам
             if (_dbOrders != null)
             {
-                lock (_dbOrders)
+                #region *** ОБНОВЛЕНИЕ ВНУТРЕННЕГО СЛОВАРЯ ЗАКАЗОВ _orders коллекцией из БД _dbOrders ***
+                // 1. удалить
+                int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
+                delIds = _orders.Keys.Except(delIds).ToArray();
+                if (_isLogOrderDetails)
                 {
-                    // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
-                    sLog = "   updateDishesQuantityDict()...";
-                    AppEnv.WriteLogOrderDetails(sLog);
-                    try
-                    {
-                        updateDishesQuantityDict(_dbOrders);
-                        if (_isLogOrderDetails)
-                        {
-                            Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
-                            StringBuilder sb = new StringBuilder();
-                            foreach (KeyValuePair<int, decimal> item in dishesQty)
-                            {
-                                if (sb.Length > 0) sb.Append("; ");
-                                sb.Append(string.Format("{0}/{1}", item.Key, item.Value));
-                            }
-                            AppEnv.WriteLogOrderDetails("   - result (depId/count): " + sb.ToString());
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   error: " + ex.ToString());
-                        else AppEnv.WriteLogErrorMessage("Ошибка обновления словаря количества готовящихся блюд по цехам: " + ex.ToString());
-                    }
+                    string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
+                    if (s1 != "") AppEnv.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
+                }
+                foreach (int id in delIds)
+                {
+                    _orders[id].Dispose();
+                    _orders.Remove(id);
+                }
 
-                    // *** ОБНОВЛЕНИЕ ВНУТРЕННЕГО СЛОВАРЯ ЗАКАЗОВ ***
-                    // 1. удалить
-                    int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
-                    delIds = _orders.Keys.Except(delIds).ToArray();
-                    if (_isLogOrderDetails)
+                // 2. обновить или добавить
+                _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
+                foreach (Order dbOrder in _dbOrders)
+                {
+                    // пропустить, если заказ заблокирован от изменений по таймеру при длительных операциях чтения из БД
+                    if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
                     {
-                        string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
-                        if (s1 != "") AppEnv.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
-                    }
-                    foreach (int id in delIds)
-                    {
-                        _orders[id].Dispose();
-                        _orders.Remove(id);
-                    }
-
-                    // 2. обновить или добавить
-                    _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-                    foreach (Order dbOrder in _dbOrders)
-                    {
-                        // пропустить, если заказ заблокирован от изменений по таймеру
-                        if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
-                        {
-                            AppEnv.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
-                            continue;
-                        }
-
+                        AppEnv.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
+                        // если заказ стал неотображаемый, то удалить его из коллекции
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
-                            AppEnv.WriteLogOrderDetails(sLog + " - START");
-                            try
+                            OrderModel om = _orders[dbOrder.Id];
+                            if (_allowedKDSStatuses.Contains(om.OrderStatusId) == false)
                             {
-                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                                _orders.Remove(dbOrder.Id);
+                                AppEnv.WriteLogOrderDetails("             remove from appModel set");
                             }
-                            catch (Exception ex)
-                            {
-                                AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                            }
-                            AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
                         }
-                        // добавление заказа в словарь
-                        else
+                        continue;
+                    }
+
+                    if (_orders.ContainsKey(dbOrder.Id))
+                    {
+                        sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
+                        AppEnv.WriteLogOrderDetails(sLog + " - START");
+                        try
                         {
-                            sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
-                            AppEnv.WriteLogOrderDetails(sLog + " - START");
-                            try
-                            {
-                                OrderModel newOrder = new OrderModel(dbOrder);
-                                _orders.Add(dbOrder.Id, newOrder);
-                            }
-                            catch (Exception ex)
-                            {
-                                AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                            }
-                            AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
-                        }  //curOrder
+                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                        }
+                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
+                    }
+                    // добавление заказа в словарь
+                    else
+                    {
+                        sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
+                        AppEnv.WriteLogOrderDetails(sLog + " - START");
+                        try
+                        {
+                            OrderModel newOrder = new OrderModel(dbOrder);
+                            _orders.Add(dbOrder.Id, newOrder);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                        }
+                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
+                    }  //curOrder
+                }  // foreach
+                #endregion
 
-                    }  // foreach
-
-                }  // lock
+                #region обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
+                sLog = "   updateDishesQuantityDict()...";
+                AppEnv.WriteLogOrderDetails(sLog);
+                try
+                {
+                    updateDishesQuantityDict(_orders);
+                    if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   - result (depId/count): " + getDishesQtyString());
+                }
+                catch (Exception ex)
+                {
+                    if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   error: " + ex.ToString());
+                    else AppEnv.WriteLogErrorMessage("Ошибка обновления словаря количества готовящихся блюд по цехам: " + ex.ToString());
+                }
+                #endregion
             }
 
             if (_isLogOrderDetails)
             {
-                string ids = "";
-                if (_orders.Count > 0) ids = string.Join(",", _orders.Values.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
+                string ids = string.Join(",", _orders.Values.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
                 AppEnv.WriteLogOrderDetails(" - to clients {0} id/Num: {1}", _orders.Count, ids);
             }
 
@@ -283,16 +276,12 @@ namespace KDSService.AppModel
         }
 
 
-
-        // блюда, которые ожидают готовки или уже готовятся, с их кол-вом в заказах для каждого НП
-        // словарь хранится в свойствах приложения
-        private void updateDishesQuantityDict(List<Order> dbOrders)
+        #region работа с коллекцией количества готовящихся блюд по цехам (напр.печати)
+        //  обновить коллекцию
+        private void updateDishesQuantityDict(Dictionary<int, OrderModel> orders)
         {
-            // получить или создать словарь по отделам (направлениям печати)
-            Dictionary<int, decimal> dishesQty = null;
-            var v1 = AppProperties.GetProperty("dishesQty");
-            if (v1 == null) dishesQty = new Dictionary<int, decimal>();
-            else dishesQty = (Dictionary<int, decimal>)v1;
+            // получить словарь по отделам (направлениям печати)
+            Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
 
             // очистить кол-во
             List<int> keys = dishesQty.Keys.ToList();
@@ -301,11 +290,11 @@ namespace KDSService.AppModel
             decimal qnt;
             OrderStatusEnum eStatus;
             bool isTakeQuantity, isTakeCancelled;
-            foreach (Order order in dbOrders)   // orders loop
+            foreach (OrderModel order in orders.Values)   // orders loop
             {
-                foreach (OrderDish dish in order.OrderDish)  //  dishes loop
+                foreach (OrderDishModel dish in order.Dishes.Values)  //  dishes loop
                 {
-                    eStatus = (OrderStatusEnum)(dish.DishStatusId ?? 0);
+                    eStatus = (OrderStatusEnum)dish.DishStatusId;
                     isTakeCancelled = (_takeCancelledInAutostartCooking && (eStatus == OrderStatusEnum.Cancelled));
                     isTakeQuantity = dish.ParentUid.IsNull()
                         && ((eStatus == OrderStatusEnum.Cooking) || isTakeCancelled);
@@ -323,6 +312,21 @@ namespace KDSService.AppModel
             AppProperties.SetProperty("dishesQty", dishesQty);
         }  // method
 
+
+        private string getDishesQtyString()
+        {
+            // получить словарь по отделам (направлениям печати)
+            Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
+
+            StringBuilder sb = new StringBuilder();
+            foreach (KeyValuePair<int, decimal> item in dishesQty)
+            {
+                if (sb.Length > 0) sb.Append("; ");
+                sb.Append(string.Format("{0}/{1}", item.Key, item.Value));
+            }
+            return sb.ToString();
+        }
+        #endregion
 
         public void Dispose()
         {
