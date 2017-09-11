@@ -3,7 +3,9 @@ using ClientOrderQueue.Model;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ClientOrderQueue
@@ -32,8 +34,39 @@ namespace ClientOrderQueue
             // проверка доступа к БД
             if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
             {
-                MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
-                App.Current.Shutdown(1);
+                bool result = false;
+                AppStartWait winWait = new AppStartWait();
+                winWait.Show();
+
+                // сделать цикл проверки подключения: 20 раз через 2 сек
+                for (int i = 1; i <= 20; i++)
+                {
+                    winWait.Dispatcher.Invoke(() =>
+                    {
+                        int iVal = winWait.txtNumAttempt.Text.ToInt();
+                        iVal++;
+                        winWait.txtNumAttempt.Text = iVal.ToString();
+                        winWait.InvalidateProperty(TextBlock.TextProperty);
+                        winWait.InvalidateVisual();
+                        winWait.Refresh();
+                    });
+                    Thread.Sleep(2000);
+
+                    result = AppLib.CheckDBConnection(typeof(KDSContext));
+                    if (result) break;
+                }
+                winWait.Close();
+
+                if (!result)
+                {
+                    MessageBox.Show("Ошибка подключения к базе данных. См. журнал в папке Logs.\nПриложение будет закрыто", "Аварийное завершение", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    Environment.Exit(3);
+                }
+                // перезапусить приложение
+                else
+                {
+                    AppLib.RestartApplication();
+                }
             }
 
             // настройка приложения

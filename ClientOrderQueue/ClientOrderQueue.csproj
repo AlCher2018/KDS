@@ -112,6 +112,9 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppStartWait.xaml.cs">
+      <DependentUpon>AppStartWait.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
@@ -128,6 +131,10 @@
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\ImageHelper.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
+    <Page Include="AppStartWait.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
