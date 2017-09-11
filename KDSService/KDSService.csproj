@@ -88,6 +88,7 @@
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
+    <Compile Include="DataSource\DBOrderHelper.cs" />
     <Compile Include="DataSource\Department.cs">
       <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
@@ -153,6 +154,7 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <None Include="App.Config" />
     <None Include="DataSource\KDSEntities.edmx.diagram">
       <DependentUpon>KDSEntities.edmx</DependentUpon>
     </None>

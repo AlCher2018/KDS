@@ -1,6 +1,21 @@
 ﻿История изменений приложения KDSWPFClient.exe - кухонный дисплей
 ================================================================
 
+2017-09-08 Внесены изменения в config-файл: раздел
+    <targets>
+      <target name="fileTrace" xsi:type="File" fileName="Logs/KDSClient.log" layout="${date}|${level}|${message}"/>
+    </targets>
+заменен полностью разделом
+    <targets async="true">
+      <target name="fileTrace" xsi:type="File" fileName="Logs/KDSClient.log" layout="${date}|${level}|${message}"
+              archiveEvery = "Hour" archiveFileName = "Logs/KDSClient {#}.txt" archiveNumbering = "Date" archiveDateFormat="yyyyMMdd HH\h"
+              concurrentWrites="false" keepFileOpen="true"/>
+    </targets>
+Эти изменения позволяют:
+- делать записи в лог асинхронно;
+- держать файл журнала постоянно открытым;
+- каждый час сбрасывать журнал в архив (т.е. за сутки будет 24 файла), уменьшая таким образом файл журнала.
+
 
 Версия 2.0.0.2
 --------------

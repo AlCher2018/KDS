@@ -14,19 +14,10 @@ namespace KDSService.DataSource
     
     public partial class Department
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public Department()
-        {
-            this.OrderDish = new HashSet<OrderDish>();
-        }
-    
         public int Id { get; set; }
         public string Name { get; set; }
         public string UID { get; set; }
         public Nullable<bool> IsAutoStart { get; set; }
         public Nullable<int> DishQuantity { get; set; }
-    
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<OrderDish> OrderDish { get; set; }
     }
 }

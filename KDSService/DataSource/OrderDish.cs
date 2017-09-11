@@ -14,13 +14,6 @@ namespace KDSService.DataSource
     
     public partial class OrderDish
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public OrderDish()
-        {
-            this.OrderDishReturnTime = new HashSet<OrderDishReturnTime>();
-            this.OrderDishRunTime = new HashSet<OrderDishRunTime>();
-        }
-    
         public int Id { get; set; }
         public int OrderId { get; set; }
         public Nullable<int> DishStatusId { get; set; }
@@ -34,14 +27,8 @@ namespace KDSService.DataSource
         public string Comment { get; set; }
         public System.DateTime CreateDate { get; set; }
         public Nullable<System.DateTime> StartDate { get; set; }
-        public string UID1C { get; set; }
         public int DelayedStartTime { get; set; }
     
         public virtual Department Department { get; set; }
-        public virtual Order Order { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<OrderDishReturnTime> OrderDishReturnTime { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<OrderDishRunTime> OrderDishRunTime { get; set; }
     }
 }

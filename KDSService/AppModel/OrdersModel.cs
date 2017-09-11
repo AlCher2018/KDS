@@ -19,9 +19,11 @@ namespace KDSService.AppModel
     {
         private Random rnd = new Random();
 
-        private HashSet<int> allowedKDSStatuses;
+        private HashSet<int> _allowedKDSStatuses;
+        private HashSet<int> _unUsedDeps;
         private Dictionary<int, bool> _lockedOrders;
 
+        private List<Order> _dbOrders;
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
 
@@ -33,27 +35,29 @@ namespace KDSService.AppModel
 
         private bool _isLogOrderDetails;
         private bool _changeStatusYesterdayOrdersCfg, _changeStatusYesterdayOrdersCurrent;
-        private DateTime _currenDate;
+        private DateTime _currentDate;
 
         List<Order> _delOrders;
-        List<OrderDish> _delDishes;
-        List<string> _dishUIDs;
-        private HashSet<int> _unUsedDeps;
 
-        private string _returnedOrderIds;
-        
+       
         // CONSTRUCTOR
         public OrdersModel()
         {
             // статусы заказов, которые выбираются из БД для отображения на КДС (все НЕтерминальные)
-            allowedKDSStatuses = new HashSet<int>();
-            allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
-            allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
-            allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
-            allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
-            allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
-            allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);
+            _allowedKDSStatuses = new HashSet<int>();
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);
+            DBOrderHelper.AllowedKDSStatuses = _allowedKDSStatuses;
 
+            // неиспользуемые отделы, отфильтровываются на службе
+            _unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
+            DBOrderHelper.UnusedDeps = _unUsedDeps;
+
+            _dbOrders = DBOrderHelper.DBOrders;
             _orders = new Dictionary<int, OrderModel>();
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
@@ -63,12 +67,11 @@ namespace KDSService.AppModel
 
             _changeStatusYesterdayOrdersCfg = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
             _changeStatusYesterdayOrdersCurrent = _changeStatusYesterdayOrdersCfg;
-            _currenDate = DateTime.Now.Date;
+            _currentDate = DateTime.Now.Date;
+            //_currentDate = _currentDate.AddDays(-1);
 
+            
             _delOrders = new List<Order>();
-            _delDishes = new List<OrderDish>();
-            _dishUIDs = new List<string>();
-            _unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
         }
 
         //**************************************
@@ -89,10 +92,11 @@ namespace KDSService.AppModel
                     {
                         // для одноразового прохода в течение дня
                         _changeStatusYesterdayOrdersCurrent = false;
+                        if (_currentDate != DateTime.Today) _currentDate = DateTime.Today;
                     }
                 }
                 // текущий флаг обновления вчерашних заказов сброшен и переползли в новые сутки
-                else if (_currenDate != DateTime.Today)
+                else if (_currentDate != DateTime.Today)
                 {
                     // устанавливаем флажок, чтобы при следующем проходе, попытаться обновить статус вчерашних заказов
                     _changeStatusYesterdayOrdersCurrent = true;
@@ -104,30 +108,13 @@ namespace KDSService.AppModel
             DebugTimer.Init(" - get orders from DB", false);
 
             // получить заказы из БД
-            List<Order> dbOrders = null;
+            _dbOrders.Clear();
             try
             {
-                using (KDSEntities db = new KDSEntities())
-                {
-                    // отобрать заказы за 5 дней, включая сегодня
-                    // в запрос включить блюда, отделы и группы отделов
-                    IEnumerable<Order> ordTmp = db.Order
-                        .Include("OrderDish")
-                        .Include("OrderDish.Department")
-                        .Where(dbDateFilter);
-
-                    // отобрать заказы с определенными статусами (HashSet<int> allowedKDSStatuses)
-                    // группировка и сортировка осуществляется на клиенте
-                    // здесь статус заказа может быть изменен в методе <isProcessingOrderStatusId>
-                    if (_returnedOrderIds != "") _returnedOrderIds = "";
-                    dbOrders = ordTmp.Where(isProcessingOrderStatusId).ToList();
-
-                    if (db.ChangeTracker.HasChanges())
-                    {
-                        AppEnv.WriteLogOrderDetails(" - returned Orders to status 1 (id/Num): " + _returnedOrderIds);
-                        db.SaveChanges();
-                    }
-                }
+//                DateTime dt1 = DateTime.Now;
+                DBOrderHelper.LoadDBOrders();
+                //DateTime dt1 = DateTime.Now;
+                //Debug.Print(" -- load orders: " + (DateTime.Now - dt1).ToString());
             }
             catch (Exception ex)
             {
@@ -137,101 +124,21 @@ namespace KDSService.AppModel
             // получено заказов из БД
             if (_isLogOrderDetails)
             {
-                string ids = string.Join(",", dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
-                AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num: {1}", dbOrders.Count, ids);
+                string ids = string.Join(",", _dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
+                AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num: {1}", _dbOrders.Count, ids);
             }
 
             // цикл по полученным из БД заказам
-            if (dbOrders != null)
+            if (_dbOrders != null)
             {
-                lock (dbOrders)
+                lock (_dbOrders)
                 {
-                    // для последующих обработок удалить из заказов блюда с ненужными статусами и неотображаемые на КДСах
-                    AppEnv.WriteLogOrderDetails(" - delete not allowed dishes...");
-                    _delOrders.Clear();
-                    foreach (Order dbOrder in dbOrders)
-                    {
-                        OrderStatusEnum dishesStatus = AppEnv.GetStatusAllDishes(dbOrder.OrderDish);
-
-                        // все блюда (активных НП) Выданы, а заказ - не выдан, изменить статус заказа
-                        if ((dishesStatus != OrderStatusEnum.None) 
-                            && ((int)dishesStatus != dbOrder.OrderStatusId) && (dishesStatus == OrderStatusEnum.Took))
-                        {
-                            dbOrder.OrderStatusId = 3;
-                            dbOrder.QueueStatusId = 2;
-                            sLog = string.Format("   изменен статус заказа {0}/{1} на {2} согласно общему статусу всех блюд в ЦИКЛЕ ЧТЕНИЯ ДАННЫХ - ", dbOrder.Id, dbOrder.Number, dbOrder.OrderStatusId);
-                            using (KDSEntities db = new KDSEntities())
-                            {
-                                try
-                                {
-                                    db.Order.Attach(dbOrder);
-                                    db.Entry(dbOrder).State = System.Data.Entity.EntityState.Modified;
-                                    db.SaveChanges();
-
-                                    sLog += "Ok";
-                                }
-                                catch (Exception ex)
-                                {
-                                    sLog += ex.ToString();
-                                }
-                                AppEnv.WriteLogOrderDetails(sLog);
-                            }
-                        }
-
-                        // фильтр БЛЮД: разрешенные статусы И количество != 0 (положительные - готовятся, отрицательные - отмененные)
-                        // И цех (напр.печати) - отображаемый
-                        //bool retVal = allowedKDSStatuses.Contains(dish.DishStatusId??-1)
-                        //    && (dish.Quantity != 0m)
-                        //    && (!_unUsedDeps.Contains(dish.DepartmentId));
-                        _delDishes.Clear();
-                        _delDishes = dbOrder.OrderDish.Where(
-                            d =>
-                            {
-                                bool result = false;
-                                if (_unUsedDeps == null)
-                                    result = allowedKDSStatuses.Contains(d.DishStatusId ?? -1) && (d.Quantity != 0m);
-                                else
-                                    result = allowedKDSStatuses.Contains(d.DishStatusId ?? -1) && (d.Quantity != 0m) 
-                                    && (!_unUsedDeps.Contains(d.DepartmentId));
-
-                                return !result;
-                            }
-                        ).ToList();
-                        // удалить ненужные блюда
-                        foreach (OrderDish delDish in _delDishes) dbOrder.OrderDish.Remove(delDish);
-
-                        // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
-                        _delDishes.Clear();
-                        _dishUIDs = dbOrder.OrderDish.Where(d => d.ParentUid.IsNull()).Select(d => d.UID).ToList();
-                        _delDishes = dbOrder.OrderDish.Where(d => (!d.ParentUid.IsNull() && (!_dishUIDs.Contains(d.ParentUid)))).ToList();
-                        if (_delDishes.Count > 0)
-                        {
-                            // удалить ненужные блюда
-                            foreach (OrderDish delDish in _delDishes) dbOrder.OrderDish.Remove(delDish);
-                        }
-
-                        // коллекция заказов с нулевым количеством блюд - клиентам не передавать
-                        if (dbOrder.OrderDish.Count == 0) _delOrders.Add(dbOrder);
-                    }
-
-                    // удалить заказы, у которых нет разрешенных блюд
-                    if (_delOrders.Count == 0)
-                    {
-                        AppEnv.WriteLogOrderDetails("   - result: 0");
-                    }
-                    else
-                    {
-                        string s1 = string.Join(", ",_delOrders.Select(o => o.Id.ToString()));
-                        AppEnv.WriteLogOrderDetails("   - result: order Ids without allowed dishes: " + s1);
-                        _delOrders.ForEach(o => dbOrders.Remove(o));
-                    }
-
                     // обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
                     sLog = "   updateDishesQuantityDict()...";
                     AppEnv.WriteLogOrderDetails(sLog);
                     try
                     {
-                        updateDishesQuantityDict(dbOrders);
+                        updateDishesQuantityDict(_dbOrders);
                         if (_isLogOrderDetails)
                         {
                             Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
@@ -252,7 +159,7 @@ namespace KDSService.AppModel
 
                     // *** ОБНОВЛЕНИЕ ВНУТРЕННЕГО СЛОВАРЯ ЗАКАЗОВ ***
                     // 1. удалить
-                    int[] delIds = dbOrders.Select(o => o.Id).ToArray();
+                    int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
                     delIds = _orders.Keys.Except(delIds).ToArray();
                     if (_isLogOrderDetails)
                     {
@@ -267,7 +174,7 @@ namespace KDSService.AppModel
 
                     // 2. обновить или добавить
                     _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-                    foreach (Order dbOrder in dbOrders)
+                    foreach (Order dbOrder in _dbOrders)
                     {
                         // пропустить, если заказ заблокирован от изменений по таймеру
                         if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
@@ -310,7 +217,6 @@ namespace KDSService.AppModel
                     }  // foreach
 
                 }  // lock
-                dbOrders = null; GC.Collect(0, GCCollectionMode.Optimized);
             }
 
             if (_isLogOrderDetails)
@@ -335,7 +241,7 @@ namespace KDSService.AppModel
         private bool updateYesterdayOrdersStatus()
         {
             // дата/время, когда необходимо обновить статус вчерашних заказов
-            DateTime dtUpdate = _currenDate.Add(AppEnv.TimeOfAutoCloseYesterdayOrders);
+            DateTime dtUpdate = _currentDate.Add(AppEnv.TimeOfAutoCloseYesterdayOrders);
             if (DateTime.Now < dtUpdate) return false;
 
             AppEnv.WriteLogOrderDetails(" - обновить статус вчерашних заказов... - START");
@@ -345,86 +251,37 @@ namespace KDSService.AppModel
                 // с учетом смещения от полуночи назад, созданные в течение которого вчерашние заказы будут отображаться на КДСе
                 double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
                 dtUpdate = DateTime.Today.AddHours(-d1);
-                List<Order> yesterdayOrders = db.Order
-                    .Where(o => (o.OrderStatusId < 3) && (o.CreateDate < dtUpdate))
-                    .ToList();
-                // обновить статус у объектов
-                foreach (Order item in yesterdayOrders)
-                {
-                    item.OrderStatusId = (int)OrderStatusEnum.YesterdayNotTook;
-                }
-                //    и в БД
+
+                string sqlText = string.Format("SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < {0})", dtUpdate.ToSQLExpr());
+                int cntDishes = 0, cntOrders, iCnt;
+                List<int> idList = db.Database.SqlQuery<int>(sqlText).ToList();
+                cntOrders = idList.Count;  // кол-во заказов
+                // обновить статус в БД
                 bool retVal = false;
                 try
                 {
-                    int processed = db.SaveChanges();
-                    AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} - FINISH", processed.ToString());
+                    foreach (int orderId in idList)
+                    {
+                        // обновить статус блюд
+                        sqlText = string.Format("UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={0})", orderId.ToString());
+                        iCnt = db.Database.ExecuteSqlCommand(sqlText);
+                        cntDishes += iCnt;
+                        // обновить статус заказа
+                        sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={0})", orderId.ToString());
+                        db.Database.ExecuteSqlCommand(sqlText);
+                    }
+                    AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH", cntOrders, cntDishes);
                     retVal = true;
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} - FINISH", AppEnv.GetShortErrMessage(ex));
+                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} ({1}) - FINISH", AppEnv.GetShortErrMessage(ex), sqlText);
                 }
 
                 return retVal;
             }
         }
 
-        private bool dbDateFilter(Order order)
-        {
-            return (DateTime.Today - order.CreateDate.Date).TotalDays <= 5;
-        }
-
-        // процедуры проверки числ.значения статуса ЗАКАЗА (из БД) на обработку в КДС
-        // статус: 0 - ожидает приготовления, 1 - готовится, 2 - готово, 3 - выдано, 4 - отмена, 5 - зафиксировано
-        // дата создания заказа: сегодня или назад от полуночи на MidnightShiftShowYesterdayOrders часов.
-        private bool isProcessingOrderStatusId(Order order)
-        {
-            bool bDate, bStatus;
-
-            // ПРОВЕРКА ПО СТАТУСУ
-            bStatus = allowedKDSStatuses.Contains(order.OrderStatusId);
-            // статус заказа не разрешен - проверяем по блюдам
-            if (bStatus == false)
-            {
-                int iDishStatus;
-                foreach (OrderDish dish in order.OrderDish)
-                {
-                    iDishStatus = (dish.DishStatusId ?? 0);
-                    // а блюдо Ожидает или Готовится, то заказ переводим в статус Готовится
-                    if ((iDishStatus == 0) || (iDishStatus == 1))
-                    {
-                        _returnedOrderIds += ((_returnedOrderIds.Length == 0) ? "" : "; ") + order.Id.ToString() + "/" + order.Number;
-                        bStatus = true;
-                        order.OrderStatusId = 1; order.QueueStatusId = 0;
-                        break;
-                    }
-                }
-            }
-            if (bStatus == false) return false;
-
-            // ПРОВЕРКА ПО ДАТЕ
-            // заказ сегодняшний?
-            bDate = (DateTime.Today == order.CreateDate.Date);
-            // вчерашний заказ, проверить дату/время, после которого вчерашние заказы будут отображаться на КДСе
-            // 2017-08-31 проверка и по заказу, и по БЛЮДАМ
-            if (bDate == false)
-            {
-                double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
-                DateTime dtWider = DateTime.Today.AddHours(-d1);
-                if (order.CreateDate >= dtWider) bDate = true;
-
-                // по блюдам
-                if (bDate == false)
-                {
-                    foreach (OrderDish dish in order.OrderDish)
-                    {
-                        if (dish.CreateDate >= dtWider) { bDate = true; break; }
-                    }
-                }
-            }
-            return bDate;
-        }
 
 
         // блюда, которые ожидают готовки или уже готовятся, с их кол-вом в заказах для каждого НП
@@ -477,12 +334,6 @@ namespace KDSService.AppModel
             }
         }
 
-        // класс для чтения с помощью EF подчиненного запроса с условием
-        //private class OrderAndDishesAsField
-        //{
-        //    public Order Order { get; set; }
-        //    public IEnumerable<OrderDish> Dishes { get; set; }
-        //}
 
     }  // class
 }
