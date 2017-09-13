@@ -136,7 +136,7 @@ namespace KDSService.AppModel
             else
             {
                 // обновить статус заказа по статусам всех блюд
-                OrderStatusEnum eStatusAllDishes = AppEnv.GetStatusAllDishes(dbOrder.OrderDish);
+                OrderStatusEnum eStatusAllDishes = AppEnv.GetStatusAllDishes(dbOrder.Dishes);
                 if ((eStatusAllDishes != OrderStatusEnum.None) 
                     && (this.Status != eStatusAllDishes) 
                     && ((int)this.Status < (int)eStatusAllDishes))
@@ -158,7 +158,7 @@ namespace KDSService.AppModel
 
             // добавить блюда к заказу
             //   расставить сначала блюдо, потом его ингредиенты, т.к. ингр.могут идти ПЕРЕД блюдом
-            List<OrderDish> dList = dbOrder.OrderDish.Where(d => d.ParentUid.IsNull()).ToList();
+            List<OrderDish> dList = dbOrder.Dishes.Where(d => d.ParentUid.IsNull()).ToList();
             Dictionary<int, OrderDish> dAll = new Dictionary<int,OrderDish>();
             foreach (OrderDish dish in dList)
             {
@@ -166,7 +166,7 @@ namespace KDSService.AppModel
                 {
                     dAll.Add(dish.Id, dish);
 
-                    List<OrderDish> dIngr = dbOrder.OrderDish.Where(d => (d.UID == dish.UID) && (d.Id != dish.Id)).ToList();
+                    List<OrderDish> dIngr = dbOrder.Dishes.Where(d => (d.UID == dish.UID) && (d.Id != dish.Id)).ToList();
                     foreach (var ingr in dIngr)
                         if (dAll.ContainsKey(ingr.Id) == false) dAll.Add(ingr.Id, ingr);
                 }
@@ -223,7 +223,7 @@ namespace KDSService.AppModel
 
                 // *** СЛОВАРЬ БЛЮД  ***
                 // удалить блюда из внутр.модели заказа, которых уже нет в БД
-                List<int> idDishList = dbOrder.OrderDish.Select(d => d.Id).ToList();  // все Id блюд из БД
+                List<int> idDishList = dbOrder.Dishes.Select(d => d.Id).ToList();  // все Id блюд из БД
                 List<int> idForRemove = _dishesDict.Keys.Except(idDishList).ToList();  // Id блюд для удаления
                 foreach (int idDish in idForRemove)
                 {
@@ -234,7 +234,7 @@ namespace KDSService.AppModel
 
                 // обновить состояние или добавить блюда
                 Dictionary<int, bool> lockedDishes = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-                foreach (OrderDish dbDish in dbOrder.OrderDish)
+                foreach (OrderDish dbDish in dbOrder.Dishes)
                 {
                     // пропустить, если блюдо находится в словаре заблокированных от изменения по таймеру
                     if ((lockedDishes != null) && lockedDishes.ContainsKey(dbDish.Id)) continue;

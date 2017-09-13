@@ -20,5 +20,7 @@ namespace KDSService.DataSource
         public int StatusFrom { get; set; }
         public int StatusFromTimeSpan { get; set; }
         public int StatusTo { get; set; }
+    
+        public virtual OrderDish OrderDish { get; set; }
     }
 }

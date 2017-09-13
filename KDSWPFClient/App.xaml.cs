@@ -270,13 +270,14 @@ namespace KDSWPFClient
                             if (dishModel != null)
                             {
                                 sLogMsg = string.Format("orderId {0} (num {1}) for change status dishId {2} ({3}) to {4}", orderModel.Id, orderModel.Number, dishModel.Id, dishModel.DishName, newState.ToString());
+                                DateTime dtTmr = DateTime.Now;
                                 AppLib.WriteLogClientAction("lock " + sLogMsg);
                                 dataProvider.LockOrder(orderModel.Id);
 
                                 // изменить статус блюда с ингредиентами
                                 changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
 
-                                AppLib.WriteLogClientAction("delock " + sLogMsg);
+                                AppLib.WriteLogClientAction("delock " + sLogMsg + " - " + (DateTime.Now-dtTmr).ToString());
                                 dataProvider.DelockOrder(orderModel.Id);
                             }
 
@@ -284,6 +285,7 @@ namespace KDSWPFClient
                             else if (dishModel == null)
                             {
                                 sLogMsg = string.Format("orderId {0} (num {1}) for change order status to {2}", orderModel.Id, orderModel.Number, newState.ToString());
+                                DateTime dtTmr = DateTime.Now;
                                 AppLib.WriteLogClientAction("lock " + sLogMsg);
                                 dataProvider.LockOrder(orderModel.Id);
 
@@ -297,7 +299,7 @@ namespace KDSWPFClient
                                     }
                                 }  // foreach
 
-                                AppLib.WriteLogClientAction("delock orderId {0} (num {1})", orderModel.Id, orderModel.Number);
+                                AppLib.WriteLogClientAction("delock orderId {0} (num {1}) - {2}", orderModel.Id, orderModel.Number, (DateTime.Now - dtTmr).ToString());
                                 dataProvider.DelockOrder(orderModel.Id);
 
                             }  // order status
@@ -324,23 +326,27 @@ namespace KDSWPFClient
             // изменить статус блюда
             dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
 
-            // изменить статус ингредиентов при условиях: 
-            // - разрешен на данном КДСе 
-            // - блюдо переходит в статус Готово, Выдан или ПодтвОтмены
-            OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
-            if (ingrs.Length > 0)
+            // если блюдо, то изменить статус ингредиентов
+            if (dishModel.ParentUID.IsNull())
             {
-                foreach (OrderDishViewModel ingr in ingrs)
+                // изменить статус ингредиентов при условиях: 
+                // - разрешен на данном КДСе 
+                // - блюдо переходит в статус Готово, Выдан или ПодтвОтмены
+                OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
+                if (ingrs.Length > 0)
                 {
-                    if (DishesFilter.Instance.Checked(ingr)
-                        || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready))
-                        || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
-                        || (newState == OrderStatusEnum.Took)
-                        || (newState == OrderStatusEnum.CancelConfirmed))
-                        dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                    foreach (OrderDishViewModel ingr in ingrs)
+                    {
+                        if (DishesFilter.Instance.Checked(ingr)
+                            || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready))
+                            || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
+                            || (newState == OrderStatusEnum.Took)
+                            || (newState == OrderStatusEnum.CancelConfirmed))
+                            dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                    }
                 }
             }
-        }
+        } // method
 
 
     }  // class App

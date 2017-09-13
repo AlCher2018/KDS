@@ -347,33 +347,33 @@ namespace KDSService
                 }
             }
 
-            if (result)
-            {
-                // убедиться, что в БД записан нужный статус
-                DateTime dt = DateTime.Now;
-                bool chkStat = false;
-                while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
-                {
-                    System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
-                    using (KDSEntities db = new KDSEntities())
-                    {
-                        try
-                        {
-                            OrderDish dbDish = db.OrderDish.Find(orderDishId);
-                            chkStat = ((dbDish != null) && (dbDish.DishStatusId == (int)orderDishStatus));
-                        }
-                        catch (Exception ex)
-                        {
-                            AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
-                        }
-                    }
-                }
-                // истекло время ожидания записи в БД
-                if (!chkStat)
-                {
-                    AppEnv.WriteLogErrorMessage("Истекло время ожидания (2 сек) проверочного чтения после записи нового состояния.");
-                }
-            }
+            //if (result)
+            //{
+            //    // убедиться, что в БД записан нужный статус
+            //    DateTime dt = DateTime.Now;
+            //    bool chkStat = false;
+            //    while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
+            //    {
+            //        System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
+            //        using (KDSEntities db = new KDSEntities())
+            //        {
+            //            try
+            //            {
+            //                OrderDish dbDish = db.OrderDish.Find(orderDishId);
+            //                chkStat = ((dbDish != null) && (dbDish.DishStatusId == (int)orderDishStatus));
+            //            }
+            //            catch (Exception ex)
+            //            {
+            //                AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
+            //            }
+            //        }
+            //    }
+            //    // истекло время ожидания записи в БД
+            //    if (!chkStat)
+            //    {
+            //        AppEnv.WriteLogErrorMessage("Истекло время ожидания (2 сек) проверочного чтения после записи нового состояния.");
+            //    }
+            //}
 
             AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
 

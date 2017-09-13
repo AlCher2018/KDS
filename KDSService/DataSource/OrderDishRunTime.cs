@@ -29,5 +29,7 @@ namespace KDSService.DataSource
         public Nullable<System.DateTime> CancelConfirmedDate { get; set; }
         public Nullable<int> ReadyTS { get; set; }
         public Nullable<System.DateTime> ReadyConfirmedDate { get; set; }
+    
+        public virtual OrderDish OrderDish { get; set; }
     }
 }
