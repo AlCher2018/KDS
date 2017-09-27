@@ -116,7 +116,7 @@ namespace KDSWPFClient
             try
             {
                 // получить со службы статусы заказов и сохранить их в _ordStatuses
-                AppLib.WriteLogTraceMessage("  - clt: получаю словарь статусов от службы...");
+                AppLib.WriteLogInfoMessage("  - clt: получаю словарь статусов от службы...");
                 setOrderStatusFromService();
 
                 // получить отделы со службы и сохранить их в _deps

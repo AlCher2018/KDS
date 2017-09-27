@@ -376,14 +376,6 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
-        internal static double GetOrdersPageContentHeight()
-        {
-            double _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
-            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-
-             return Math.Floor(_screenHeight - 2d * topBotMargin);
-        }
-
 
         // получить глобальное значение приложения из его свойств
         public static object GetAppGlobalValue(string key, object defaultValue = null)
@@ -588,39 +580,6 @@ namespace KDSWPFClient.Lib
             if (win.Top != topLeftPoint.Y) win.Top = topLeftPoint.Y;
             if (win.Left != topLeftPoint.X) win.Left = topLeftPoint.X;
         }
-
-        // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
-        internal static void RecalcOrderPanelsLayot()
-        {
-            string cfgValue;
-            int cntCols;
-            // размеры элементов панели заказа
-            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
-            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
-            if (cfgValue == null)
-            {
-                cntCols = 4;   // по умолчанию - 4
-                string errMsg;
-                AppLib.SaveAppSettings(new Dictionary<string, string>() { { "OrdersColumnsCount", cntCols.ToString() } }, out errMsg);
-            }
-            else cntCols = cfgValue.ToInt();
-
-            //   ширина столбцов заказов и расстояния между столбцами
-            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
-            // где, koef = доля поля от ширины колонки
-            double koef = 0.15d;
-            double colWidth = Math.Floor(screenWidth / (cntCols + koef * (cntCols + 1)));
-            double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
-            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
-
-            //   отступ сверху/снизу для панели заказов
-            AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
-            //   отступ между заказами по вертикали
-            AppLib.SetAppGlobalValue("ordPnlTopMargin", 1.5d * colMargin);
-        }
-
 
         /// <summary>
         /// соединение двух ОТСОРТИРОВАННЫХ массивов

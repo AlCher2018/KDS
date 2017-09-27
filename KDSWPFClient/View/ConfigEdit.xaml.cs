@@ -109,7 +109,7 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("IsWriteTraceMessages", true, chkIsWriteTraceMessages);
             _cfgValKeeper.AddPreValue("IsLogUserAction", true, chkIsLogUserAction);
             _cfgValKeeper.AddPreValue("AppFontScale", false, tbFontSizeScale);
-            _cfgValKeeper.AddPreValue("OrdersColumnsCount", false, tbxOrdersColumnsCount);
+            _cfgValKeeper.AddPreValue("OrdersColumnsCount", true, tbxOrdersColumnsCount);
             _cfgValKeeper.AddPreValue("AutoReturnOrdersGroupByTime", false, tbTimerIntervalToOrderGroupByTime);
             _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             _cfgValKeeper.AddPreValue("OrderHeaderClickable", true, cbxOrderHeaderClickable);

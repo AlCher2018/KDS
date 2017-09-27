@@ -158,16 +158,17 @@ namespace KDSService.AppModel
 
             // добавить блюда к заказу
             //   расставить сначала блюдо, потом его ингредиенты, т.к. ингр.могут идти ПЕРЕД блюдом
-            List<OrderDish> dList = dbOrder.Dishes.Where(d => d.ParentUid.IsNull()).ToList();
+            List<OrderDish> dishParentList = dbOrder.Dishes.Where(d => d.ParentUid.IsNull()).ToList();
             Dictionary<int, OrderDish> dAll = new Dictionary<int,OrderDish>();
-            foreach (OrderDish dish in dList)
+            foreach (OrderDish dishParent in dishParentList)
             {
-                if (dAll.ContainsKey(dish.Id) == false)
+                if (dAll.ContainsKey(dishParent.Id) == false)
                 {
-                    dAll.Add(dish.Id, dish);
+                    dAll.Add(dishParent.Id, dishParent);
 
-                    List<OrderDish> dIngr = dbOrder.Dishes.Where(d => (d.UID == dish.UID) && (d.Id != dish.Id)).ToList();
-                    foreach (var ingr in dIngr)
+                    // отобрать ингредиенты
+                    List<OrderDish> ingrList = dbOrder.Dishes.Where(ingr => (ingr.ParentUid == dishParent.UID) && (ingr.Id != dishParent.Id)).ToList();
+                    foreach (OrderDish ingr in ingrList)
                         if (dAll.ContainsKey(ingr.Id) == false) dAll.Add(ingr.Id, ingr);
                 }
             }

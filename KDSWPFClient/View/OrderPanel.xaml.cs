@@ -19,6 +19,7 @@ namespace KDSWPFClient.View
         private double _fontSize;
         private int _pageIndex;
         private OrderViewModel _orderView;
+        private Size _size;
 
         // высота панели заказа
         public double HeightPanel { get { return this.DesiredSize.Height; } }
@@ -35,6 +36,7 @@ namespace KDSWPFClient.View
             InitializeComponent();
 
             _pageIndex = pageIndex; base.Width = width;
+            _size = new Size(base.Width, double.PositiveInfinity);
 
             _orderView = orderView;
             orderView.ViewPanel = this;
@@ -42,12 +44,9 @@ namespace KDSWPFClient.View
             if (isCreateHeaderPanel)
             {
                 // создать заголовок заказа
-                OrderPanelHeader hdrPnl = new OrderPanelHeader(_orderView);
+                OrderPanelHeader hdrPnl = new OrderPanelHeader(_orderView, width);
                 // и добавить его к заказу
                 this.grdHeader.Children.Add(hdrPnl);
-
-//                hdrPnl.Measure(new Size(base.Width, double.PositiveInfinity));
-//                grdHeader.UpdateLayout();
             }
 
             // установить шрифт текстовых блоков в заголовке таблицы блюд
@@ -61,7 +60,7 @@ namespace KDSWPFClient.View
             }
 
             // пересчитать высоту панели
-            this.Measure(new Size(base.Width, double.PositiveInfinity));
+//            this.Measure(_size);
 
             //if (!orderView.DivisionColorRGB.IsNull())
             //{
@@ -76,9 +75,6 @@ namespace KDSWPFClient.View
         public void AddDish(DishPanel dishPanel)
         {
             this.stkDishes.Children.Add(dishPanel);
-
-            //  update DesiredSize
-            stkDishes.UpdateLayout();
         }
 
         // добавить массив элементов в стек
@@ -88,38 +84,50 @@ namespace KDSWPFClient.View
             {
                 this.stkDishes.Children.Add(item);
             }
-
-            //  update DesiredSize
-            stkDishes.UpdateLayout();
         }
 
         // для удаляемого блюда (при переносе в следующую колонку), создать массив UI-элементов, которые будут
         // переноситься в следующую колонку для предотвращения "висячих" разделителей номера подачи и ингредиентов
-        internal UIElement[] RemoveDish(DishPanel dishPanel, double cnvHeight)
+        internal UIElement[] RemoveDish(DishPanel dishPanel, double topValue, double cnvHeight)
         {
             int idx = stkDishes.Children.IndexOf(dishPanel);
-            double totalHeight = this.DesiredSize.Height;
+            double totalHeight = topValue + this.DesiredSize.Height;
 
             List<UIElement> retVal = new List<UIElement>();
             retVal.Add(dishPanel);
             this.stkDishes.Children.Remove(dishPanel);
             totalHeight -= dishPanel.DesiredSize.Height;
 
-            string parentUid = dishPanel.DishView.ParentUID;  // если не пусто, то содержит значение родительского Uid
+            // если не пусто, то это ингредиент и содержит значение родительского Uid
+            string parentUid = dishPanel.DishView.ParentUID;  
+
             UIElement uiElem;
+            bool isMove;
             // сохраняем в массиве разделитель подач или все ингредиенты вместе с блюдом
             for (int i = idx-1; i >= 0; i--)
             {
                 uiElem = stkDishes.Children[i];
-                if ((uiElem is DishDelimeterPanel)
-                    || ((uiElem is DishPanel) && !parentUid.IsNull() 
-                        && ((uiElem as DishPanel).DishView.UID == parentUid)))
+
+                // условия переноса строки заказа в следующий столбец
+                // - это разделитель (номер подачи)
+                isMove = (uiElem is DishDelimeterPanel);
+                // - или это блюдо для переносимого ингредиента
+                if ((!isMove) && (uiElem is DishPanel) && !parentUid.IsNull())
+                {
+                    DishPanel dsPnl = (uiElem as DishPanel);
+                    isMove = (dsPnl.DishView.UID == parentUid) && dsPnl.DishView.ParentUID.IsNull(); // признак блюда
+                   //((uiElem as DishPanel).DishView.ParentUID == parentUid)))
+                }
+                // - или выходим за рамки по вертикали
+                if (!isMove && (Math.Ceiling(totalHeight) >= cnvHeight)) isMove = true;
+
+                if (isMove)
                 {
                     retVal.Add(uiElem);
                     this.stkDishes.Children.Remove(uiElem);
                     totalHeight -= uiElem.DesiredSize.Height;
                 }
-                else if (totalHeight < cnvHeight)
+                else 
                     break;
             }
             if (retVal.Count > 1) retVal.Reverse();
@@ -127,12 +135,15 @@ namespace KDSWPFClient.View
             return retVal.ToArray();
         }
 
+        internal void SetPosition(double top, double left)
+        {
+            this.SetValue(Canvas.TopProperty, top);
+            this.SetValue(Canvas.LeftProperty, left);
+        }
+
         public void AddDelimiter(DishDelimeterPanel delimPanel)
         {
             this.stkDishes.Children.Add(delimPanel);
-
-            //  update DesiredSize
-            stkDishes.UpdateLayout();
         }
 
     }  // class

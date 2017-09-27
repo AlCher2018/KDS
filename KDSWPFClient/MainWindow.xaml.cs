@@ -122,8 +122,9 @@ namespace KDSWPFClient
             setOrderGroupTab();
             setOrderStatusFilterTab();
 
-            double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-            this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
+            // отступы панели заказов (ViewBox) внутри родительской панели
+            double verMargin = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersPanelTopBotMargin"));
+            this.vbxOrders.Margin = new Thickness(0, verMargin, 0, verMargin);
 
             _preOrdersId = new List<int>();
             _viewOrders = new List<OrderViewModel>();
@@ -134,10 +135,7 @@ namespace KDSWPFClient
             _timer.Start(); _canInvokeUpdateOrders = -1;
 
             // кнопки переключения страниц
-            btnSetPagePrevious.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPagePrevious.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
 
             // временные коллекции
             _delOrderIds = new List<OrderModel>();
@@ -165,11 +163,8 @@ namespace KDSWPFClient
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
             // размер канвы для панелей заказов
-            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-            double cnvHeight = Math.Floor(grdMain.ActualHeight - 2d * topBotMargin);
-            double cnvWidth = grdMain.ActualWidth;
-            _pages = new OrdersPages(cnvWidth, cnvHeight);
-            _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
+            recalcOrderPanelsLayot();
+            _pages = new OrdersPages(vbxOrders);
 
             // настройки кнопок пользов.группировки и фильтрации
             double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
@@ -326,7 +321,7 @@ namespace KDSWPFClient
 
                         // есть ли доступные ингредиенты
                         bool checkIngrs = false;
-                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid) && (d.Value.Uid == curDish.Uid)).ToArray();
+                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid)).ToArray();
                         foreach (var ingr in _tmpIngrs)
                         {
                             if (_dishesFilter.Checked(ingr.Value))
@@ -669,7 +664,7 @@ namespace KDSWPFClient
                 retVal.Dishes.Add(dm.Id, dm);
                 dishes.Remove(dm);
                 // и собрать все ингредиенты с ТАКИМ же CreateDate!
-                ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
+                ingrsForCopy = dishes.Where(d => (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
                 foreach (OrderDishModel dmIngr in ingrsForCopy)
                 {
                     if (!retVal.Dishes.ContainsKey(dmIngr.Id))
@@ -696,13 +691,31 @@ namespace KDSWPFClient
             _pages.ClearPages(); // очистить панели заказов
 
             // добавить заказы
-            //DebugTimer.Init("AddOrdersPanels");
+            DebugTimer.Init("AddOrdersPanels");
             _pages.AddOrdersPanels(_viewOrders);
-            //DebugTimer.GetInterval();
+            DebugTimer.GetInterval();
 
             setCurrentPage();
             AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
         }
+
+        // размеры элементов панели заказа рассчитываются из размеров vbxOrders (Viewbox)
+        private void recalcOrderPanelsLayot()
+        {
+            //   кол-во столбцов заказов
+            int cntCols = Convert.ToInt32(AppLib.GetAppGlobalValue("OrdersColumnsCount"));
+
+            //   ширина столбцов заказов и расстояния между столбцами
+            double pnlWidth = vbxOrders.ActualWidth;
+            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
+            // где, koef = доля поля от ширины колонки
+            double koef = Convert.ToDouble(AppLib.GetAppGlobalValue("OrderPanelLeftMargin"));
+            double colWidth = Math.Floor(pnlWidth / (cntCols + koef * (cntCols + 1)));
+            double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
+            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+        }
+
 
         #region change page
         // *** кнопки листания страниц ***
@@ -746,7 +759,6 @@ namespace KDSWPFClient
         #endregion
 
         #region настройка приложения через ConfigEdit
-
 
         // ******
         // ФОРМА НАСТРОЕК И ОБНОВЛЕНИЕ ПОЛЕЙ ПОСЛЕ НАСТРОЙКИ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
@@ -802,8 +814,7 @@ namespace KDSWPFClient
                 // кол-во колонок заказов
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
-                    _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
-                    AppLib.RecalcOrderPanelsLayot();
+                    recalcOrderPanelsLayot();
                     _pages.ResetOrderPanelSize();
 
                     repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
@@ -1063,7 +1074,7 @@ namespace KDSWPFClient
         {
             Point p = e.GetPosition(brdAdmin);
 //            int iSec = (DateTime.Now - _adminDate).Seconds;
-//            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+            //Debug.Print("-- up {0}", p.ToString());
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 0.25d *_screenHeight))
                 _adminBitMask = _adminBitMask.SetBit(1); // верхний левый со смещением вниз
@@ -1083,6 +1094,15 @@ namespace KDSWPFClient
             e.Handled = true;
         }
 
+        private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (AppLib.IsOpenWindow("ColorLegend"))
+            {
+                ColorLegend colorLegendWin = (ColorLegend)AppLib.GetAppGlobalValue("ColorLegendWindow");
+                if (colorLegendWin != null) colorLegendWin.Hide();
+            }
+        }
+
         private void btnColorsLegend_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             double admSecs = (DateTime.Now - _adminDate).TotalSeconds;
@@ -1090,8 +1110,11 @@ namespace KDSWPFClient
             {
                 openConfigPanel();
             }
+            // открыть/закрыть легенду цветов таймеров
             else
+            {
                 App.OpenColorLegendWindow();
+            }
 
             _adminDate = DateTime.MaxValue;
             e.Handled = true;

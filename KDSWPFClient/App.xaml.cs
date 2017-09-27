@@ -63,7 +63,7 @@ namespace KDSWPFClient
             AppLib.WriteLogInfoMessage("App settings from config file: " + AppLib.GetAppSettingsFromConfigFile());
 
             // создать каналы
-            AppLib.WriteLogInfoMessage("\nСоздаю клиента для работы со службой KDSService...");
+            AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - START");
             AppLib.WriteLogInfoMessage("   - версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
 
             AppDataProvider dataProvider = new AppDataProvider();
@@ -71,7 +71,7 @@ namespace KDSWPFClient
             {
                 dataProvider.CreateGetChannel();
                 dataProvider.CreateSetChannel();
-                AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService... Ok");
+                AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - FINISH");
             }
             catch (Exception)
             {
@@ -85,7 +85,7 @@ namespace KDSWPFClient
             }
             
             // и получить словари и настройки от службы
-            AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService...");
+            AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - START");
             if (dataProvider.SetDictDataFromService() == false)
             {
                 // КДСы могут быть уже запущены, а служба еще нет!
@@ -95,7 +95,7 @@ namespace KDSWPFClient
                 //Environment.Exit(2);
             }
             else
-                AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService... Ok");
+                AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - FINISH");
 
             AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
 
@@ -164,8 +164,22 @@ namespace KDSWPFClient
             cfgValue = AppLib.GetAppSetting("IsLogClientAction");
             AppLib.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
-            // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
-            AppLib.RecalcOrderPanelsLayot();
+            // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
+            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
+            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
+            AppLib.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
+            //   отступ сверху/снизу для панели заказов
+            cfgValue = AppLib.GetAppSetting("OrdersPanelTopBotMargin");
+            AppLib.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            //   отступ между заказами по вертикали
+            cfgValue = AppLib.GetAppSetting("OrderPanelTopMargin");
+            AppLib.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            //   отступ между заказами по горизонтали
+            cfgValue = AppLib.GetAppSetting("OrderPanelLeftMargin");
+            AppLib.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
+            // кнопки прокрутки страниц
+            cfgValue = AppLib.GetAppSetting("OrdersPanelScrollButtonSize");
+            AppLib.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
 
             // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
@@ -185,9 +199,6 @@ namespace KDSWPFClient
             // шрифт разделителя блюд (напр. Подача **)
             AppLib.SetAppGlobalValue("ordPnlDishDelimiterFontSize", 16d);
 
-            // кнопки прокрутки страниц
-            AppLib.SetAppGlobalValue("dishesPanelScrollButtonSize", 100d);
-
             cfgValue = AppLib.GetAppSetting("NewOrderAudioAttention");
             if (cfgValue != null) AppLib.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
 
@@ -200,10 +211,11 @@ namespace KDSWPFClient
             AppLib.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
         }
 
+        // открыть/закрыть легенду цветов таймеров
         internal static void OpenColorLegendWindow()
         {
             ColorLegend colorLegendWin = (ColorLegend)AppLib.GetAppGlobalValue("ColorLegendWindow");
-            if (colorLegendWin != null) colorLegendWin.ShowDialog();
+            if ((colorLegendWin != null) && !AppLib.IsOpenWindow("ColorLegend")) colorLegendWin.Show();
         }
 
 
@@ -332,7 +344,7 @@ namespace KDSWPFClient
                 // изменить статус ингредиентов при условиях: 
                 // - разрешен на данном КДСе 
                 // - блюдо переходит в статус Готово, Выдан или ПодтвОтмены
-                OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID) && (d.UID == dishModel.UID)).ToArray();
+                OrderDishViewModel[] ingrs = orderModel.Dishes.Where(d => (d.ParentUID != null) && (d.ParentUID == dishModel.UID)).ToArray();
                 if (ingrs.Length > 0)
                 {
                     foreach (OrderDishViewModel ingr in ingrs)

@@ -71,7 +71,7 @@ namespace KDSWPFClient.View
 
         #endregion
 
-        public OrderPanelHeader(OrderViewModel order)
+        public OrderPanelHeader(OrderViewModel order, double width)
         {
             InitializeComponent();
 
@@ -96,7 +96,6 @@ namespace KDSWPFClient.View
             {
                 brdDivisionMark.Fill = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
             }
-
         }
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)

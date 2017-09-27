@@ -21,7 +21,7 @@ namespace KDSWPFClient.Lib
 				CryptoStream cryptoStream = new CryptoStream(memoryStream, provider.CreateDecryptor(bt, bt), CryptoStreamMode.Read);
 				result = (new StreamReader(cryptoStream)).ReadToEnd();
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				result = "Ошибка ввода";
 			}

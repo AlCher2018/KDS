@@ -34,7 +34,7 @@ namespace KDSService.DataSource
             {
                 if (value != null)
                 {
-                    string sBuf = string.Format(",", value);
+                    string sBuf = string.Join(",", value);
                     if ((_sDishWhere.IsNull() == false) && (_sDishWhere.Contains("DepartmentId") == false))
                         _sDishWhere += " AND NOT (DepartmentId In (" + sBuf + "))";
                 }
