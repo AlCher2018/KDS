@@ -204,6 +204,9 @@ namespace KDSService.AppModel
                 {
                     updateDishesQuantityDict(_orders);
                     if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   - result (depId/count): " + getDishesQtyString());
+
+                    // проверяем условие автоматического перехода в режим приготовления
+                    checkAutoStartCooking(_orders);
                 }
                 catch (Exception ex)
                 {
@@ -276,13 +279,12 @@ namespace KDSService.AppModel
         }
 
 
-        #region работа с коллекцией количества готовящихся блюд по цехам (напр.печати)
+        #region работа с коллекцией количества готовящихся блюд по цехам (напр.печати), автостарт
         //  обновить коллекцию
         private void updateDishesQuantityDict(Dictionary<int, OrderModel> orders)
         {
             // получить словарь по отделам (направлениям печати)
             Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
-
             // очистить кол-во
             List<int> keys = dishesQty.Keys.ToList();
             foreach (int key in keys) dishesQty[key] = 0m;
@@ -299,19 +301,14 @@ namespace KDSService.AppModel
                     isTakeQuantity = dish.ParentUid.IsNull()
                         && ((eStatus == OrderStatusEnum.Cooking) || isTakeCancelled);
 
-                    // кол-во блюд для подсчета
-                    qnt = isTakeQuantity ? (isTakeCancelled ? -dish.Quantity : dish.Quantity) : 0;
+                    // кол-во блюд для подсчета округляем до верхнего целого
+                    qnt = Math.Ceiling(dish.Quantity);
+                    qnt = isTakeQuantity ? (isTakeCancelled ? -qnt : qnt) : 0m;
 
-                    if (dishesQty.ContainsKey(dish.DepartmentId))
-                        dishesQty[dish.DepartmentId] += qnt;
-                    else
-                        dishesQty.Add(dish.DepartmentId, qnt);
+                    if ((dishesQty.ContainsKey(dish.DepartmentId)) && (qnt != 0m)) dishesQty[dish.DepartmentId] += qnt;
                 }  // loop
             }  // loop
-
-            AppProperties.SetProperty("dishesQty", dishesQty);
         }  // method
-
 
         private string getDishesQtyString()
         {
@@ -325,6 +322,63 @@ namespace KDSService.AppModel
                 sb.Append(string.Format("{0}/{1}", item.Key, item.Value));
             }
             return sb.ToString();
+        }
+
+        // проверка возможности АВТОМАТИЧЕСКОГО перехода в состояние Cooking
+        private void checkAutoStartCooking(Dictionary<int, OrderModel> orders)
+        {
+            OrderStatusEnum eStatus;
+            decimal depDepth, dishQnt;
+            bool isStart;
+            Dictionary<int, decimal> dishesQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
+
+            foreach (OrderModel order in orders.Values)   // orders loop
+            {
+                foreach (OrderDishModel dish in order.Dishes.Values)  //  dishes loop
+                {
+                    eStatus = (OrderStatusEnum)dish.DishStatusId;
+                    if (eStatus <= OrderStatusEnum.WaitingCook)
+                    {
+                        // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
+                        DateTime n = DateTime.Now;
+                        isStart = (ModelDicts.GetDepAutoStart(dish.DepartmentId)
+                            && (n >= dish.CreateDate.AddSeconds(dish.DelayedStartTime)));
+
+                        // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
+                        if (isStart == true)
+                        {
+                            depDepth = ModelDicts.GetDepDepthCount(dish.DepartmentId);
+                            if ((dishesQty != null) && (dishesQty.ContainsKey(dish.DepartmentId)) && (depDepth > 0))
+                            {
+                                dishQnt = Math.Ceiling(dish.Quantity);
+                                if (dishesQty[dish.DepartmentId] < depDepth)
+                                {
+                                    isStart = true;
+                                    // обновить кол-во готовящихся блюд в словаре
+                                    dishesQty[dish.DepartmentId] += dishQnt;
+                                }
+                                else
+                                {
+                                    isStart = false;
+                                }
+                            }
+                        }
+
+                        // автостарт приготовления блюда
+                        if (isStart)
+                        {
+                            DateTime dtTmr = DateTime.Now;
+                            string sLogMsg = string.Format(" - AutoStart Cooking Id {0}/{1}", dish.Id, dish.Name);
+                            AppEnv.WriteLogOrderDetails(sLogMsg + " - start");
+
+                            dish.UpdateStatus(OrderStatusEnum.Cooking);
+
+                            sLogMsg += " - finish - " + (DateTime.Now - dtTmr).ToString();
+                            AppEnv.WriteLogOrderDetails(sLogMsg);
+                        }
+                    }
+                }  // loop
+            }  // loop
         }
         #endregion
 

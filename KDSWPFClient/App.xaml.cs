@@ -120,29 +120,30 @@ namespace KDSWPFClient
         {
             // файл E_init.PSW должен находиться в папке приложения
             string fileName = AppLib.GetAppDirectory() + "E_init.PSW";
+            string cpuid = Hardware.getCPUID();
+            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот код службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
 
             if (File.Exists(fileName) == false)
             {
-                AppLib.WriteLogErrorMessage("Не найден файл: " + fileName);
-                MessageBox.Show("Не найден файл\n" + fileName, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                AppLib.WriteLogErrorMessage(string.Format("Не найден файл: {0}, key {1}", fileName, cpuid));
+                Clipboard.Clear();
+                Clipboard.SetText(cpuid, TextDataFormat.Text);
+                MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return false;
             }
-
-            string cpuid = Hardware.getCPUID();
 
             if (Hardware.SeeHardware(fileName, cpuid))
             {
                 return true;
             }
-
-            AppLib.WriteLogErrorMessage("Софт не прошел проверку в ProtectedProgramm()");
-            Clipboard.Clear();
-            Clipboard.SetText(cpuid, TextDataFormat.Text);
-
-            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот код службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
-            MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-
-            return false;
+            else
+            {
+                AppLib.WriteLogErrorMessage(string.Format("Софт не прошел проверку в ProtectedProgramm(), key {0}", cpuid));
+                Clipboard.Clear();
+                Clipboard.SetText(cpuid, TextDataFormat.Text);
+                MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return false;
+            }
         }
 
 

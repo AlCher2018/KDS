@@ -121,7 +121,6 @@ namespace KDSService.AppModel
         public Dictionary<OrderStatusEnum, DateTime> EnterStatusDict { get { return _dtEnterStatusDict; } }
 
         #region Fields
-        private DepartmentModel _department;
         private TimeSpan _tsCookingEstimated;   // время приготовления
 
         // накопительные счетчики нахождения в конкретном состоянии
@@ -140,7 +139,6 @@ namespace KDSService.AppModel
 
         #endregion
 
-
         // ctor
         // ДЛЯ НОВОГО БЛЮДА
         public OrderDishModel(OrderDish dbDish, OrderModel modelOrder)
@@ -148,6 +146,7 @@ namespace KDSService.AppModel
             _modelOrder = modelOrder;
 
             Id = dbDish.Id; Uid = dbDish.UID;
+            DepartmentId = dbDish.DepartmentId;
             CreateDate = dbDish.CreateDate;
             Name = dbDish.DishName;
             FilingNumber = dbDish.FilingNumber;
@@ -157,8 +156,6 @@ namespace KDSService.AppModel
             DelayedStartTime = dbDish.DelayedStartTime;
 
             // свойства объекта с зависимыми полями
-            DepartmentId = dbDish.DepartmentId;
-            _department = ModelDicts.GetDepartmentById(DepartmentId); // объект отдела взять из справочника
 
             EstimatedTime = dbDish.EstimatedTime;
             _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
@@ -218,6 +215,7 @@ namespace KDSService.AppModel
             lock (this)
             {
                 // и для блюда, и для ингредиента
+                if (DepartmentId != dbDish.DepartmentId) DepartmentId = dbDish.DepartmentId;
                 if (Uid != dbDish.UID) Uid = dbDish.UID;
                 if (CreateDate != dbDish.CreateDate) CreateDate = dbDish.CreateDate;
                 if (Name != dbDish.DishName) Name = dbDish.DishName;
@@ -238,15 +236,6 @@ namespace KDSService.AppModel
                 OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
-
-                // проверяем условие автоматического перехода в режим приготовления
-                if ((newStatus <= OrderStatusEnum.WaitingCook) && canAutoPassToCookingStatus())
-                {
-                    newStatus = OrderStatusEnum.Cooking;
-                }
-
-                // если поменялся отдел, то объект отдела взять из справочника
-                if (DepartmentId != dbDish.DepartmentId) _department = ModelDicts.GetDepartmentById(dbDish.DepartmentId);
 
                 UpdateStatus(newStatus);
 
@@ -789,29 +778,6 @@ namespace KDSService.AppModel
         }
 
         #endregion
-
-        // проверка возможности АВТОМАТИЧЕСКОГО перехода в состояние Cooking
-        private bool canAutoPassToCookingStatus()
-        {
-            DateTime n = DateTime.Now;
-            // 1. для отдела установлен автоматический старт приготовления и текущая дата больше даты ожидаемого времени начала приготовления
-            bool retVal = (_department.IsAutoStart 
-                && (n >= this.CreateDate.AddSeconds(this.DelayedStartTime)));
-
-            // 2. проверяем общее кол-во такого блюда в заказах, если установлено кол-во одновременно готовящихся блюд
-            if (retVal == true)
-            {
-                Dictionary<int, decimal> dishesQtyDict = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
-                if ((dishesQtyDict != null) && (dishesQtyDict.ContainsKey(DepartmentId)) && (_department.DishQuantity > 0))
-                {
-                    retVal = ((dishesQtyDict[DepartmentId] + this.Quantity) <= _department.DishQuantity);
-                    // обновить кол-во в словаре, пока он не обновился из БД
-                    if (retVal) dishesQtyDict[DepartmentId] += this.Quantity;
-                }
-            }
-
-            return retVal;
-        }
 
         public void Dispose()
         {
