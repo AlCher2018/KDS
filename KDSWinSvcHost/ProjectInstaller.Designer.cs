@@ -42,7 +42,6 @@
             this.serviceInstaller1.Description = "Служба, обслуживающая КДСы (© Integra-IT Solutions)";
             this.serviceInstaller1.DisplayName = "KDS Service";
             this.serviceInstaller1.ServiceName = "KDSService";
-            this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 
             // ProjectInstaller
             // 

@@ -64,7 +64,16 @@ namespace KDSWPFClient
             try
             {
                 if (_getClient != null) _getClient.Close();
-                _getClient = new KDSServiceClient();
+
+                // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
+                NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
+                string hostName = (string)AppLib.GetAppGlobalValue("KDSServiceHostName", "");
+                if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
+                string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
+                EndpointAddress getEndpointAddress = new EndpointAddress(addr);
+
+                _getClient = new KDSServiceClient(getBinding, getEndpointAddress);
+
                 _getClient.Open();
                 logClientInfo(_getClient);
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
@@ -79,6 +88,7 @@ namespace KDSWPFClient
 
             return retVal;
         }
+
         public bool CreateSetChannel()
         {
             bool retVal = false;
@@ -87,7 +97,18 @@ namespace KDSWPFClient
             try
             {
                 if ((_setClient != null) && (_setClient.State != CommunicationState.Faulted)) _setClient.Close();
-                _setClient = new KDSCommandServiceClient();
+
+                // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
+                NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
+                setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
+                setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
+                string hostName = (string)AppLib.GetAppGlobalValue("KDSServiceHostName", "");
+                if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
+                string addr = string.Format("net.tcp://{0}:8734/KDSCommandService", hostName);
+                EndpointAddress setEndpointAddress = new EndpointAddress(addr);
+
+                _setClient = new KDSCommandServiceClient(setBinding, setEndpointAddress);
+
                 _setClient.Open();
                 logClientInfo(_setClient);
 

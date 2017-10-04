@@ -139,6 +139,28 @@ namespace KDSWPFClient.Lib
 			return Encoding.UTF8.GetString(desCrypto.Key);
 		}
 
+        // создает psw-файл в папке приложения и возвращает полное имя этого файла
+        public static void CreatePSWFile(string fileName, string cpuId)
+        {
+            string LF = Environment.NewLine;
+            string xmlContentTemplate = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" + LF +
+            "<User organization=\"Отель у Погибшего альпиниста\" phone=\"044-5554433\" email=\"ord@pop.up\" date=\"01/02/2013\">" + LF +
+            "  <Device>" + LF +
+            "    <Orderman sa=\"1020\"></Orderman>" + LF +
+            "    <Orderman sa=\"1010\"></Orderman>" + LF +
+            "    <Orderman sa=\"15\"></Orderman>" + LF +
+            "    <Orderman sa=\"1001\"></Orderman>" + LF +
+            "    <Orderman sa=\"23532\"></Orderman>" + LF +
+            "  </Device>" + LF +
+            "  <Cpu Key=\"{0}\"></Cpu>" + LF +
+            "  <Computer MachineName=\"{1}\" UserName=\"{2}\" UserDomain=\"{3}\"></Computer>" + LF +
+            "  <DateCreate>{4}</DateCreate>" + LF +
+            "  <NumberOrderman Num =\"0\"></NumberOrderman>" + LF +
+            "</User>";
+            string xmlContent = string.Format(xmlContentTemplate, cpuId, Environment.MachineName, Environment.UserName, Environment.UserDomainName, DateTime.Now.ToString());
+
+            EncryptStringToFile(xmlContent, fileName);
+        }
 
 		[DllImport("KERNEL32.DLL", CharSet=CharSet.None, EntryPoint="RtlZeroMemory", ExactSpelling=false)]
 		public static extern bool ZeroMemory(IntPtr Destination, int Length);

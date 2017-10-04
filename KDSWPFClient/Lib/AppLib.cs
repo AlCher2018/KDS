@@ -309,11 +309,19 @@ namespace KDSWPFClient.Lib
         {
             // Open App.Config of executable
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            string cfgFilePath = config.FilePath;
+            bool isSeparateAppSettings = false;
+            string appCfgFile = config.AppSettings.SectionInformation.ConfigSource;
+            if (appCfgFile.IsNull() == false)
+            {
+                isSeparateAppSettings = true;
+                cfgFilePath = System.IO.Path.GetDirectoryName(cfgFilePath) + "\\" + appCfgFile;
+            }
 
             try
             {
                 errorMsg = null;
-                string filename = config.FilePath;
+                string filename = cfgFilePath;
 
                 //Load the config file as an XDocument
                 XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
@@ -324,11 +332,19 @@ namespace KDSWPFClient.Lib
                 }
 
                 // получить раздел appSettings
-                XElement xAppSettings = document.Root.Element("appSettings");
-                if (xAppSettings == null)
+                XElement xAppSettings;
+                if (isSeparateAppSettings)   // в отдельном файле
                 {
-                    xAppSettings = new XElement("appSettings");
-                    document.Root.Add(xAppSettings);
+                    xAppSettings = document.Root;
+                }
+                else    // в App.config
+                {
+                    xAppSettings = document.Root.Element("appSettings");
+                    if (xAppSettings == null)
+                    {
+                        xAppSettings = new XElement("appSettings");
+                        document.Root.Add(xAppSettings);
+                    }
                 }
 
                 // цикл по ключам словаря значений

@@ -125,11 +125,14 @@ namespace KDSWPFClient
 
             if (File.Exists(fileName) == false)
             {
-                AppLib.WriteLogErrorMessage(string.Format("Не найден файл: {0}, key {1}", fileName, cpuid));
-                Clipboard.Clear();
-                Clipboard.SetText(cpuid, TextDataFormat.Text);
-                MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return false;
+                // 2017-10-04 создать psw-файл для клиента
+                Password.CreatePSWFile(fileName, cpuid);
+
+                //AppLib.WriteLogErrorMessage(string.Format("Не найден файл: {0}, key {1}", fileName, cpuid));
+                //Clipboard.Clear();
+                //Clipboard.SetText(cpuid, TextDataFormat.Text);
+                //MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                //return false;
             }
 
             if (Hardware.SeeHardware(fileName, cpuid))
@@ -157,6 +160,9 @@ namespace KDSWPFClient
         private static void setAppGlobalValues()
         {
             string cfgValue;
+
+            cfgValue = AppLib.GetAppSetting("KDSServiceHostName");
+            AppLib.SetAppGlobalValue("KDSServiceHostName", cfgValue);
 
             cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
             AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());

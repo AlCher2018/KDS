@@ -158,6 +158,9 @@ namespace KDSConsoleSvcHost
             AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
+
+        // работа с config-файлом как с XML-документом - сохраняем комментарии
+        // параметр appSettingsDict - словарь из ключа и значения (string), которые необх.сохранить в разделе appSettings
         public static bool SaveAppSettings(string key, string value, out string errorMsg)
         {
             // Open App.Config of executable

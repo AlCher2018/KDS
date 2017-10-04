@@ -13,7 +13,7 @@ namespace KDSWPFClient.Lib
 	{
 		public static string getCPUID()
 		{
-			string retVal = null;
+			string retVal = "Lorem ipsum dolor sit amet";  // рыба для ошибочного cpuId
 			try
 			{
 				foreach (ManagementBaseObject mo in (new ManagementObjectSearcher("Select ProcessorID From Win32_processor")).Get())
@@ -23,8 +23,8 @@ namespace KDSWPFClient.Lib
 			}
 			catch (Exception)
 			{
-			}
-			return retVal;
+            }
+            return retVal;
 		}
 
         public static string getMAC()
@@ -50,6 +50,8 @@ namespace KDSWPFClient.Lib
 
         public static bool SeeHardware(string fileName, string cpu)
 		{
+            if (fileName.IsNull()) return false;
+
             XElement doc = getInitFileXML(fileName);
             if (doc == null) return false;
             

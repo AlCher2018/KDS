@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
+using System.ServiceModel.Description;
 using System.Timers;
 
 
@@ -96,13 +97,76 @@ namespace KDSService
         }
 
         // создает сервис WCF, параметры канала считываются из app.config
+        /*
+  <system.serviceModel>
+    <bindings>
+      <netTcpBinding>
+        <binding name="getBinding">
+          <security mode="None" />
+        </binding>
+        <binding name="setBinding" receiveTimeout="05:00:00">
+          <reliableSession enabled="true" inactivityTimeout="05:00:00"/>
+          <security mode="None" />
+        </binding>
+      </netTcpBinding>
+    </bindings>
+
+    <services>
+      <service name="KDSService.KDSServiceClass">
+        <endpoint address="net.tcp://localhost:8733/KDSService" binding="netTcpBinding"
+          contract="KDSService.IKDSService" bindingConfiguration="getBinding"/>
+        <endpoint address="net.tcp://localhost:8734/KDSCommandService/"
+          binding="netTcpBinding" contract="KDSService.IKDSCommandService" bindingConfiguration="setBinding"/>
+        <endpoint address="net.tcp://localhost/mex" binding="mexTcpBinding"
+          contract="IMetadataExchange" />
+      </service>
+    </services>
+    <behaviors>
+      <serviceBehaviors>
+        <behavior>
+          <serviceMetadata/>
+          <serviceDebug includeExceptionDetailInFaults="False"/>
+        </behavior>
+      </serviceBehaviors>
+    </behaviors>
+  </system.serviceModel>
+
+***** Host Info *****
+Address: net.tcp://localhost:8733/KDSService
+Binding: NetTcpBinding
+Contract: IKDSService
+
+Address: net.tcp://localhost:8734/KDSService
+Binding: NetTcpBinding
+Contract: IKDSCommandService
+
+Address: net.tcp://localhost/mex
+Binding: MetadataExchangeTcpBinding
+Contract: IMetadataExchange
+**********************
+         */
         public void CreateHost()
         {
             try
             {
                 AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений...");
-                //host = new ServiceHost(typeof(KDSService.KDSServiceClass));
+                //_host = new ServiceHost(typeof(KDSService.KDSServiceClass));
                 _host = new ServiceHost(this);
+                if (_host.Description.Behaviors.Contains(typeof(ServiceMetadataBehavior)) == false)
+                {
+                    ServiceMetadataBehavior metaBhv = new ServiceMetadataBehavior();
+                    _host.Description.Behaviors.Add(metaBhv);
+                }
+
+                NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
+                NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
+                setBinding.ReceiveTimeout = new TimeSpan(5, 0, 0);
+                setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
+
+                _host.AddServiceEndpoint(typeof(IKDSService), getBinding, "net.tcp://localhost:8733/KDSService");
+                _host.AddServiceEndpoint(typeof(IKDSCommandService), setBinding, "net.tcp://localhost:8734/KDSCommandService");
+                _host.AddServiceEndpoint(typeof(System.ServiceModel.Description.IMetadataExchange), MetadataExchangeBindings.CreateMexTcpBinding(), "net.tcp://localhost/mex");
+
                 //host.OpenTimeout = TimeSpan.FromMinutes(10);  // default 1 min
                 //host.CloseTimeout = TimeSpan.FromMinutes(1);  // default 10 sec
 

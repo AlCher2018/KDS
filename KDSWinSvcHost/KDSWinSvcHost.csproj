@@ -122,7 +122,16 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>Copy "$(SolutionDir)KDSService.config"  "$(TargetDir)KDSService.config"</PostBuildEvent>
+    <PostBuildEvent>Copy "$(SolutionDir)KDSService.config"  "$(TargetDir)KDSService.config"
+Copy "$(SolutionDir)KDSServiceAppSettings.config"  "$(TargetDir)KDSServiceAppSettings.config"
+Copy "$(SolutionDir)KDSServiceDBConnection.config"  "$(TargetDir)KDSServiceDBConnection.config"
+
+mkdir "$(TargetDir)DefaultConfigs"
+Copy "$(SolutionDir)KDSServiceAppSettings.config"  "$(TargetDir)DefaultConfigs\KDSServiceAppSettings.config"
+Copy "$(SolutionDir)KDSServiceDBConnection.config"  "$(TargetDir)DefaultConfigs\KDSServiceDBConnection.config"
+
+
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
