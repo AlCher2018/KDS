@@ -223,11 +223,11 @@ namespace KDSWPFClient.ViewModel
                 else
                 {
                     // из глобальных настроек
-                    bool isUseReadyConfirmed = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+                    bool isUseReadyConfirmed = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
                     if ((!isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready))
                         || (isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed)))
                     {
-                        int expTake = (int)AppLib.GetAppGlobalValue("ExpectedTake");
+                        int expTake = (int)AppPropsHelper.GetAppGlobalValue("ExpectedTake");
                         if (expTake > 0)
                         {
                             tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);

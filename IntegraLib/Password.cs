@@ -4,7 +4,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace KDSWPFClient.Lib
+
+namespace IntegraLib
 {
 	public static class Password
 	{

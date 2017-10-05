@@ -6,11 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
-using KDSService.Lib;
 using System.Diagnostics;
 using System.Threading;
 using KDSService.DataSource;
 using KDSWPFClient.Lib;
+using IntegraLib;
 
 namespace KDSService.AppModel
 {

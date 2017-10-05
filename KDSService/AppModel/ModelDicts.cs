@@ -1,7 +1,6 @@
-﻿using KDSConsoleSvcHost;
-using KDSService.AppModel;
+﻿using IntegraLib;
+using KDSConsoleSvcHost;
 using KDSService.DataSource;
-using KDSService.Lib;
 using System;
 using System.Collections.Generic;
 using System.Linq;

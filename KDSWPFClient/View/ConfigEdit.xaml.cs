@@ -1,4 +1,5 @@
 ﻿using CAVControls;
+using IntegraLib;
 using KDSWPFClient.Lib;
 using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
@@ -49,14 +50,14 @@ namespace KDSWPFClient.View
             _appNewSettings = new Dictionary<string, string>();
 
             // размеры окна
-            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            double screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            double screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
+            double screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
             this.Width = 0.67d * screenWidth;
             this.Height = 0.75d * screenHeight;
 
 
             // дополнтельные действия в зависимости от подтверджения готовности
-            _useReadyConfirmedState =  (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+            _useReadyConfirmedState =  (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
             if (_useReadyConfirmedState)
             {
                 cbxState8.Visibility = Visibility.Visible;
@@ -75,7 +76,7 @@ namespace KDSWPFClient.View
             }
 
             // заполнить комбобокс звуковых файлов
-            _audioPath = AppLib.GetAppDirectory("Audio");
+            _audioPath = AppEnvironment.GetAppDirectory("Audio");
             _wavPlayer = new System.Media.SoundPlayer();
             if (Directory.Exists(_audioPath))
             {
@@ -85,7 +86,7 @@ namespace KDSWPFClient.View
                 foreach (FileInfo fileInfo in dirInfo.GetFiles("*.wav", SearchOption.TopDirectoryOnly)) files.Add(fileInfo.Name);
                 cbxSelectAudio.ItemsSource = files;
 
-                var defFile = AppLib.GetAppGlobalValue("NewOrderAudioAttention");
+                var defFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
                 if ((defFile != null) && (files.Contains(defFile)))
                 {
                     cbxSelectAudio.SelectedValue = defFile;
@@ -249,7 +250,7 @@ namespace KDSWPFClient.View
             {
                 string errMsg = null;
                 string sBuf;
-                if (AppLib.SaveAppSettings(_appNewSettings, out errMsg))  // сохранить в config-файле (все в символьном виде)
+                if (CfgFileHelper.SaveAppSettings(_appNewSettings, out errMsg))  // сохранить в config-файле (все в символьном виде)
                 {
                     // для объектов, взятых из AppProps, сохранить туда
                     _cfgValKeeper.SaveToAppProps();  
@@ -601,7 +602,7 @@ namespace KDSWPFClient.View
                 _key = key; _control = control; _fromAppProps = fromAppProps;
 
                 // из AppLib.GetAppSetting(_key) возвращается СТРОКА 
-                _preValue = (fromAppProps) ? AppLib.GetAppGlobalValue(_key) : AppLib.GetAppSetting(_key);
+                _preValue = (fromAppProps) ? AppPropsHelper.GetAppGlobalValue(_key) : CfgFileHelper.GetAppSetting(_key);
                 if (_preValue == null) return;
 
                 _typeName = _preValue.GetType().Name;
@@ -726,7 +727,7 @@ namespace KDSWPFClient.View
 
             internal void SaveToAppProps()
             {
-                if ((_fromAppProps) && IsChanged()) AppLib.SetAppGlobalValue(_key, _newValue);
+                if ((_fromAppProps) && IsChanged()) AppPropsHelper.SetAppGlobalValue(_key, _newValue);
             }
 
         } // class CfgValue
@@ -734,12 +735,12 @@ namespace KDSWPFClient.View
 
         private void btnRestartWithArgs_Click(object sender, RoutedEventArgs e)
         {
-            AppLib.RestartApplication("-adm");
+            AppEnvironment.RestartApplication("-adm");
         }
 
         private void btnRestartWithoutArgs_Click(object sender, RoutedEventArgs e)
         {
-            AppLib.RestartApplication();
+            AppEnvironment.RestartApplication();
         }
     }  // class ConfigEdit
 }

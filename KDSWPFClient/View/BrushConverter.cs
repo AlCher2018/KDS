@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
@@ -66,7 +67,7 @@ namespace KDSWPFClient.View
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
             string key = null;
             
-            if (((bool)AppLib.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes")) 
+            if (((bool)AppPropsHelper.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes")) 
                 && (status2 != StatusEnum.None) && (status2 != StatusEnum.WaitingCook) && (status2 != status1))
                 key = status2.ToString();
             else

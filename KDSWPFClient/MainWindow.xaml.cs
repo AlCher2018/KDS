@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using KDSWPFClient.Model;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -80,18 +81,18 @@ namespace KDSWPFClient
 
             this.Loaded += MainWindow_Loaded;
 
-            _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            _screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
+            _screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
 
             this.Top = 0; this.Left = 0;
             this.Width = _screenWidth; this.Height = _screenHeight;
 
             // админ-кнопка для открытия окна конфигурации
-            btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
+            btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
-            _traceOrderDetails = (bool)AppLib.GetAppGlobalValue("TraceOrdersDetails");
+            _traceOrderDetails = (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails");
 
-            _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
 
             double timerInterval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
@@ -123,7 +124,7 @@ namespace KDSWPFClient
             setOrderStatusFilterTab();
 
             // отступы панели заказов (ViewBox) внутри родительской панели
-            double verMargin = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersPanelTopBotMargin"));
+            double verMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
             this.vbxOrders.Margin = new Thickness(0, verMargin, 0, verMargin);
 
             _preOrdersId = new List<int>();
@@ -135,7 +136,7 @@ namespace KDSWPFClient
             _timer.Start(); _canInvokeUpdateOrders = -1;
 
             // кнопки переключения страниц
-            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
+            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
 
             // временные коллекции
             _delOrderIds = new List<OrderModel>();
@@ -148,10 +149,10 @@ namespace KDSWPFClient
 
             // звук предупреждения о появлении нового заказа
             _wavPlayer = new System.Media.SoundPlayer();
-            var wavFile = AppLib.GetAppGlobalValue("NewOrderAudioAttention");
+            var wavFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
             if (wavFile != null)
             {
-                _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
         }
@@ -653,7 +654,7 @@ namespace KDSWPFClient
             };
             // скопировать ссылки на блюда
             // ингредиенты копируются вместе с блюдом, независимо от флажка IsIngredientsIndependent
-            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+            bool isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
             // все блюда
             List<OrderDishModel> dishes = om.Dishes.Values.ToList();
             // блюда для копирования
@@ -703,17 +704,17 @@ namespace KDSWPFClient
         private void recalcOrderPanelsLayot()
         {
             //   кол-во столбцов заказов
-            int cntCols = Convert.ToInt32(AppLib.GetAppGlobalValue("OrdersColumnsCount"));
+            int cntCols = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
 
             //   ширина столбцов заказов и расстояния между столбцами
             double pnlWidth = vbxOrders.ActualWidth;
             // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
             // где, koef = доля поля от ширины колонки
-            double koef = Convert.ToDouble(AppLib.GetAppGlobalValue("OrderPanelLeftMargin"));
+            double koef = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
             double colWidth = Math.Floor(pnlWidth / (cntCols + koef * (cntCols + 1)));
             double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
-            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+            AppPropsHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            AppPropsHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
         }
 
 
@@ -808,6 +809,7 @@ namespace KDSWPFClient
                 // перерисовать полностью, т.к. по таймеру может все не обновиться
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
+                    AppPropsHelper.SetAppGlobalValue("AppFontScale", cfgEdit.AppNewSettings["AppFontScale"].ToDouble());
                     repaintOrders("change config parameter AppFontScale");  
                 }
 
@@ -841,11 +843,12 @@ namespace KDSWPFClient
                 {
                     string wavFile = cfgEdit.AppNewSettings["NewOrderAudioAttention"];
                     // сохранить в свойствах приложения 
-                    AppLib.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
+                    AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
                     // в config-файле
-                    AppLib.SaveAppSettings("NewOrderAudioAttention", wavFile);
+                    string errMsg;
+                    CfgFileHelper.SaveAppSettings("NewOrderAudioAttention", wavFile,out errMsg);
                     // и загрузить в проигрыватель
-                    _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                    _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                     _wavPlayer.LoadAsync();
                 }
 
@@ -858,7 +861,7 @@ namespace KDSWPFClient
         // получить из config-файла интервал таймера сброса группировки заказов по номерам
         private double getOrderGroupTimerInterval()
         {
-            string cfgStr = AppLib.GetAppSetting("AutoReturnOrdersGroupByTime");
+            string cfgStr = CfgFileHelper.GetAppSetting("AutoReturnOrdersGroupByTime");
             return 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
         }
 
@@ -1098,7 +1101,7 @@ namespace KDSWPFClient
         {
             if (AppLib.IsOpenWindow("ColorLegend"))
             {
-                ColorLegend colorLegendWin = (ColorLegend)AppLib.GetAppGlobalValue("ColorLegendWindow");
+                ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
                 if (colorLegendWin != null) colorLegendWin.Hide();
             }
         }

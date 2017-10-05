@@ -1,7 +1,7 @@
-﻿using KDSConsoleSvcHost;
+﻿using IntegraLib;
+using KDSConsoleSvcHost;
 using KDSService.AppModel;
 using KDSService.DataSource;
-using KDSService.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -306,7 +306,7 @@ Contract: IMetadataExchange
             AppProperties.SetProperty("ExpectedTake", value);
 
             string errMsg;
-            if (AppEnv.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg))
+            if (CfgFileHelper.SaveAppSettings("ExpectedTake", value.ToString(), out errMsg))
                 logMsg += "Ok";
             else
                 logMsg += errMsg;

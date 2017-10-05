@@ -6,10 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using KDSConsoleSvcHost;
-using KDSService.Lib;
 using System.Diagnostics;
 using System.ServiceModel;
 using KDSService.DataSource;
+using IntegraLib;
 
 namespace KDSService.AppModel
 {
@@ -161,7 +161,7 @@ namespace KDSService.AppModel
             _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
             DishStatusId = dbDish.DishStatusId??0;
-            Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+            Status = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
             // получить запись из таблицы состояний
             _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
@@ -233,7 +233,7 @@ namespace KDSService.AppModel
                     _tsCookingEstimated = TimeSpan.FromSeconds(EstimatedTime);
                 }
 
-                OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+                OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
 
@@ -399,7 +399,7 @@ namespace KDSService.AppModel
                 {
                     if (statArray[i] == iDishesCount)
                     {
-                        OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
+                        OrderStatusEnum statDishes = AppEnv.GetStatusEnumFromNullableInt(i);
                         if (parentDish.Status != statDishes)
                         {
                             parentDish.UpdateStatus(statDishes);

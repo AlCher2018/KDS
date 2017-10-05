@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSService.Lib
+namespace IntegraLib
 {
     // словарь глобальных свойств
     public static class AppProperties

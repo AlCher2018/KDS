@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using KDSConsoleSvcHost;
-using KDSService.Lib;
 using System.ServiceModel;
 using KDSService.DataSource;
+using IntegraLib;
 
 namespace KDSService.AppModel
 {
@@ -212,7 +212,7 @@ namespace KDSService.AppModel
                 if (Waiter != dbOrder.Waiter) Waiter = dbOrder.Waiter;
                 if (DivisionColorRGB != dbOrder.DivisionColorRGB) DivisionColorRGB = dbOrder.DivisionColorRGB;
 
-                OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
+                OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
                 if (dbOrder.OrderStatusId < 1)
                 {
@@ -382,7 +382,7 @@ namespace KDSService.AppModel
                 string sLog = string.Format("   изменение статуса заказа {0}/{1} на {2} согласно общему статусу всех блюд ПРИ ОБНОВЛЕНИИ БЛЮДА...", this.Id, this.Number, iStat);
                 AppEnv.WriteLogOrderDetails(sLog);
 
-                OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(iStat);
+                OrderStatusEnum statDishes = AppEnv.GetStatusEnumFromNullableInt(iStat);
                 UpdateStatus(statDishes, false);
                 _isUpdStatusFromDishes = true;
             }

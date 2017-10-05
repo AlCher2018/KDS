@@ -1,7 +1,6 @@
-﻿using KDSService;
+﻿using IntegraLib;
 using KDSService.AppModel;
 using KDSService.DataSource;
-using KDSService.Lib;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -47,7 +46,7 @@ namespace KDSConsoleSvcHost
             putAppConfigParamsToAppProperties();
 
             // вывести в лог настройки из config-файла
-            WriteLogInfoMessage("Настройки из config-файла: " + GetAppSettingsFromConfigFile());
+            WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // доступная память
             WriteLogInfoMessage("Доступная память: {0} Mb", GetAvailableRAM());
@@ -69,33 +68,6 @@ namespace KDSConsoleSvcHost
             else return null;
         }
 
-        #region App properties
-
-        // настройки из config-файла
-        internal static string GetAppSettingsFromConfigFile()
-        {
-            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
-        }
-        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
-        {
-            if (appSettingNames == null) return null;
-            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
-        }
-        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
-        {
-            StringBuilder sb = new StringBuilder();
-            string sValue;
-            foreach (string settingName in appSettingNames)
-            {
-                sValue = ConfigurationManager.AppSettings[settingName];
-                if (sValue.IsNull() == false)
-                {
-                    if (sb.Length > 0) sb.Append("; ");
-                    sb.Append(settingName + "=" + sValue);
-                }
-            }
-            return sb.ToString();
-        }
 
         // сложить настройки из config-файла в словарь настроек приложения
         private static void putAppConfigParamsToAppProperties()
@@ -158,62 +130,6 @@ namespace KDSConsoleSvcHost
             AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
-
-        // работа с config-файлом как с XML-документом - сохраняем комментарии
-        // параметр appSettingsDict - словарь из ключа и значения (string), которые необх.сохранить в разделе appSettings
-        public static bool SaveAppSettings(string key, string value, out string errorMsg)
-        {
-            // Open App.Config of executable
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
-            try
-            {
-                errorMsg = null;
-                string filename = config.FilePath;
-
-                //Load the config file as an XDocument
-                XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
-                if (document.Root == null)
-                {
-                    errorMsg = "Document was null for XDocument load.";
-                    return false;
-                }
-
-                // получить раздел appSettings
-                XElement xAppSettings = document.Root.Element("appSettings");
-                if (xAppSettings == null)
-                {
-                    xAppSettings = new XElement("appSettings");
-                    document.Root.Add(xAppSettings);
-                }
-
-                XElement appSetting = xAppSettings.Elements("add").FirstOrDefault(x => x.Attribute("key").Value == key);
-                if (appSetting == null)
-                {
-                    //Create the new appSetting
-                    xAppSettings.Add(new XElement("add", new XAttribute("key", key), new XAttribute("value", value)));
-                }
-                else
-                {
-                    //Update the current appSetting
-                    appSetting.Attribute("value").Value = value;
-                }
-
-                //Save the changes to the config file.
-                document.Save(filename, SaveOptions.DisableFormatting);
-
-                // Force a reload of a changed section.
-                ConfigurationManager.RefreshSection("appSettings");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
-                return false;
-            }
-        }
-
         public static string GetShortErrMessage(Exception ex)
         {
             string retVal = ex.Message;
@@ -223,9 +139,6 @@ namespace KDSConsoleSvcHost
 
             return retVal;
         }
-
-        // 
-        #endregion
 
 
         // проверка базы данных
@@ -406,6 +319,12 @@ namespace KDSConsoleSvcHost
         #endregion
 
         #region для конкретного приложения
+
+        public static OrderStatusEnum GetStatusEnumFromNullableInt(int? dbIntValue)
+        {
+            return (OrderStatusEnum)(dbIntValue ?? 0);
+        }
+
         // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
         public static OrderStatusEnum oldGetStatusAllDishes(IEnumerable<OrderDish> dishes)
         {

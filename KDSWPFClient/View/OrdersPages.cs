@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Globalization;
 using System.Windows.Threading;
 using KDSWPFClient.ServiceReference1;
+using IntegraLib;
 
 namespace KDSWPFClient.View
 {
@@ -51,10 +52,10 @@ namespace KDSWPFClient.View
 
         public void ResetOrderPanelSize()
         {
-            _pageColsCount = Convert.ToInt32(AppLib.GetAppGlobalValue("OrdersColumnsCount"));
-            _colWidth = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersColumnWidth"));
-            _colMargin = Convert.ToDouble(AppLib.GetAppGlobalValue("OrdersColumnMargin"));
-            _hdrTopMargin = Convert.ToDouble(AppLib.GetAppGlobalValue("OrderPanelTopMargin"));
+            _pageColsCount = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            _colWidth = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnWidth"));
+            _colMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnMargin"));
+            _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
         }
 
         // добавить все заказы и определить кол-во страниц

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace KDSService.Lib
+
+namespace IntegraLib
 {
 
     public static class StringExtensions

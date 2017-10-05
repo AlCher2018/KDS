@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

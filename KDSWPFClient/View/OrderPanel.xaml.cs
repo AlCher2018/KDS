@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using KDSWPFClient.ViewModel;
 using System.Diagnostics;
+using IntegraLib;
 
 namespace KDSWPFClient.View
 {
@@ -50,8 +51,8 @@ namespace KDSWPFClient.View
             }
 
             // установить шрифт текстовых блоков в заголовке таблицы блюд
-            double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
-            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
+            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
+            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             _fontSize = fontSize * fontScale;
             IEnumerable<TextBlock> tbs = grdTblHeader.Children.OfType<TextBlock>();
             foreach (TextBlock tb in tbs)

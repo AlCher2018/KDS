@@ -1,5 +1,6 @@
 ﻿using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.Lib;
+using IntegraLib;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -34,10 +35,10 @@ namespace KDSWPFClient
             AppLib.InitAppLogger();
 
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
-            AppLib.WriteLogInfoMessage(AppLib.GetEnvironmentString());
+            AppLib.WriteLogInfoMessage(AppEnvironment.GetEnvironmentString());
 
             // установить текущий каталог на папку с приложением
-            string appDir = AppLib.GetAppDirectory();
+            string appDir = AppEnvironment.GetAppDirectory();
             if (System.IO.Directory.GetCurrentDirectory() != appDir)
             {
                 AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
@@ -60,11 +61,11 @@ namespace KDSWPFClient
             app.InitializeComponent();  // определенные в app.xaml
 
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
-            AppLib.WriteLogInfoMessage("App settings from config file: " + AppLib.GetAppSettingsFromConfigFile());
+            AppLib.WriteLogInfoMessage("App settings from config file: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // создать каналы
             AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - START");
-            AppLib.WriteLogInfoMessage("   - версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
+            AppLib.WriteLogInfoMessage("   - версия файла {0}: {1}", AppEnvironment.GetAppFileName(), AppEnvironment.GetAppVersion());
 
             AppDataProvider dataProvider = new AppDataProvider();
             try
@@ -97,7 +98,7 @@ namespace KDSWPFClient
             else
                 AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - FINISH");
 
-            AppLib.SetAppGlobalValue("AppDataProvider", dataProvider);
+            AppPropsHelper.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             KDSModeHelper.Init();
@@ -105,9 +106,9 @@ namespace KDSWPFClient
             // основное окно приложения
             MainWindow mainWindow = new MainWindow(args);
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
-            AppLib.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
+            AppPropsHelper.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
             // окно изменения статуса
-            AppLib.SetAppGlobalValue("StateChangeWindow", new StateChange());
+            AppPropsHelper.SetAppGlobalValue("StateChangeWindow", new StateChange());
 
             app.Run(mainWindow);
 
@@ -119,7 +120,7 @@ namespace KDSWPFClient
         private static bool ProtectedProgramm()
         {
             // файл E_init.PSW должен находиться в папке приложения
-            string fileName = AppLib.GetAppDirectory() + "E_init.PSW";
+            string fileName = AppEnvironment.GetAppDirectory() + "E_init.PSW";
             string cpuid = Hardware.getCPUID();
             string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот код службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
 
@@ -135,7 +136,7 @@ namespace KDSWPFClient
                 //return false;
             }
 
-            if (Hardware.SeeHardware(fileName, cpuid))
+            if (AppLib.SeeHardware(fileName, cpuid))
             {
                 return true;
             }
@@ -152,8 +153,8 @@ namespace KDSWPFClient
 
         private static void getAppLayout()
         {
-            AppLib.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
-            AppLib.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
+            AppPropsHelper.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
+            AppPropsHelper.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
         }
 
         
@@ -161,67 +162,71 @@ namespace KDSWPFClient
         {
             string cfgValue;
 
-            cfgValue = AppLib.GetAppSetting("KDSServiceHostName");
-            AppLib.SetAppGlobalValue("KDSServiceHostName", cfgValue);
+            cfgValue = CfgFileHelper.GetAppSetting("KDSServiceHostName");
+            AppPropsHelper.SetAppGlobalValue("KDSServiceHostName", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
-            AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
-            cfgValue = AppLib.GetAppSetting("TraceOrdersDetails");
-            AppLib.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
-            cfgValue = AppLib.GetAppSetting("IsLogClientAction");
-            AppLib.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
+            AppPropsHelper.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("TraceOrdersDetails");
+            AppPropsHelper.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsLogClientAction");
+            AppPropsHelper.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
             //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
-            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
-            AppLib.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
+            cfgValue = CfgFileHelper.GetAppSetting("OrdersColumnsCount");
+            AppPropsHelper.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
             //   отступ сверху/снизу для панели заказов
-            cfgValue = AppLib.GetAppSetting("OrdersPanelTopBotMargin");
-            AppLib.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelTopBotMargin");
+            AppPropsHelper.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
             //   отступ между заказами по вертикали
-            cfgValue = AppLib.GetAppSetting("OrderPanelTopMargin");
-            AppLib.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelTopMargin");
+            AppPropsHelper.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
             //   отступ между заказами по горизонтали
-            cfgValue = AppLib.GetAppSetting("OrderPanelLeftMargin");
-            AppLib.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
+            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelLeftMargin");
+            AppPropsHelper.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
             // кнопки прокрутки страниц
-            cfgValue = AppLib.GetAppSetting("OrdersPanelScrollButtonSize");
-            AppLib.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
+            cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelScrollButtonSize");
+            AppPropsHelper.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
+
+            cfgValue = CfgFileHelper.GetAppSetting("AppFontScale");
+            AppPropsHelper.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1.0d : cfgValue.ToDouble());
+
 
             // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
-            AppLib.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
-            AppLib.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
-            AppLib.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
-            AppLib.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
-            AppLib.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
             //    шрифт заголовка таблицы блюд
-            AppLib.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
             // ** СТРОКА БЛЮДА
             // шрифт строки блюда
-            AppLib.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
             // минимальная высота строки блюда
-            double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("screenHeight") / 20d;
-            AppLib.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
+            double dishLineMinHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight") / 20d;
+            AppPropsHelper.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
             // шрифт разделителя блюд (напр. Подача **)
-            AppLib.SetAppGlobalValue("ordPnlDishDelimiterFontSize", 16d);
+            AppPropsHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", 16d);
 
-            cfgValue = AppLib.GetAppSetting("NewOrderAudioAttention");
-            if (cfgValue != null) AppLib.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
+            cfgValue = CfgFileHelper.GetAppSetting("NewOrderAudioAttention");
+            if (cfgValue != null) AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("OrderHeaderClickable");
-            AppLib.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
-            cfgValue = AppLib.GetAppSetting("IsIngredientsIndependent");
-            AppLib.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("OrderHeaderClickable");
+            AppPropsHelper.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsIngredientsIndependent");
+            AppPropsHelper.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
 
-            cfgValue = AppLib.GetAppSetting("IsShowOrderStatusByAllShownDishes");
-            AppLib.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderStatusByAllShownDishes");
+            AppPropsHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
         }
 
         // открыть/закрыть легенду цветов таймеров
         internal static void OpenColorLegendWindow()
         {
-            ColorLegend colorLegendWin = (ColorLegend)AppLib.GetAppGlobalValue("ColorLegendWindow");
+            ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
             if ((colorLegendWin != null) && !AppLib.IsOpenWindow("ColorLegend")) colorLegendWin.Show();
         }
 
@@ -263,7 +268,7 @@ namespace KDSWPFClient
                 // открываем окно изменения статуса
                 if (allowedStates.Count != 0)
                 {
-                    StateChange win = (StateChange)AppLib.GetAppGlobalValue("StateChangeWindow");
+                    StateChange win = (StateChange)AppPropsHelper.GetAppGlobalValue("StateChangeWindow");
                     win.CurrentState = currentState;
                     win.Order = orderModel;
                     win.Dish = dishModel;
@@ -274,7 +279,7 @@ namespace KDSWPFClient
                     AppLib.WriteLogClientAction("Close StateChange win, result: {0}", win.CurrentState.ToString());
 
                     // изменить статус
-                    AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+                    AppDataProvider dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
                     OrderStatusEnum newState = win.CurrentState;
                     if ((newState != OrderStatusEnum.None) && (newState != currentState) && (dataProvider != null))
                     {
@@ -340,7 +345,7 @@ namespace KDSWPFClient
         private static void changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
             // эта настройка от КДС-сервиса
-            bool isConfirmedReadyState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool isConfirmedReadyState = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
 
             // изменить статус блюда
             dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);

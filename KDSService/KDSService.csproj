@@ -129,12 +129,8 @@
     <Compile Include="IKDSCommandService.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
-    <Compile Include="Lib\AppConfig.cs" />
     <Compile Include="Lib\AppEnv.cs" />
-    <Compile Include="Lib\AppLib.cs" />
-    <Compile Include="Lib\AppProperties.cs" />
     <Compile Include="Lib\DebugTimer.cs" />
-    <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -163,6 +159,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IntegraLib\IntegraLib.csproj">
+      <Project>{68445753-040e-4d30-8063-1f494d7370c4}</Project>
+      <Name>IntegraLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

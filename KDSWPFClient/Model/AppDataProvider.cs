@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Configuration;
 using System.Threading;
+using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -67,7 +68,7 @@ namespace KDSWPFClient
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
-                string hostName = (string)AppLib.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
                 EndpointAddress getEndpointAddress = new EndpointAddress(addr);
@@ -102,7 +103,7 @@ namespace KDSWPFClient
                 NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
                 setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
                 setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
-                string hostName = (string)AppLib.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8734/KDSCommandService", hostName);
                 EndpointAddress setEndpointAddress = new EndpointAddress(addr);
@@ -166,23 +167,23 @@ namespace KDSWPFClient
                     string s1;
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
-                        AppLib.SetAppGlobalValue(pair.Key, pair.Value);
+                        AppPropsHelper.SetAppGlobalValue(pair.Key, pair.Value);
                         if (sBuf.Length > 0) sBuf += "; ";
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
 
                     // получить и преобразовать сложные типы из строк
                     //    TimeSpan
-                    s1 = (string)AppLib.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
-                    if (!s1.IsNull()) AppLib.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
+                    s1 = (string)AppPropsHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!s1.IsNull()) AppPropsHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
 
                     //    HashSet<int>
-                    s1 = (string)AppLib.GetAppGlobalValue("UnusedDepartments");
+                    s1 = (string)AppPropsHelper.GetAppGlobalValue("UnusedDepartments");
                     if (!s1.IsNull())
                     {
                         int[] iArr = s1.Split(',').Select(s => s.ToInt()).ToArray();
                         List<int> hsInt = new List<int>(iArr);
-                        AppLib.SetAppGlobalValue("UnusedDepartments", hsInt);
+                        AppPropsHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
                     }
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
@@ -313,7 +314,7 @@ namespace KDSWPFClient
             try
             {
                 _getClient.SetExpectedTakeValue(_machineName, value);
-                AppLib.SetAppGlobalValue("ExpectedTakeValue", value);
+                AppPropsHelper.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
             {
