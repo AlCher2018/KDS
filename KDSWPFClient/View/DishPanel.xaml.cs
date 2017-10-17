@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
@@ -27,7 +28,7 @@ namespace KDSWPFClient.View
         private OrderDishViewModel _dishView;
         internal OrderDishViewModel DishView { get { return _dishView; } }
 
-        private bool _isDish, _isIngrIndepend, _isTimerBrushesIndepend;
+        private bool _isDish, _isIngrIndepend;
         private double _fontSize, _padd;
         private string _currentBrushKey;
         private DishPanel _parentPanel;
@@ -42,17 +43,15 @@ namespace KDSWPFClient.View
             grdDishLine.DataContext = _dishView;
 
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
-            _isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-            // признак изменения рамки таймера
-            _isTimerBrushesIndepend = (_isDish || (!_isDish && _isIngrIndepend));
+            _isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
             //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
             //base.MinHeight = dishLineMinHeight;
 
-            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
-            double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
+            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale",1.0d);
+            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
 
             // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
@@ -67,18 +66,9 @@ namespace KDSWPFClient.View
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
             this.tbDishQuantity.FontSize = _fontSize;
-            // для блюда и независимого ингредиента
-            if (_isTimerBrushesIndepend)
-            {
-                tbDishStatusTS.FontSize = 1.2 * _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Bold;
-            }
-            // для ЗАВИСИМОГО ИНГРЕДИЕНТА рамка зависит от одинаковости статуса ингредиента и блюда
-            else
-            {
-                tbDishStatusTS.FontSize = _fontSize;
-                tbDishStatusTS.FontWeight = FontWeights.Normal;
-            }
+
+            tbDishStatusTS.FontSize = _fontSize;
+            tbDishStatusTS.FontWeight = FontWeights.Bold;
 
             _padd = 0.5 * fontSize;  // от немасштабного фонта
             brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
@@ -158,27 +148,37 @@ namespace KDSWPFClient.View
         // клик по строке блюда/ингредиента
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            string sLogMsg = "click on order ITEM";
+
             // КЛИКАБЕЛЬНОСТЬ (условия отсутствия)
             // 1. не входит в отображаемые отделы
             if (AppLib.IsDepViewOnKDS(_dishView.DepartmentId) == false)
-                return;
-            // 2. условие кликабельности ингредиента (независимо от блюда) или блюда на допнаправлении
-            else
             {
-                bool b1 = _isTimerBrushesIndepend;
-                bool b2 = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
-                if ((b1 == false) && (b2 == false)) return;
+                AppLib.WriteLogClientAction(sLogMsg + " - NO action (dep not view)");
+                return;
+            }
+                
+            // 2. условие кликабельности ингредиента (независимо от блюда) или блюда на допнаправлении
+            else if (!_isDish)
+            {
+                // IsIngredientsIndependent может меняться динамически, поэтому проверяем каждый раз
+                bool b1 = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
+                if (!b1)
+                {
+                    AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по ингр/допНП не разрешен в IsIngredientsIndependent)");
+                    return;
+                }
             }
 
             OrderViewModel orderView = null;
             FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
+            AppLib.WriteLogClientAction("{0} - open StateChange window for dishId {1} ({2})", sLogMsg, _dishView.Id, _dishView.DishName);
+
             App.OpenStateChangeWindow(orderView, _dishView);
 
             e.Handled = true;
-
-        //    MessageBox.Show(string.Format("dish id {0} - {1}, state {2}",dishView.Id, dishView.DishName, dishView.Status));
         }
 
     }  // class

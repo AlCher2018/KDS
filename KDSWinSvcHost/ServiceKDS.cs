@@ -5,8 +5,6 @@ using System.Linq;
 using System.ServiceModel;
 using System.ServiceProcess;
 
-
-
 namespace KDSWinSvcHost
 {
     public partial class ServiceKDS : ServiceBase
@@ -23,6 +21,10 @@ namespace KDSWinSvcHost
             this.AutoLog = true;
             //_logFile = @"d:\KDSWinSvc.log";
             _logFile = getAppPath() + "Logs\\kdsWinService.log";
+
+#if (DEBUG)
+            OnStart(null);
+#endif
         }
 
         protected override void OnStart(string[] args)
@@ -32,7 +34,6 @@ namespace KDSWinSvcHost
             try
             {
                 // config file
-                //string cfgFile = @"D:\KDSService.config";
                 string cfgFile = getAppPath() + "KDSService.config";
                 putToSvcLog("Инициализация сервисного класса KDSService...");
                 service = new KDSService.KDSServiceClass();

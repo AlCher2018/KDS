@@ -178,11 +178,17 @@
             </StackPanel>
 
             <!-- выбор звукового файла -->
-            <StackPanel Orientation="Horizontal">
+            <DockPanel LastChildFill="false">
                 <TextBlock Text="Выберите звуковой файл:  "/>
                 <ComboBox x:Name="cbxSelectAudio" Width="300"/>
                 <Button x:Name="btnBrowseAudioFile" Margin="20,0,0,0" Content="Обзор..." Click="btnBrowseAudioFile_Click" Padding="10,0"/>
-            </StackPanel>
+                <Button x:Name="btnRestartWithArgs" DockPanel.Dock="Right" ToolTip="перезапуск с параметром -adm" Width="22" Height="20" Padding="2" ClickMode="Press" Click="btnRestartWithArgs_Click">
+                    <Image ClipToBounds="True" Stretch="Fill" Source="../Images/restartApp2.png"/>
+                </Button>
+                <Button x:Name="btnRestartWithoutArgs" DockPanel.Dock="Right" ToolTip="перезапуск без параметров" Width="22" Height="20" Padding="2" Margin="0,0,10,0" ClickMode="Press" Click="btnRestartWithoutArgs_Click">
+                    <Image ClipToBounds="True" Stretch="Fill" Source="../Images/restartApp1.png"/>
+                </Button>
+            </DockPanel>
 
         </StackPanel>
 

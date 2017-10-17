@@ -1,0 +1,88 @@
+﻿<UserControl x:Class="ClientOrderQueue.Model.OrderPanel1"
+             Name="ucOrderPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ClientOrderQueue"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300"
+             Foreground="{Binding ElementName=ucOrderPanel, Path=ForeColor}">
+
+    <Border Background="{Binding ElementName=ucOrderPanel, Path=BackColor}">
+        <Border.CornerRadius>
+            <MultiBinding Converter="{StaticResource getCornerRadiusConverter}" ConverterParameter="0.1">
+                <Binding ElementName="ucOrderPanel" Path="ActualWidth" />
+                <Binding ElementName="ucOrderPanel" Path="ActualHeight"/>
+            </MultiBinding>
+        </Border.CornerRadius>
+        <Border.Margin>
+            <MultiBinding Converter="{StaticResource calculatedMarginConverter}">
+                <Binding ElementName="ucOrderPanel" Path="ActualWidth" />
+                <Binding ElementName="ucOrderPanel" Path="ActualHeight" />
+                <Binding ElementName="ucOrderPanel" Path="MarginKoefStr" />
+            </MultiBinding>
+        </Border.Margin>
+        
+        <!-- основной грид -->
+        <Grid x:Name="grdMain">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <!-- разделительная линия -->
+            <Border Grid.Row="0" BorderBrush="{Binding ElementName=ucOrderPanel, Path=BackColor, Converter={StaticResource getDarkerColorConverter}}" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" />
+
+            <!-- НОМЕР ЗАКАЗА -->
+            <Grid x:Name="grdRow1" Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.2*"/>
+                </Grid.RowDefinitions>
+                <Viewbox x:Name="cntOrderNumber" Grid.Row="0" Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Left" Stretch="Uniform">
+                    <TextBlock Margin="3,0,2,0">
+                    <Run Text="№" FontSize="12" FontFamily="Arial" FontWeight="Normal"/>
+                    <Run Text="{Binding ElementName=ucOrderPanel, Path=OrderNumber}" FontSize="18" FontFamily="Impact"/>
+                    <Run Text="{Binding ElementName=ucOrderPanel, Path=OrderNumberTail}" FontSize="18" FontFamily="Impact" Foreground="Transparent"/>
+                    </TextBlock>
+                </Viewbox>
+
+                <Viewbox x:Name="cntCookingTimer" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Collapsed">
+                    <TextBlock Margin="5,0">
+                        <Run x:Name="tbCookingTimerTitle" FontSize="12"/>
+                        <Run Text=" "/>
+                        <Run x:Name="tbCookingTimer" FontSize="14" FontWeight="Bold"/>
+                    </TextBlock>
+                </Viewbox>
+            </Grid>
+
+            <!-- СТАТУС ЗАКАЗА -->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="1.3*"/>
+                    <RowDefinition Height="0.2*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.1*"/>
+                </Grid.ColumnDefinitions>
+
+                <Viewbox Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                    <TextBlock x:Name="tbStatTitle" Margin="5,0,0,0"/>
+                </Viewbox>
+
+                <Viewbox x:Name="cntStatText" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <TextBlock x:Name="tbStatText" Margin="3,0,0,0" FontWeight="Normal"/>
+                </Viewbox>
+
+                <Image x:Name="imgStat2" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Center" Margin="3" VerticalAlignment="Bottom"/>
+
+            </Grid>
+           
+        </Grid>
+
+    </Border>
+</UserControl>

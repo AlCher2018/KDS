@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
@@ -43,7 +44,7 @@ namespace KDSWPFClient.Model
         }
         private static void initDefinedKDSModes()
         {
-            bool useReadyConfirmedState = (bool)AppLib.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool useReadyConfirmedState = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
 
             // повар
             #region Повар
@@ -146,7 +147,7 @@ namespace KDSWPFClient.Model
         private static void initFromCfgFile()
         {
             KDSModeEnum mode;
-            string cfgValue = AppLib.GetAppSetting("KDSMode");
+            string cfgValue = CfgFileHelper.GetAppSetting("KDSMode");
             if (cfgValue.IsNull())
                 mode = KDSModeEnum.Cook;  // нет такого элемента
             else if (Enum.TryParse<KDSModeEnum>(cfgValue, out mode) == false)
@@ -159,9 +160,9 @@ namespace KDSWPFClient.Model
             {
                 KDSModeStates modeStates = _definedKDSModes[KDSModeEnum.Special];
 
-                string cfgVal = AppLib.GetAppSetting("KDSModeSpecialStates");
+                string cfgVal = CfgFileHelper.GetAppSetting("KDSModeSpecialStates");
                 modeStates.StringToAllowedStates(cfgVal);
-                cfgVal = AppLib.GetAppSetting("KDSModeSpecialActions");
+                cfgVal = CfgFileHelper.GetAppSetting("KDSModeSpecialActions");
                 modeStates.StringToAllowedActions(cfgVal);
                 modeStates.CreateUserStateSets();
             }

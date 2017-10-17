@@ -36,6 +36,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -88,6 +89,7 @@
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
+    <Compile Include="DataSource\DBOrderHelper.cs" />
     <Compile Include="DataSource\Department.cs">
       <DependentUpon>KDSEntities.tt</DependentUpon>
     </Compile>
@@ -127,11 +129,8 @@
     <Compile Include="IKDSCommandService.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
-    <Compile Include="Lib\AppConfig.cs" />
     <Compile Include="Lib\AppEnv.cs" />
-    <Compile Include="Lib\AppLib.cs" />
-    <Compile Include="Lib\AppProperties.cs" />
-    <Compile Include="Lib\TypeExtensions.cs" />
+    <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -145,6 +144,9 @@
       <DependentUpon>KDSEntities.edmx</DependentUpon>
       <LastGenOutput>KDSEntities.cs</LastGenOutput>
     </Content>
+    <Content Include="history.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <EntityDeploy Include="DataSource\KDSEntities.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
@@ -156,6 +158,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IntegraLib\IntegraLib.csproj">
+      <Project>{68445753-040e-4d30-8063-1f494d7370c4}</Project>
+      <Name>IntegraLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

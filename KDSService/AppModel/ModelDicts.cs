@@ -1,5 +1,5 @@
-﻿using KDSConsoleSvcHost;
-using KDSService.AppModel;
+﻿using IntegraLib;
+using KDSConsoleSvcHost;
 using KDSService.DataSource;
 using System;
 using System.Collections.Generic;
@@ -27,10 +27,17 @@ namespace KDSService.AppModel
             list1.ForEach(item => _statuses.Add(item.Id, item));
 
             // список отделов -> в словарь
+            // а также обновить словарь кол-ва блюд по цехам
+            Dictionary<int, decimal> depQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
+            depQty.Clear();
+            _departments = new Dictionary<int, DepartmentModel>();
             List<DepartmentModel> list2 = ModelDicts.GetDepartmentsList(out errMsg);
             if (list2 == null) return false;
-            _departments = new Dictionary<int, DepartmentModel>();
-            list2.ForEach(item => _departments.Add(item.Id, item));
+            list2.ForEach(item =>
+            {
+                _departments.Add(item.Id, item);
+                depQty.Add(item.Id, 0m);
+            });
 
             return true;
         }
@@ -97,6 +104,20 @@ namespace KDSService.AppModel
 
         #endregion
 
+        // является ли цех автостартуемым
+        public static bool GetDepAutoStart(int depId)
+        {
+            if (_departments.ContainsKey(depId)) return _departments[depId].IsAutoStart;
+            else return false;
+        }
+
+        // глубина очереди цеха
+        public static int GetDepDepthCount(int depId)
+        {
+            if (_departments.ContainsKey(depId)) return _departments[depId].DishQuantity;
+            else return 0;
+        }
+
     }  // class ModelDicts
 
 
@@ -136,7 +157,7 @@ namespace KDSService.AppModel
         public bool IsAutoStart { get; set; }
 
         [DataMember]
-        public decimal DishQuantity { get; set; }
+        public int DishQuantity { get; set; }
 
         public DepartmentModel()
         {

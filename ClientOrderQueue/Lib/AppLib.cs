@@ -25,6 +25,19 @@ namespace ClientOrderQueue.Lib
             AppLogger = NLog.LogManager.GetLogger("appLogger");
         }
 
+        public static void RestartApplication(string args = null)
+        {
+            System.Diagnostics.Process curProcess = System.Diagnostics.Process.GetCurrentProcess();
+
+            System.Diagnostics.ProcessStartInfo pInfo = new System.Diagnostics.ProcessStartInfo();
+            pInfo.FileName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            if (args.IsNull() == false) pInfo.Arguments = args;
+
+            System.Diagnostics.Process.Start(pInfo);
+
+            curProcess.Kill();
+        }
+
         #region app logger
         // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)

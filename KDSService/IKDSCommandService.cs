@@ -11,24 +11,24 @@ namespace KDSService
     {
         // заблокировать/разблокировать заказ от изменения по таймеру
         [OperationContract]
-        void LockOrder(int orderId);
+        void LockOrder(string machineName, int orderId);
         [OperationContract]
-        void DelockOrder(int orderId);
+        void DelockOrder(string machineName, int orderId);
 
         // заблокировать/разблокировать блюдо от изменения по таймеру
         [OperationContract]
-        void LockDish(int dishId);
+        void LockDish(string machineName, int dishId);
         [OperationContract]
-        void DelockDish(int dishId);
+        void DelockDish(string machineName, int dishId);
 
 
         // изменение статуса заказа
         [OperationContract]
-        void ChangeOrderStatus(int orderId, OrderStatusEnum orderStatus);
+        void ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus);
 
 
         // изменение статуса блюда
         [OperationContract]
-        void ChangeOrderDishStatus(int orderId, int orderDishId, OrderStatusEnum orderDishStatus);
+        void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus);
     }
 }

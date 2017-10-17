@@ -42,8 +42,8 @@ namespace KDSWPFClient.View
 
             this.Loaded += DishDelimeterPanel_Loaded;
 
-            double fontSize = (double)AppLib.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d);
-            double fontScale = AppLib.GetAppSetting("AppFontScale").ToDouble();
+            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d);
+            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             if (fontScale == 0d) fontScale = 1.0d;
 
             fontSize *= fontScale;

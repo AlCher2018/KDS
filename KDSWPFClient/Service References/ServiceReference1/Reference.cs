@@ -718,34 +718,34 @@ namespace KDSWPFClient.ServiceReference1 {
     public interface IKDSService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses();
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrderStatuses", ReplyAction="http://tempuri.org/IKDSService/GetOrderStatusesResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync();
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments();
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetDepartments", ReplyAction="http://tempuri.org/IKDSService/GetDepartmentsResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync();
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders();
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync();
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
-        System.Collections.Generic.Dictionary<string, object> GetHostAppSettings();
+        System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync();
+        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
-        void SetExpectedTakeValue(int value);
+        void SetExpectedTakeValue(string machineName, int value);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/SetExpectedTakeValue", ReplyAction="http://tempuri.org/IKDSService/SetExpectedTakeValueResponse")]
-        System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value);
+        System.Threading.Tasks.Task SetExpectedTakeValueAsync(string machineName, int value);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -775,44 +775,44 @@ namespace KDSWPFClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses() {
-            return base.Channel.GetOrderStatuses();
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel> GetOrderStatuses(string machineName) {
+            return base.Channel.GetOrderStatuses(machineName);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync() {
-            return base.Channel.GetOrderStatusesAsync();
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderStatusModel>> GetOrderStatusesAsync(string machineName) {
+            return base.Channel.GetOrderStatusesAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments() {
-            return base.Channel.GetDepartments();
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel> GetDepartments(string machineName) {
+            return base.Channel.GetDepartments(machineName);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync() {
-            return base.Channel.GetDepartmentsAsync();
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName) {
+            return base.Channel.GetDepartmentsAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders() {
-            return base.Channel.GetOrders();
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName) {
+            return base.Channel.GetOrders(machineName);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync() {
-            return base.Channel.GetOrdersAsync();
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName) {
+            return base.Channel.GetOrdersAsync(machineName);
         }
         
-        public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings() {
-            return base.Channel.GetHostAppSettings();
+        public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName) {
+            return base.Channel.GetHostAppSettings(machineName);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync() {
-            return base.Channel.GetHostAppSettingsAsync();
+        public System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, object>> GetHostAppSettingsAsync(string machineName) {
+            return base.Channel.GetHostAppSettingsAsync(machineName);
         }
         
-        public void SetExpectedTakeValue(int value) {
-            base.Channel.SetExpectedTakeValue(value);
+        public void SetExpectedTakeValue(string machineName, int value) {
+            base.Channel.SetExpectedTakeValue(machineName, value);
         }
         
-        public System.Threading.Tasks.Task SetExpectedTakeValueAsync(int value) {
-            return base.Channel.SetExpectedTakeValueAsync(value);
+        public System.Threading.Tasks.Task SetExpectedTakeValueAsync(string machineName, int value) {
+            return base.Channel.SetExpectedTakeValueAsync(machineName, value);
         }
     }
     
@@ -821,40 +821,40 @@ namespace KDSWPFClient.ServiceReference1 {
     public interface IKDSCommandService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        void LockOrder(int orderId);
+        void LockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        System.Threading.Tasks.Task LockOrderAsync(int orderId);
+        System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        void DelockOrder(int orderId);
+        void DelockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        System.Threading.Tasks.Task DelockOrderAsync(int orderId);
+        System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        void LockDish(int dishId);
+        void LockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        System.Threading.Tasks.Task LockDishAsync(int dishId);
+        System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        void DelockDish(int dishId);
+        void DelockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        System.Threading.Tasks.Task DelockDishAsync(int dishId);
+        System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        void ChangeOrderStatus(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        void ChangeOrderDishStatus(int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -884,52 +884,52 @@ namespace KDSWPFClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public void LockOrder(int orderId) {
-            base.Channel.LockOrder(orderId);
+        public void LockOrder(string machineName, int orderId) {
+            base.Channel.LockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task LockOrderAsync(int orderId) {
-            return base.Channel.LockOrderAsync(orderId);
+        public System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId) {
+            return base.Channel.LockOrderAsync(machineName, orderId);
         }
         
-        public void DelockOrder(int orderId) {
-            base.Channel.DelockOrder(orderId);
+        public void DelockOrder(string machineName, int orderId) {
+            base.Channel.DelockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task DelockOrderAsync(int orderId) {
-            return base.Channel.DelockOrderAsync(orderId);
+        public System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId) {
+            return base.Channel.DelockOrderAsync(machineName, orderId);
         }
         
-        public void LockDish(int dishId) {
-            base.Channel.LockDish(dishId);
+        public void LockDish(string machineName, int dishId) {
+            base.Channel.LockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task LockDishAsync(int dishId) {
-            return base.Channel.LockDishAsync(dishId);
+        public System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId) {
+            return base.Channel.LockDishAsync(machineName, dishId);
         }
         
-        public void DelockDish(int dishId) {
-            base.Channel.DelockDish(dishId);
+        public void DelockDish(string machineName, int dishId) {
+            base.Channel.DelockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task DelockDishAsync(int dishId) {
-            return base.Channel.DelockDishAsync(dishId);
+        public System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId) {
+            return base.Channel.DelockDishAsync(machineName, dishId);
         }
         
-        public void ChangeOrderStatus(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
-            base.Channel.ChangeOrderStatus(orderId, orderStatus);
+        public void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            base.Channel.ChangeOrderStatus(machineName, orderId, orderStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderStatusAsync(int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
-            return base.Channel.ChangeOrderStatusAsync(orderId, orderStatus);
+        public System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            return base.Channel.ChangeOrderStatusAsync(machineName, orderId, orderStatus);
         }
         
-        public void ChangeOrderDishStatus(int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
-            base.Channel.ChangeOrderDishStatus(orderId, orderDishId, orderDishStatus);
+        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            base.Channel.ChangeOrderDishStatus(machineName, orderId, orderDishId, orderDishStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
-            return base.Channel.ChangeOrderDishStatusAsync(orderId, orderDishId, orderDishStatus);
+        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            return base.Channel.ChangeOrderDishStatusAsync(machineName, orderId, orderDishId, orderDishStatus);
         }
     }
 }

@@ -1,0 +1,20 @@
+﻿Возможные ошибки запуска службы KDSWinSvcHost.exe
+-------------------------------------------------
+
+1. При старте службы на экране появляется сообщение об ошибке 1067. Unable to load the specified metadata resource
+Причина: в описании строки подключения (<add name="KDSEntities" connectionString="metadata=...; provider=...">) неверно указано значение metadata.
+Исправление: в текущей версии службы значение параметра metadata должно быть таким:
+	metadata=res://*/DataSource.KDSEntities.csdl|res://*/DataSource.KDSEntities.ssdl|res://*/DataSource.KDSEntities.msl
+
+2. На экране: Не удалось запустить службу KDS Service на Локальный компьютер. Ошибка 1067. Процесс был неожиданно завершен. 
+В логе: Ошибка инициализации сервисного класса: Ошибка проверки доступа к базе данных: При установлении соединения с SQL Server произошла ошибка, связанная с сетью или с определенным экземпляром.
+Решение: необходимо проверить параметры подключения к БД MS SQL Server: имя ПК, на котором находится MS SQL Server, имя БД, имя пользователя и пароль. Эти параметры находятся в файле KDSService.config, строка
+    <add name="KDSEntities" connectionString="metadata=res://*/DataSource.KDSEntities.csdl|res://*/DataSource.KDSEntities.ssdl|res://*/DataSource.KDSEntities.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source=PRG01;initial catalog=KDS1;persist security info=True;user id=testUser;password=test;MultipleActiveResultSets=True;App=EntityFramework&quot;" providerName="System.Data.EntityClient"/>
+Параметры подключения:
+	data source		- имя ПК, на котором находится MS SQL Server
+	initial catalog - имя БД
+	user id			- имя пользователя, имеющего доступ для чтения/записи к БД
+	password		- пароль пользователя
+
+
+

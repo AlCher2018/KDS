@@ -37,7 +37,6 @@ namespace KDSService.DataSource
         public string UID1C { get; set; }
         public int DelayedStartTime { get; set; }
     
-        public virtual Department Department { get; set; }
         public virtual Order Order { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDishReturnTime> OrderDishReturnTime { get; set; }

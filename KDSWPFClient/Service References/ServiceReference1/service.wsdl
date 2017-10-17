@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <wsdl:definitions xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:tns="http://tempuri.org/" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="KDSServiceClass" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
-  <wsp:Policy wsu:Id="getData_policy">
+  <wsp:Policy wsu:Id="getDataEndPoint_policy">
     <wsp:ExactlyOne>
       <wsp:All>
         <msb:BinaryEncoding xmlns:msb="http://schemas.microsoft.com/ws/06/2004/mspolicy/netbinary1">
@@ -10,9 +10,15 @@
       </wsp:All>
     </wsp:ExactlyOne>
   </wsp:Policy>
-  <wsp:Policy wsu:Id="setData_policy">
+  <wsp:Policy wsu:Id="setDataEndpoint_policy">
     <wsp:ExactlyOne>
       <wsp:All>
+        <wsrm:RMAssertion xmlns:wsrm="http://schemas.xmlsoap.org/ws/2005/02/rm/policy">
+          <wsrm:InactivityTimeout Milliseconds="1200000">
+          </wsrm:InactivityTimeout>
+          <wsrm:AcknowledgementInterval Milliseconds="200">
+          </wsrm:AcknowledgementInterval>
+        </wsrm:RMAssertion>
         <msb:BinaryEncoding xmlns:msb="http://schemas.microsoft.com/ws/06/2004/mspolicy/netbinary1">
         </msb:BinaryEncoding>
         <wsaw:UsingAddressing>
@@ -142,8 +148,8 @@
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse" message="tns:IKDSCommandService_ChangeOrderDishStatus_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
-  <wsdl:binding name="getData" type="tns:IKDSService">
-    <wsp:PolicyReference URI="#getData_policy">
+  <wsdl:binding name="getDataEndPoint" type="tns:IKDSService">
+    <wsp:PolicyReference URI="#getDataEndPoint_policy">
     </wsp:PolicyReference>
     <soap12:binding transport="http://schemas.microsoft.com/soap/tcp" />
     <wsdl:operation name="GetOrderStatuses">
@@ -192,8 +198,8 @@
       </wsdl:output>
     </wsdl:operation>
   </wsdl:binding>
-  <wsdl:binding name="setData" type="tns:IKDSCommandService">
-    <wsp:PolicyReference URI="#setData_policy">
+  <wsdl:binding name="setDataEndpoint" type="tns:IKDSCommandService">
+    <wsp:PolicyReference URI="#setDataEndpoint_policy">
     </wsp:PolicyReference>
     <soap12:binding transport="http://schemas.microsoft.com/soap/tcp" />
     <wsdl:operation name="LockOrder">
@@ -252,13 +258,13 @@
     </wsdl:operation>
   </wsdl:binding>
   <wsdl:service name="KDSServiceClass">
-    <wsdl:port name="getData" binding="tns:getData">
+    <wsdl:port name="getDataEndPoint" binding="tns:getDataEndPoint">
       <soap12:address location="net.tcp://localhost:8733/KDSService" />
       <wsa10:EndpointReference>
         <wsa10:Address>net.tcp://localhost:8733/KDSService</wsa10:Address>
       </wsa10:EndpointReference>
     </wsdl:port>
-    <wsdl:port name="setData" binding="tns:setData">
+    <wsdl:port name="setDataEndpoint" binding="tns:setDataEndpoint">
       <soap12:address location="net.tcp://localhost:8734/KDSCommandService/" />
       <wsa10:EndpointReference>
         <wsa10:Address>net.tcp://localhost:8734/KDSCommandService/</wsa10:Address>

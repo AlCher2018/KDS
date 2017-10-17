@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Configuration;
 using System.Threading;
+using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -20,6 +21,7 @@ namespace KDSWPFClient
     {
         Random rnd = new Random();
 
+        private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
 
@@ -63,7 +65,16 @@ namespace KDSWPFClient
             try
             {
                 if (_getClient != null) _getClient.Close();
-                _getClient = new KDSServiceClient();
+
+                // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
+                NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
+                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
+                string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
+                EndpointAddress getEndpointAddress = new EndpointAddress(addr);
+
+                _getClient = new KDSServiceClient(getBinding, getEndpointAddress);
+
                 _getClient.Open();
                 logClientInfo(_getClient);
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
@@ -78,6 +89,7 @@ namespace KDSWPFClient
 
             return retVal;
         }
+
         public bool CreateSetChannel()
         {
             bool retVal = false;
@@ -86,7 +98,18 @@ namespace KDSWPFClient
             try
             {
                 if ((_setClient != null) && (_setClient.State != CommunicationState.Faulted)) _setClient.Close();
-                _setClient = new KDSCommandServiceClient();
+
+                // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
+                NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
+                setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
+                setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
+                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
+                string addr = string.Format("net.tcp://{0}:8734/KDSCommandService", hostName);
+                EndpointAddress setEndpointAddress = new EndpointAddress(addr);
+
+                _setClient = new KDSCommandServiceClient(setBinding, setEndpointAddress);
+
                 _setClient.Open();
                 logClientInfo(_setClient);
 
@@ -115,7 +138,7 @@ namespace KDSWPFClient
             try
             {
                 // получить со службы статусы заказов и сохранить их в _ordStatuses
-                AppLib.WriteLogTraceMessage("  - clt: получаю словарь статусов от службы...");
+                AppLib.WriteLogInfoMessage("  - clt: получаю словарь статусов от службы...");
                 setOrderStatusFromService();
 
                 // получить отделы со службы и сохранить их в _deps
@@ -144,23 +167,23 @@ namespace KDSWPFClient
                     string s1;
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
-                        AppLib.SetAppGlobalValue(pair.Key, pair.Value);
+                        AppPropsHelper.SetAppGlobalValue(pair.Key, pair.Value);
                         if (sBuf.Length > 0) sBuf += "; ";
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
 
                     // получить и преобразовать сложные типы из строк
                     //    TimeSpan
-                    s1 = (string)AppLib.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
-                    if (!s1.IsNull()) AppLib.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
+                    s1 = (string)AppPropsHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!s1.IsNull()) AppPropsHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
 
                     //    HashSet<int>
-                    s1 = (string)AppLib.GetAppGlobalValue("UnusedDepartments");
+                    s1 = (string)AppPropsHelper.GetAppGlobalValue("UnusedDepartments");
                     if (!s1.IsNull())
                     {
                         int[] iArr = s1.Split(',').Select(s => s.ToInt()).ToArray();
                         List<int> hsInt = new List<int>(iArr);
-                        AppLib.SetAppGlobalValue("UnusedDepartments", hsInt);
+                        AppPropsHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
                     }
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
@@ -179,7 +202,7 @@ namespace KDSWPFClient
             _ordStatuses.Clear();
             try
             {
-                List<OrderStatusModel> svcList = _getClient.GetOrderStatuses();
+                List<OrderStatusModel> svcList = _getClient.GetOrderStatuses(_machineName);
                 svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
                     new OrderStatusViewModel() { Id = o.Id, Name = o.Name, AppName = o.AppName, Description = o.Description }
                     ));
@@ -195,7 +218,7 @@ namespace KDSWPFClient
             _deps.Clear();
             try
             {
-                List<DepartmentModel> svcDict = _getClient.GetDepartments();
+                List<DepartmentModel> svcDict = _getClient.GetDepartments(_machineName);
                 foreach (DepartmentModel dep in svcDict)
                 {
                     DepartmentViewModel newDep = new DepartmentViewModel()
@@ -229,7 +252,7 @@ namespace KDSWPFClient
             List<OrderModel> retVal = null;
             try
             {
-                retVal = _getClient.GetOrders();
+                retVal = _getClient.GetOrders(_machineName);
             }
             catch (Exception ex)
             {
@@ -275,7 +298,7 @@ namespace KDSWPFClient
             Dictionary<string, object> retVal = null;
             try
             {
-                retVal = _getClient.GetHostAppSettings();
+                retVal = _getClient.GetHostAppSettings(_machineName);
             }
             catch (Exception ex)
             {
@@ -290,8 +313,8 @@ namespace KDSWPFClient
         {
             try
             {
-                _getClient.SetExpectedTakeValue(value);
-                AppLib.SetAppGlobalValue("ExpectedTakeValue", value);
+                _getClient.SetExpectedTakeValue(_machineName, value);
+                AppPropsHelper.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
             {
@@ -309,7 +332,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.LockOrder(orderId);
+                _setClient.LockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
@@ -322,7 +345,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.DelockOrder(orderId);
+                _setClient.DelockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
@@ -334,14 +357,17 @@ namespace KDSWPFClient
         {
             if (_setClient == null) return;
 
-            AppLib.WriteLogUserAction("Установить статус заказа (id {1}) в {2} (состояние службы: {0})...", _getClient.State, orderId, newStatus.ToString());
-
+            AppLib.WriteLogClientAction("Установить статус ЗАКАЗА, состояние службы: {0}", _getClient.State);
             checkSvcState();
 
             try
             {
-                _setClient.ChangeOrderStatus(orderId, newStatus);
-                AppLib.WriteLogTraceMessage(" - результат: успешно");
+                DateTime dtTmr = DateTime.Now;
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - START", orderId, newStatus);
+
+                _setClient.ChangeOrderStatus(_machineName, orderId, newStatus);
+
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - FINISH - {2}", orderId, newStatus, (DateTime.Now - dtTmr).ToString());
             }
             catch (Exception)
             {
@@ -357,7 +383,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.LockDish(dishId);
+                _setClient.LockDish(_machineName, dishId);
             }
             catch (Exception)
             {
@@ -370,7 +396,7 @@ namespace KDSWPFClient
             checkSvcState();
             try
             {
-                _setClient.DelockDish(dishId);
+                _setClient.DelockDish(_machineName, dishId);
             }
             catch (Exception)
             {
@@ -381,17 +407,20 @@ namespace KDSWPFClient
         public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
             if (_setClient == null) return;
+
+            AppLib.WriteLogClientAction("Установить статус БЛЮДА, состояние службы: {0}", _getClient.State);
             checkSvcState();
 
             try
             {
-                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
+                DateTime dtTmr = DateTime.Now;
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
-                _setClient.ChangeOrderDishStatus(orderId, dishId, newStatus);
+                _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
-                AppLib.WriteLogTraceMessage("clt: ChangeOrderDishStatus({0}, {1}, {2}) - FINISH", orderId, dishId, newStatus);
+                AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - FINISH - {3}", orderId, dishId, newStatus, (DateTime.Now - dtTmr).ToString());
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -402,7 +431,7 @@ namespace KDSWPFClient
         {
             if (_setClient.State == CommunicationState.Faulted)
             {
-                AppLib.WriteLogUserAction(" - restart KDSCommandServiceClient !!!");
+                AppLib.WriteLogClientAction(" - restart KDSCommandServiceClient !!!");
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }

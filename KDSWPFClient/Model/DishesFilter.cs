@@ -29,8 +29,6 @@ namespace KDSWPFClient.Model
         }
         #endregion
 
-        public MainWindow mainWindow { get; set; }
-
         // поля для фильтра по цеху
         // ФИЛЬТР ЗАКАЗОВ на данном КДС. Может быть статическим (отделы из config-файла) или динамическим (статус заказов) 
         private ValueChecker<OrderFilterValue> _valueDishChecker;

@@ -5,7 +5,13 @@
              xmlns:locLib="clr-namespace:ClientOrderQueue.Lib"
              >
     <Application.Resources>
-        <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
+        <!-- converters -->
+        <locLib:MultiplyParamValueConverter x:Key="multiplyParamValueConverter"/>
         <locLib:GetMargin x:Key="getMargin"/>
+        <locLib:GetMinValueConverter x:Key="getMinValueConverter"/>
+        <locLib:GetCornerRadiusConverter x:Key="getCornerRadiusConverter"/>
+        <locLib:GetDarkerColorConverter x:Key="getDarkerColorConverter"/>
+        <locLib:CalculatedMarginConverter x:Key="calculatedMarginConverter" />
+        
     </Application.Resources>
 </Application>

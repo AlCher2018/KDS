@@ -112,11 +112,13 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppStartWait.xaml.cs">
+      <DependentUpon>AppStartWait.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
     <Compile Include="Lib\Converters.cs" />
-    <Compile Include="Model\CellBrushes.cs" />
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -129,6 +131,10 @@
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\ImageHelper.cs" />
     <Compile Include="Lib\TypeExtensions.cs" />
+    <Page Include="AppStartWait.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -151,8 +157,15 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Model\OrderPanel1.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\OrderPanel1.xaml.cs">
+      <DependentUpon>OrderPanel1.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Order.cs">
       <DependentUpon>DataModel.tt</DependentUpon>
     </Compile>

@@ -15,6 +15,7 @@ using System.Windows.Media;
 using KDSWPFClient.ViewModel;
 using KDSWPFClient.View;
 using System.Reflection;
+using IntegraLib;
 
 namespace KDSWPFClient.Lib
 {
@@ -22,106 +23,78 @@ namespace KDSWPFClient.Lib
     public static class AppLib
     {
         // общий логгер
-        public static NLog.Logger AppLogger;
-        public static NLog.Logger _dbCommandLogger = null;
+        public static NLog.Logger _appLogger;
 
         static AppLib()
         {
+        }
+
+        public static void InitAppLogger()
+        {
             // логгер приложения
-            AppLogger = NLog.LogManager.GetLogger("appLogger");
+            _appLogger = NLog.LogManager.GetLogger("appLogger");
         }
 
         #region app logger
-
-        // общий логгер КДС-клиента и службы
-        public static void InitDBCommandLogger()
-        {
-            // параметр берем сразу из конфига
-            string cfgValue = AppLib.GetAppSetting("SingleClientSvcLog");
-            if ((cfgValue != null) && cfgValue.ToBool())
-            {
-                _dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
-            }
-        }
         // отладочные сообщения
+        // стандартные действия службы
         public static void WriteLogTraceMessage(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
-            {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(msg);
-                else
-                    AppLogger.Trace(msg ?? "null");
-            }
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false) && !msg.IsNull()) _appLogger.Trace(msg);
         }
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsWriteTraceMessages", false))
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false)) _appLogger.Trace(format, args);
+        }
+
+        // подробная информация о преобразованиях списка заказов, полученных клиентом от службы
+        public static void WriteLogOrderDetails(string msg)
+        {
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false) 
+                && (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails", false))
+                _appLogger.Trace(msg);
+        }
+        public static void WriteLogOrderDetails(string format, params object[] paramArray)
+        {
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false)
+                && (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails", false))
             {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(format, args);
-                else
-                    AppLogger.Trace(format, args);
+                string msg = string.Format(format, paramArray);
+                _appLogger.Trace(msg);
             }
         }
 
-        // сообщения о действиях пользователя
-        public static void WriteLogUserAction(string msg)
+        // сообщения о действиях клиента
+        public static void WriteLogClientAction(string msg)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) 
-                && AppLogger.IsTraceEnabled)
-                AppLogger.Trace("userAct: " + msg);
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsLogClientAction", false))
+                _appLogger.Trace("cltAct|" + msg);
         }
-        public static void WriteLogUserAction(string format, params object[] paramArray)
+        public static void WriteLogClientAction(string format, params object[] paramArray)
         {
-            if ((bool)AppLib.GetAppGlobalValue("IsLogUserAction", false) && AppLogger.IsTraceEnabled) AppLogger.Trace("userAct: " + format, paramArray);
+            if ((bool)AppPropsHelper.GetAppGlobalValue("IsLogClientAction", false))
+                _appLogger.Trace("cltAct|" + string.Format(format, paramArray));
         }
 
         public static void WriteLogInfoMessage(string msg)
         {
-            if (AppLogger.IsInfoEnabled) AppLogger.Info(msg??"null");
+            if (_appLogger.IsInfoEnabled && !msg.IsNull()) _appLogger.Info(msg);
         }
         public static void WriteLogInfoMessage(string format, params object[] args)
         {
-            if (AppLogger.IsInfoEnabled) AppLogger.Info(format, args);
+            if (_appLogger.IsInfoEnabled) _appLogger.Info(format, args);
         }
 
         public static void WriteLogErrorMessage(string msg)
         {
-            if (AppLogger.IsErrorEnabled) AppLogger.Error(msg??"null");
+            if (_appLogger.IsErrorEnabled && !msg.IsNull()) _appLogger.Error(msg);
         }
         public static void WriteLogErrorMessage(string format, params object[] args)
         {
-            if (AppLogger.IsErrorEnabled) AppLogger.Error(format, args);
+            if (_appLogger.IsErrorEnabled) _appLogger.Error(format, args);
         }
 
         #endregion
-
-        #region system info
-        internal static string GetEnvironmentString()
-        {
-            return string.Format("Environment: machine={0}, user={1}, current directory={2}, OS version={3}, isOS64bit={4}, processor count={5}, free RAM={6} Mb",
-                Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, getAvailableRAM());
-        }
-
-
-        // in Mb
-        private static int getAvailableRAM()
-        {
-            int retVal = 0;
-
-            // class get memory size in kB
-            System.Management.ManagementObjectSearcher mgmtObjects = new System.Management.ManagementObjectSearcher("Select * from Win32_OperatingSystem");
-            foreach (var item in mgmtObjects.Get())
-            {
-                //System.Diagnostics.Debug.Print("FreePhysicalMemory:" + item.Properties["FreeVirtualMemory"].Value);
-                //System.Diagnostics.Debug.Print("FreeVirtualMemory:" + item.Properties["FreeVirtualMemory"].Value);
-                //System.Diagnostics.Debug.Print("TotalVirtualMemorySize:" + item.Properties["TotalVirtualMemorySize"].Value);
-                retVal = (Convert.ToInt32(item.Properties["FreeVirtualMemory"].Value)) / 1024;
-            }
-            return retVal;
-        }
-
 
         //public static bool CheckDBConnection(Type dbType)
         //{
@@ -170,53 +143,6 @@ namespace KDSWPFClient.Lib
         //    return retVal;
         //}
 
-        public static string GetAppFileName()
-        {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            return assembly.ManifestModule.Name;
-        }
-
-        public static string GetAppFullFile()
-        {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            return assembly.Location;
-        }
-
-        public static string GetAppDirectory()
-        {
-            return AppDomain.CurrentDomain.BaseDirectory;
-        }
-
-        public static string GetAppDirectory(string subDir)
-        {
-            return GetAppDirectory() + subDir + ((subDir.EndsWith("\\")) ? "" : "\\");
-        }
-
-        public static string GetFullFileName(string relPath, string fileName)
-        {
-            return getFullPath(relPath) + fileName;
-        }
-        private static string getFullPath(string relPath)
-        {
-            string retVal = relPath;
-
-            if (string.IsNullOrEmpty(relPath))  // путь не указан в конфиге - берем путь приложения
-                retVal = AppLib.GetAppDirectory();
-            else if (retVal.Contains(@"\:") == false)  // относительный путь
-            {
-                retVal = AppLib.GetAppDirectory() + retVal;
-            }
-            if (retVal.EndsWith(@"\") == false) retVal += @"\";
-
-            return retVal;
-        }
-
-        public static string GetAppVersion()
-        {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            return fvi.FileVersion;
-        }
 
         public static Point GetWindowTopLeftPoint(Window window)
         {
@@ -240,161 +166,44 @@ namespace KDSWPFClient.Lib
             return new Point(left, top);
         }
 
-        #endregion
 
-        #region app settings
-        // получить настройки приложения из config-файла
-        public static string GetAppSetting(string key)
+        public static bool SeeHardware(string fileName, string cpu)
         {
-            return ConfigurationManager.AppSettings[key];
+            if (fileName.IsNull()) return false;
+
+            XElement doc = getInitFileXML(fileName);
+            if (doc == null) return false;
+
+            string proccessors = doc.Descendants("Cpu").Attributes("Key").First<XAttribute>().Value;
+
+            return (proccessors == cpu);
         }
 
-        // настройки из config-файла
-        internal static string GetAppSettingsFromConfigFile()
+
+        private static XElement getInitFileXML(string fileName)
         {
-            return GetAppSettingsFromConfigFile(ConfigurationManager.AppSettings.AllKeys);
-        }
-        internal static string GetAppSettingsFromConfigFile(string appSettingNames)
-        {
-            if (appSettingNames == null) return null;
-            return GetAppSettingsFromConfigFile(appSettingNames.Split(';'));
-        }
-        internal static string GetAppSettingsFromConfigFile(string[] appSettingNames)
-        {
-            StringBuilder sb = new StringBuilder();
-            string sValue;
-            foreach (string settingName in appSettingNames)
+            string result = Password.DecryptFileToString(fileName);
+
+            if ((result == null) || (result.StartsWith("ERROR")))
             {
-                sValue = ConfigurationManager.AppSettings[settingName];
-                if (sValue.IsNull() == false)
-                {
-                    if (sb.Length > 0) sb.Append("; ");
-                    sb.Append(settingName + "=" + sValue);
-                }
+                AppLib.WriteLogErrorMessage(result);
+                return null;
             }
-            return sb.ToString();
-        }
 
-        // запись значения в config-файл
-        // ConfigurationManager НЕ СОХРАНЯЕТ КОММЕНТАРИИ!!!!
-        //public static void SaveValueToConfig(string key, string value)
-        //{
-        //    // Open App.Config of executable
-        //    System.Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        //    // Add an Application Setting.
-        //    config.AppSettings.Settings.Remove(key);
-        //    config.AppSettings.Settings.Add(key, value);
-        //    // Save the configuration file.
-        //    config.Save(ConfigurationSaveMode.Modified);
-        //    // Force a reload of a changed section.
-        //    ConfigurationManager.RefreshSection("appSettings");
-        //}
-
-        // работа с config-файлом как с XML-документом - сохраняем комментарии
-        // параметр appSettingsDict - словарь из ключа и значения (string), которые необх.сохранить в разделе appSettings
-        public static bool SaveAppSettings(Dictionary<string, string> appSettingsDict, out string errorMsg)
-        {
-            // Open App.Config of executable
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
+            XElement retVal = null;
             try
             {
-                errorMsg = null;
-                string filename = config.FilePath;
-
-                //Load the config file as an XDocument
-                XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
-                if (document.Root == null)
-                {
-                    errorMsg = "Document was null for XDocument load.";
-                    return false;
-                }
-
-                // получить раздел appSettings
-                XElement xAppSettings = document.Root.Element("appSettings");
-                if (xAppSettings == null)
-                {
-                    xAppSettings = new XElement("appSettings");
-                    document.Root.Add(xAppSettings);
-                }
-
-                // цикл по ключам словаря значений
-                foreach (KeyValuePair<string, string> item in appSettingsDict)
-                {
-                    XElement appSetting = xAppSettings.Elements("add").FirstOrDefault(x => x.Attribute("key").Value == item.Key);
-                    if (appSetting == null)
-                    {
-                        //Create the new appSetting
-                        xAppSettings.Add(new XElement("add", new XAttribute("key", item.Key), new XAttribute("value", item.Value)));
-                    }
-                    else
-                    {
-                        //Update the current appSetting
-                        appSetting.Attribute("value").Value = item.Value;
-                    }
-                }
-
-                //Save the changes to the config file.
-                document.Save(filename, SaveOptions.DisableFormatting);
-
-                // Force a reload of a changed section.
-                ConfigurationManager.RefreshSection("appSettings");
-
-                return true;
+                retVal = XElement.Parse(result);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
-                return false;
             }
-        }
 
-
-        public static bool SaveAppSettings(string key, string value)
-        {
-            Dictionary<string, string> dict = new Dictionary<string, string>() { { key, value } };
-            string errMsg = null;
-
-            bool retVal = SaveAppSettings(dict, out errMsg);
-            if (retVal == false)
-            {
-                AppLib.WriteLogErrorMessage("An error occurred while saving the value ({0}: {1}) to config file: {2}",key, value, errMsg);
-            }
             return retVal;
         }
 
-        internal static double GetOrdersPageContentHeight()
-        {
-            double _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
-            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
 
-             return Math.Floor(_screenHeight - 2d * topBotMargin);
-        }
-
-
-        // получить глобальное значение приложения из его свойств
-        public static object GetAppGlobalValue(string key, object defaultValue = null)
-        {
-            IDictionary dict = Application.Current.Properties;
-            if (dict == null) return null;
-
-            if (dict.Contains(key) == false) return defaultValue;
-            else return dict[key];
-        }
-
-        // установить глобальное значение приложения (в свойствах приложения)
-        public static void SetAppGlobalValue(string key, object value)
-        {
-            IDictionary dict = Application.Current.Properties;
-            if (dict.Contains(key) == false)  // если еще нет значения в словаре
-            {
-                dict.Add(key, value);   // то добавить
-            }
-            else    // иначе - изменить существующее
-            {
-                dict[key] = value;
-            }
-        }
+        #region app settings
 
         internal static string GetShortErrMessage(Exception ex)
         {
@@ -419,8 +228,8 @@ namespace KDSWPFClient.Lib
         {
             get
             {
-                double appWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-                double appHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+                double appWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
+                double appHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
                 return (appWidth < appHeight);
             }
         }
@@ -576,39 +385,6 @@ namespace KDSWPFClient.Lib
             if (win.Left != topLeftPoint.X) win.Left = topLeftPoint.X;
         }
 
-        // ****  РАСЧЕТ РАЗМЕЩЕНИЯ ПАНЕЛЕЙ ЗАКАЗОВ
-        internal static void RecalcOrderPanelsLayot()
-        {
-            string cfgValue;
-            int cntCols;
-            // размеры элементов панели заказа
-            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
-            cfgValue = AppLib.GetAppSetting("OrdersColumnsCount");
-            if (cfgValue == null)
-            {
-                cntCols = 4;   // по умолчанию - 4
-                string errMsg;
-                AppLib.SaveAppSettings(new Dictionary<string, string>() { { "OrdersColumnsCount", cntCols.ToString() } }, out errMsg);
-            }
-            else cntCols = cfgValue.ToInt();
-
-            //   ширина столбцов заказов и расстояния между столбцами
-            double screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
-            // где, koef = доля поля от ширины колонки
-            double koef = 0.15d;
-            double colWidth = Math.Floor(screenWidth / (cntCols + koef * (cntCols + 1)));
-            double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
-            AppLib.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppLib.SetAppGlobalValue("OrdersColumnMargin", colMargin);
-
-            //   отступ сверху/снизу для панели заказов
-            AppLib.SetAppGlobalValue("dishesPanelTopBotMargin", 20d);
-            //   отступ между заказами по вертикали
-            AppLib.SetAppGlobalValue("ordPnlTopMargin", 1.5d * colMargin);
-        }
-
-
         /// <summary>
         /// соединение двух ОТСОРТИРОВАННЫХ массивов
         ///  target - что обновляем (цель/получатель обновления), напр. List<OrderDishViewModel>
@@ -707,7 +483,7 @@ namespace KDSWPFClient.Lib
             if ((dishes == null) || (dishes.Count == 0)) return StatusEnum.None;
 
             int statId = -1;
-            AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            AppDataProvider dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
             foreach (OrderDishViewModel modelDish in dishes)
             {
                 if (dataProvider.Departments[modelDish.DepartmentId].IsViewOnKDS)
@@ -723,7 +499,7 @@ namespace KDSWPFClient.Lib
         // принадлежит ли переданный Ид цеха разрешенным цехам на этом КДСе
         internal static bool IsDepViewOnKDS(int depId, AppDataProvider dataProvider = null)
         {
-            if (dataProvider == null) dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            if (dataProvider == null) dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
 
             return dataProvider.Departments[depId].IsViewOnKDS;
         }

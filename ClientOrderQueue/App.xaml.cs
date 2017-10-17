@@ -3,7 +3,9 @@ using ClientOrderQueue.Model;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ClientOrderQueue
@@ -32,12 +34,44 @@ namespace ClientOrderQueue
             // проверка доступа к БД
             if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
             {
-                MessageBox.Show("Ошибка доступа к базе данных. См. журнал в папке Logs.", "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
-                App.Current.Shutdown(1);
+                bool result = false;
+                AppStartWait winWait = new AppStartWait();
+                winWait.Show();
+
+                // сделать цикл проверки подключения: 20 раз через 2 сек
+                for (int i = 1; i <= 20; i++)
+                {
+                    winWait.Dispatcher.Invoke(() =>
+                    {
+                        int iVal = winWait.txtNumAttempt.Text.ToInt();
+                        iVal++;
+                        winWait.txtNumAttempt.Text = iVal.ToString();
+                        winWait.InvalidateProperty(TextBlock.TextProperty);
+                        winWait.InvalidateVisual();
+                        winWait.Refresh();
+                    });
+                    Thread.Sleep(2000);
+
+                    result = AppLib.CheckDBConnection(typeof(KDSContext));
+                    if (result) break;
+                }
+                winWait.Close();
+
+                if (!result)
+                {
+                    MessageBox.Show("Ошибка подключения к базе данных. См. журнал в папке Logs.\nПриложение будет закрыто", "Аварийное завершение", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    Environment.Exit(3);
+                }
+                // перезапусить приложение
+                else
+                {
+                    AppLib.RestartApplication();
+                }
             }
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
+
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
 
             MainWindow mWindow = new MainWindow();
@@ -57,10 +91,10 @@ namespace ClientOrderQueue
         private static void setAppGlobalValues()
         {
             string cfgValue;
-            string sPath = AppLib.GetAppSetting("ImagesPath");
-            AppLib.SetAppGlobalValue("ImagesPath", sPath);
 
             // файл изображения состояния
+            string sPath = AppLib.GetAppSetting("ImagesPath");
+            AppLib.SetAppGlobalValue("ImagesPath", sPath);
             string sFile = AppLib.GetAppSetting("StatusReadyImage");
             string fileName = AppLib.GetFullFileName(sPath, sFile);
             if ((fileName != null) && (System.IO.File.Exists(fileName))) AppLib.SetAppGlobalValue("StatusReadyImageFile", fileName);
@@ -106,19 +140,23 @@ namespace ClientOrderQueue
             // массивы строк для различных языков
             cfgValue = AppLib.GetAppSetting("StatusTitle");
             if (cfgValue == null) cfgValue = "Заказ|Замовлення|Order";
-            AppLib.SetAppGlobalValue("StatusTitle", cfgValue.Split('|'));
+            AppLib.SetAppGlobalValue("StatusTitle", cfgValue);
 
             cfgValue = AppLib.GetAppSetting("PanelWaitText");
             if (cfgValue != null) cfgValue = "Ожидать|Чекати|Wait";
-            AppLib.SetAppGlobalValue("PanelWaitText", cfgValue.Split('|'));
+            AppLib.SetAppGlobalValue("PanelWaitText", cfgValue);
 
-            string sBuf0 = AppLib.GetAppSetting("StatusLang0");
-            if (sBuf0 == null) sBuf0 = "Готовится|Готується|In process";
-            string sBuf1 = AppLib.GetAppSetting("StatusLang1");
-            if (sBuf1 == null) sBuf1 = "Готов|Готово|Done";
-            string sBuf2 = AppLib.GetAppSetting("StatusLang2");
-            if (sBuf2 == null) sBuf2 = "Забрали|Забрали|Taken";
-            AppLib.SetAppGlobalValue("StatusLang", new string[][] { sBuf0.Split('|'), sBuf1.Split('|'), sBuf2.Split('|') });
+            cfgValue = AppLib.GetAppSetting("StatusLang0");
+            if (cfgValue == null) cfgValue = "Готовится|Готується|In process";
+            AppLib.SetAppGlobalValue("Status1Langs", cfgValue);
+
+            cfgValue = AppLib.GetAppSetting("StatusLang1");
+            if (cfgValue == null) cfgValue = "Готов|Готово|Done";
+            AppLib.SetAppGlobalValue("Status2Langs", cfgValue);
+
+            cfgValue = AppLib.GetAppSetting("StatusLang2");
+            if (cfgValue == null) cfgValue = "Забрали|Забрали|Taken";
+            AppLib.SetAppGlobalValue("Status3Langs", cfgValue);
         }
 
         private static void createWinTitleBrushes()
@@ -135,25 +173,16 @@ namespace ClientOrderQueue
 
         private static void createPanelBackBrushes()
         {
+            Brush[] cellBrushes = new Brush[2];
+
             string cfgValue;
-
-            CellBrushes[] cellBrushes = new CellBrushes[2] { new CellBrushes(), new CellBrushes() };
-            Color col, col1;
-            float darkKoef = 0.8f;  // коэффициент затемнения
-
             cfgValue = AppLib.GetAppSetting("StatusCookingPanelBackground");
             if (cfgValue == null) cfgValue = "Gold";
-            cellBrushes[0].Background = getBrushByName(cfgValue, "Gold");
-            col = ((SolidColorBrush)cellBrushes[0].Background).Color;
-            col1 = Color.Multiply(col, darkKoef); col1.A = 255;
-            cellBrushes[0].DelimLine = new SolidColorBrush(col1);
+            cellBrushes[0] = getBrushByName(cfgValue, "Gold");
 
             cfgValue = AppLib.GetAppSetting("StatusReadyPanelBackground");
             if (cfgValue == null) cfgValue = "LimeGreen";
-            cellBrushes[1].Background = getBrushByName(cfgValue, "LimeGreen");
-            col = ((SolidColorBrush)cellBrushes[1].Background).Color;
-            col1 = Color.Multiply(col, darkKoef); col1.A = 255;
-            cellBrushes[1].DelimLine = new SolidColorBrush(col1);
+            cellBrushes[1] = getBrushByName(cfgValue, "LimeGreen");
 
             // сохранить в свойствах
             AppLib.SetAppGlobalValue("PanelBackgroundBrushes", cellBrushes);

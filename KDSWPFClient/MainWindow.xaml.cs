@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using KDSWPFClient.Model;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -74,24 +75,24 @@ namespace KDSWPFClient
         System.Media.SoundPlayer _wavPlayer;
 
         // CONSTRUCTOR
-        public MainWindow()
+        public MainWindow(string[] args)
         {
             InitializeComponent();
 
-            _dishesFilter.mainWindow = this;
             this.Loaded += MainWindow_Loaded;
 
-            _screenWidth = (double)AppLib.GetAppGlobalValue("screenWidth");
-            _screenHeight = (double)AppLib.GetAppGlobalValue("screenHeight");
+            _screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
+            _screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
 
             this.Top = 0; this.Left = 0;
             this.Width = _screenWidth; this.Height = _screenHeight;
 
             // админ-кнопка для открытия окна конфигурации
-            btnCFG.Visibility = (AppLib.GetAppSetting("IsShowCFGButton").ToBool()) ? Visibility.Visible : Visibility.Hidden;
-            _traceOrderDetails = AppLib.GetAppSetting("TraceOrdersDetails").ToBool();
+            btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
-            _dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
+            _traceOrderDetails = (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails");
+
+            _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
 
             double timerInterval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
@@ -122,8 +123,9 @@ namespace KDSWPFClient
             setOrderGroupTab();
             setOrderStatusFilterTab();
 
-            double topBotMargValue = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-            this.vbxOrders.Margin = new Thickness(0, topBotMargValue, 0, topBotMargValue);
+            // отступы панели заказов (ViewBox) внутри родительской панели
+            double verMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
+            this.vbxOrders.Margin = new Thickness(0, verMargin, 0, verMargin);
 
             _preOrdersId = new List<int>();
             _viewOrders = new List<OrderViewModel>();
@@ -134,10 +136,7 @@ namespace KDSWPFClient
             _timer.Start(); _canInvokeUpdateOrders = -1;
 
             // кнопки переключения страниц
-            btnSetPagePrevious.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPagePrevious.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPageNext.Width = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
-            btnSetPageNext.Height = (double)AppLib.GetAppGlobalValue("dishesPanelScrollButtonSize");
+            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
 
             // временные коллекции
             _delOrderIds = new List<OrderModel>();
@@ -150,10 +149,10 @@ namespace KDSWPFClient
 
             // звук предупреждения о появлении нового заказа
             _wavPlayer = new System.Media.SoundPlayer();
-            var wavFile = AppLib.GetAppGlobalValue("NewOrderAudioAttention");
+            var wavFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
             if (wavFile != null)
             {
-                _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
         }
@@ -165,11 +164,8 @@ namespace KDSWPFClient
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
             // размер канвы для панелей заказов
-            double topBotMargin = (double)AppLib.GetAppGlobalValue("dishesPanelTopBotMargin");
-            double cnvHeight = Math.Floor(grdMain.ActualHeight - 2d * topBotMargin);
-            double cnvWidth = grdMain.ActualWidth;
-            _pages = new OrdersPages(cnvWidth, cnvHeight);
-            _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
+            recalcOrderPanelsLayot();
+            _pages = new OrdersPages(vbxOrders);
 
             // настройки кнопок пользов.группировки и фильтрации
             double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
@@ -235,7 +231,7 @@ namespace KDSWPFClient
                     // потеря связи со службой
                     if (_dataProvider.EnableGetChannel == false)
                     {
-                        AppLib.WriteLogTraceMessage("CLT: потеря связи со службой получения данных, пересоздаю get-канал...");
+                        AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
                         _mayGetData = _dataProvider.CreateGetChannel();
                     }
                     else
@@ -260,7 +256,8 @@ namespace KDSWPFClient
         // с учетом фильтрации блюд (состояние и отдел)
         private void updateOrders()
         {
-            AppLib.WriteLogTraceMessage("clt: get orders from SVC - START");
+            DateTime dtTmr1 = DateTime.Now;
+            AppLib.WriteLogOrderDetails("get orders from SVC - START");
 
             if (_mayGetData)
             {
@@ -274,30 +271,31 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
                 _pages.ClearPages();
                 if (_viewOrders.Count > 0) _viewOrders.Clear();
-                AppLib.WriteLogTraceMessage("clt: can't get orders due to service status Falted");
+                AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
                 return;
             }
 
             // получить заказы от сервиса
             List<OrderModel> svcOrders = _dataProvider.GetOrders();
-            AppLib.WriteLogTraceMessage("clt: got {0} orders", ((svcOrders == null)?0:svcOrders.Count));
+            if (_traceOrderDetails)
+            {
+                if (svcOrders == null)
+                    AppLib.WriteLogOrderDetails(" - от службы получено 0 заказов");
+                else
+                {
+                    AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
+                    AppLib.WriteLogOrderDetails(" - отображаемые отделы: {0}", getDepsFilter());
+                }
+            }
 
             if (svcOrders == null) return;
 
-            if (_traceOrderDetails)
-            {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд "+o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage(" - от службы получено заказов: {0} (ids: {1})", svcOrders.Count, s1);
-                AppLib.WriteLogTraceMessage(" - отображаемые отделы: {0}", getDepsFilter());
-            }
-
             //обновить словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - обновляю служебный словарь _dependDeps...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - обновляю служебный словарь _dependDeps...");
             try
             {
                 updateDependDepsDict(svcOrders);
-                if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   словарь _dependDeps обновлен успешно");
+                if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   словарь _dependDeps обновлен успешно");
             }
             catch (Exception ex1)
             {
@@ -305,7 +303,7 @@ namespace KDSWPFClient
             }
 
             // ФИЛЬТРАЦИЯ блюд в svcOrders
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - фильтрация блюд (цеха и статусы данного КДС)...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - фильтрация блюд (цеха и статусы данного КДС)...");
             try
             {
                 OrderDishModel curDish;
@@ -324,7 +322,7 @@ namespace KDSWPFClient
 
                         // есть ли доступные ингредиенты
                         bool checkIngrs = false;
-                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid) && (d.Value.Uid == curDish.Uid)).ToArray();
+                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid)).ToArray();
                         foreach (var ingr in _tmpIngrs)
                         {
                             if (_dishesFilter.Checked(ingr.Value))
@@ -377,9 +375,7 @@ namespace KDSWPFClient
 
             if (_traceOrderDetails)
             {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   после фильтрации заказов {0}, (ids: {1})", svcOrders.Count, s1);
+                AppLib.WriteLogOrderDetails("   после фильтрации заказов {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
             }
 
             // условие проигрывания мелодии при появлении нового заказа
@@ -398,7 +394,7 @@ namespace KDSWPFClient
 
 
             // *** СОРТИРОВКА ЗАКАЗОВ  ***
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
             // группировка и сортировка заказов по номерам
             if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
             {
@@ -454,12 +450,7 @@ namespace KDSWPFClient
                 svcOrders = sortOrders.Select(s => s.Order).ToList();
             }
 
-            if (_traceOrderDetails)
-            {
-                string s1 = "";
-                if (svcOrders.Count > 0) s1 = string.Join("; ", svcOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, (ids: {1})", svcOrders.Count, s1);
-            }
+            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
 
             // после реорганизации списка блюд
             // группировка по подачам если надо
@@ -479,7 +470,7 @@ namespace KDSWPFClient
             // в случае с группировкой по времени и разбивкой заказов на несколько панелей AppLib.JoinSortedLists() работает НЕПРАВИЛЬНО!!!
             //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
             // поэтому сделано уникальной процедурой
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   обновление служебной коллекции заказов (для отображения на экране)...");
+            if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
             bool isViewRepaint2 = false;
             try
             {
@@ -517,16 +508,30 @@ namespace KDSWPFClient
 
             if (_traceOrderDetails)
             {
-                string s1 = "";
-                if (_viewOrders.Count > 0) s1 = string.Join("; ", _viewOrders.Select(o => o.Id.ToString() + ", блюд " + o.Dishes.Count.ToString()).ToArray());
-                AppLib.WriteLogTraceMessage("   для отображения на экране заказов: {0}, (ids: {1}) - {2}", _viewOrders.Count, s1, (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+                AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
             }
 
             // перерисовать полностью
-            if (isViewRepaint2 == true) repaintOrders();
+            if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
 
-            AppLib.WriteLogTraceMessage("clt: get orders from SVC - FINISH");
+            AppLib.WriteLogOrderDetails("get orders from SVC - FINISH - " + (DateTime.Now - dtTmr1).ToString());
+
         }  // method
+
+        private string _logOrderInfo(List<OrderModel> orders)
+        {
+            string retVal = "id/Num/dishes: ";
+            if (orders.Count > 0) retVal += string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
+
+            return retVal;
+        }
+        private string _logOrderInfo(List<OrderViewModel> orders)
+        {
+            string retVal = "id/Num/dishes: ";
+            if (orders.Count > 0) retVal += string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
+
+            return retVal;
+        }
 
 
         //создать словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
@@ -649,7 +654,7 @@ namespace KDSWPFClient
             };
             // скопировать ссылки на блюда
             // ингредиенты копируются вместе с блюдом, независимо от флажка IsIngredientsIndependent
-            bool isIngrIndepend = (bool)AppLib.GetAppGlobalValue("IsIngredientsIndependent", false);
+            bool isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
             // все блюда
             List<OrderDishModel> dishes = om.Dishes.Values.ToList();
             // блюда для копирования
@@ -660,7 +665,7 @@ namespace KDSWPFClient
                 retVal.Dishes.Add(dm.Id, dm);
                 dishes.Remove(dm);
                 // и собрать все ингредиенты с ТАКИМ же CreateDate!
-                ingrsForCopy = dishes.Where(d => (d.Uid == dm.Uid) && (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
+                ingrsForCopy = dishes.Where(d => (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
                 foreach (OrderDishModel dmIngr in ingrsForCopy)
                 {
                     if (!retVal.Dishes.ContainsKey(dmIngr.Id))
@@ -677,19 +682,41 @@ namespace KDSWPFClient
             return retVal;
         }
 
-        private void repaintOrders()
+        private void repaintOrders(string reason)
         {
             if (_pages == null) return;
 
+            string sLogMsg = string.Format(" - redraw reason: {0}", reason);
+            DateTime dtTmr = DateTime.Now;
+            AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             _pages.ClearPages(); // очистить панели заказов
 
             // добавить заказы
-            //DebugTimer.Init("AddOrdersPanels");
+            DebugTimer.Init("AddOrdersPanels");
             _pages.AddOrdersPanels(_viewOrders);
-            //DebugTimer.GetInterval();
+            DebugTimer.GetInterval();
 
             setCurrentPage();
+            AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
         }
+
+        // размеры элементов панели заказа рассчитываются из размеров vbxOrders (Viewbox)
+        private void recalcOrderPanelsLayot()
+        {
+            //   кол-во столбцов заказов
+            int cntCols = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+
+            //   ширина столбцов заказов и расстояния между столбцами
+            double pnlWidth = vbxOrders.ActualWidth;
+            // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
+            // где, koef = доля поля от ширины колонки
+            double koef = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
+            double colWidth = Math.Floor(pnlWidth / (cntCols + koef * (cntCols + 1)));
+            double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
+            AppPropsHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            AppPropsHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+        }
+
 
         #region change page
         // *** кнопки листания страниц ***
@@ -734,7 +761,6 @@ namespace KDSWPFClient
 
         #region настройка приложения через ConfigEdit
 
-
         // ******
         // ФОРМА НАСТРОЕК И ОБНОВЛЕНИЕ ПОЛЕЙ ПОСЛЕ НАСТРОЙКИ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
         // ******
@@ -742,9 +768,13 @@ namespace KDSWPFClient
         {
             _timer.Stop();
 
+            AppLib.WriteLogClientAction("Open ConfigEdit window...");
+
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
+            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + ":" + s.Value));
+            AppLib.WriteLogClientAction("   changed: " + sLogMsg);
 
             //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
             if (cfgEdit.AppNewSettings.Count > 0)
@@ -772,22 +802,24 @@ namespace KDSWPFClient
 
                 if (cfgEdit.AppNewSettings.ContainsKey("IsShowOrderStatusByAllShownDishes"))
                 {
-                    repaintOrders();
+                    repaintOrders("change config parameter IsShowOrderStatusByAllShownDishes");
                 }
 
                 // масштаб шрифта
+                // перерисовать полностью, т.к. по таймеру может все не обновиться
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
-                    repaintOrders();  // перерисовать полностью, т.к. по таймеру может все не обновиться
+                    AppPropsHelper.SetAppGlobalValue("AppFontScale", cfgEdit.AppNewSettings["AppFontScale"].ToDouble());
+                    repaintOrders("change config parameter AppFontScale");  
                 }
 
                 // кол-во колонок заказов
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
-                    _pages.OrdersColumnsCount = AppLib.GetAppSetting("OrdersColumnsCount").ToInt();
-                    AppLib.RecalcOrderPanelsLayot();
+                    recalcOrderPanelsLayot();
                     _pages.ResetOrderPanelSize();
-                    repaintOrders();  // перерисовать заказы
+
+                    repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
                 }
 
                 // интервал таймера сброса группировки заказов по номерам
@@ -811,11 +843,12 @@ namespace KDSWPFClient
                 {
                     string wavFile = cfgEdit.AppNewSettings["NewOrderAudioAttention"];
                     // сохранить в свойствах приложения 
-                    AppLib.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
+                    AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
                     // в config-файле
-                    AppLib.SaveAppSettings("NewOrderAudioAttention", wavFile);
+                    string errMsg;
+                    CfgFileHelper.SaveAppSettings("NewOrderAudioAttention", wavFile,out errMsg);
                     // и загрузить в проигрыватель
-                    _wavPlayer.SoundLocation = AppLib.GetAppDirectory("Audio") + wavFile;
+                    _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                     _wavPlayer.LoadAsync();
                 }
 
@@ -828,7 +861,7 @@ namespace KDSWPFClient
         // получить из config-файла интервал таймера сброса группировки заказов по номерам
         private double getOrderGroupTimerInterval()
         {
-            string cfgStr = AppLib.GetAppSetting("AutoReturnOrdersGroupByTime");
+            string cfgStr = CfgFileHelper.GetAppSetting("AutoReturnOrdersGroupByTime");
             return 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
         }
 
@@ -898,7 +931,9 @@ namespace KDSWPFClient
         {
             // сдвинуть текущий элемент
             _orderGroupLooper.SetNextIndex();
+
             // и отобразить следующий
+            AppLib.WriteLogClientAction("Change Order group to " + _orderGroupLooper.Current.ToString());
             setOrderGroupTab();
         }
 
@@ -933,6 +968,8 @@ namespace KDSWPFClient
 
             // сдвинуть фильтр
             _orderStatesLooper.SetNextIndex();
+
+            AppLib.WriteLogClientAction("Change Status Filter to " + _orderStatesLooper.Current.Name);
 
             // обновить пользовательский фильтр текущим набором
             setOrderStatusFilterTab();
@@ -1040,7 +1077,7 @@ namespace KDSWPFClient
         {
             Point p = e.GetPosition(brdAdmin);
 //            int iSec = (DateTime.Now - _adminDate).Seconds;
-//            Debug.Print("-- up {0}, sec {1}", p.ToString(), iSec);
+            //Debug.Print("-- up {0}", p.ToString());
 
             if ((p.X <= brdAdmin.ActualWidth) && (p.Y > 30d) && (p.Y <= 0.25d *_screenHeight))
                 _adminBitMask = _adminBitMask.SetBit(1); // верхний левый со смещением вниз
@@ -1060,6 +1097,15 @@ namespace KDSWPFClient
             e.Handled = true;
         }
 
+        private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (AppLib.IsOpenWindow("ColorLegend"))
+            {
+                ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
+                if (colorLegendWin != null) colorLegendWin.Hide();
+            }
+        }
+
         private void btnColorsLegend_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             double admSecs = (DateTime.Now - _adminDate).TotalSeconds;
@@ -1067,8 +1113,11 @@ namespace KDSWPFClient
             {
                 openConfigPanel();
             }
+            // открыть/закрыть легенду цветов таймеров
             else
+            {
                 App.OpenColorLegendWindow();
+            }
 
             _adminDate = DateTime.MaxValue;
             e.Handled = true;

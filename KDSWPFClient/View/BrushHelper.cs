@@ -31,7 +31,7 @@ namespace KDSWPFClient.View
                     new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", Background=Brushes.Plum, Foreground = Brushes.Navy, LegendText = "00:00:00"} },
 
                 { "estimateStart",
-                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", Background = Brushes.Olive, Foreground = Brushes.Yellow, LegendText = "00:00:00" } },
+                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", Background = Brushes.DeepSkyBlue, Foreground = Brushes.Yellow, LegendText = "00:00:00" } },
 
                 { OrderStatusEnum.Cooking.ToString(),
                     new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", Background=Brushes.Green, Foreground = Brushes.Yellow, LegendText="00:00:00" } },

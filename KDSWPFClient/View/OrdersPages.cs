@@ -12,36 +12,37 @@ using System.Windows.Media;
 using System.Globalization;
 using System.Windows.Threading;
 using KDSWPFClient.ServiceReference1;
+using IntegraLib;
 
 namespace KDSWPFClient.View
 {
     // список всех страниц заказов
     public class OrdersPages
     {
-        private double _cnvWidth, _cnvHeight;
         private List<OrdersPage> _pages;
+        private Viewbox _uiPanel;
+        private Size _uiPanelSize;
 
         // для расчета размещения панелей заказов на канве
+        private int _pageColsCount;
         private double _colWidth, _colMargin;
         private int _curColIndex;
         private double _curTopValue;
         private double _hdrTopMargin;
         private int _currentPageIndex;  // 1-based value !!!!
 
-        // количество столбцов заказов, берется из config-файла и редактируется в окне Настройка
-        private int _pageColsCount;
-        public int OrdersColumnsCount { set { _pageColsCount = value; } }
-
         public int CurrentPageIndex { get { return _currentPageIndex; } }
         public int Count { get { return _pages.Count; } }
         public OrdersPage CurrentPage { get; set; }
 
-        public OrdersPages(double cnvWidth, double cnvHeight)
+        public OrdersPages(Viewbox uiPanel)
         {
-            _cnvWidth = cnvWidth; _cnvHeight = cnvHeight;
-
+            // панель, в которой будут размещаться канвы с панелями заказов - необходимо для получения правильных размеров элементов на этой панели
+            _uiPanel = uiPanel;
+            _uiPanelSize = _uiPanel.RenderSize; 
+           
             _pages = new List<OrdersPage>();
-            _pages.Add(new OrdersPage(_cnvWidth, _cnvHeight));
+            _pages.Add(new OrdersPage(_uiPanel));
             CurrentPage = _pages[0];
 
             ResetOrderPanelSize();
@@ -51,23 +52,26 @@ namespace KDSWPFClient.View
 
         public void ResetOrderPanelSize()
         {
-            _colWidth = (double)AppLib.GetAppGlobalValue("OrdersColumnWidth");
-            _colMargin = (double)AppLib.GetAppGlobalValue("OrdersColumnMargin");
-            _hdrTopMargin = (double)AppLib.GetAppGlobalValue("ordPnlTopMargin");
+            _pageColsCount = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            _colWidth = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnWidth"));
+            _colMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnMargin"));
+            _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
         }
 
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {
             ClearPages();
-
             _curColIndex = 1; _curTopValue = 0d;
+            Visibility vis = _uiPanel.Visibility;
+            _uiPanel.Visibility = Visibility.Hidden;
 
             foreach (OrderViewModel ord in orders)
             {
                 AddOrderPanel(ord);
             }
 
+            _uiPanel.Visibility = vis;
             CurrentPage = _pages[0]; _currentPageIndex = 1;
         }
 
@@ -77,96 +81,90 @@ namespace KDSWPFClient.View
         public void AddOrderPanel(OrderViewModel orderModel)
         {
             OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
-//            DebugTimer.Init("order id " + orderModel.Id + " Header");
-            
+
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
-            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);  // в конструкторе уже посчитан DesiredSize
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
 
-            if (_curTopValue > 0d) _curTopValue += _hdrTopMargin; // поле между заказами по вертикали
+            // поле между заказами по вертикали
+            if (_curTopValue > 0d) _curTopValue += _hdrTopMargin;
 
-            if ((_curTopValue + ordPnl.HeightPanel) >= _cnvHeight)  // переход в новый столбец
+            ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
+            CurrentPage.AddOrder(ordPnl);
+            CurrentPage.UpdateLayout();
+            // перенос в новый столбец всего заказа
+            if ((_curTopValue + ordPnl.HeightPanel) >= _uiPanelSize.Height)
             {
-                setNextColumn();
-                _curTopValue = 0d;
+                moveToNewCol(ordPnl);
+                CurrentPage.UpdateLayout();
             }
-//            DebugTimer.GetInterval();
 
             int curFiling = 0;
             // блюда
-//            DebugTimer.Init("order id " + orderModel.Id + " Dishes");
             foreach (OrderDishViewModel dishModel in orderModel.Dishes)
             {
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
                     DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling };
-                    ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек и измерить высоту
+                    ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
                 }
 
                 if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
                 dshPnl = new DishPanel(dishModel, curDshPnl);
                 if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
 
-                ordPnl.AddDish(dshPnl);  // добавить в стек и измерить высоту
-                if ((_curTopValue + ordPnl.HeightPanel) >= _cnvHeight)  // переход в новый столбец
+                // добавить строку заказа в стек
+                ordPnl.AddDish(dshPnl);
+                CurrentPage.UpdateLayout();
+
+                if ((_curTopValue + Math.Ceiling(ordPnl.HeightPanel)) > _uiPanelSize.Height)  // переход в новый столбец
                 {
                     // 1. удалить из ordPnl только что добавленное блюдо
                     //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
-                    UIElement[] delItems = ordPnl.RemoveDish(dshPnl, _cnvHeight);
+                    UIElement[] delItems = ordPnl.RemoveDish(dshPnl, _curTopValue, _uiPanelSize.Height);
 
                     // разбиваем блюда заказа по колонкам на той же странице
-                    if ((ordPnl.Lines > 2) && (_curColIndex < _pageColsCount))
+                    if ((ordPnl.Lines > 2) 
+                        && ((_curColIndex < _pageColsCount) || ((_curColIndex == _pageColsCount) && (Convert.ToDouble(ordPnl.GetValue(Canvas.TopProperty))==0d))))
                     {
-                        // 2. добавить в канву начало заказа
-                        ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
-                        //ordPnl.SetValue(Canvas.TopProperty, ordTop);
-                        ordPnl.SetValue(Canvas.TopProperty, _curTopValue);
-                        CurrentPage.Children.Add(ordPnl);
-                        // 3. создать новый OrderPanel для текущего блюда с заголовком таблицы
-                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
+                        setNextColumn();
+                        // 2. создать новый OrderPanel для текущего блюда с заголовком таблицы
+                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
+                        // 3. добавить только что удаленные блюда
+                        ordPnl.AddDish(delItems);
+                        // 4. привязать к канве
+                        ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
+                        CurrentPage.AddOrder(ordPnl);
                     }
                     // не разбиваем заказ, а полностью переносим в новую колонку
                     else
                     {
-                        if (ordPnl.HeightPanel >= _cnvHeight)
-                        {
-                            setNextColumn(); _curTopValue = 0d;
-                            // 2. добавить в канву начало заказа
-                            ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
-                            //ordPnl.SetValue(Canvas.TopProperty, ordTop);
-                            ordPnl.SetValue(Canvas.TopProperty, _curTopValue);
-                            CurrentPage.Children.Add(ordPnl);
-                            // 3. создать новый OrderPanel для текущего блюда с заголовком таблицы
-                            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false); // высота уже измерена
-                        }
+                        // 2. изменить координаты панели заказа
+                        moveToNewCol(ordPnl);
+                        // 3. добавить только что удаленные блюда
+                        ordPnl.AddDish(delItems);
                     }
-
-                    // 4. добавить только что удаленные блюда
-                    ordPnl.AddDish(delItems);
-                    setNextColumn();
-                    _curTopValue = 0d;
+                    CurrentPage.UpdateLayout();
                 }
 
             }  // foreach dishes
-//            DebugTimer.GetInterval();
 
-            // смещение слева по номеру тек.колонки
-            ordPnl.SetValue(Canvas.LeftProperty, getLeftOrdPnl());
-            // смещение сверху
-            ordPnl.SetValue(Canvas.TopProperty, _curTopValue);
             _curTopValue += ordPnl.HeightPanel;
-
-            // добавить панель заказа на страницу
-            CurrentPage.Children.Add(ordPnl);
         }
 
-
-        internal void RemoveOrderPanel(OrderViewModel orderView)
+        private void moveToNewCol(OrderPanel ordPnl)
         {
-            OrderPanel oPnl = orderView.ViewPanel;
-            int pageIndex = oPnl.PageIndex - 1;
-
-            _pages[pageIndex].Children.Remove(oPnl);
+            int iPagePrev = _currentPageIndex;
+            setNextColumn();
+            ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
+            //    добавлена новая страница(канва) - перенести панель заказа из предыд.канвы в текущую
+            if (iPagePrev != _currentPageIndex)
+            {
+                OrdersPage page = _pages[iPagePrev - 1];
+                page.DelOrder(ordPnl);
+                ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
+                CurrentPage.AddOrder(ordPnl);
+            }
         }
 
         private Size MeasureString(TextBlock textBlock, string candidate)
@@ -187,12 +185,13 @@ namespace KDSWPFClient.View
             _curColIndex++;
             if (_curColIndex > _pageColsCount)
             {
-                OrdersPage page = new OrdersPage(_cnvWidth, _cnvHeight);
+                OrdersPage page = new OrdersPage(_uiPanel);
                 _pages.Add(page);
                 _currentPageIndex = _pages.Count();
                 CurrentPage = page;
                 _curColIndex = 1;
             }
+            _curTopValue = 0d;
         }
 
         // очистить все страницы и удалить все, кроме первой
@@ -250,15 +249,37 @@ namespace KDSWPFClient.View
     public class OrdersPage: Canvas
     {
         private List<OrderPanel> _ordPanels;
+        public List<OrderPanel> OrderPanels { get { return _ordPanels; } }
 
         public int Index { get; set; }
 
-        public OrdersPage(double width, double height)
+        public OrdersPage(Decorator uiPanel)
         {
             _ordPanels = new List<OrderPanel>();
+            
+            this.Width = uiPanel.RenderSize.Width;
+            this.Height = uiPanel.RenderSize.Height;
+            uiPanel.Child = this;
+        }
 
-            this.Width = width;
-            this.Height = height;
+        internal new void UpdateLayout()
+        {
+            base.UpdateLayout();
+        }
+
+        internal void AddOrder(OrderPanel panel)
+        {
+            _ordPanels.Add(panel);
+            base.Children.Add(panel);
+        }
+
+        internal void DelOrder(OrderPanel panel)
+        {
+            if (_ordPanels.Contains(panel))
+            {
+                _ordPanels.Remove(panel);
+                base.Children.Remove(panel);
+            }
         }
 
         internal void ClearOrders()

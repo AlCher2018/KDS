@@ -1,7 +1,6 @@
-﻿using KDSService;
+﻿using IntegraLib;
 using KDSService.AppModel;
 using KDSService.DataSource;
-using KDSService.Lib;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -22,17 +21,15 @@ namespace KDSConsoleSvcHost
     // служебный статический класс для работы со словарем свойств и журналом сообщений
     public static class AppEnv
     {
-        // словарь глобальных свойств
-        private static AppProperties _props;
         // логгер
         private static Logger _logger;
-        public static NLog.Logger _dbCommandLogger = null;
 
         public static TimeSpan TimeOfAutoCloseYesterdayOrders
         {
-            get {
-                var v = _props.GetProperty("TimeOfAutoCloseYesterdayOrders");
-                return (v == null) ? TimeSpan.Zero : (TimeSpan)v;
+            get
+            {
+                var v1 = AppProperties.GetProperty("TimeOfAutoCloseYesterdayOrders");
+                return ((v1 == null) ? TimeSpan.Zero : (TimeSpan)v1);
             }
         }
 
@@ -44,20 +41,15 @@ namespace KDSConsoleSvcHost
         public static bool AppInit(out string errMsg)
         {
             errMsg = null;
-            _props = new AppProperties();
 
             // прочитать настройки из config-файла во внутренний словарь
             putAppConfigParamsToAppProperties();
 
             // вывести в лог настройки из config-файла
-            string cfgValuesString = getConfigString();
-            WriteLogInfoMessage("Настройки из config-файла: " + cfgValuesString);
+            WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // доступная память
             WriteLogInfoMessage("Доступная память: {0} Mb", GetAvailableRAM());
-
-            if (_props.GetBoolProperty("SingleClientSvcLog"))
-                _dbCommandLogger = NLog.LogManager.GetLogger("dbCommandTracer");
 
             return true;
         }
@@ -76,42 +68,6 @@ namespace KDSConsoleSvcHost
             else return null;
         }
 
-        #region App properties
-
-        public static void SetAppProperty(string name, object propObj)
-        {
-            _props.SetProperty(name, propObj);
-        }
-
-        public static object GetAppProperty(string name, object defaultValue = null)
-        {
-            if (_props.ContainsKey(name))
-                return _props.GetProperty(name);
-            else
-                return defaultValue;
-        }
-
-        private static string getConfigString()
-        {
-            NameValueCollection cfg = ConfigurationManager.AppSettings;
-            StringBuilder sb = new StringBuilder();
-
-            putCfgValueToStrBuilder(cfg, sb, "IsWriteTraceMessages");
-            putCfgValueToStrBuilder(cfg, sb, "SingleClientSvcLog");
-            putCfgValueToStrBuilder(cfg, sb, "IsLogUserAction");
-            putCfgValueToStrBuilder(cfg, sb, "ExpectedTake");
-            putCfgValueToStrBuilder(cfg, sb, "UseReadyConfirmedState");
-            putCfgValueToStrBuilder(cfg, sb, "TakeCancelledInAutostartCooking");
-            putCfgValueToStrBuilder(cfg, sb, "TimeOfAutoCloseYesterdayOrders");
-            putCfgValueToStrBuilder(cfg, sb, "UnusedDepartments");
-
-            return sb.ToString();
-        }
-        private static void putCfgValueToStrBuilder(NameValueCollection cfg, StringBuilder sb, string key)
-        {
-            string value;
-            if ((value = cfg[key]) != null) sb.Append(string.Format("{0}{1}: {2}", (sb.Length == 0 ? "" : "; "), key, value));
-        }
 
         // сложить настройки из config-файла в словарь настроек приложения
         private static void putAppConfigParamsToAppProperties()
@@ -120,105 +76,69 @@ namespace KDSConsoleSvcHost
             string value;
 
             if ((value = cfg["IsWriteTraceMessages"]) != null)
-                _props.SetProperty("IsWriteTraceMessages", value.ToBool());
-            if ((value = cfg["SingleClientSvcLog"]) != null)
-                _props.SetProperty("SingleClientSvcLog", value.ToBool());
-            if ((value = cfg["IsLogUserAction"]) != null)
-                _props.SetProperty("IsLogUserAction", value.ToBool());
+                AppProperties.SetProperty("IsWriteTraceMessages", value.ToBool());
+            if ((value = cfg["TraceOrdersDetails"]) != null)
+                AppProperties.SetProperty("TraceOrdersDetails", value.ToBool());
+            if ((value = cfg["IsLogClientAction"]) != null)
+                AppProperties.SetProperty("IsLogClientAction", value.ToBool());
 
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
-            _props.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
+            AppProperties.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
 
             // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
-            _props.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
+            AppProperties.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
-            _props.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());
+            AppProperties.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());
 
             value = cfg["TimeOfAutoCloseYesterdayOrders"];
             TimeSpan ts = TimeSpan.Zero;
-            if (value != null) TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts);
-            _props.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
-
-            // неиспользуемые цеха
-            HashSet<int> unUsed = new HashSet<int>();
-            value = cfg["UnusedDepartments"];
             if (value != null)
             {
-                if (value.Contains(',')) value = value.Replace(',', ';');
-                var ids = value.Split(';').Select(s => s.ToInt());
-                foreach (int item in ids) if (!unUsed.Contains(item)) unUsed.Add(item);
+                if (!TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts)) ts = TimeSpan.Zero;
             }
-            _props.SetProperty("UnusedDepartments", unUsed);
+            AppProperties.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
+
+            value = cfg["MidnightShiftShowYesterdayOrders"];
+            AppProperties.SetProperty("MidnightShiftShowYesterdayOrders", ((value.IsNull()) ? 0d : value.ToDouble()));
+
+            // неиспользуемые цеха
+            value = cfg["UnusedDepartments"];
+            if (!value.IsNull())  // не Null и не пусто
+            {
+                HashSet<int> unUsed = new HashSet<int>();
+                if (value.Contains(',')) value = value.Replace(',', ';');
+                int[] ids = value.Split(';').Select(s => s.Trim().ToInt()).ToArray();
+                foreach (int item in ids)
+                    if ((item != 0) && !unUsed.Contains(item)) unUsed.Add(item);
+
+                if (unUsed.Count == 0)
+                    AppProperties.SetProperty("UnusedDepartments", null);
+                else
+                    AppProperties.SetProperty("UnusedDepartments", unUsed);
+            }
+            else
+                AppProperties.SetProperty("UnusedDepartments", null);
+
+            // ВНУТРЕННИЕ КОЛЛЕКЦИИ
+
+            // коллекция для хранения готовящегося количества блюд по цехам (направлениям печати)
+            AppProperties.SetProperty("dishesQty", new Dictionary<int, decimal>());
 
             // коллекции для хранения заблокированных от изменения по таймеру заказов и блюд
-            _props.SetProperty("lockedOrders", new Dictionary<int, bool>());
-            _props.SetProperty("lockedDishes", new Dictionary<int, bool>());
-        }
-
-        public static bool SaveAppSettings(string key, string value, out string errorMsg)
-        {
-            // Open App.Config of executable
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
-            try
-            {
-                errorMsg = null;
-                string filename = config.FilePath;
-
-                //Load the config file as an XDocument
-                XDocument document = XDocument.Load(filename, LoadOptions.PreserveWhitespace);
-                if (document.Root == null)
-                {
-                    errorMsg = "Document was null for XDocument load.";
-                    return false;
-                }
-
-                // получить раздел appSettings
-                XElement xAppSettings = document.Root.Element("appSettings");
-                if (xAppSettings == null)
-                {
-                    xAppSettings = new XElement("appSettings");
-                    document.Root.Add(xAppSettings);
-                }
-
-                XElement appSetting = xAppSettings.Elements("add").FirstOrDefault(x => x.Attribute("key").Value == key);
-                if (appSetting == null)
-                {
-                    //Create the new appSetting
-                    xAppSettings.Add(new XElement("add", new XAttribute("key", key), new XAttribute("value", value)));
-                }
-                else
-                {
-                    //Update the current appSetting
-                    appSetting.Attribute("value").Value = value;
-                }
-
-                //Save the changes to the config file.
-                document.Save(filename, SaveOptions.DisableFormatting);
-
-                // Force a reload of a changed section.
-                ConfigurationManager.RefreshSection("appSettings");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                errorMsg = "There was an exception while trying to update the config file: " + ex.ToString();
-                return false;
-            }
+            AppProperties.SetProperty("lockedOrders", new Dictionary<int, bool>());
+            AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
         public static string GetShortErrMessage(Exception ex)
         {
             string retVal = ex.Message;
+
             if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
             retVal += ex.Source;
+
             return retVal;
         }
-
-        // 
-        #endregion
 
 
         // проверка базы данных
@@ -296,34 +216,41 @@ namespace KDSConsoleSvcHost
         #region App logger
 
         // отладочные сообщения
+        // стандартные действия службы
         public static void WriteLogTraceMessage(string msg)
         {
-            if (_props.GetBoolProperty("IsWriteTraceMessages"))
-            {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(msg);
-                else
-                    _logger.Trace(msg);
-            }
+            if (AppProperties.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(msg);
         }
         public static void WriteLogTraceMessage(string format, params object[] paramArray)
         {
-            if (_props.GetBoolProperty("IsWriteTraceMessages"))
+            if (AppProperties.GetBoolProperty("IsWriteTraceMessages")) _logger.Trace(format, paramArray);
+        }
+
+        // подробные действия о чтении заказов из БД
+        public static void WriteLogOrderDetails(string msg)
+        {
+            if (AppProperties.GetBoolProperty("IsWriteTraceMessages") && AppProperties.GetBoolProperty("TraceOrdersDetails"))
+                _logger.Trace("svcDtl|" + msg);
+        }
+        public static void WriteLogOrderDetails(string format, params object[] paramArray)
+        {
+            if (AppProperties.GetBoolProperty("IsWriteTraceMessages") && AppProperties.GetBoolProperty("TraceOrdersDetails"))
             {
-                if (_dbCommandLogger != null)
-                    _dbCommandLogger.Info(format, paramArray);
-                else
-                    _logger.Trace(format, paramArray);
+                string msg = string.Format(format, paramArray);
+                _logger.Trace("svcDtl|" + msg);
             }
         }
-        // сообщения о действиях пользователя
-        public static void WriteLogUserAction(string msg)
+
+        // сообщения о действиях клиента
+        public static void WriteLogClientAction(string machineName, string msg)
         {
-            if (_props.GetBoolProperty("IsLogUserAction")) _logger.Trace("userAct: " + msg);
+            if (AppProperties.GetBoolProperty("IsLogClientAction"))
+                _logger.Trace(string.Format("clt {0}|{1}", machineName, msg));
         }
-        public static void WriteLogUserAction(string format, params object[] paramArray)
+        public static void WriteLogClientAction(string machineName, string format, params object[] paramArray)
         {
-            if (_props.GetBoolProperty("IsLogUserAction")) _logger.Trace("userAct: " + format, paramArray);
+            if (AppProperties.GetBoolProperty("IsLogClientAction"))
+                _logger.Trace("clt {0}|{1}", machineName, string.Format(format, paramArray));
         }
 
         public static void WriteLogInfoMessage(string msg)
@@ -342,16 +269,6 @@ namespace KDSConsoleSvcHost
         public static void WriteLogErrorMessage(string format, params object[] paramArray)
         {
             _logger.Error(format, paramArray);
-        }
-
-        public static void WriteAppAction(AppActionEnum action, string value = null)
-        {
-            if (_props.GetBoolProperty("IsLogUserAction"))
-            {
-                string msg = action.ToString();
-                if (value != null) msg += ". " + value;
-                WriteLogTraceMessage(msg);
-            }
         }
 
         #endregion
@@ -402,16 +319,24 @@ namespace KDSConsoleSvcHost
         #endregion
 
         #region для конкретного приложения
-        // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
-        public static OrderStatusEnum GetStatusAllDishes(IEnumerable<OrderDish> dishes)
+
+        public static OrderStatusEnum GetStatusEnumFromNullableInt(int? dbIntValue)
         {
+            return (OrderStatusEnum)(dbIntValue ?? 0);
+        }
+
+        // узнать, в каком состоянии находятся ВСЕ БЛЮДА заказа
+        public static OrderStatusEnum oldGetStatusAllDishes(IEnumerable<OrderDish> dishes)
+        {
+            if ((dishes == null) || (dishes.Count() == 0)) return OrderStatusEnum.None;
+
             OrderStatusEnum retVal = OrderStatusEnum.None;
 
             int iLen = Enum.GetValues(typeof(OrderStatusEnum)).Length;
             int dishCount = dishes.Count();
 
             int[] statArray = new int[iLen];
-            HashSet<int> unUsedDeps = (HashSet<int>)AppEnv.GetAppProperty("UnusedDepartments");
+            HashSet<int> unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
 
             int iStatus;
             foreach (OrderDish dish in dishes)
@@ -433,6 +358,29 @@ namespace KDSConsoleSvcHost
             }
 
             return retVal;
+        }
+
+        public static OrderStatusEnum GetStatusAllDishes(IEnumerable<OrderDish> dishes)
+        {
+            if ((dishes == null) || (dishes.Count() == 0)) return OrderStatusEnum.None;
+
+            int statId = -1, curStat;
+            HashSet<int> unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
+
+            foreach (OrderDish dish in dishes)
+            {
+                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId)))
+                {
+                }
+                else
+                {
+                    curStat = dish.DishStatusId ?? -1;
+                    if (statId == -1) statId = curStat;
+                    else if (statId != dish.DishStatusId) return OrderStatusEnum.None;
+                }
+            }
+
+            return (OrderStatusEnum)statId;
         }
 
         #endregion

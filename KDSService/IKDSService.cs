@@ -13,23 +13,23 @@ namespace KDSService
         // получить словари
         //    статусов заказа/блюда
         [OperationContract]
-        List<OrderStatusModel> GetOrderStatuses();
+        List<OrderStatusModel> GetOrderStatuses(string machineName);
 
         //    отделы
         [OperationContract]
-        List<DepartmentModel> GetDepartments();
+        List<DepartmentModel> GetDepartments(string machineName);
 
 
         // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
         [OperationContract]
-        List<OrderModel> GetOrders();
+        List<OrderModel> GetOrders(string machineName);
 
         // *** ПОЛУЧИТЬ НАСТРОЙКИ ИЗ CONFIG-ФАЙЛА ХОСТА ***
         [OperationContract]
-        Dictionary<string, object> GetHostAppSettings();
+        Dictionary<string, object> GetHostAppSettings(string machineName);
 
         [OperationContract]
-        void SetExpectedTakeValue(int value);
+        void SetExpectedTakeValue(string machineName, int value);
 
     }  // class
 }

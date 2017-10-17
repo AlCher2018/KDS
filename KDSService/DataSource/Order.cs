@@ -17,7 +17,7 @@ namespace KDSService.DataSource
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Order()
         {
-            this.OrderDish = new HashSet<OrderDish>();
+            this.Dishes = new HashSet<OrderDish>();
             this.OrderRunTime = new HashSet<OrderRunTime>();
         }
     
@@ -34,10 +34,10 @@ namespace KDSService.DataSource
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
         public string DivisionColorRGB { get; set; }
+        public string ClientName { get; set; }
     
-        public virtual OrderStatus OrderStatus { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<OrderDish> OrderDish { get; set; }
+        public virtual ICollection<OrderDish> Dishes { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderRunTime> OrderRunTime { get; set; }
     }
