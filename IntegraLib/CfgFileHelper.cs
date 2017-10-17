@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Xml.Linq;
 
 namespace IntegraLib
@@ -148,6 +149,42 @@ namespace IntegraLib
             }
             return retVal;
         }
+
+        public static SolidColorBrush GetBrushByName(string brushName, string defaultBrushName = null)
+        {
+            SolidColorBrush retVal = null;
+
+            // кисть задана через RGB
+            if (brushName.Contains(";"))
+            {
+                string[] rgb = brushName.Split(';');
+                if (rgb.Length == 3)
+                {
+                    Color c = Color.FromRgb(Convert.ToByte(rgb[0]), Convert.ToByte(rgb[1]), Convert.ToByte(rgb[2]));
+                    retVal = new SolidColorBrush(c);
+                }
+            }
+
+            // кисть задана именем из перечисления Brushes
+            else
+            {
+                Type t = typeof(Brushes);
+                System.Reflection.PropertyInfo[] bProps = t.GetProperties();
+                foreach (System.Reflection.PropertyInfo item in bProps)
+                {
+                    if (item.Name == brushName)
+                    {
+                        retVal = (SolidColorBrush)item.GetValue(null, null);
+                        break;
+                    }
+                }
+            }
+
+            if ((retVal == null) && (defaultBrushName != null)) retVal = GetBrushByName(defaultBrushName);
+
+            return retVal;
+        }
+
 
     }  // class CfgFileHelper
 

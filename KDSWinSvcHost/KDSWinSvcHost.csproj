@@ -116,7 +116,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ошибки запуска службы.txt">
+    <Content Include="docs\ошибки запуска службы.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -125,6 +125,8 @@
     <PostBuildEvent>Copy "$(SolutionDir)KDSService.config"  "$(TargetDir)KDSService.config"
 Copy "$(SolutionDir)KDSServiceAppSettings.config"  "$(TargetDir)KDSServiceAppSettings.config"
 Copy "$(SolutionDir)KDSServiceDBConnection.config"  "$(TargetDir)KDSServiceDBConnection.config"
+
+move /y "$(TargetDir)history.txt"  "$(TargetDir)docs\."
 
 mkdir "$(TargetDir)DefaultConfigs"
 Copy "$(SolutionDir)KDSServiceAppSettings.config"  "$(TargetDir)DefaultConfigs\KDSServiceAppSettings.config"

@@ -198,6 +198,9 @@
     <Content Include="AppSettings.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="docs\Настройка ПО Integra-КДС.docx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
@@ -296,7 +299,7 @@
     <Content Include="Audio\Windows Ringout.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="history.txt">
+    <Content Include="docs\history.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="monitor7.ico" />

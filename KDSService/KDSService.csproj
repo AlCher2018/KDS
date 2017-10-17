@@ -151,7 +151,6 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
     </EntityDeploy>
-    <None Include="App.Config" />
     <None Include="DataSource\KDSEntities.edmx.diagram">
       <DependentUpon>KDSEntities.edmx</DependentUpon>
     </None>
