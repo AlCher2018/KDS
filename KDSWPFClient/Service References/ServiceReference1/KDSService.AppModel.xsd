@@ -25,7 +25,7 @@
   <xs:element name="ArrayOfDepartmentModel" nillable="true" type="tns:ArrayOfDepartmentModel" />
   <xs:complexType name="DepartmentModel">
     <xs:sequence>
-      <xs:element minOccurs="0" name="DishQuantity" type="xs:decimal" />
+      <xs:element minOccurs="0" name="DishQuantity" type="xs:int" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="IsAutoStart" type="xs:boolean" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
@@ -33,6 +33,13 @@
     </xs:sequence>
   </xs:complexType>
   <xs:element name="DepartmentModel" nillable="true" type="tns:DepartmentModel" />
+  <xs:simpleType name="OrderGroupEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ByCreateTime" />
+      <xs:enumeration value="ByOrderNumber" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="OrderGroupEnum" nillable="true" type="tns:OrderGroupEnum" />
   <xs:complexType name="ArrayOfOrderModel">
     <xs:sequence>
       <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderModel" nillable="true" type="tns:OrderModel" />

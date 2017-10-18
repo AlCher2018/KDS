@@ -240,7 +240,7 @@ namespace KDSWPFClient
         }
         #endregion
 
-        public List<OrderModel> GetOrders()
+        public List<OrderModel> GetOrders(List<int> clientStatuses, OrderGroupEnum ordersGroupBy)
         {
             if (_getClient.State == CommunicationState.Faulted)
             {
@@ -250,9 +250,12 @@ namespace KDSWPFClient
             }
 
             List<OrderModel> retVal = null;
+            // запрос данных от службы
             try
             {
-                retVal = _getClient.GetOrders(_machineName);
+                List<int> clientDeps = (from d in _deps.Values where d.IsViewOnKDS select d.Id).ToList();
+
+                retVal = _getClient.GetOrders(_machineName, clientStatuses, clientDeps, ordersGroupBy);
             }
             catch (Exception ex)
             {

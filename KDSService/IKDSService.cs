@@ -21,8 +21,9 @@ namespace KDSService
 
 
         // ПОЛУЧИТЬ СПИСОК ЗАКАЗОВ
+        // клиент передает службе свое имя (машины), список отображаемых статусов и цехов, тип отображения данных
         [OperationContract]
-        List<OrderModel> GetOrders(string machineName);
+        List<OrderModel> GetOrders(string machineName, List<int> clientStatusIDs, List<int> clientDepIDs, OrderGroupEnum clientGroupBy);
 
         // *** ПОЛУЧИТЬ НАСТРОЙКИ ИЗ CONFIG-ФАЙЛА ХОСТА ***
         [OperationContract]

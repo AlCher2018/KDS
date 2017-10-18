@@ -11,8 +11,8 @@
 namespace KDSWPFClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
-    using View;
-
+    
+    
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderStatusModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
@@ -116,7 +116,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private decimal DishQuantityField;
+        private int DishQuantityField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
@@ -141,7 +141,7 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public decimal DishQuantity {
+        public int DishQuantity {
             get {
                 return this.DishQuantityField;
             }
@@ -215,11 +215,22 @@ namespace KDSWPFClient.ServiceReference1 {
         }
     }
     
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="OrderGroupEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    public enum OrderGroupEnum : int {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ByCreateTime = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ByOrderNumber = 1,
+    }
+    
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, KDSWPFClient.View.IContainIDField
     {
         
         [System.NonSerializedAttribute()]
@@ -425,8 +436,7 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
-    {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, KDSWPFClient.View.IContainIDField {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -730,10 +740,10 @@ namespace KDSWPFClient.ServiceReference1 {
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName);
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName);
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
         System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName);
@@ -791,12 +801,12 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.GetDepartmentsAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName) {
-            return base.Channel.GetOrders(machineName);
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy) {
+            return base.Channel.GetOrders(machineName, clientStatusIDs, clientDepIDs, clientGroupBy);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName) {
-            return base.Channel.GetOrdersAsync(machineName);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy) {
+            return base.Channel.GetOrdersAsync(machineName, clientStatusIDs, clientDepIDs, clientGroupBy);
         }
         
         public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName) {

@@ -258,15 +258,105 @@ Contract: IMetadataExchange
         }
 
         // все заказы
-        public List<OrderModel> GetOrders(string machineName)
+        public List<OrderModel> GetOrders(string machineName, List<int> clientStatusIDs, List<int> clientDepIDs, OrderGroupEnum clientGroupBy)
         {
-            List<OrderModel> retVal = null;
-            retVal = _ordersModel.Orders.Values.ToList();
+            List<OrderModel> retVal = new List<OrderModel>();
 
-            string logMsg = string.Format("GetOrders(): {0} orders", retVal.Count);
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}', '{2}', '{3}')", machineName, string.Join(",", clientStatusIDs), string.Join(",", clientDepIDs), clientGroupBy.ToString());
 
+            OrderModel validOrder;
+            List<OrderDishModel> validDishes = new List<OrderDishModel>();
+            // key - блюдо, value - список ингредиентов
+            Dictionary<OrderDishModel, List<OrderDishModel>> dishIngr = new Dictionary<OrderDishModel, List<OrderDishModel>>();
+            lock (_ordersModel)
+            {
+                foreach (OrderModel order in _ordersModel.Orders.Values)
+                {
+                    // разобрать плоский список блюд и ингр. в иерархический
+                    dishIngr.Clear();
+                    foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
+                    {
+                        List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
+                        dishIngr.Add(dish, ingrList);
+                    }
+
+                    // собрать в validDishes блюда и ингр., которые проходят проверку
+                    validDishes.Clear();
+                    foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
+                    {
+                        // блюдо проходит - берем и все его ингредиенты
+                        if (checkOrderItem(clientStatusIDs, clientDepIDs, diPair.Key))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value);
+                        }
+                        // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
+                        else if (diPair.Value.Any(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)));
+                        }
+                    }
+
+                    if (validDishes.Count > 0)
+                    {
+                        validOrder = order.Copy();
+                        validDishes.ForEach(d => validOrder.Dishes.Add(d.Id, d));
+
+                        retVal.Add(validOrder);
+                    }
+
+                }  // foreach OrderModel
+            }  // lock _ordersModel
+
+            // группировка и сортировка
+            if (retVal.Count > 0)
+            {
+                // группировка по CreateDate блюд может увеличить кол-во заказов
+                if (clientGroupBy == OrderGroupEnum.ByCreateTime)
+                {
+                    // разбить заказы по датам (CreateDate)
+                    SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
+                    foreach (OrderModel order in retVal)
+                    {
+                        if (sortedOrders.ContainsKey(order.CreateDate) == false) sortedOrders.Add(order.CreateDate, order);
+                    }
+                    // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
+                    if (retVal.Count == sortedOrders.Count)
+                        retVal = sortedOrders.Values.ToList();
+                    // иначе создать заново выходный список
+                    else
+                    {
+
+                    }
+                }
+
+                // сортировка по номеру подачи и Id
+                List<OrderDishModel> sortedDishes;
+                foreach (OrderModel order in retVal)
+                {
+                    sortedDishes = order.Dishes.Values.OrderBy(d => d.FilingNumber).ThenBy(d => d.Id).ToList();
+
+                    order.Dishes.Clear();
+                    sortedDishes.ForEach(d => order.Dishes.Add(d.Id, d));
+                }
+            }
+
+            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders", retVal.Count);
             return retVal;
+        }
+
+        private bool checkOrderItem(List<int> clientStatusIDs, List<int> clientDepIDs, OrderDishModel orderItem)
+        {
+            return (clientStatusIDs.Contains(orderItem.DishStatusId) && clientDepIDs.Contains(orderItem.DepartmentId));
+        }
+
+        private class DateTimeComparer : IComparer<DateTime>
+        {
+            public int Compare(DateTime x, DateTime y)
+            {
+                return x.CompareTo(y);
+            }
         }
 
         // **** настройки из config-файла хоста

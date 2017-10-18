@@ -34,7 +34,6 @@ namespace KDSService.DataSource
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
         public string DivisionColorRGB { get; set; }
-        public string ClientName { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<OrderDish> Dishes { get; set; }

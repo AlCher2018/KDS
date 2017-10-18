@@ -43,7 +43,7 @@ namespace KDSWPFClient
         // классы для циклического перебора клиентских условий отображения блюд
         private ListLooper<OrderGroupEnum> _orderGroupLooper;
         // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
-        private ListLooper<KDSUserStatesSet> _orderStatesLooper;  
+        private ListLooper<KDSUserStatesSet> _orderStatesLooper;
 
         // страницы заказов
         private OrdersPages _pages;
@@ -101,7 +101,7 @@ namespace KDSWPFClient
             Action _timerBackToOrderGroupByTimeDelegate = new Action(setOrderGroupTab);
             _timerBackToOrderGroupByTime.Elapsed += (object sender, ElapsedEventArgs e) => 
             {
-                if (_orderGroupLooper.Current != OrderGroupEnum.ByTime) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
+                if (_orderGroupLooper.Current != OrderGroupEnum.ByCreateTime) _orderGroupLooper.Current = OrderGroupEnum.ByCreateTime;
                 this.Dispatcher.Invoke(_timerBackToOrderGroupByTimeDelegate);
             };
 
@@ -119,7 +119,7 @@ namespace KDSWPFClient
 
             // класс для циклического перебора группировки заказов
             // в коде используется ТЕКУЩИЙ объект, но на вкладках отображается СЛЕДУЮЩИЙ !!!
-            _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByTime, OrderGroupEnum.ByOrderNumber });
+            _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByCreateTime, OrderGroupEnum.ByOrderNumber });
             setOrderGroupTab();
             setOrderStatusFilterTab();
 
@@ -276,7 +276,9 @@ namespace KDSWPFClient
             }
 
             // получить заказы от сервиса
-            List<OrderModel> svcOrders = _dataProvider.GetOrders();
+            List<int> statusesIDs = _orderStatesLooper.Current.States.Select(e => (int)e).ToList();
+
+            List<OrderModel> svcOrders = _dataProvider.GetOrders(statusesIDs, _orderGroupLooper.Current);
             if (_traceOrderDetails)
             {
                 if (svcOrders == null)
@@ -291,92 +293,92 @@ namespace KDSWPFClient
             if (svcOrders == null) return;
 
             //обновить словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - обновляю служебный словарь _dependDeps...");
-            try
-            {
-                updateDependDepsDict(svcOrders);
-                if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   словарь _dependDeps обновлен успешно");
-            }
-            catch (Exception ex1)
-            {
-                AppLib.WriteLogErrorMessage("   Error: {0}", AppLib.GetShortErrMessage(ex1));
-            }
+            //if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - обновляю служебный словарь _dependDeps...");
+            //try
+            //{
+            //    updateDependDepsDict(svcOrders);
+            //    if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   словарь _dependDeps обновлен успешно");
+            //}
+            //catch (Exception ex1)
+            //{
+            //    AppLib.WriteLogErrorMessage("   Error: {0}", AppLib.GetShortErrMessage(ex1));
+            //}
 
             // ФИЛЬТРАЦИЯ блюд в svcOrders
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - фильтрация блюд (цеха и статусы данного КДС)...");
-            try
-            {
-                OrderDishModel curDish;
+            //if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - фильтрация блюд (цеха и статусы данного КДС)...");
+            //try
+            //{
+            //    OrderDishModel curDish;
 
-                _delOrderIds.Clear();
-                foreach (OrderModel orderModel in svcOrders)
-                {
-                    _delDishIds.Clear();
-                    // пройтись по блюдам
-                    _tmpDishes = orderModel.Dishes.Where(d => d.Value.ParentUid.IsNull()).ToArray();
-                    _dishUIDs.Clear(); _dishUIDs.AddRange(_tmpDishes.Select(d => d.Value.Uid));
-                    foreach (KeyValuePair<int, OrderDishModel> item in _tmpDishes)
-                    {
-                        curDish = item.Value;
-                        bool checkDish = _dishesFilter.Checked(curDish);
+            //    _delOrderIds.Clear();
+            //    foreach (OrderModel orderModel in svcOrders)
+            //    {
+            //        _delDishIds.Clear();
+            ////        пройтись по блюдам
+            //       _tmpDishes = orderModel.Dishes.Where(d => d.Value.ParentUid.IsNull()).ToArray();
+            //        _dishUIDs.Clear(); _dishUIDs.AddRange(_tmpDishes.Select(d => d.Value.Uid));
+            //        foreach (KeyValuePair<int, OrderDishModel> item in _tmpDishes)
+            //        {
+            //            curDish = item.Value;
+            //            bool checkDish = _dishesFilter.Checked(curDish);
 
-                        // есть ли доступные ингредиенты
-                        bool checkIngrs = false;
-                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid)).ToArray();
-                        foreach (var ingr in _tmpIngrs)
-                        {
-                            if (_dishesFilter.Checked(ingr.Value))
-                            {
-                                checkIngrs = true; break;
-                            }
-                        }
+            ////            есть ли доступные ингредиенты
+            //            bool checkIngrs = false;
+            //            _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid)).ToArray();
+            //            foreach (var ingr in _tmpIngrs)
+            //            {
+            //                if (_dishesFilter.Checked(ingr.Value))
+            //                {
+            //                    checkIngrs = true; break;
+            //                }
+            //            }
 
-                        // если блюдо прошло проверку, то оставляем вместе со ВСЕМИ ингредиентами
-                        if (checkDish) { }
-                        // если блюдо не прошло проверку...
-                        else
-                        {
-                            // но есть прошедшие проверку ингредиенты, то удалить не прошедшие проверку ингредиенты
-                            if (checkIngrs)
-                            {
-                                foreach (var ingr in _tmpIngrs)
-                                {
-                                    if (!_dishesFilter.Checked(ingr.Value)) _delDishIds.Add(ingr.Key);
-                                }
-                            }
-                            // иначе удалить блюдо вместе с его ингредиентами
-                            else
-                            {
-                                _delDishIds.Add(item.Key);
-                                foreach (var ingr in _tmpIngrs) _delDishIds.Add(ingr.Key);
-                            }
-                        }
-                    }
+            ////            если блюдо прошло проверку, то оставляем вместе со ВСЕМИ ингредиентами
+            //            if (checkDish) { }
+            ////            если блюдо не прошло проверку...
+            //            else
+            //            {
+            //                но есть прошедшие проверку ингредиенты, то удалить не прошедшие проверку ингредиенты
+            //                if (checkIngrs)
+            //                {
+            //                    foreach (var ingr in _tmpIngrs)
+            //                    {
+            //                        if (!_dishesFilter.Checked(ingr.Value)) _delDishIds.Add(ingr.Key);
+            //                    }
+            //                }
+            ////                иначе удалить блюдо вместе с его ингредиентами
+            //                else
+            //                {
+            //                    _delDishIds.Add(item.Key);
+            //                    foreach (var ingr in _tmpIngrs) _delDishIds.Add(ingr.Key);
+            //                }
+            //            }
+            //        }
 
-                    // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
-                    _tmpDishes = orderModel.Dishes.Where(d => (!d.Value.ParentUid.IsNull() && (!_dishUIDs.Contains(d.Value.ParentUid)))).ToArray();
-                    if (_tmpDishes.Length > 0)
-                    {
-                        foreach (var item in _tmpDishes) orderModel.Dishes.Remove(item.Key);
-                    }
+            ////        поиск "висячих" ингредиентов, т.е.блюда нет (по статусу от службы), а ингредиенты -есть
+            //        _tmpDishes = orderModel.Dishes.Where(d => (!d.Value.ParentUid.IsNull() && (!_dishUIDs.Contains(d.Value.ParentUid)))).ToArray();
+            //        if (_tmpDishes.Length > 0)
+            //        {
+            //            foreach (var item in _tmpDishes) orderModel.Dishes.Remove(item.Key);
+            //        }
 
-                    // удалить неразрешенные блюда
-                    _delDishIds.ForEach(key => orderModel.Dishes.Remove(key));
+            ////        удалить неразрешенные блюда
+            //        _delDishIds.ForEach(key => orderModel.Dishes.Remove(key));
 
-                    if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
-                }
-                //   и заказы, у которых нет разрешенных блюд
-                _delOrderIds.ForEach(o => svcOrders.Remove(o));
-            }
-            catch (Exception ex2)
-            {
-                AppLib.WriteLogErrorMessage("Ошибка удаления из svcOrders блюд, не входящие в условия фильтрации: {0}", ex2.ToString());
-            }
+            //        if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
+            //    }
+            ////    и заказы, у которых нет разрешенных блюд
+            //    _delOrderIds.ForEach(o => svcOrders.Remove(o));
+            //}
+            //catch (Exception ex2)
+            //{
+            //    AppLib.WriteLogErrorMessage("Ошибка удаления из svcOrders блюд, не входящие в условия фильтрации: {0}", ex2.ToString());
+            //}
 
-            if (_traceOrderDetails)
-            {
-                AppLib.WriteLogOrderDetails("   после фильтрации заказов {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
-            }
+            //if (_traceOrderDetails)
+            //{
+            //    AppLib.WriteLogOrderDetails("   после фильтрации заказов {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
+            //}
 
             // условие проигрывания мелодии при появлении нового заказа
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
@@ -945,7 +947,7 @@ namespace KDSWPFClient
 
             switch (eOrderGroup)
             {
-                case OrderGroupEnum.ByTime:
+                case OrderGroupEnum.ByCreateTime:
                     tbOrderGroup.Text = "По времени";
                     break;
 
@@ -1033,8 +1035,6 @@ namespace KDSWPFClient
             }
 
         }
-
-        private enum OrderGroupEnum { ByTime, ByOrderNumber}
 
         private class DateNumberOrder
         {

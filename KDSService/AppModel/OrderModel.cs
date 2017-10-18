@@ -190,11 +190,10 @@ namespace KDSService.AppModel
             OrderModel retVal = (OrderModel)this.MemberwiseClone();
 
             // удалить все ссылки
-            retVal._dishesDict = null;  // без ссылки на блюда
+            retVal._dishesDict = new Dictionary<int, OrderDishModel>();
             retVal._tsTimersDict = null;
-            retVal._curTimer = null;
+            retVal._curTimer = this._curTimer;
             retVal._dbRunTimeRecord = null;
-            retVal.Dishes = null;
 
             return retVal;
         }

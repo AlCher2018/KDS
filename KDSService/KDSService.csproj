@@ -85,6 +85,7 @@
     <Compile Include="AppModel\ModelDicts.cs" />
     <Compile Include="AppModel\OrderDishModel.cs" />
     <Compile Include="AppModel\OrderModel.cs" />
+    <Compile Include="AppModel\OrderGroupEnum.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
@@ -151,6 +152,7 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <None Include="App.Config" />
     <None Include="DataSource\KDSEntities.edmx.diagram">
       <DependentUpon>KDSEntities.edmx</DependentUpon>
     </None>
