@@ -35,7 +35,8 @@ namespace KDSWPFClient
             AppLib.InitAppLogger();
 
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
-            AppLib.WriteLogInfoMessage(AppEnvironment.GetEnvironmentString());
+            AppLib.WriteLogInfoMessage("Версия файла {0}: {1}", GetAppFileName(), GetAppVersion());
+            AppLib.WriteLogInfoMessage(GetEnvironmentString());
 
             // установить текущий каталог на папку с приложением
             string appDir = AppEnvironment.GetAppDirectory();
@@ -65,8 +66,6 @@ namespace KDSWPFClient
 
             // создать каналы
             AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - START");
-            AppLib.WriteLogInfoMessage("   - версия файла {0}: {1}", AppEnvironment.GetAppFileName(), AppEnvironment.GetAppVersion());
-
             AppDataProvider dataProvider = new AppDataProvider();
             try
             {
@@ -115,6 +114,25 @@ namespace KDSWPFClient
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
             AppLib.WriteLogInfoMessage("************  End KDS Client (WPF)  *************");
         }  // Main()
+
+        private static string GetAppFileName()
+        {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            return assembly.ManifestModule.Name;
+        }
+
+        private static string GetAppVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            return fvi.FileVersion;
+        }
+
+        private static string GetEnvironmentString()
+        {
+            return string.Format("Environment: machine={0}, user={1}, current directory={2}, OS version={3}, isOS64bit={4}, processor count={5}, free RAM={6} Mb",
+                Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, Hardware.getAvailableRAM());
+        }
 
 
         private static bool ProtectedProgramm()
