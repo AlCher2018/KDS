@@ -10,6 +10,7 @@ using IntegraLib;
 namespace KDSService.AppModel
 {
     [DataContract]
+    [Serializable]
     public class OrderModel : IDisposable
     {
         [DataMember]
@@ -87,6 +88,7 @@ namespace KDSService.AppModel
         private TimeCounter _curTimer;  // текущий таймер для выдачи клиенту значения таймера
 
         // записи БД для сохранения блюда
+        [NonSerialized]
         private OrderRunTime _dbRunTimeRecord = null;   // запись дат/времени прямого пути 
         private string _serviceErrorMessage;
 
@@ -94,6 +96,10 @@ namespace KDSService.AppModel
         private bool _isUseReadyConfirmed;
         #endregion
 
+        // for serialization
+        public OrderModel()
+        {
+        }
 
         // *** CONSTRUCTOR  ***
         public OrderModel(Order dbOrder)
@@ -386,6 +392,28 @@ namespace KDSService.AppModel
                 _isUpdStatusFromDishes = true;
             }
         }  // method
+
+        internal int GetInstanceSize()
+        {
+            int retVal = 0;
+
+            int szInt = sizeof(int), szDate = 8;
+            // Id, Number, Uid, CreateDate, HallName, TableName, Waiter, DivisionColorRGB, OrderStatusId,
+            // WaitingTimerString
+            retVal = szInt + szInt + (Uid.IsNull()?0:Uid.Length) + szDate 
+                + (HallName.IsNull() ? 0 : HallName.Length) 
+                + (TableName.IsNull() ? 0 : TableName.Length) 
+                + (Waiter.IsNull() ? 0 : Waiter.Length)
+                + (DivisionColorRGB.IsNull() ? 0 : DivisionColorRGB.Length)
+                + szInt
+                + (WaitingTimerString.IsNull() ? 0 : WaitingTimerString.Length);
+
+            int szDishes = 0;
+            foreach (OrderDishModel dish in this.Dishes.Values) szDishes += dish.GetInstanceSize();
+            retVal += szDishes;
+
+            return retVal;
+        }
 
         // получить последнюю дату входа в состояние из блюд
         private DateTime getMaxDishEnterStateDate(OrderStatusEnum newStatus)

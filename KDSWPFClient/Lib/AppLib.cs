@@ -202,17 +202,12 @@ namespace KDSWPFClient.Lib
             return retVal;
         }
 
-
-        #region app settings
-
         internal static string GetShortErrMessage(Exception ex)
         {
             string retVal = ex.Message;
             if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
             return retVal;
         }
-
-        #endregion
 
         #region WPF UI interface
 

@@ -7,7 +7,8 @@
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
         Title="KDS" Height="720" Width="1024" ShowInTaskbar="True"
-        ResizeMode="NoResize" Icon="monitor7.ico" PreviewMouseDown="Window_PreviewMouseDown">
+        ResizeMode="NoResize" Icon="monitor7.ico" PreviewMouseDown="Window_PreviewMouseDown"
+        >
 
     <Window.Resources>
 
@@ -21,6 +22,9 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
+
+        <!-- затенение -->
+        <!--<Border x:Name="backgroundDisable" Background="DimGray" Grid.ColumnSpan="12" Opacity="0.8"/>-->
 
         <!-- админская панель -->
         <Border x:Name="brdAdmin"  Grid.Column="0" PreviewMouseDown="brdAdmin_PreviewMouseDown" PreviewMouseUp="brdAdmin_PreviewMouseUp">

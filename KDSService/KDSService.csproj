@@ -69,6 +69,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Runtime.Serialization.Formatters.Soap" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.Extensions" />
@@ -81,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppModel\AppActionEnum.cs" />
+    <Compile Include="AppModel\ClientInfo.cs" />
     <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="AppModel\ModelDicts.cs" />
     <Compile Include="AppModel\OrderDishModel.cs" />

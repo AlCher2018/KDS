@@ -58,6 +58,30 @@ namespace KDSWPFClient.View
             _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
         }
 
+        public int GetMaxDishesCountOnPage()
+        {
+            int retVal = 0;
+            double h = _uiPanel.ActualHeight;
+            double w = _uiPanel.ActualWidth;
+
+            Canvas tmpCanvas = new Canvas();
+            OrderDishViewModel dishModel = new OrderDishViewModel();
+            dishModel.DishName = "QWERTY";
+            DishPanel dshPnl = new DishPanel(dishModel);
+            dshPnl.Width = _colWidth;
+            tmpCanvas.Children.Add(dshPnl);
+            _uiPanel.Child = tmpCanvas;
+            _uiPanel.UpdateLayout();
+
+            double dishHeight = dshPnl.DesiredSize.Height;
+
+            _uiPanel.Child = null;
+            dshPnl = null;
+            tmpCanvas = null;
+
+            return retVal;
+        }
+
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {
@@ -72,7 +96,6 @@ namespace KDSWPFClient.View
             }
 
             _uiPanel.Visibility = vis;
-            CurrentPage = _pages[0]; _currentPageIndex = 1;
         }
 
         //*******************************************
@@ -205,36 +228,41 @@ namespace KDSWPFClient.View
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
             CurrentPage.ClearOrders();
+
+            if (CurrentPage.Parent == null) _uiPanel.Child = CurrentPage;
         }
 
+        // возвращает true, если произошла смена страницы, иначе возвращает false
+        public bool SetPageIndex(int pageIndex)
+        {
+            if (pageIndex <= 0) pageIndex = 1;
+            else if (pageIndex > _pages.Count) pageIndex = _pages.Count;
+
+            bool retVal = false;
+            if (_currentPageIndex != pageIndex)
+            {
+                retVal = true;
+                _currentPageIndex = pageIndex;
+                CurrentPage = _pages[_currentPageIndex - 1];
+
+                if (CurrentPage.Parent == null) _uiPanel.Child = CurrentPage;
+            }
+
+            return retVal;
+        }
 
         public void SetFirstPage()
         {
-            _currentPageIndex = 1;
-            CurrentPage = _pages[_currentPageIndex - 1];  // because _currentPageIndex is 1-based var
+            SetPageIndex(1);
         }
 
         public bool SetNextPage()
         {
-            if (_currentPageIndex < _pages.Count)
-            {
-                _currentPageIndex++;
-                CurrentPage = _pages[_currentPageIndex-1];  // because _currentPageIndex is 1-based var
-                return true;
-            }
-            else
-                return false;
+            return SetPageIndex(_currentPageIndex + 1);
         }
         public bool SetPreviousPage()
         {
-            if (_currentPageIndex > 1)
-            {
-                _currentPageIndex--;
-                CurrentPage = _pages[_currentPageIndex - 1];  // because _currentPageIndex is 1-based var
-                return true;
-            }
-            else
-                return false;
+            return SetPageIndex(_currentPageIndex - 1);
         }
 
         private double getLeftOrdPnl()

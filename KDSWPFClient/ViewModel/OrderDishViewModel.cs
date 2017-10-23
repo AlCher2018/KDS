@@ -209,7 +209,6 @@ namespace KDSWPFClient.ViewModel
             // другие состояния
             else
             {
-                if (this.Id == 482) Debug.Print("tmr, from svc: " + this.WaitingTimerString);
                 TimeSpan tsTimerValue = AppLib.GetTSFromString(this.WaitingTimerString);
 
                 // состояние "В процессе" - отображаем время приготовления по убыванию от планого времени приготовления,
@@ -231,7 +230,6 @@ namespace KDSWPFClient.ViewModel
                         if (expTake > 0)
                         {
                             tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
-                            if (this.Id == 482) Debug.Print("tmr, expected: " + tsTimerValue.ToString());
                         }
                     }
                 }

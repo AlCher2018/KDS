@@ -9,6 +9,7 @@ namespace KDSService.AppModel
     // эти даты заносятся при вызове соотв.методов: при вызове Start(initDate=0) устанавливается _dtStart и обнуляется _dtStop
     // в ValueTS возвращается промежуеток времени между _dtStart и Now
     // Когда вызывается Stop(), то в _dtStop заносится текущая дата, а в IncrementTS возвращается промежуток между _dtStop и _dtStart
+    [Serializable]
     public class TimeCounter
     {
         private DateTime _dtStart, _dtStop;

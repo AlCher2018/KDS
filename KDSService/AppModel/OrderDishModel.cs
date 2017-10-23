@@ -22,6 +22,7 @@ namespace KDSService.AppModel
     // Чтение полей:
     // 1. Для внешнего клиента нужена строка счетчика нахождения в состоянии
     [DataContract]
+    [Serializable]
     public class OrderDishModel: IDisposable
     {
         // MS SQL data type Datetime: January 1, 1753, through December 31, 9999
@@ -128,6 +129,7 @@ namespace KDSService.AppModel
         private TimeCounter _curTimer;  // текущий таймер для выдачи клиенту значения таймера
 
         // записи БД для сохранения блюда
+        [NonSerialized]
         private OrderDishRunTime _dbRunTimeRecord = null;         // запись дат/времени прямого пути 
         private string _serviceErrorMessage;
 
@@ -138,6 +140,11 @@ namespace KDSService.AppModel
         private OrderDishModel _parentDish;
 
         #endregion
+
+        // for serialization
+        public OrderDishModel()
+        {
+        }
 
         // ctor
         // ДЛЯ НОВОГО БЛЮДА
@@ -208,6 +215,26 @@ namespace KDSService.AppModel
 
         }  // constructor
 
+        internal int GetInstanceSize()
+        {
+            int retVal = 0;
+
+            int szInt = sizeof(int), szDate = 8, szDecimal = 16;
+            // Id, Uid, CreateDate, Name, FilingNumber, Quantity, ParentUid, Comment,
+            // EstimatedTime, DelayedStartTime, DishStatusId, DepartmentId,
+            // ServiceErrorMessage
+            // WaitingTimerString - 14
+            retVal = szInt + (Uid.IsNull() ? 0 : Uid.Length) + szDate
+                + (Name.IsNull() ? 0 : Name.Length)
+                + szInt + szDecimal
+                + (ParentUid.IsNull() ? 0 : ParentUid.Length)
+                + (Comment.IsNull() ? 0 : Comment.Length)
+                + szInt+ szInt + szInt+ szInt
+                + (ServiceErrorMessage.IsNull() ? 0 : ServiceErrorMessage.Length)
+                + (WaitingTimerString.IsNull() ? 0 : WaitingTimerString.Length);
+
+            return retVal;
+        }
 
         // обновить из БД
         internal void UpdateFromDBEntity(OrderDish dbDish)

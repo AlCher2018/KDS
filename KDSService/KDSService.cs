@@ -25,19 +25,22 @@ namespace KDSService
     {
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
-        private bool _timerEnable;
-        // периодичность опроса БД, в мсек
-        private const double _ObserveTimerInterval = 1000;
         
         // сервис WCF
         private ServiceHost _host;
         public ServiceHost ServiceHost { get { return _host; } }
 
+        // словарь клиентов
+        Dictionary<string, ClientInfo> _clients;
+
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;
 
+
+        // CTOR
         public KDSServiceClass()
         {
+            _clients = new Dictionary<string, ClientInfo>();
         }
 
         public void InitService(string configFile = null)
@@ -78,10 +81,10 @@ namespace KDSService
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
 
-            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = false };
+            // периодичность опроса БД - 500 в мсек
+            _observeTimer = new Timer(500) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
             StartTimer();
-            _timerEnable = true;
 
             AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
@@ -205,12 +208,23 @@ Contract: IMetadataExchange
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
-            if (_timerEnable)
+
+            // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
+            if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))
             {
                 string errMsg = _ordersModel.UpdateOrders();
 
                 if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+
+                // установить стандартный интервал опроса БД
+                if (_observeTimer.Interval != 500) _observeTimer.Interval = 500; // msec
             }
+            // иначе установить минимальный интервал для наискорейшего чтения данных из БД
+            else
+            {
+                if (_observeTimer.Interval != 50) _observeTimer.Interval = 50; // msec
+            }
+
             StartTimer();
         }
 
@@ -257,59 +271,84 @@ Contract: IMetadataExchange
             return retVal;
         }
 
-        // все заказы
+        // *** ЗАПРОС ЗАКАЗОВ ОТ КЛИЕНТОВ ***
+        // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа
         public List<OrderModel> GetOrders(string machineName, List<int> clientStatusIDs, List<int> clientDepIDs, OrderGroupEnum clientGroupBy)
         {
-            List<OrderModel> retVal = new List<OrderModel>();
-
             AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}', '{2}', '{3}')", machineName, string.Join(",", clientStatusIDs), string.Join(",", clientDepIDs), clientGroupBy.ToString());
 
+            // таймер чтения из БД выключен - ждем, пока не закончится чтение данных из БД
+            if (_observeTimer.Enabled == false)
+            {
+                AppEnv.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
+                // вернуть клиенту пустой массив - признак того, что надо уменьшить интервал таймера запроса данных к службе
+                return new List<OrderModel>();  
+            }
+
+            List<OrderModel> retVal = new List<OrderModel>();
+            DateTime dtTmr = DateTime.Now;
+
+            // временные буферы
             OrderModel validOrder;
             List<OrderDishModel> validDishes = new List<OrderDishModel>();
             // key - блюдо, value - список ингредиентов
             Dictionary<OrderDishModel, List<OrderDishModel>> dishIngr = new Dictionary<OrderDishModel, List<OrderDishModel>>();
-            lock (_ordersModel)
+
+            // установить флаг чтения заказов из внутренней коллекции клиентом machineName
+            getClientInfo(machineName).GetOrdersFlag = true;
+
+            // получить в retVal отфильтрованные заказы
+            foreach (OrderModel order in _ordersModel.Orders.Values)
             {
-                foreach (OrderModel order in _ordersModel.Orders.Values)
+                //    iCnt++;
+                //Debug.Print(string.Format("- {0}. обработка Id - {1}", iCnt, order.Id.ToString()));
+
+                // разобрать плоский список блюд и ингр. в иерархический
+                dishIngr.Clear();
+                foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
                 {
-                    // разобрать плоский список блюд и ингр. в иерархический
-                    dishIngr.Clear();
-                    foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
+                    List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
+                    dishIngr.Add(dish, ingrList);
+                }
+
+                // собрать в validDishes блюда и ингр., которые проходят проверку
+                validDishes.Clear();
+                foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
+                {
+                    // блюдо проходит - берем и все его ингредиенты
+                    if (checkOrderItem(clientStatusIDs, clientDepIDs, diPair.Key))
                     {
-                        List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
-                        dishIngr.Add(dish, ingrList);
+                        validDishes.Add(diPair.Key);
+                        validDishes.AddRange(diPair.Value);
+                    }
+                    // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
+                    else if (diPair.Value.Any(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)))
+                    {
+                        validDishes.Add(diPair.Key);
+                        validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)));
+                    }
+                }
+
+                if (validDishes.Count > 0)
+                {
+                    validOrder = order.Copy();
+                    // к заказу добавить правильные блюда
+                    foreach (OrderDishModel dish in validDishes)
+                    {
+                        if (validOrder.Dishes.ContainsKey(dish.Id) == false)
+                            validOrder.Dishes.Add(dish.Id, dish);
                     }
 
-                    // собрать в validDishes блюда и ингр., которые проходят проверку
-                    validDishes.Clear();
-                    foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
-                    {
-                        // блюдо проходит - берем и все его ингредиенты
-                        if (checkOrderItem(clientStatusIDs, clientDepIDs, diPair.Key))
-                        {
-                            validDishes.Add(diPair.Key);
-                            validDishes.AddRange(diPair.Value);
-                        }
-                        // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
-                        else if (diPair.Value.Any(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)))
-                        {
-                            validDishes.Add(diPair.Key);
-                            validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)));
-                        }
-                    }
+                    // и добавить к результату правильный заказ
+                    retVal.Add(validOrder);
+                }
 
-                    if (validDishes.Count > 0)
-                    {
-                        validOrder = order.Copy();
-                        validDishes.ForEach(d => validOrder.Dishes.Add(d.Id, d));
+            }  // foreach OrderModel
 
-                        retVal.Add(validOrder);
-                    }
-
-                }  // foreach OrderModel
-            }  // lock _ordersModel
-
-            // группировка и сортировка
+            // сбросить флаг чтения заказов из внутренней коллекции клиентом machineName
+            getClientInfo(machineName).GetOrdersFlag = false;
+            
+            // группировка и сортировка retVal
             if (retVal.Count > 0)
             {
                 // группировка по CreateDate блюд может увеличить кол-во заказов
@@ -317,32 +356,90 @@ Contract: IMetadataExchange
                 {
                     // разбить заказы по датам (CreateDate)
                     SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
+                    List<DateTime> dtList;
                     foreach (OrderModel order in retVal)
                     {
-                        if (sortedOrders.ContainsKey(order.CreateDate) == false) sortedOrders.Add(order.CreateDate, order);
+                        dtList = order.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
+                        foreach (DateTime dtCreate in dtList)
+                        {
+                            if (sortedOrders.ContainsKey(dtCreate) == false) sortedOrders.Add(dtCreate, order);
+                        }
                     }
                     // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
                     if (retVal.Count == sortedOrders.Count)
                         retVal = sortedOrders.Values.ToList();
-                    // иначе создать заново выходный список
+                    // иначе создать заново выходный список заказов с блюдами
                     else
                     {
-
+                        retVal.Clear();
+                        OrderModel tmpOrder;
+                        foreach (var ord in sortedOrders)
+                        {
+                            // скопировать заказ
+                            tmpOrder = ord.Value.Copy();
+                            tmpOrder.CreateDate = ord.Key;
+                            // скопировать блюда на данную дату
+                            foreach (var tmpDish in ord.Value.Dishes.Values.Where(d => d.CreateDate == ord.Key))
+                                tmpOrder.Dishes.Add(tmpDish.Id, tmpDish);
+                            // добавить заказ в выходную коллекцию
+                            retVal.Add(tmpOrder);
+                        }
                     }
                 }
 
                 // сортировка по номеру подачи и Id
-                List<OrderDishModel> sortedDishes;
+                Dictionary<int, OrderDishModel> sortedDishes;
                 foreach (OrderModel order in retVal)
                 {
-                    sortedDishes = order.Dishes.Values.OrderBy(d => d.FilingNumber).ThenBy(d => d.Id).ToList();
-
-                    order.Dishes.Clear();
-                    sortedDishes.ForEach(d => order.Dishes.Add(d.Id, d));
+                    sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
+                    order.Dishes = sortedDishes;
                 }
             }
 
-            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders", retVal.Count);
+            // размер retVal в памяти
+            //long memSize = GetObjectSize(retVal);
+            //int iSize = 0;
+            //retVal.ForEach(o => iSize += o.GetInstanceSize());
+
+            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retVal.Count, (DateTime.Now - dtTmr).ToString());
+            return retVal;
+        }
+
+        /// <summary>
+        /// Calculates the lenght in bytes of an object 
+        /// and returns the size 
+        /// </summary>
+        /// <param name="TestObject"></param>
+        /// <returns></returns>
+        private long GetObjectSize(object TestObject)
+        {
+            long retVal = 0;
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                // сериализация в двоичный форматтер
+                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                bf.Serialize(ms, TestObject);
+                retVal = ms.Length;
+
+                // сериализация в SOAP formatter
+                // Модуль сериализации SOAP не поддерживает сериализацию стандартных типов: System.Collections.Generic.List`1[KDSService.AppModel.OrderModel].
+                //System.Runtime.Serialization.Formatters.Soap.SoapFormatter sf = new System.Runtime.Serialization.Formatters.Soap.SoapFormatter();
+                //sf.Serialize(ms, TestObject);
+                //retVal = sf.ToString().Length;
+
+                // сериализация в XML formatter
+                // Ошибка при отражении типа OrderModel[]
+                //System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(OrderModel[]));
+                //OrderModel[] oArr = ((List<OrderModel>)TestObject).ToArray();
+                //xs.Serialize(ms, oArr);
+                //retVal = xs.ToString().Length;
+
+                // JSON serialization
+                //System.Runtime.Serialization.Json.DataContractJsonSerializer js = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<OrderModel>));
+                //js.WriteObject(ms, TestObject);
+                //string sBuf = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                //retVal = sBuf.Length;
+            }
             return retVal;
         }
 
@@ -461,8 +558,8 @@ Contract: IMetadataExchange
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
             DateTime dtTmr = DateTime.Now;
             AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
-            //StopTimer();
-            _timerEnable = false;
+
+            getClientInfo(machineName).SetDataFlag = true;
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
@@ -474,8 +571,7 @@ Contract: IMetadataExchange
                 logMsg += "order not found in the Model";
             }
 
-            //StartTimer();
-            _timerEnable = true;
+            getClientInfo(machineName).SetDataFlag = false;
 
             AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
         }
@@ -486,8 +582,8 @@ Contract: IMetadataExchange
             string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
             DateTime dtTmr = DateTime.Now;
             AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
-            //StopTimer();
-            _timerEnable = false;
+
+            getClientInfo(machineName).SetDataFlag = true;
 
             bool result = false;
             if (_ordersModel.Orders.ContainsKey(orderId))
@@ -501,40 +597,19 @@ Contract: IMetadataExchange
                 }
             }
 
-            //if (result)
-            //{
-            //    // убедиться, что в БД записан нужный статус
-            //    DateTime dt = DateTime.Now;
-            //    bool chkStat = false;
-            //    while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
-            //    {
-            //        System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
-            //        using (KDSEntities db = new KDSEntities())
-            //        {
-            //            try
-            //            {
-            //                OrderDish dbDish = db.OrderDish.Find(orderDishId);
-            //                chkStat = ((dbDish != null) && (dbDish.DishStatusId == (int)orderDishStatus));
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
-            //            }
-            //        }
-            //    }
-            //    // истекло время ожидания записи в БД
-            //    if (!chkStat)
-            //    {
-            //        AppEnv.WriteLogErrorMessage("Истекло время ожидания (2 сек) проверочного чтения после записи нового состояния.");
-            //    }
-            //}
-
             AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
 
-            //StartTimer();
-            _timerEnable = true;
+            getClientInfo(machineName).SetDataFlag = false;
         }
         #endregion
+
+        private ClientInfo getClientInfo(string machineName)
+        {
+            if (_clients.ContainsKey(machineName) == false)
+                _clients.Add(machineName, new ClientInfo() { Name = machineName });
+            return _clients[machineName];
+        }
+
 
         public void Dispose()
         {

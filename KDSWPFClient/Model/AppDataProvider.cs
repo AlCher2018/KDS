@@ -64,10 +64,12 @@ namespace KDSWPFClient
             _errMsg = null;
             try
             {
-                if (_getClient != null) _getClient.Close();
+                if ((_getClient != null) && (_getClient.State != CommunicationState.Faulted)) _getClient.Close();
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
+                setBindingBuffers(getBinding);
+
                 string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
@@ -88,6 +90,23 @@ namespace KDSWPFClient
             }
 
             return retVal;
+        }
+
+        private void setBindingBuffers(NetTcpBinding getBinding)
+        {
+            // set max buffer size
+            int maxIntValue = int.MaxValue;
+            getBinding.MaxBufferSize = maxIntValue;
+            getBinding.MaxReceivedMessageSize = maxIntValue;
+            /*
+            XmlDictionaryReaderQuotas myReaderQuotas = new XmlDictionaryReaderQuotas(); myReaderQuotas.MaxStringContentLength = 2147483647; myReaderQuotas.MaxArrayLength = 2147483647; myReaderQuotas.MaxBytesPerRead = 2147483647; myReaderQuotas.MaxDepth = 64; myReaderQuotas.MaxNameTableCharCount = 2147483647; binding.GetType().GetProperty("ReaderQuotas").SetValue(bindi‌​ng, myReaderQuotas, null);
+             */
+            System.Xml.XmlDictionaryReaderQuotas readQuotas = getBinding.ReaderQuotas;
+            readQuotas.MaxArrayLength = 1048576;
+            readQuotas.MaxBytesPerRead = 1048576;
+            readQuotas.MaxDepth = 1048576;
+            readQuotas.MaxNameTableCharCount = 1048576;
+            readQuotas.MaxStringContentLength = maxIntValue;
         }
 
         public bool CreateSetChannel()
@@ -192,7 +211,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = AppLib.GetShortErrMessage(ex);
             }
 
             return retVal;
@@ -235,12 +254,12 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = AppLib.GetShortErrMessage(ex);
             }
         }
         #endregion
 
-        public List<OrderModel> GetOrders(List<int> clientStatuses, OrderGroupEnum ordersGroupBy)
+        public List<OrderModel> GetOrders(List<int> clientStatuses, List<int> clientDeps, OrderGroupEnum ordersGroupBy)
         {
             if (_getClient.State == CommunicationState.Faulted)
             {
@@ -251,21 +270,39 @@ namespace KDSWPFClient
 
             List<OrderModel> retVal = null;
             // запрос данных от службы
-            try
-            {
-                List<int> clientDeps = (from d in _deps.Values where d.IsViewOnKDS select d.Id).ToList();
+            retVal = _getClient.GetOrders(_machineName, clientStatuses, clientDeps, ordersGroupBy);
 
-                retVal = _getClient.GetOrders(_machineName, clientStatuses, clientDeps, ordersGroupBy);
-            }
-            catch (Exception ex)
-            {
-                _errMsg = getShortErrMsg(ex);
-                //MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", _errMsg), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                AppLib.WriteLogErrorMessage(_errMsg);
-            }
+            //if ((retVal != null) && (retVal.Count > 0))
+            //{
+            //    int iD = 0, iO = 0;
+            //    retVal.ForEach(o =>
+            //    {
+            //        iO++; iD += o.Dishes.Count;
+            //    });
+            //    long memSize = GetObjectSize(retVal[0]);
+            //}
 
             return retVal;
         }
+
+        /// <summary>
+        /// Calculates the lenght in bytes of an object 
+        /// and returns the size 
+        /// </summary>
+        /// <param name="TestObject"></param>
+        /// <returns></returns>
+        private long GetObjectSize(object TestObject)
+        {
+            long retVal = 0;
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                bf.Serialize(ms, TestObject);
+                retVal = ms.Length;
+            }
+            return retVal;
+        }
+
 
         #region get app dict item
         public OrderStatusViewModel GetOrderStatusModelById(int statusId)
@@ -305,7 +342,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = AppLib.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
             return retVal;
@@ -321,7 +358,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = AppLib.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
         }
@@ -438,13 +475,6 @@ namespace KDSWPFClient
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }
-        }
-
-        private string getShortErrMsg(Exception ex)
-        {
-            string retVal = ex.Message;
-            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
-            return retVal;
         }
 
         public void Dispose()

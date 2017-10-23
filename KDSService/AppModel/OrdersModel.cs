@@ -23,6 +23,7 @@ namespace KDSService.AppModel
         private HashSet<int> _unUsedDeps;
         private Dictionary<int, bool> _lockedOrders;
 
+        // буферы для хранения коллекций заказов
         private List<Order> _dbOrders;
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
@@ -56,6 +57,7 @@ namespace KDSService.AppModel
             _unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
             DBOrderHelper.UnusedDeps = _unUsedDeps;
 
+            // буферы для хранения коллекций заказов
             _dbOrders = DBOrderHelper.DBOrders;
             _orders = new Dictionary<int, OrderModel>();
 
@@ -80,7 +82,7 @@ namespace KDSService.AppModel
         //**************************************
         public string UpdateOrders()
         {
-            string sLog;
+            string sLog = "";
 
             #region автосброс вчерашних заказов
             if (_changeStatusYesterdayOrdersCfg)
@@ -108,9 +110,9 @@ namespace KDSService.AppModel
             DebugTimer.Init(" - get orders from DB", false);
 
             // получить заказы из БД
-            _dbOrders.Clear();
             try
             {
+                // this._dbOrders = DBOrderHelper._dbOrders
                 DBOrderHelper.LoadDBOrders();
             }
             catch (Exception ex)
@@ -121,7 +123,7 @@ namespace KDSService.AppModel
             // получено заказов из БД
             if (_isLogOrderDetails)
             {
-                string ids = string.Join(",", _dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
+                string ids = (_dbOrders.Count>50) ? "> 50" : string.Join(",", _dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
                 AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num: {1}", _dbOrders.Count, ids);
             }
 
@@ -129,72 +131,80 @@ namespace KDSService.AppModel
             if (_dbOrders != null)
             {
                 #region *** ОБНОВЛЕНИЕ ВНУТРЕННЕГО СЛОВАРЯ ЗАКАЗОВ _orders коллекцией из БД _dbOrders ***
-                // 1. удалить
-                int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
-                delIds = _orders.Keys.Except(delIds).ToArray();
-                if (_isLogOrderDetails)
+                // заблокировать _orders
+                lock (_orders)
                 {
-                    string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
-                    if (s1 != "") AppEnv.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
-                }
-                foreach (int id in delIds)
-                {
-                    _orders[id].Dispose();
-                    _orders.Remove(id);
-                }
-
-                // 2. обновить или добавить
-                _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-                foreach (Order dbOrder in _dbOrders)
-                {
-                    // пропустить, если заказ заблокирован от изменений по таймеру при длительных операциях чтения из БД
-                    if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
+                    // 1. удалить
+                    int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
+                    delIds = _orders.Keys.Except(delIds).ToArray();
+                    if (_isLogOrderDetails)
                     {
-                        AppEnv.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
-                        // если заказ стал неотображаемый, то удалить его из коллекции
+                        string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
+                        if (s1 != "") AppEnv.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
+                    }
+                    foreach (int id in delIds)
+                    {
+                        _orders[id].Dispose();
+                        _orders.Remove(id);
+                    }
+
+                    // 2. обновить или добавить
+                    _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
+                    int iCnt = 0;
+                    foreach (Order dbOrder in _dbOrders)
+                    {
+                        iCnt++;
+                        // пропустить, если заказ заблокирован от изменений по таймеру при длительных операциях чтения из БД
+                        if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
+                        {
+                            AppEnv.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
+                            // если заказ стал неотображаемый, то удалить его из коллекции
+                            if (_orders.ContainsKey(dbOrder.Id))
+                            {
+                                OrderModel om = _orders[dbOrder.Id];
+                                if (_allowedKDSStatuses.Contains(om.OrderStatusId) == false)
+                                {
+                                    _orders.Remove(dbOrder.Id);
+                                    AppEnv.WriteLogOrderDetails("             remove from appModel set");
+                                }
+                            }
+                            continue;
+                        }
+
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            OrderModel om = _orders[dbOrder.Id];
-                            if (_allowedKDSStatuses.Contains(om.OrderStatusId) == false)
-                            {
-                                _orders.Remove(dbOrder.Id);
-                                AppEnv.WriteLogOrderDetails("             remove from appModel set");
-                            }
-                        }
-                        continue;
-                    }
+                            //sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
+                            //AppEnv.WriteLogOrderDetails(sLog + " - START");
 
-                    if (_orders.ContainsKey(dbOrder.Id))
-                    {
-                        sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
-                        AppEnv.WriteLogOrderDetails(sLog + " - START");
-                        try
-                        {
-                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                            try
+                            {
+                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                            }
+
+                            //AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
                         }
-                        catch (Exception ex)
+                        // добавление заказа в словарь
+                        else
                         {
-                            AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                        }
-                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
-                    }
-                    // добавление заказа в словарь
-                    else
-                    {
-                        sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
-                        AppEnv.WriteLogOrderDetails(sLog + " - START");
-                        try
-                        {
-                            OrderModel newOrder = new OrderModel(dbOrder);
-                            _orders.Add(dbOrder.Id, newOrder);
-                        }
-                        catch (Exception ex)
-                        {
-                            AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                        }
-                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
-                    }  //curOrder
-                }  // foreach
+                            sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
+                            AppEnv.WriteLogOrderDetails(sLog + " - START");
+                            try
+                            {
+                                OrderModel newOrder = new OrderModel(dbOrder);
+                                _orders.Add(dbOrder.Id, newOrder);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                            }
+                            AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
+                        }  //curOrder
+                    }  // foreach
+                }  // lock _orders
                 #endregion
 
                 #region обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
@@ -218,7 +228,7 @@ namespace KDSService.AppModel
 
             if (_isLogOrderDetails)
             {
-                string ids = string.Join(",", _orders.Values.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
+                string ids = (_dbOrders.Count > 50) ? "> 50" : string.Join(",", _dbOrders.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
                 AppEnv.WriteLogOrderDetails(" - to clients {0} id/Num: {1}", _orders.Count, ids);
             }
 

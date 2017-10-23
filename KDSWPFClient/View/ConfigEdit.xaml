@@ -160,7 +160,7 @@
             <!-- интервал таймера автоматического перехода группировки заказов из "По номерам" в "По времени" -->
             <StackPanel  Margin="0,15,0,5" Orientation="Horizontal">
                 <TextBlock Text="интервал таймера автоматического перехода группировки заказов из 'По номерам' в 'По времени':  "/>
-                <cavCtl:NumericUpDown x:Name="tbTimerIntervalToOrderGroupByTime" Minimum="2" Maximum="30" Value="10" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
+                <cavCtl:NumericUpDown x:Name="tbTimerIntervalToOrderGroupByTime" Minimum="0" Maximum="30" Value="10" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
                 <TextBlock Text="сек"/>
             </StackPanel>
 
