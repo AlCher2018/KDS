@@ -428,21 +428,15 @@ namespace KDSWPFClient
         {
             if (_pages == null) return;
 
-            // сохранить номер текущей страницы
-            int curPageIndex = _pages.CurrentPageIndex;
             DateTime dtTmr = DateTime.Now;
             string sLogMsg = string.Format(" - redraw reason: {0}", reason);
             AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             Cursor = System.Windows.Input.Cursors.Wait;
-            backgroundDisable.Visibility = Visibility.Visible;
 
             // добавить заказы
             _pages.AddOrdersPanels(_viewOrders);
 
-            // отобразить страницу сохраненного номера
-            _pages.SetPageIndex(curPageIndex);
             setCurrentPage();
-            backgroundDisable.Visibility = Visibility.Hidden;
             Cursor = null; //System.Windows.Input.Cursors.Arrow;
 
             AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
@@ -478,6 +472,7 @@ namespace KDSWPFClient
             if (_pages.SetPreviousPage()) setCurrentPage();
         }
 
+        // отображение кнопок с номерами страниц и вкл/выкл таймера возврата на первую страницу
         private void setCurrentPage()
         {
             btnSetPagePrevious.Visibility = Visibility.Hidden;
