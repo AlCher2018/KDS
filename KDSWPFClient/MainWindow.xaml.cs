@@ -38,7 +38,6 @@ namespace KDSWPFClient
         private double _autoBackTimersInterval;     // интервал для таймеров возврата
 
         private AppDataProvider _dataProvider;
-        private bool _traceOrderDetails;
         private DishesFilter _dishesFilter = DishesFilter.Instance;
 
         // классы для циклического перебора клиентских условий отображения блюд
@@ -85,8 +84,6 @@ namespace KDSWPFClient
 
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
-
-            _traceOrderDetails = (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails");
 
             _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
@@ -245,27 +242,18 @@ namespace KDSWPFClient
                 return;
             }
 
-            if (_traceOrderDetails)
-            {
-                if (_svcOrders == null)
-                    AppLib.WriteLogOrderDetails(" - от службы получено 0 заказов");
-                else
-                {
-                    AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
-                }
-            }
-
-            if (_svcOrders == null) return;
             // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
             // уменьшить интервал таймера до 100 мсек
-            else if (_svcOrders.Count == 0)
+            if (_svcOrders == null)
             {
                 _timer.Interval = 90;
-                AppLib.WriteLogTraceMessage(" - set timer.Interval = 0,1 sec");
+                AppLib.WriteLogOrderDetails(" - служба читает данные из БД, set timer.Interval = 0,1 sec");
                 return;
             }
-            // иначе вернуться на стандартный интервал в 1 сек
-            else if (_timer.Interval != 1000)
+
+            AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
+            // вернуться на стандартный интервал в 1 сек
+            if (_timer.Interval != 1000)
             {
                 _timer.Interval = 1000;
                 AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
@@ -291,7 +279,7 @@ namespace KDSWPFClient
             // в случае с группировкой по времени и разбивкой заказов на несколько панелей AppLib.JoinSortedLists() работает НЕПРАВИЛЬНО!!!
             //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
             // поэтому сделано уникальной процедурой
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
+            AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
             bool isViewRepaint2 = false;
             try
             {
@@ -324,10 +312,7 @@ namespace KDSWPFClient
             }
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
-            if (_traceOrderDetails)
-            {
-                AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
-            }
+            AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
 
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
             if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));

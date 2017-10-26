@@ -281,8 +281,8 @@ Contract: IMetadataExchange
             if (_observeTimer.Enabled == false)
             {
                 AppEnv.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
-                // вернуть клиенту пустой массив - признак того, что надо уменьшить интервал таймера запроса данных к службе
-                return new List<OrderModel>();  
+                // вернуть клиенту null - признак того, что надо уменьшить интервал таймера запроса данных к службе
+                return null;
             }
 
             List<OrderModel> retVal = new List<OrderModel>();
