@@ -25,6 +25,7 @@ namespace KDSWPFClient.View
         // высота панели заказа
         public double HeightPanel { get { return this.DesiredSize.Height; } }
 
+        public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int DishPanelsCount { get { return this.stkDishes.Children.Count; } }
 
         public OrderViewModel OrderViewModel { get { return _orderView; } }
@@ -42,7 +43,7 @@ namespace KDSWPFClient.View
             _size = new Size(base.Width, double.PositiveInfinity);
 
             _orderView = orderView;
-            orderView.ViewPanel = this;
+            if (orderView != null) orderView.ViewPanel = this;
 
             if (isCreateHeaderPanel)
             {
@@ -61,9 +62,6 @@ namespace KDSWPFClient.View
             {
                 tb.FontSize = _fontSize;
             }
-
-            // пересчитать высоту панели
-//            this.Measure(_size);
 
             //if (!orderView.DivisionColorRGB.IsNull())
             //{

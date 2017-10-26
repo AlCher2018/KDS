@@ -26,7 +26,7 @@ namespace KDSWPFClient.View
         // для расчета размещения панелей заказов на канве
         private int _pageColsCount;
         private double _colWidth, _colMargin;
-        private int _curColIndex;
+        private int _curColIndex; // 1-based value !!!!
         private double _curTopValue;
         private double _hdrTopMargin;
         private int _currentPageIndex;  // 1-based value !!!!
@@ -85,16 +85,6 @@ namespace KDSWPFClient.View
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {
-            // TODO  тестирование прохождения по коллекции заказов/блюд
-            OrderPageHelper pageHelper = new OrderPageHelper();
-            pageHelper.PanelWidth = _colWidth;
-            pageHelper.SetPageSize(_uiPanel.RenderSize.Width, _uiPanel.RenderSize.Height);
-
-            List<OrderPanel> orderPanelList = pageHelper.GetOrderPanelsPerPage(orders, 0, 3, true);
-
-            Debug.Print("** создано {0} панелей", (orderPanelList == null) ? 0 : orderPanelList.Count);
-
-
             ClearPages();
             _curColIndex = 1; _curTopValue = 0d;
             Visibility vis = _uiPanel.Visibility;
@@ -113,7 +103,7 @@ namespace KDSWPFClient.View
         //*******************************************
         public void AddOrderPanel(OrderViewModel orderModel)
         {
-            OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
+            OrderPanel ordPnl; DishPanel dshPnl; //, curDshPnl = null;
 
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
             ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
@@ -138,13 +128,15 @@ namespace KDSWPFClient.View
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling };
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString() };
+                    if (curFiling == 1) newDelimPanel.Foreground = Brushes.Red; else newDelimPanel.Foreground = Brushes.Blue;
+
                     ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
                 }
 
-                if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
-                dshPnl = new DishPanel(dishModel, curDshPnl);
-                if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
+                //if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
+                dshPnl = new DishPanel(dishModel);  // , curDshPnl
+                //if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
 
                 // добавить строку заказа в стек
                 ordPnl.AddDish(dshPnl);

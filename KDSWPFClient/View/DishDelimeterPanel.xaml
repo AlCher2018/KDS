@@ -8,8 +8,8 @@
              d:DesignHeight="60" d:DesignWidth="300"
              >
 
-    <Border Background="White" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
-        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center"/>
+    <Border Background="White" BorderBrush="DarkBlue" BorderThickness="1,1,1,1">
+        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=root}"/>
     </Border>
 
 </UserControl>

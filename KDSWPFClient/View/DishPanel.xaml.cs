@@ -31,15 +31,15 @@ namespace KDSWPFClient.View
         private bool _isDish, _isIngrIndepend;
         private double _fontSize, _padd;
         private string _currentBrushKey;
-        private DishPanel _parentPanel;
+        //private DishPanel _parentPanel;
 
 
-        public DishPanel(OrderDishViewModel dishView, DishPanel parentPanel = null)
+        public DishPanel(OrderDishViewModel dishView)  // DishPanel parentPanel = null
         {
             InitializeComponent();
 
             _dishView = dishView;
-            _parentPanel = parentPanel;
+            //_parentPanel = parentPanel;
             grdDishLine.DataContext = _dishView;
 
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда

@@ -1,24 +1,51 @@
-﻿using KDSWPFClient.ViewModel;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
+using KDSWPFClient.ViewModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
-
+using System.Windows.Media;
 
 namespace KDSWPFClient.View
 {
     internal class OrderPageHelper
     {
         private Canvas _canvas;
+        // для расчета размещения панелей заказов на канве
+        private int _pageColsCount;
+        private double _colWidth, _colMargin;
+        private double _hdrTopMargin;
+        private double _ordHeaderMinHeight, _continuePanelHeight;
 
-        internal double PanelWidth { get; set; }
-
-        internal void SetPageSize(double width, double height)
+        public OrderPageHelper(Canvas uiBuffer)
         {
-            _canvas = new Canvas();
-            _canvas.Width = width; _canvas.Height = height;
+            _canvas = uiBuffer;
+        }
+
+        public void ResetOrderPanelSize()
+        {
+            _pageColsCount = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            _colWidth = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnWidth"));
+            _colMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnMargin"));
+            _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
+
+
+            OrderPanel minHeaderPanel = new OrderPanel(null, 0, _colWidth, false);
+            _canvas.Children.Add(minHeaderPanel);
+            DishDelimeterPanel continuePanel = createContinuePanel(true);
+            _canvas.Children.Add(continuePanel);
+            _canvas.UpdateLayout();
+
+            _ordHeaderMinHeight = minHeaderPanel.ActualHeight;
+            _continuePanelHeight = continuePanel.ActualHeight;
+
+            _canvas.Children.Clear();
+            minHeaderPanel = null;
         }
 
         /// <summary>
@@ -29,10 +56,10 @@ namespace KDSWPFClient.View
         /// <param name="dishIndex">Индекс блюда, начиная с которогу будут строиться панели</param>
         /// <param name="isPanelsForward">Признак того, что коллекция orders будет листаться вперед, от стартовой позиции к концу набора</param>
         /// <returns></returns>
-        internal List<OrderPanel> GetOrderPanelsPerPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward)
+        internal void DrawOrderPanelsOnPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward)
         {
-            if (orders == null) return null;
-            if (orderStartIndex >= orders.Count) return null;
+            if (orders == null) return;
+            if (orderStartIndex >= orders.Count) return;
 
             System.Diagnostics.Debug.Print("** начальные индексы: order {0}, dish {1}", orderStartIndex, dishStartIndex);
 
@@ -41,10 +68,11 @@ namespace KDSWPFClient.View
             // прямое направление
             if (isPanelsForward)
             {
+                if (orderStartIndex < 0) orderStartIndex = 0;
                 if (dishStartIndex >= orders[orderStartIndex].Dishes.Count-1)
                 {
-                    orderStartIndex++; dishStartIndex = 0;
-                    if (orderStartIndex >= orders.Count) return null;
+                    orderStartIndex++; dishStartIndex = -1;
+                    if (orderStartIndex >= orders.Count) return;
                 }
                 else
                 {
@@ -56,8 +84,8 @@ namespace KDSWPFClient.View
             {
                 if (dishStartIndex == 0)
                 {
-                    orderStartIndex--;
-                    if (orderStartIndex < 0) return null;
+                    orderStartIndex--; dishStartIndex = -1;
+                    if (orderStartIndex < 0) return;
                 }
                 else
                 {
@@ -66,34 +94,133 @@ namespace KDSWPFClient.View
             }
             #endregion
 
-            List<OrderPanel> retVal = new List<OrderPanel>();
-            OrderViewModel tmpOrder; OrderDishViewModel tmpDish;
+            //List<OrderPanel> orderPanels = new List<OrderPanel>();
+            OrderViewModel orderModel;
+            int dishIdxFrom=-1, dishIdxTo=-1;
+
+            _canvas.Children.Clear();
+            // текущий столбец, с 1
+            int curColIndex = (isPanelsForward) ? 1 : _pageColsCount;
+            // текущая координата Top
+            double curTopValue = (isPanelsForward) ? 0 : _canvas.ActualHeight;
+            // высота свободного места в столбце
+            double colBlankH = _canvas.ActualHeight;
             for (int iOrd = orderStartIndex;
                 (isPanelsForward) ? iOrd < orders.Count : iOrd >= 0;
                 iOrd += (isPanelsForward) ? 1 : -1)
             {
-                tmpOrder = orders[iOrd];
-                OrderPanel ordPanel = new OrderPanel(tmpOrder, 0, PanelWidth, true);
-                System.Diagnostics.Debug.Print("** order idx - " + iOrd.ToString());
-                if (dishStartIndex < 0) dishStartIndex = (isPanelsForward) ? 0 : tmpOrder.Dishes.Count;
-                for (int iDish = dishStartIndex;
-                    (isPanelsForward) ? iDish < tmpOrder.Dishes.Count : iDish >= 0;
-                    iDish += (isPanelsForward) ? 1 : -1)
+                // текущий заказ
+                orderModel = orders[iOrd];
+                // создать панель заказа со всеми блюдами и разделителями подач
+                #region индексы блюд
+                //   для последующих заказов - все блюда
+                if (dishStartIndex == -1) { dishIdxFrom = 0; dishIdxTo = orderModel.Dishes.Count - 1; }
+                //   для первого заказа - часть блюд
+                else
                 {
-                    tmpDish = tmpOrder.Dishes[iDish];
-                    DishPanel dishPanel = new DishPanel(tmpDish, null);
-                    ordPanel.AddDish(dishPanel);
-                    System.Diagnostics.Debug.Print("**   dish index - " + iDish.ToString());
+                    if (isPanelsForward)
+                    {
+                        // пропустить "назад" ингредиенты - блюда, у которых не пустой ParentUID
+                        while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex > 0)) dishStartIndex--;
+                        dishIdxFrom = dishStartIndex;
+                        dishIdxTo = orderModel.Dishes.Count - 1;
+                    }
+                    else
+                    {
+                        dishIdxFrom = 0;
+                        // пропустить "вперед" ингредиенты - блюда, у которых не пустой ParentUID
+                        while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count-1))) dishStartIndex++;
+                        dishIdxTo = dishStartIndex;
+                    }
                 }
-                retVal.Add(ordPanel);
-                // после первого прохода по заказу, сбрасывать dishStartIndex в -1, чтобы он вычислялся динамически
-                dishStartIndex = -1;
+                #endregion
+                OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo);
+                // получить реальные размеры панели заказа
+                _canvas.Children.Add(ordPanel);
+                _canvas.UpdateLayout();
+                dishStartIndex = -1;  // все блюда
+
+                // размещение панели
+                //   полностью помещается в свободное место столбца
+                if (ordPanel.ActualHeight <= colBlankH)
+                {
+                    // сдвинуть Top до отрисовки
+                    if (!isPanelsForward) curTopValue -= ordPanel.ActualHeight;
+                    
+                    ordPanel.SetPosition(curTopValue, getLeftOrdPnl(curColIndex));
+
+                    double d = ordPanel.ActualHeight + _hdrTopMargin;
+                    // уменьшить свободное место на высоту панели и на расстояние между панелями по вертикали
+                    colBlankH -= d;
+                    // сдвинуть Top после отрисовки
+                    curTopValue += (isPanelsForward) ? d : -_hdrTopMargin;
+                }
+                //   необходим перенос панели заказа, поэтому в цикле по панелям блюд
+                else
+                {
+                    
+                    
+                }
+
+                //orderPanels.Add(ordPanel);
+                System.Diagnostics.Debug.Print("** order idx - " + iOrd.ToString());
             }
 
-            if (retVal.Count == 0) retVal = null;
-            else if ((retVal.Count == 1) && (retVal[0].DishPanelsCount == 0)) retVal = null;
+        }
 
-            return retVal;
+        private OrderPanel createOrderPanel(OrderViewModel orderModel, int dishIdxFrom, int dishIdxTo)
+        {
+            OrderPanel ordPanel = new OrderPanel(orderModel, 0, _colWidth, (dishIdxFrom==0 ? true: false));
+            // первый заказ не с первого блюда - добавляем разделитель продолжения
+            if (dishIdxFrom != 0)  
+            {
+                ordPanel.AddDelimiter(createContinuePanel(false));
+            }
+
+            OrderDishViewModel dishModel;
+            int curFiling = 0;
+            for (int i = dishIdxFrom; i <= dishIdxTo; i++)
+            {
+                dishModel = orderModel.Dishes[i];
+                // разделитель подач
+                if (curFiling != dishModel.FilingNumber)
+                {
+                    curFiling = dishModel.FilingNumber;
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString() };
+                    newDelimPanel.Foreground = (curFiling == 1) ? Brushes.Red : Brushes.Blue;
+                    ordPanel.AddDelimiter(newDelimPanel);
+                }
+                // панель блюда
+                DishPanel dishPanel = new DishPanel(dishModel);
+                ordPanel.AddDish(dishPanel);
+                System.Diagnostics.Debug.Print("**   dish index - " + i.ToString());
+            }
+
+            // первый заказ не до последнего блюда - добавляем разделитель продолжения
+            if (dishIdxFrom != 0)
+            {
+                ordPanel.AddDelimiter(createContinuePanel(true));
+            }
+
+            return ordPanel;
+        }
+
+        private double getLeftOrdPnl(int curColIndex)
+        {
+            return ((curColIndex - 1) * _colWidth) + (curColIndex * _colMargin);
+        }
+
+        private DishDelimeterPanel createContinuePanel(bool isForward)
+        {
+            string text = (isForward) 
+                ? "Продолж. см.на СЛЕДУЮЩЕЙ стр."
+                : "Начало см.на ПРЕДЫДУЩЕЙ стр.";
+            DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
+            {
+                Text = text,
+                Foreground = Brushes.DarkMagenta
+            };
+            return newDelimPanel;
         }
 
 

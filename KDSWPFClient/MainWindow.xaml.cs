@@ -434,6 +434,13 @@ namespace KDSWPFClient
             Cursor = System.Windows.Input.Cursors.Wait;
 
             // добавить заказы
+            // TODO тестирование прохождения по коллекции заказов/блюд
+            OrderPageHelper pageHelper = new OrderPageHelper(bufferOrderPanels);
+            pageHelper.ResetOrderPanelSize();
+            pageHelper.DrawOrderPanelsOnPage(_viewOrders, -1, -1, true);
+
+            //Debug.Print("** создано {0} панелей", (orderPanelList == null) ? 0 : orderPanelList.Count);
+
             _pages.AddOrdersPanels(_viewOrders);
 
             setCurrentPage();

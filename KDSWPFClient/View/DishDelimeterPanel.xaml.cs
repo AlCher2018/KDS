@@ -22,9 +22,6 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class DishDelimeterPanel : UserControl
     {
-
-        public int FilingNumber { get; set; }
-
         public string Text
         {
             get { return (string)GetValue(TextProperty); }
@@ -40,8 +37,6 @@ namespace KDSWPFClient.View
         {
             InitializeComponent();
 
-            this.Loaded += DishDelimeterPanel_Loaded;
-
             double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d);
             double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             if (fontScale == 0d) fontScale = 1.0d;
@@ -49,14 +44,6 @@ namespace KDSWPFClient.View
             fontSize *= fontScale;
             this.tbDelimText.FontSize = fontSize;
 
-        }
-
-        private void DishDelimeterPanel_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (FilingNumber == 1)
-            {
-                this.tbDelimText.Foreground = Brushes.Red;
-            }
         }
 
     }  // class

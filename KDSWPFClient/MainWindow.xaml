@@ -81,6 +81,9 @@
 
         <!-- панель заказов -->
         <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public"/>
+        <Border Grid.Column="1" Visibility="Hidden">
+            <Canvas x:Name="bufferOrderPanels" x:FieldModifier="public"/>
+        </Border>
 
         <!-- сообщение об ошибке связи со службой -->
         <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
