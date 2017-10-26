@@ -61,6 +61,15 @@ namespace KDSWPFClient.View
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {
+            // TODO  тестирование прохождения по коллекции заказов/блюд
+            OrderPageHelper pageHelper = new OrderPageHelper();
+            pageHelper.PanelWidth = _colWidth;
+            pageHelper.SetPageSize(_uiPanel.RenderSize.Width, _uiPanel.RenderSize.Height);
+
+            List<OrderPanel> orderPanelList = pageHelper.GetOrderPanelsPerPage(orders, 0, 3, true);
+
+            Debug.Print("** создано {0} панелей", (orderPanelList==null)?0:orderPanelList.Count);
+
             ClearPages();
             _curColIndex = 1; _curTopValue = 0d;
             Visibility vis = _uiPanel.Visibility;
