@@ -29,7 +29,7 @@ namespace KDSWPFClient.View
         private int _curColIndex;
         private double _curTopValue;
         private double _hdrTopMargin;
-        private int _currentPageIndex, _viewPageIndex;  // 1-based value !!!!
+        private int _currentPageIndex;  // 1-based value !!!!
 
         public int CurrentPageIndex { get { return _currentPageIndex; } }
         public int Count { get { return _pages.Count; } }
@@ -85,9 +85,15 @@ namespace KDSWPFClient.View
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {
-            // сохранить номер отображаемой в данный момент страницы
-            _viewPageIndex = _currentPageIndex;
-            if (_viewPageIndex == 0) _viewPageIndex = 1;
+            // TODO  тестирование прохождения по коллекции заказов/блюд
+            OrderPageHelper pageHelper = new OrderPageHelper();
+            pageHelper.PanelWidth = _colWidth;
+            pageHelper.SetPageSize(_uiPanel.RenderSize.Width, _uiPanel.RenderSize.Height);
+
+            List<OrderPanel> orderPanelList = pageHelper.GetOrderPanelsPerPage(orders, 0, 3, true);
+
+            Debug.Print("** создано {0} панелей", (orderPanelList == null) ? 0 : orderPanelList.Count);
+
 
             ClearPages();
             _curColIndex = 1; _curTopValue = 0d;
@@ -222,11 +228,8 @@ namespace KDSWPFClient.View
             CurrentPage = page;
             _curColIndex = 1;
 
-            if ((_viewPageIndex > 1) && (_viewPageIndex == _pages.Count))
-            {
-                _currentPageIndex = _viewPageIndex;
-                _uiPanel.Child = CurrentPage;
-            }
+            _currentPageIndex = _pages.Count;
+            _uiPanel.Child = CurrentPage;
         }
 
         // очистить все страницы и удалить все, кроме первой
