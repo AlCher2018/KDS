@@ -692,9 +692,7 @@ namespace KDSWPFClient
             _pages.ClearPages(); // очистить панели заказов
 
             // добавить заказы
-            DebugTimer.Init("AddOrdersPanels");
             _pages.AddOrdersPanels(_viewOrders);
-            DebugTimer.GetInterval();
 
             setCurrentPage();
             AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
