@@ -25,6 +25,8 @@ namespace KDSWPFClient.View
         // высота панели заказа
         public double HeightPanel { get { return this.DesiredSize.Height; } }
 
+        public int DishPanelsCount { get { return this.stkDishes.Children.Count; } }
+
         public OrderViewModel OrderViewModel { get { return _orderView; } }
 
         public int PageIndex { get { return _pageIndex; } }

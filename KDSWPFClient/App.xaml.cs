@@ -134,6 +134,7 @@ namespace KDSWPFClient
                 Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, Hardware.getAvailableRAM());
         }
 
+
         private static bool ProtectedProgramm()
         {
             // файл E_init.PSW должен находиться в папке приложения
