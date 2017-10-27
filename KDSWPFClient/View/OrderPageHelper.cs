@@ -315,6 +315,7 @@ namespace KDSWPFClient.View
         private List<OrderPanel> getOrderViewPanels(OrderPanel ordPanel, double allowedHeight, double curTopValue, bool isPanelsForward)
         {
             List<OrderPanel> retVal = new List<OrderPanel>();
+            OrderPanel newPanel=null;
 
             if (isPanelsForward)
             {
@@ -332,15 +333,22 @@ namespace KDSWPFClient.View
                     if (curTopValue + blockHeight > allowedHeight)
                     {
                         // создать новую панель
-                        OrderPanel newPanel = new OrderPanel(ordPanel.OrderViewModel, 0, _colWidth, false);
+                        newPanel = new OrderPanel(ordPanel.OrderViewModel, 0, _colWidth, false);
+                        retVal.Add(newPanel);
+                        // TODO удаление из осн.панели и добавление в новую
+                        // а если сразу переносится в новую?
                         // добавить в нее текущий блок
                         foreach (UIElement elem in curBlock) newPanel.DishPanels.Add(elem);
                         curIndex = curBlock.Count;
                     }
                     else
                     {
-                        curIndex += 
+                        // добавить в текущую панель текущий блок
+                        foreach (UIElement elem in curBlock) newPanel.DishPanels.Add(elem);
+                        curIndex += curBlock.Count;
                     }
+
+                    curBlock = getOrderPanelItemsBlock(ordPanel, curIndex, true);
                 }
 
             }
