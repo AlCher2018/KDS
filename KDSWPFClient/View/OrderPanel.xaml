@@ -26,7 +26,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid x:Name="grdHeader" x:FieldModifier="private" Grid.Row="0"/>
+        <Grid x:Name="grdHeader" Grid.Row="0"/>
 
         <!-- заголовок таблицы блюд -->
         <Border x:Name="brdTblHeader" Grid.Row="1" Background="AliceBlue" BorderBrush="DarkBlue" BorderThickness="1,0,1,1">
@@ -48,7 +48,7 @@
             </Grid>
         </Border>
 
-        <StackPanel x:Name="stkDishes" x:FieldModifier="private" Grid.Row="2"/>
+        <StackPanel x:Name="stkDishes" Grid.Row="2"/>
 
     </Grid>
     </Border>

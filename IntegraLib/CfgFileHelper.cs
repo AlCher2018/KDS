@@ -37,11 +37,8 @@ namespace IntegraLib
             foreach (string settingName in appSettingNames)
             {
                 sValue = ConfigurationManager.AppSettings[settingName];
-                if (sValue.IsNull() == false)
-                {
-                    if (sb.Length > 0) sb.Append("; ");
-                    sb.Append(settingName + "=" + sValue);
-                }
+                if (sb.Length > 0) sb.Append("; ");
+                sb.Append(string.Format("{0}={1}", settingName, (sValue==null) ? "null" : "\"" + sValue + "\""));
             }
             return sb.ToString();
         }

@@ -246,8 +246,12 @@ namespace KDSWPFClient
             // уменьшить интервал таймера до 100 мсек
             if (_svcOrders == null)
             {
-                _timer.Interval = 90;
-                AppLib.WriteLogOrderDetails(" - служба читает данные из БД, set timer.Interval = 0,1 sec");
+                if (_timer.Interval != 90)
+                {
+                    _timer.Interval = 90;
+                    AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
+                }
+                AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
                 return;
             }
 

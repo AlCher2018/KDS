@@ -115,7 +115,7 @@ namespace KDSWPFClient.View
             CurrentPage.AddOrder(ordPnl);
             CurrentPage.UpdateLayout();
             // перенос в новый столбец всего заказа
-            if ((_curTopValue + ordPnl.HeightPanel) >= _uiPanelSize.Height)
+            if ((_curTopValue + ordPnl.PanelHeight) >= _uiPanelSize.Height)
             {
                 moveToNewCol(ordPnl);
                 CurrentPage.UpdateLayout();
@@ -128,7 +128,8 @@ namespace KDSWPFClient.View
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString() };
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
+                    { Text = "Подача " + curFiling.ToString(), DontTearOffNext = true };
                     if (curFiling == 1) newDelimPanel.Foreground = Brushes.Red; else newDelimPanel.Foreground = Brushes.Blue;
 
                     ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
@@ -142,14 +143,14 @@ namespace KDSWPFClient.View
                 ordPnl.AddDish(dshPnl);
                 CurrentPage.UpdateLayout();
 
-                if ((_curTopValue + Math.Ceiling(ordPnl.HeightPanel)) > _uiPanelSize.Height)  // переход в новый столбец
+                if ((_curTopValue + Math.Ceiling(ordPnl.PanelHeight)) > _uiPanelSize.Height)  // переход в новый столбец
                 {
                     // 1. удалить из ordPnl только что добавленное блюдо
                     //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
                     UIElement[] delItems = ordPnl.RemoveDish(dshPnl, _curTopValue, _uiPanelSize.Height);
 
                     // разбиваем блюда заказа по колонкам на той же странице
-                    if ((ordPnl.Lines > 2) 
+                    if ((ordPnl.ItemsCount > 2) 
                         && ((_curColIndex < _pageColsCount) || ((_curColIndex == _pageColsCount) && (Convert.ToDouble(ordPnl.GetValue(Canvas.TopProperty))==0d))))
                     {
                         setNextColumn();
@@ -174,7 +175,7 @@ namespace KDSWPFClient.View
 
             }  // foreach dishes
 
-            _curTopValue += ordPnl.HeightPanel;
+            _curTopValue += ordPnl.PanelHeight;
         }
 
         private void moveToNewCol(OrderPanel ordPnl)
@@ -227,11 +228,10 @@ namespace KDSWPFClient.View
         // очистить все страницы и удалить все, кроме первой
         public void ClearPages()
         {
-            if (_pages.Count > 1)
-            {
-                foreach (OrdersPage page in _pages) page.ClearOrders();
-                _pages.RemoveRange(1, _pages.Count - 1);
-            }
+            // очистить все страницы
+            foreach (OrdersPage page in _pages) page.ClearOrders();
+            // удалить все страницы, кроме первой
+            if (_pages.Count > 1) _pages.RemoveRange(1, _pages.Count - 1);
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
 

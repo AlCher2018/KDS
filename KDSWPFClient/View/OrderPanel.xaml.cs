@@ -23,16 +23,16 @@ namespace KDSWPFClient.View
         private Size _size;
 
         // высота панели заказа
-        public double HeightPanel { get { return this.DesiredSize.Height; } }
+        public double PanelHeight { get { return this.ActualHeight; } }
+        public double HeaderHeight { get { return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight; } }
 
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
-        public int DishPanelsCount { get { return this.stkDishes.Children.Count; } }
+        public int ItemsCount { get { return this.DishPanels.Count; } }
+
 
         public OrderViewModel OrderViewModel { get { return _orderView; } }
 
         public int PageIndex { get { return _pageIndex; } }
-
-        public int Lines { get { return this.stkDishes.Children.Count; } }
 
         // ctor
         public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
@@ -111,7 +111,8 @@ namespace KDSWPFClient.View
 
                 // условия переноса строки заказа в следующий столбец
                 // - это разделитель (номер подачи)
-                isMove = (uiElem is DishDelimeterPanel);
+                isMove = ((uiElem is DishDelimeterPanel) && ((DishDelimeterPanel)uiElem).DontTearOffNext);
+
                 // - или это блюдо для переносимого ингредиента
                 if ((!isMove) && (uiElem is DishPanel) && !parentUid.IsNull())
                 {
@@ -119,6 +120,7 @@ namespace KDSWPFClient.View
                     isMove = (dsPnl.DishView.UID == parentUid) && dsPnl.DishView.ParentUID.IsNull(); // признак блюда
                    //((uiElem as DishPanel).DishView.ParentUID == parentUid)))
                 }
+                
                 // - или выходим за рамки по вертикали
                 if (!isMove && (Math.Ceiling(totalHeight) >= cnvHeight)) isMove = true;
 
