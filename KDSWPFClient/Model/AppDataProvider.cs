@@ -64,10 +64,12 @@ namespace KDSWPFClient
             _errMsg = null;
             try
             {
-                if (_getClient != null) _getClient.Close();
+                if ((_getClient != null) && (_getClient.State != CommunicationState.Faulted)) _getClient.Close();
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
+                setBindingBuffers(getBinding);
+
                 string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
