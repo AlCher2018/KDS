@@ -34,7 +34,7 @@ namespace KDSWPFClient
         public Dictionary<int, DepartmentViewModel> Departments { get { return _deps; } }
 
         private string _errMsg;
-        public string ErrorMessage { get { return _errMsg; } }
+        public string ErrorMessage { get { return _errMsg??""; } }
 
         public bool EnableGetChannel { get
             { return (_getClient != null)
@@ -86,11 +86,28 @@ namespace KDSWPFClient
             catch (Exception ex)
             {
                 _errMsg = ex.Message;
-                throw;
             }
 
             return retVal;
         }
+
+        private void setBindingBuffers(NetTcpBinding getBinding)
+        {
+            // set max buffer size
+            int maxIntValue = int.MaxValue;
+            getBinding.MaxBufferSize = maxIntValue;
+            getBinding.MaxReceivedMessageSize = maxIntValue;
+            /*
+            XmlDictionaryReaderQuotas myReaderQuotas = new XmlDictionaryReaderQuotas(); myReaderQuotas.MaxStringContentLength = 2147483647; myReaderQuotas.MaxArrayLength = 2147483647; myReaderQuotas.MaxBytesPerRead = 2147483647; myReaderQuotas.MaxDepth = 64; myReaderQuotas.MaxNameTableCharCount = 2147483647; binding.GetType().GetProperty("ReaderQuotas").SetValue(bindi‌​ng, myReaderQuotas, null);
+             */
+            System.Xml.XmlDictionaryReaderQuotas readQuotas = getBinding.ReaderQuotas;
+            readQuotas.MaxArrayLength = 1048576;
+            readQuotas.MaxBytesPerRead = 1048576;
+            readQuotas.MaxDepth = 1048576;
+            readQuotas.MaxNameTableCharCount = 1048576;
+            readQuotas.MaxStringContentLength = maxIntValue;
+        }
+
 
         public bool CreateSetChannel()
         {
@@ -120,7 +137,6 @@ namespace KDSWPFClient
             catch (Exception ex)
             {
                 _errMsg = ex.Message;
-                throw;
             }
 
             return retVal;

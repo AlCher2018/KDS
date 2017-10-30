@@ -271,7 +271,7 @@ namespace KDSWPFClient
                 if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
                 _pages.ClearPages();
                 if (_viewOrders.Count > 0) _viewOrders.Clear();
-                AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
+                AppLib.WriteLogErrorMessage("Ошибка get-канала получения данных: " + _dataProvider.ErrorMessage??"");
                 return;
             }
 

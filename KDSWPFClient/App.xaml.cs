@@ -67,35 +67,18 @@ namespace KDSWPFClient
             // создать каналы
             AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - START");
             AppDataProvider dataProvider = new AppDataProvider();
-            try
-            {
-                dataProvider.CreateGetChannel();
-                dataProvider.CreateSetChannel();
-                AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - FINISH");
-            }
-            catch (Exception)
-            {
-                // КДСы могут быть уже запущены, а служба еще нет!
-                AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-
-                //if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
-                //string msg = string.Format("Ошибка создания каналов к службе KDSService: {0}\n{1}", dataProvider.ErrorMessage, ex.ToString());
-                //MessageBox.Show(msg, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-                //Environment.Exit(1);
-            }
+            bool isSuccess = dataProvider.CreateGetChannel();
+            // КДСы могут быть уже запущены, а служба еще нет!
+            if (!isSuccess) AppLib.WriteLogErrorMessage("Ошибка создания Get-канала: " + dataProvider.ErrorMessage);
+            isSuccess  = dataProvider.CreateSetChannel();
+            if (!isSuccess) AppLib.WriteLogErrorMessage("Ошибка создания Set-канала: " + dataProvider.ErrorMessage);
+            AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - FINISH");
             
             // и получить словари и настройки от службы
             AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - START");
-            if (dataProvider.SetDictDataFromService() == false)
-            {
-                // КДСы могут быть уже запущены, а служба еще нет!
-                AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
-                //if (splashScreen != null) splashScreen.Close(TimeSpan.FromMinutes(10));
-                //MessageBox.Show("Ошибка получения словарей от службы KDSService:" + Environment.NewLine + dataProvider.ErrorMessage, "АВАРИЙНОЕ ЗАВЕРШЕНИЕ ПРИЛОЖЕНИЯ", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-                //Environment.Exit(2);
-            }
-            else
-                AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - FINISH");
+            isSuccess = dataProvider.SetDictDataFromService();
+            if (!isSuccess) AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
+            AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - FINISH");
 
             AppPropsHelper.SetAppGlobalValue("AppDataProvider", dataProvider);
 
@@ -307,6 +290,7 @@ namespace KDSWPFClient
                             // проверить set-канал
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
                             if (!dataProvider.EnableSetChannel) dataProvider.CreateSetChannel();
+                            if (!dataProvider.EnableSetChannel) throw new Exception(dataProvider.ErrorMessage);
 
                             // изменение состояния БЛЮДА и разрешенных ингредиентов (2017-07-26)
                             if (dishModel != null)
