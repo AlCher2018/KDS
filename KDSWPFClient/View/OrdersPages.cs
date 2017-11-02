@@ -157,7 +157,7 @@ namespace KDSWPFClient.View
                         // 2. создать новый OrderPanel для текущего блюда с заголовком таблицы
                         ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
                         // 3. добавить только что удаленные блюда
-                        ordPnl.AddDish(delItems);
+                        ordPnl.AddDishes(delItems);
                         // 4. привязать к канве
                         ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
                         CurrentPage.AddOrder(ordPnl);
@@ -168,7 +168,7 @@ namespace KDSWPFClient.View
                         // 2. изменить координаты панели заказа
                         moveToNewCol(ordPnl);
                         // 3. добавить только что удаленные блюда
-                        ordPnl.AddDish(delItems);
+                        ordPnl.AddDishes(delItems);
                     }
                     CurrentPage.UpdateLayout();
                 }

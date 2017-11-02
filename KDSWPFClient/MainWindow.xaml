@@ -76,12 +76,16 @@
                     </TextBlock>
                 </Border>
 
+                <Border x:Name="brdCFG" Panel.ZIndex="10" VerticalAlignment="Top" Background="LightGray" BorderBrush="DarkGray" BorderThickness="1" PreviewMouseUp="btnDBG_Click">
+                    <TextBlock x:Name="btnDBG" Text="debug" Foreground="Black" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="14" Margin="0,0,0,4"/>
+                </Border>
+
             </Grid>
         </Border>
 
         <!-- панель заказов -->
         <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public"/>
-        <Border Grid.Column="1" Visibility="Hidden">
+        <Border x:Name="bufPanelsContainer" Grid.Column="1" Visibility="Hidden">
             <Canvas x:Name="bufferOrderPanels" x:FieldModifier="public"/>
         </Border>
 

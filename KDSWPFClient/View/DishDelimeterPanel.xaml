@@ -5,11 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:KDSWPFClient.View"
              mc:Ignorable="d" Name="root"
-             d:DesignHeight="60" d:DesignWidth="300"
+             d:DesignHeight="60" d:DesignWidth="300" Background="White"
              >
 
-    <Border Background="White" BorderBrush="DarkBlue" BorderThickness="1,1,1,1">
-        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=root}"/>
+    <Border Background="{Binding Background, ElementName=root}" BorderBrush="DarkBlue" BorderThickness="1,1,1,1">
+        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=root}" Margin="0,10"/>
     </Border>
 
 </UserControl>

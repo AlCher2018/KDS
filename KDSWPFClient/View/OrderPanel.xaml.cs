@@ -29,6 +29,25 @@ namespace KDSWPFClient.View
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int ItemsCount { get { return this.DishPanels.Count; } }
 
+        public OrderPanelHeader HeaderPanel {
+            get
+            {
+                return (this.grdHeader.Children.Count == 0) ? null : (OrderPanelHeader)this.grdHeader.Children[0];
+            }
+            set
+            {
+                if (value == null)
+                {
+                    if (this.grdHeader.Children.Count != 0) this.grdHeader.Children.Clear();
+                }
+                else if ((value is OrderPanelHeader) && (value.Parent == null))
+                {
+                    if (this.grdHeader.Children.Count == 0) this.grdHeader.Children.Add(value);
+                    else this.grdHeader.Children[0] = value;
+                }
+            }
+        }
+
 
         public OrderViewModel OrderViewModel { get { return _orderView; } }
 
@@ -79,12 +98,40 @@ namespace KDSWPFClient.View
         }
 
         // добавить массив элементов в стек
-        internal void AddDish(UIElement[] delItems)
+        internal void AddDishes(UIElement[] dishPanels)
         {
-            foreach (UIElement item in delItems)
+            foreach (UIElement item in dishPanels)
             {
                 this.stkDishes.Children.Add(item);
             }
+        }
+        internal void AddDishes(List<UIElement> dishPanels)
+        {
+            foreach (UIElement item in dishPanels)
+            {
+                this.stkDishes.Children.Add(item);
+            }
+        }
+
+        internal void InsertDish(int index, UIElement dishPanel)
+        {
+            this.stkDishes.Children.Insert(index, dishPanel);
+        }
+        internal void InsertDishes(int index, List<UIElement> dishPanels)
+        {
+            for (int i = dishPanels.Count-1; i >= 0; i--)
+            {
+                this.stkDishes.Children.Insert(index, dishPanels[i]);
+            }
+        }
+
+        internal void DetachDish(UIElement item)
+        {
+            this.stkDishes.Children.Remove(item);
+        }
+        internal void DetachDishes(List<UIElement> items)
+        {
+            items.ForEach(e => this.stkDishes.Children.Remove(e));
         }
 
         // для удаляемого блюда (при переносе в следующую колонку), создать массив UI-элементов, которые будут
@@ -148,6 +195,22 @@ namespace KDSWPFClient.View
         {
             this.stkDishes.Children.Add(delimPanel);
         }
+        public void InsertDelimiter(int index, DishDelimeterPanel delimPanel)
+        {
+            this.stkDishes.Children.Insert(index, delimPanel);
+        }
 
+        // отсоединить заголовок и вернуть его
+        internal OrderPanelHeader DetachHeader()
+        {
+            if ((this.grdHeader.Children.Count > 0) && (this.grdHeader.Children[0] is OrderPanelHeader))
+            {
+                OrderPanelHeader retVal = (OrderPanelHeader)this.grdHeader.Children[0];
+                this.grdHeader.Children.Clear();
+                return retVal;
+            }
+            else
+                return null;
+        }
     }  // class
 }
