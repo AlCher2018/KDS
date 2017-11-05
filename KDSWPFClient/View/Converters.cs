@@ -43,6 +43,30 @@ namespace KDSWPFClient.View
         }
     }
 
+    // количество порций в строку
+    [ValueConversion(typeof(decimal), typeof(string))]
+    public class DishQuantityToStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            decimal decValue = (decimal)value;
+            int intValue = (int)decValue;
+            string retVal = "";
+
+            if ((decValue - intValue) > 0m) // есть дробная часть
+                retVal = decValue.ToString("#0.00");
+            else
+                retVal = intValue.ToString();
+
+            return retVal;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return System.Convert.ToDecimal(value);
+        }
+    }
+
 
     [ValueConversion(typeof(double), typeof(double))]
     public class MultiplyParamValueConverter : IValueConverter

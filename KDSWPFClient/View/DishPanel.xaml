@@ -26,7 +26,7 @@
                 <!-- 1. наименование блюда -->
                 <ColumnDefinition Width="*"/>
                 <!-- 2. количество -->
-                <ColumnDefinition Width="0.3*"/>
+                <ColumnDefinition Width="0.35*"/>
                 <!-- 3. таймер состояния -->
                 <ColumnDefinition Width="0.8*"/>
             </Grid.ColumnDefinitions>
@@ -37,8 +37,8 @@
                 <Run x:Name="tbDishName" Text="{Binding DishName}"/>
                 <Run x:Name="tbComment" FontStyle="Italic" FontWeight="Normal"/>
             </TextBlock>
-            
-            <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center"/>
+
+            <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity, Converter={StaticResource dishQuantityToStringConverter}}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,3,0"/>
 
             <Border x:Name="brdTimer" Grid.Column="3" Margin="0,0,3,0"
                     CornerRadius="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">

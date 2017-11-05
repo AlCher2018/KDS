@@ -9,7 +9,7 @@
              >
 
     <Border Background="{Binding Background, ElementName=root}" BorderBrush="DarkBlue" BorderThickness="1,1,1,1">
-        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=root}" Margin="0,10"/>
+        <TextBlock x:Name="tbDelimText" TextAlignment="Center" FontWeight="Bold" FontStretch="Expanded" Text="{Binding Text, ElementName=root}" VerticalAlignment="Center" Foreground="{Binding Foreground, ElementName=root}" Margin="0,0,0,3" TextWrapping="Wrap"/>
     </Border>
 
 </UserControl>

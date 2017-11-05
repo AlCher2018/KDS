@@ -48,10 +48,10 @@ namespace KDSWPFClient
 
         // страницы заказов
         private OrdersPages _pages;
-        // сохраненные панели заказов
-        private List<FrameworkElement> 
-            _panelsList1 = new List<FrameworkElement>(), 
-            _panelsList2 = new List<FrameworkElement>();
+        private OrderPageHelper _pageHelper;
+        private bool _viewPrevPageButton, _viewNextPageButton;
+        // флаг режима формирования панелей заказов на канве, если true - то с помощью _pageHelper, иначе - _pages
+        private bool _viewByPage = true;
 
         // служебные коллекции
         private List<OrderModel> _svcOrders;
@@ -86,7 +86,7 @@ namespace KDSWPFClient
 
             this.Top = 0; this.Left = 0;
             this.Width = _screenWidth; this.Height = _screenHeight;
-
+            
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
@@ -144,6 +144,9 @@ namespace KDSWPFClient
             // размер канвы для панелей заказов
             recalcOrderPanelsLayot();
             _pages = new OrdersPages(vbxOrders);
+            // постраничная отрисовка
+            _pageHelper = new OrderPageHelper(bufferOrderPanels);
+            _pageHelper.ResetOrderPanelSize();
 
             // настройки кнопок пользов.группировки и фильтрации
             double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
@@ -325,13 +328,10 @@ namespace KDSWPFClient
             AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
 
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
-            if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
+            if (!isViewRepaint2 && !_viewByPage)
+                isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
             // перерисовать полностью
-            if (isViewRepaint2 == true)
-            {
-                repaintOrders("update Orders from KDS service");
-                repaintOrdersNew("update Orders from KDS service", LeafDirectionEnum.NoLeaf);
-            }
+            if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
 
             AppLib.WriteLogOrderDetails("svc.GetOrders(...) - FINISH - " + (DateTime.Now - dtTmr1).ToString());
 
@@ -432,8 +432,15 @@ namespace KDSWPFClient
             AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             Cursor = System.Windows.Input.Cursors.Wait;
 
-            // добавить заказы
-            _pages.AddOrdersPanels(_viewOrders);
+            if (_viewByPage)
+            {
+                repaintOrdersNew(LeafDirectionEnum.NoLeaf);
+            }
+            else
+            {
+                // добавить заказы
+                _pages.AddOrdersPanels(_viewOrders);
+            }
 
             setCurrentPage();
             Cursor = null; //System.Windows.Input.Cursors.Arrow;
@@ -457,30 +464,19 @@ namespace KDSWPFClient
             AppPropsHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
         }
 
-        private void repaintOrdersNew(string reason, LeafDirectionEnum shiftDirection)
+        private void repaintOrdersNew(LeafDirectionEnum shiftDirection)
         {
-            if (_pages == null) return;
-
-            DateTime dtTmr = DateTime.Now;
-            string sLogMsg = string.Format(" - redrawNEW reason: {0}", reason);
-            AppLib.WriteLogOrderDetails(sLogMsg + " - START");
-            Cursor = System.Windows.Input.Cursors.Wait;
-
-            // добавить заказы
-            // TODO тестирование прохождения по коллекции заказов/блюд
-            OrderPageHelper pageHelper = new OrderPageHelper(bufferOrderPanels);
-            pageHelper.ResetOrderPanelSize();
-
             #region найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
             // найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
-            int orderStartIndex, dishStartIndex;
+            int orderStartIndex=-1, dishStartIndex=-1;
+            int orderFinishIndex=-1, dishFinishIndex=-1;
             bool bShiftDirForward = true;
 
-
-            // еще нет панелей на канве
-            if (bufferOrderPanels.Children.Count == 0)
+            // первый/последний элемент
+            if (_pages.CurrentPage.Children.Count == 0)   // еще нет панелей на канве
             {
                 orderStartIndex = 0; dishStartIndex = 0;
+                shiftDirection = LeafDirectionEnum.NoLeaf;
             }
             else
             {
@@ -488,100 +484,161 @@ namespace KDSWPFClient
                 {
                     case LeafDirectionEnum.NoLeaf:
                         // с первого элемента на канве и вперед
+                        getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                         bShiftDirForward = true;
                         break;
                     case LeafDirectionEnum.Forward:
                         // с последнего элемента на канве и вперед
+                        getModelIndexesFromViewContainer(false, out orderStartIndex, out dishStartIndex);
                         bShiftDirForward = true;
                         break;
                     case LeafDirectionEnum.Backward:
                         // с первого элемента на канве и назад
-
+                        getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                         bShiftDirForward = false;
                         break;
                     default:
                         break;
                 }
             }
-            // прямое направление
-            if (shiftDirection)
+            // следующий/предыдущий элемент, с которого будет отрисовываться страница
+            //    прямое направление
+            if (bShiftDirForward)
             {
                 if (orderStartIndex < 0)
                 {
-                    orderStartIndex = 0; dishStartIndex = -1;
+                    orderStartIndex = 0; dishStartIndex = 0;
                 }
-                else if (dishStartIndex >= orders[orderStartIndex].Dishes.Count - 1)
+                else if (dishStartIndex > _viewOrders[orderStartIndex].Dishes.Count - 1)
                 {
-                    orderStartIndex++; dishStartIndex = -1;
-                    if (orderStartIndex >= orders.Count) return;
+                    if (orderStartIndex < (_viewOrders.Count-1)) orderStartIndex++;
+                    dishStartIndex = 0;
                 }
-                else
+                else if (shiftDirection == LeafDirectionEnum.Forward)
                 {
                     dishStartIndex++;
-                    orderModel = orders[orderStartIndex];
+                    //OrderViewModel orderModel = _viewOrders[orderStartIndex];
                     // пропустить "назад" ингредиенты - блюда, у которых не пустой ParentUID
-                    while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex > 0)) dishStartIndex--;
+                    //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex > 0)) dishStartIndex--;
                 }
             }
-            // в обратном направлении
+            //    обратное направлении
             else
             {
-                if (dishStartIndex == 0)
+                if (dishStartIndex <= 0)
                 {
-                    orderStartIndex--; dishStartIndex = -1;
-                    if (orderStartIndex < 0) return;
+                    if (orderStartIndex > 0) orderStartIndex--;
+                    dishStartIndex = _viewOrders[orderStartIndex].Dishes.Count - 1;
                 }
                 else
                 {
                     dishStartIndex--;
                     // пропустить "вперед" ингредиенты - блюда, у которых не пустой ParentUID
-                    orderModel = orders[orderStartIndex];
-                    while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count - 1))) dishStartIndex++;
+                    //OrderViewModel orderModel = _viewOrders[orderStartIndex];
+                    //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count - 1))) dishStartIndex++;
                 }
             }
             #endregion
             System.Diagnostics.Debug.Print("** начальные индексы: order {0}, dish {1}", orderStartIndex, dishStartIndex);
 
-            pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
+            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
+            // если при листании назад, первая панель находится НЕ в первой колонке, то разместить заново с первой колонки вперед
+            if ((!bShiftDirForward) && (_pageHelper.OrderPanels.Count > 0))
+            {
+                int colIndex = _pageHelper.GetColumnIndex(_pageHelper.OrderPanels[0]);
+                if ((colIndex != -1) && (colIndex != 1))
+                {
+                    orderStartIndex = 0; dishStartIndex = 0;
+                    bShiftDirForward = true;
+                    _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
+                }
+            }
 
-            // получить индексы последних заказ/блюдо на странице чисто для отображения
-            int orderFinishIndex, dishFinishIndex;
-            getModelIndexesFromViewContainer(bShiftDirForward, out orderFinishIndex, out dishFinishIndex);
+            movePanelsToView(); // перенос панелей в область просмотра
+
+            // при листании вперед, получить индексы последних заказ/блюдо на странице
+            if (bShiftDirForward) getModelIndexesFromViewContainer(false, out orderFinishIndex, out dishFinishIndex);
+            // при листании назад, получить первые индексы
+            else
+            {
+                orderFinishIndex = orderStartIndex; dishFinishIndex = dishStartIndex;
+                getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+            }
             System.Diagnostics.Debug.Print("** конечные индексы: order {0}, dish {1}", orderFinishIndex, dishFinishIndex);
 
-            Cursor = null; //System.Windows.Input.Cursors.Arrow;
-            AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
+            // кнопки листания
+            _viewPrevPageButton = ((orderStartIndex > 0) || (dishStartIndex > 0));
+            if (orderFinishIndex < _viewOrders.Count-1)
+            {
+                _viewNextPageButton = true;
+            }
+            else
+            {
+                OrderViewModel lastOrder = _viewOrders.LastOrDefault();
+                if (lastOrder != null) _viewNextPageButton = (dishFinishIndex < (lastOrder.Dishes.Count - 1));
+            }
         }
 
         // индексы или первого, или последнего элемента, в зависимости от флажка fromFirstItem
-        private void getModelIndexesFromViewContainer(bool fromFirstItem, out int orderFinishIndex, out int dishFinishIndex)
+        private void getModelIndexesFromViewContainer(bool fromFirstItem, out int orderIndex, out int dishIndex)
         {
-            orderFinishIndex = -1; dishFinishIndex = -1;
+            orderIndex = -1; dishIndex = -1;
 
+            // источник панелей - или bufferOrderPanels, или vbxOrders.Child
+            UIElementCollection pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
+                ? ((Canvas)vbxOrders.Child).Children
+                : this.bufferOrderPanels.Children;
+            if (pnlSource.Count == 0) return;
+
+            OrderPanel curPanel;
+            OrderViewModel curOrderModel;
+            UIElement curItem;
+            OrderDishViewModel curDishModel;
+
+            // пройтись по всем панелям на холсте
             // индекс заказа
-            OrderPanel lastPanel = (bShiftDirForward) ? (OrderPanel)this.bufferOrderPanels.Children[this.bufferOrderPanels.Children.Count - 1] : (OrderPanel)this.bufferOrderPanels.Children[0];
-            OrderViewModel lastOrderModel = lastPanel.OrderViewModel;
-            orderFinishIndex = _viewOrders.IndexOf(lastOrderModel);  // if not find return -1
-            
-            // индекс блюда
-            int itemIndex = (bShiftDirForward) ? lastPanel.ItemsCount - 1 : 0;
-            UIElement lastItem = lastPanel.DishPanels[itemIndex];
-            while ((lastItem != null) && ((lastItem is DishPanel) == false))
+            int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
+            while (true)
             {
-                itemIndex += (bShiftDirForward) ? -1 : 1;
-                if ((itemIndex < 0) || (itemIndex >= lastPanel.ItemsCount))
+                curPanel = (OrderPanel)pnlSource[i];
+                curOrderModel = curPanel.OrderViewModel;
+                orderIndex = _viewOrders.FindIndex(vOrd => vOrd.Id == curOrderModel.Id);
+                if (orderIndex != -1)  // заказ найден
                 {
-                    lastItem = null;
+                    // поиск индекса блюда
+                    int j = (fromFirstItem) ? 0 : curPanel.ItemsCount - 1;
+                    while (true)
+                    {
+                        curItem = curPanel.DishPanels[j];
+                        if ((curItem != null) && (curItem is DishPanel))
+                        {
+                            curDishModel = ((DishPanel)curItem).DishView;
+                            dishIndex = curOrderModel.Dishes.FindIndex(vDish => vDish.Id == curDishModel.Id);
+                        }
+                        if (dishIndex != -1) break;
+
+                        j += ((fromFirstItem) ? 1 : -1);
+                        // достигли граничного условия, индекс блюда -1
+                        if ((fromFirstItem && (j >= curPanel.ItemsCount))
+                            || (!fromFirstItem && (j < 0)))
+                        {
+                            dishIndex = -1;
+                            break;
+                        }
+                    }
+                    if (dishIndex != -1) break;  // блюдо найдено
+                }
+
+                i += ((fromFirstItem) ? 1 : -1);
+                // достигли граничного условия, индекс заказа -1
+                if ((fromFirstItem && (i >= pnlSource.Count))
+                    || (!fromFirstItem && (i < 0)))
+                {
+                    orderIndex = -1;
                     break;
                 }
-                else
-                    lastItem = lastPanel.DishPanels[itemIndex];
             }
-            if (lastItem != null)
-            {
-                OrderDishViewModel dishModel = ((DishPanel)lastItem).DishView;
-                dishFinishIndex = lastOrderModel.Dishes.IndexOf(dishModel);
-            }
+            if (orderIndex == -1) dishIndex = -1;
         }
 
 
@@ -589,16 +646,24 @@ namespace KDSWPFClient
         // *** кнопки листания страниц ***
         private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (_pages.SetNextPage()) setCurrentPage();
-
-            repaintOrdersNew(" - view next page", LeafDirectionEnum.Forward);
+            if (_viewByPage)
+            {
+                repaintOrdersNew(LeafDirectionEnum.Forward);
+                setCurrentPage();
+            }
+            else if (_pages.SetNextPage())
+                setCurrentPage();
         }
 
         private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (_pages.SetPreviousPage()) setCurrentPage();
-
-            repaintOrdersNew(" - view prev page", LeafDirectionEnum.Backward);
+            if (_viewByPage)
+            {
+                repaintOrdersNew(LeafDirectionEnum.Backward);
+                setCurrentPage();
+            }
+            if (_pages.SetPreviousPage())
+                setCurrentPage();
         }
 
         // отображение кнопок с номерами страниц и вкл/выкл таймера возврата на первую страницу
@@ -608,18 +673,36 @@ namespace KDSWPFClient
             btnSetPageNext.Visibility = Visibility.Hidden;
             if (_pages.Count == 0) return;
 
-            // состояние кнопки перехода на предыдущюю страницу
-            if ((_pages.CurrentPageIndex - 1) > 0)
+            // постраничные кнопки, если _pages содержит несколько страниц
+            if (!_viewByPage && (_pages.Count > 1))
             {
-                tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
-                btnSetPagePrevious.Visibility = Visibility.Visible;
+                // кнопка перехода на предыдущюю страницу
+                if ((_pages.CurrentPageIndex - 1) > 0)
+                {
+                    tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
+                    btnSetPagePrevious.Visibility = Visibility.Visible;
+                }
+                // кнопка перехода на следующую страницу
+                if (_pages.CurrentPageIndex < _pages.Count)
+                {
+                    tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
+                    btnSetPageNext.Visibility = Visibility.Visible;
+                }
             }
-
-            // и на следующую страницу
-            if (_pages.CurrentPageIndex < _pages.Count)
+            else if (_viewByPage && (_pageHelper != null))
             {
-                tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
-                btnSetPageNext.Visibility = Visibility.Visible;
+                // кнопка перехода на предыдущюю страницу
+                if (_viewPrevPageButton)
+                {
+                    tbPagePreviousNum.Text = "предыд. стр";
+                    btnSetPagePrevious.Visibility = Visibility.Visible;
+                }
+                // кнопка перехода на следующую страницу
+                if (_viewNextPageButton)
+                {
+                    tbPageNextNum.Text = "след. стр.";
+                    btnSetPageNext.Visibility = Visibility.Visible;
+                }
             }
 
             // таймер возврата на первую страницу
@@ -690,7 +773,10 @@ namespace KDSWPFClient
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
                     recalcOrderPanelsLayot();
-                    _pages.ResetOrderPanelSize();
+                    if (_viewByPage)
+                        _pageHelper.ResetOrderPanelSize();
+                    else
+                        _pages.ResetOrderPanelSize();
 
                     repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
                 }
@@ -1036,6 +1122,9 @@ namespace KDSWPFClient
         private void btnDBG_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             Canvas workContainer = (Canvas)vbxOrders.Child;
+            List<FrameworkElement>
+                _panelsList1 = new List<FrameworkElement>(),
+                _panelsList2 = new List<FrameworkElement>();
 
             if (brdCFG.Background == Brushes.LightGray)
             {
@@ -1057,6 +1146,22 @@ namespace KDSWPFClient
                 _panelsList1.ForEach(p => workContainer.Children.Add(p));
                 _panelsList2.ForEach(p => bufferOrderPanels.Children.Add(p));
             }
+        }
+
+        // переписывание панелей из bufferOrderPanels в vbxOrders.Child
+        private void movePanelsToView()
+        {
+            Canvas workContainer = (Canvas)vbxOrders.Child;
+            List<FrameworkElement> pnlList = new List<FrameworkElement>();
+
+            // очистить канву отображения
+            workContainer.Children.Clear();
+            // сохранить панели из канвы размещения в коллекции и очистить канву размещения (отсоединить панели)
+            saveOrderPanelsToList(bufferOrderPanels, pnlList);
+            bufferOrderPanels.Children.Clear();
+
+            // загрузить панели в канву отображения
+            pnlList.ForEach(p => workContainer.Children.Add(p));
         }
 
         // сохранение панелей заказов в коллекцию и удаление их из контейнера

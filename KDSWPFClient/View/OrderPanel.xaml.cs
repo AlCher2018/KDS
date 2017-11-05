@@ -119,7 +119,7 @@ namespace KDSWPFClient.View
         }
         internal void InsertDishes(int index, List<UIElement> dishPanels)
         {
-            for (int i = dishPanels.Count-1; i >= 0; i--)
+            for (int i = 0; i < dishPanels.Count; i++)
             {
                 this.stkDishes.Children.Insert(index, dishPanels[i]);
             }

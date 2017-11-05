@@ -65,7 +65,7 @@ namespace KDSWPFClient.View
                 this.tbComment.Text = string.Format("\n({0})", dishView.Comment);
                 this.tbComment.FontSize = 0.9 * _fontSize;
             }
-            this.tbDishQuantity.FontSize = _fontSize;
+            this.tbDishQuantity.FontSize = 1.1 * _fontSize;
 
             tbDishStatusTS.FontSize = _fontSize;
             tbDishStatusTS.FontWeight = FontWeights.Bold;

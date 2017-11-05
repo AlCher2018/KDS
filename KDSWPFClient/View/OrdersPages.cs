@@ -95,6 +95,7 @@ namespace KDSWPFClient.View
                 AddOrderPanel(ord);
             }
 
+            SetFirstPage();
             _uiPanel.Visibility = vis;
         }
 
@@ -129,7 +130,7 @@ namespace KDSWPFClient.View
                 {
                     curFiling = dishModel.FilingNumber;
                     DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
-                    { Text = "Подача " + curFiling.ToString(), DontTearOffNext = true };
+                    { Text = "Подача " + curFiling.ToString(), DontTearOffNext = true, Background = Brushes.AliceBlue };
                     if (curFiling == 1) newDelimPanel.Foreground = Brushes.Red; else newDelimPanel.Foreground = Brushes.Blue;
 
                     ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
