@@ -83,7 +83,12 @@ namespace KDSWPFClient.View
                     new View.BrushesPair() {Name="~Строка блюда", Background=Brushes.White, Foreground = Brushes.Black} },
 
                 { "ingrLineBase",
-                    new View.BrushesPair() {Name="~Строка ингредиента", Background=Brushes.White, Foreground = Brushes.DarkViolet } }
+                    new View.BrushesPair() {Name="~Строка ингредиента", Background=Brushes.White, Foreground = Brushes.DarkViolet } },
+
+                { "delimiterBreakPage",
+                    new View.BrushesPair() {Name="~Разделитель разрыва заказа на странице",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("pageBreakBack", "Blue"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("pageBreakFore", "White") } }
             };
         }
 

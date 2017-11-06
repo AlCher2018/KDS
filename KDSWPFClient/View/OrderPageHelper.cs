@@ -537,8 +537,8 @@ namespace KDSWPFClient.View
             DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
             {
                 Text = text,
-                Foreground = Brushes.Yellow,
-                Background = Brushes.Blue
+                Background = BrushHelper.AppBrushes["delimiterBreakPage"].Background,
+                Foreground = BrushHelper.AppBrushes["delimiterBreakPage"].Foreground
             };
 
             // измерить высоту панели, т.е. получить ActualHeight
