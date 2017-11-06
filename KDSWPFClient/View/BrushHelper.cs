@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.ServiceReference1;
+﻿using IntegraLib;
+using KDSWPFClient.ServiceReference1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,22 +29,34 @@ namespace KDSWPFClient.View
                     new View.BrushesPair() {Name="ОЖИДАНИЕ начала готовки: Ручной запуск начала приготовления.", Background=Brushes.Plum, Foreground = Brushes.Black} },
 
                 { "estimateCook",
-                    new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", Background=Brushes.Plum, Foreground = Brushes.Navy, LegendText = "00:00:00"} },
+                    new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", LegendText = "00:00:00", 
+                        Background = CfgFileHelper.GetBrushFromCfgFile("estimateCookBack", "Plum"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("estimateCookFore", "Navy")} },
 
                 { "estimateStart",
-                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", Background = Brushes.DeepSkyBlue, Foreground = Brushes.Yellow, LegendText = "00:00:00" } },
+                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", LegendText = "00:00:00",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("estimateStartBack", "DeepSkyBlue"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("estimateStartFore", "Yellow") } },
 
                 { OrderStatusEnum.Cooking.ToString(),
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", Background=Brushes.Green, Foreground = Brushes.Yellow, LegendText="00:00:00" } },
+                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", LegendText="00:00:00",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("statusCookingBack", "Green"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusCookingFore", "Yellow") } },
 
                 { OrderStatusEnum.Cooking.ToString()+"minus",
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", Background=Brushes.DarkGreen, Foreground = Brushes.Red, LegendText="-00:00:00" } },
+                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени",  LegendText="-00:00:00",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("statusCookingOverBack", "DarkGreen"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusCookingOverFore", "Red") } },
 
                 { OrderStatusEnum.Ready.ToString(),
-                    new View.BrushesPair() {Name="Отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Black, LegendText="00:00:00" } },
+                    new View.BrushesPair() {Name="Отображается таймер обратного отсчета планового времени выноса блюда", LegendText="00:00:00",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyBack", "Orange"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusReadyFore", "Black") } },
 
                 { OrderStatusEnum.Ready.ToString()+"minus",
-                    new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", Background=Brushes.Orange, Foreground = Brushes.Red, LegendText="-00:00:00" } },
+                    new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", LegendText="-00:00:00",
+                        Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyOverBack", "Orange"),
+                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusReadyOverFore", "Red") } },
 
                 { OrderStatusEnum.ReadyConfirmed.ToString(),
                     new View.BrushesPair() {Name="Подтверждение готовности: отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Gold, Foreground = Brushes.Black, LegendText="00:00:00" } },

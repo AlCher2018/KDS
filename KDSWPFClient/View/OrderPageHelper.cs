@@ -155,7 +155,7 @@ namespace KDSWPFClient.View
             }
 
             // в обратном направлении для первого заказа curTopValue = 0
-            if (!_shiftForward && (_canvas.Children.Count > 0)) _canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
+            //if (!_shiftForward && (_canvas.Children.Count > 0)) _canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
         }
 
         // преобразование сплошной панели в коллекцию панелей по колонкам
@@ -197,9 +197,13 @@ namespace KDSWPFClient.View
                         {
                             curColIndex--;
                             curTopValue = _colHeight;
-                            if ((double)curPanel.GetValue(Canvas.TopProperty) != 0d) curPanel.SetValue(Canvas.TopProperty, 0d);
+                            
                         }
-                        //if (curColIndex == 1) curTopValue = 0d;
+                        if ((curColIndex <= 1) && ((double)curPanel.GetValue(Canvas.TopProperty) != 0d))
+                        {
+                            curPanel.SetValue(Canvas.TopProperty, 0d);
+                            curTopValue = 0d;
+                        }
                     }
                     #endregion
                     break;  // нормальный выход - выбраны все элементы панели
@@ -216,7 +220,7 @@ namespace KDSWPFClient.View
                         // перед добавлением новой панели заказа, установить принудительно для первой панели Top=0
                         if ((_canvas.Children.Count > 0) && ((double)_canvas.Children[0].GetValue(Canvas.TopProperty) != 0d))
                         {
-                            _canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
+                            //_canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
                         }
                         _canvas.Children.Insert(0, curPanel);
                     }
@@ -299,8 +303,9 @@ namespace KDSWPFClient.View
                         // из НЕпоследнего столбца: создаем новую панель (Top=0)
                         else
                         {
-                            // в текущей панели нет элементов - переносим панель
-                            if (curPanel.DishPanels.Count == 0)
+                            // в текущей панели нет элементов или только одна панель DishPanel - 
+                            // переносим панель в следующую колонку
+                            if ((curPanel.DishPanels.Count == 0) || (curPanel.DishPanelsCount() == 1))
                             {
                                 curPanel.AddDishes(curBlock);   // добавить текущий блок элементов
                                 curPanel.UpdateLayout();
@@ -366,10 +371,21 @@ namespace KDSWPFClient.View
                         // из НЕпервого столбца - создаем новую панель
                         else
                         {
-                            // в текущей панели нет элементов - переносим панель
+                            // в текущей панели нет элементов - переносим панель НЕ разбивая ее
                             if (curPanel.DishPanels.Count == 0)
                             {
-                                curPanel.InsertDishes(0, curBlock);   // добавить текущий блок элементов
+                                // если в этой же колонке есть еще одна панель, то сдвигаем ее вверх
+                                if (_canvas.Children.Count > 1)
+                                {
+                                    UIElement panel2 = _canvas.Children[1];
+                                    int panel2ColIndex = GetColumnIndex(panel2);
+                                    if ((panel2ColIndex == curColIndex) && ((double)panel2.GetValue(Canvas.TopProperty) != 0d))
+                                    {
+                                        panel2.SetValue(Canvas.TopProperty, 0d);
+                                    }
+                                }
+                                // добавить текущий блок элементов в переносимую панель
+                                curPanel.InsertDishes(0, curBlock);
                                 curPanel.UpdateLayout();
                                 curColIndex--; curTopValue = _colHeight;
                             }
@@ -436,6 +452,7 @@ namespace KDSWPFClient.View
             // не с первого блюда - добавляем разделитель продолжения на предыд.странице
             if (dishIdxFrom != 0) ordPanel.AddDelimiter(createContinuePanel(false));
 
+            string supplyName = AppPropsHelper.GetAppGlobalValue("DishesSupplyName", "подача").ToString();
             OrderDishViewModel dishModel;
             int curFiling = 0;
             for (int i = dishIdxFrom; i <= dishIdxTo; i++)
@@ -446,7 +463,7 @@ namespace KDSWPFClient.View
                 {
                     curFiling = dishModel.FilingNumber;
                     DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
-                    { Text = "Подача " + curFiling.ToString(), DontTearOffNext = true, Background = Brushes.AliceBlue };
+                    { Text = supplyName + " " + curFiling.ToString(), DontTearOffNext = true, Background = Brushes.AliceBlue };
                     newDelimPanel.Foreground = (curFiling == 1) ? Brushes.Red : Brushes.Blue;
                     ordPanel.AddDelimiter(newDelimPanel);
                 }
@@ -478,11 +495,45 @@ namespace KDSWPFClient.View
                 return -1;
         }
 
+        // признак повторного размещения: первая панель не в первой колонке или много места в первой колонке
+        internal bool NeedRelayout()
+        {
+            // нет панелей - выход
+            if (this.OrderPanels.Count == 0) return false;
+
+            UIElement panel1 = this.OrderPanels[0];
+            int panel1ColIndex = GetColumnIndex(panel1);
+
+            // только одна панель в первой колонке - не переразмещаем
+            if ((this.OrderPanels.Count == 1) && (panel1ColIndex == 1))
+            {
+                if ((double)panel1.GetValue(Canvas.TopProperty) != 0d) panel1.SetValue(Canvas.TopProperty, 0d);
+                return false;
+            }
+
+            // первая панель не в первой колонке - переразмещаем
+            if (panel1ColIndex != 1) return true;
+
+            // в первой колонке более одной панели - НЕ переразмещаем
+            UIElement panel2 = this.OrderPanels[1];
+            int panel2ColIndex = GetColumnIndex(panel2);
+            if (panel2ColIndex == 1) return false;
+
+            // в первой колонке только одна панель - находим свободное место
+            if (Convert.ToDouble(panel1.GetValue(Canvas.TopProperty)) != 0d) panel1.SetValue(Canvas.TopProperty, 0d);
+            double freeCol1Height = _colHeight - ((OrderPanel)panel1).ActualHeight;
+            if (freeCol1Height > (_colHeight / 2d))
+                return true;
+            else
+                return false;
+        }
+
+
         private DishDelimeterPanel createContinuePanel(bool isForward)
         {
             string text = (isForward) 
-                ? "Продолж. см.на СЛЕДУЮЩЕЙ стр."
-                : "Начало см.на ПРЕДЫДУЩЕЙ стр.";
+                ? AppPropsHelper.GetAppGlobalValue("ContinueOrderNextPage", "see next page").ToString()
+                : AppPropsHelper.GetAppGlobalValue("ContinueOrderPrevPage", "see prev page").ToString();
             DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
             {
                 Text = text,

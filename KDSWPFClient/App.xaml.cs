@@ -210,6 +210,13 @@ namespace KDSWPFClient
             cfgValue = CfgFileHelper.GetAppSetting("AppFontScale");
             AppPropsHelper.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1.0d : cfgValue.ToDouble());
 
+            // различные текстовые строки
+            cfgValue = CfgFileHelper.GetAppSetting("DishesSupplyName");
+            AppPropsHelper.SetAppGlobalValue("DishesSupplyName", (cfgValue == null) ? "Подача" : cfgValue);
+            cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderNextPage");
+            AppPropsHelper.SetAppGlobalValue("ContinueOrderNextPage", (cfgValue == null) ? "Продолж. см.на СЛЕДУЮЩЕЙ стр." : cfgValue);
+            cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderPrevPage");
+            AppPropsHelper.SetAppGlobalValue("ContinueOrderPrevPage", (cfgValue == null) ? "Начало см.на ПРЕДЫДУЩЕЙ стр." : cfgValue);
 
             // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
@@ -226,8 +233,10 @@ namespace KDSWPFClient
             // минимальная высота строки блюда
             double dishLineMinHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight") / 20d;
             AppPropsHelper.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
+            
             // шрифт разделителя блюд (напр. Подача **)
-            AppPropsHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", 16d);
+            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelItemsDelimiterFontSize");
+            AppPropsHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", (cfgValue == null)? 16 : cfgValue.ToInt());
 
             cfgValue = CfgFileHelper.GetAppSetting("NewOrderAudioAttention");
             if (cfgValue != null) AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);

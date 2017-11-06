@@ -57,6 +57,7 @@ namespace KDSWPFClient
         private List<OrderModel> _svcOrders;
         private List<int> _preOrdersId;
         private List<OrderViewModel> _viewOrders;  // для отображения на экране
+        private bool _isRelayout = false;
 
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;  // для удаления заказов
@@ -472,12 +473,14 @@ namespace KDSWPFClient
             int orderFinishIndex=-1, dishFinishIndex=-1;
             bool bShiftDirForward = true;
 
-            // первый/последний элемент
-            if (_pages.CurrentPage.Children.Count == 0)   // еще нет панелей на канве
+            // перерисовка с первого заказа/блюда: еще нет панелей на канве или соотв.флаг
+            if ((_pages.CurrentPage.Children.Count == 0) || _isRelayout)
             {
                 orderStartIndex = 0; dishStartIndex = 0;
                 shiftDirection = LeafDirectionEnum.NoLeaf;
+                if (_isRelayout) _isRelayout = false;
             }
+            // найти первый/последний элемент
             else
             {
                 switch (shiftDirection)
@@ -509,7 +512,7 @@ namespace KDSWPFClient
                 {
                     orderStartIndex = 0; dishStartIndex = 0;
                 }
-                else if (dishStartIndex > _viewOrders[orderStartIndex].Dishes.Count - 1)
+                else if ((_viewOrders.Count > 0) && (dishStartIndex > _viewOrders[orderStartIndex].Dishes.Count - 1))
                 {
                     if (orderStartIndex < (_viewOrders.Count-1)) orderStartIndex++;
                     dishStartIndex = 0;
@@ -525,10 +528,13 @@ namespace KDSWPFClient
             //    обратное направлении
             else
             {
-                if (dishStartIndex <= 0)
+                if ((dishStartIndex <= 0) && (_viewOrders.Count > 0))
                 {
-                    if (orderStartIndex > 0) orderStartIndex--;
-                    dishStartIndex = _viewOrders[orderStartIndex].Dishes.Count - 1;
+                    if (orderStartIndex > 0)
+                    {
+                        orderStartIndex--;
+                        dishStartIndex = _viewOrders[orderStartIndex].Dishes.Count - 1;
+                    }
                 }
                 else
                 {
@@ -542,18 +548,18 @@ namespace KDSWPFClient
             System.Diagnostics.Debug.Print("** начальные индексы: order {0}, dish {1}", orderStartIndex, dishStartIndex);
 
             _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
-            // если при листании назад, первая панель находится НЕ в первой колонке, то разместить заново с первой колонки вперед
-            if ((!bShiftDirForward) && (_pageHelper.OrderPanels.Count > 0))
+            // если при листании назад, первая панель находится НЕ в первой колонке, 
+            // или, наоборот, в первой колонке и свободного места более половины,
+            // то разместить заново с первой колонки вперед
+            #region redraw
+            // делать ДО переноса панелей из канвы размещения в канву отображения
+            if (!bShiftDirForward && _pageHelper.NeedRelayout())
             {
-                int colIndex = _pageHelper.GetColumnIndex(_pageHelper.OrderPanels[0]);
-                if ((colIndex != -1) && (colIndex != 1))
-                {
-                    orderStartIndex = 0; dishStartIndex = 0;
-                    bShiftDirForward = true;
-                    _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
-                }
+                orderStartIndex = 0; dishStartIndex = 0;
+                bShiftDirForward = true;
+                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
             }
-
+            #endregion
             movePanelsToView(); // перенос панелей в область просмотра
 
             // при листании вперед, получить индексы последних заказ/блюдо на странице
@@ -590,55 +596,83 @@ namespace KDSWPFClient
                 : this.bufferOrderPanels.Children;
             if (pnlSource.Count == 0) return;
 
-            OrderPanel curPanel;
-            OrderViewModel curOrderModel;
-            UIElement curItem;
-            OrderDishViewModel curDishModel;
+            OrderPanel edgeOrderPanel; // граничная панель заказа
+            DishPanel edgeDishPanel;   // граничная панель блюда
+            OrderViewModel curPanelOrderModel;  // OrderViewModel из панели
+            OrderDishViewModel curPanelDishModel;  // OrderDishViewModel из панели
+            OrderViewModel tmpOrderModel;
+            List<OrderViewModel> tmpOrderModels;
 
-            // пройтись по всем панелям на холсте
+            // пройтись по всем панелям на холсте для поиска в _viewOrders индекса заказа и блюда, 
+            // которые есть в первой/последней панели заказа в контейнере
+
             // индекс заказа
             int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
             while (true)
             {
-                curPanel = (OrderPanel)pnlSource[i];
-                curOrderModel = curPanel.OrderViewModel;
-                orderIndex = _viewOrders.FindIndex(vOrd => vOrd.Id == curOrderModel.Id);
-                if (orderIndex != -1)  // заказ найден
-                {
-                    // поиск индекса блюда
-                    int j = (fromFirstItem) ? 0 : curPanel.ItemsCount - 1;
-                    while (true)
-                    {
-                        curItem = curPanel.DishPanels[j];
-                        if ((curItem != null) && (curItem is DishPanel))
-                        {
-                            curDishModel = ((DishPanel)curItem).DishView;
-                            dishIndex = curOrderModel.Dishes.FindIndex(vDish => vDish.Id == curDishModel.Id);
-                        }
-                        if (dishIndex != -1) break;
+                edgeOrderPanel = (OrderPanel)pnlSource[i];
+                edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
+                if (edgeDishPanel == null) break;
 
-                        j += ((fromFirstItem) ? 1 : -1);
-                        // достигли граничного условия, индекс блюда -1
-                        if ((fromFirstItem && (j >= curPanel.ItemsCount))
-                            || (!fromFirstItem && (j < 0)))
-                        {
-                            dishIndex = -1;
-                            break;
-                        }
-                    }
-                    if (dishIndex != -1) break;  // блюдо найдено
-                }
-
-                i += ((fromFirstItem) ? 1 : -1);
-                // достигли граничного условия, индекс заказа -1
-                if ((fromFirstItem && (i >= pnlSource.Count))
-                    || (!fromFirstItem && (i < 0)))
+                curPanelOrderModel = edgeOrderPanel.OrderViewModel;  // заказ из панели
+                curPanelDishModel = edgeDishPanel.DishView;         // блюдо из панели
+                
+                // найти все заказы в _viewOrders с таким же id - их может быть несколько
+                // в связи с группировкой по времени, при которой возможно получить 
+                // несколько панелей для одного и того же заказа, но с разным временем создания позиции заказа
+                tmpOrderModels = _viewOrders.FindAll(vOrd => vOrd.Id == curPanelOrderModel.Id);
+                // поиск блюда в найденных заказах
+                tmpOrderModel = null;
+                dishIndex = getDishIndex(fromFirstItem, curPanelDishModel, tmpOrderModels, ref tmpOrderModel);
+                if (dishIndex != -1)  // найдено
                 {
-                    orderIndex = -1;
+                    orderIndex = _viewOrders.IndexOf(tmpOrderModel);
                     break;
+                }
+                // иначе берем следующую панель в заданном направлении
+                else
+                {
+                    i += ((fromFirstItem) ? 1 : -1);
+                    // достигли граничного условия, индекс заказа -1
+                    if ((fromFirstItem && (i >= pnlSource.Count))
+                        || (!fromFirstItem && (i < 0)))
+                    {
+                        orderIndex = -1;
+                        break;
+                    }
                 }
             }
             if (orderIndex == -1) dishIndex = -1;
+        }
+
+        // поиск граничной панели блюда в панели заказа, с пропуском разделителей
+        private DishPanel findEdgeDishPanel(OrderPanel edgeOrderPanel, bool fromFirstItem)
+        {
+            UIElement item = null;
+            for (int i = (fromFirstItem) ? 0 : edgeOrderPanel.DishPanels.Count - 1;
+                (fromFirstItem) ? i < edgeOrderPanel.DishPanels.Count : i >= 0;
+                i += (fromFirstItem) ? 1 : -1)
+            {
+                item = edgeOrderPanel.DishPanels[i];
+                if (item is DishPanel) return (item as DishPanel);
+            }
+            return null;
+        }
+
+        private int getDishIndex(bool fromFirstItem, OrderDishViewModel curPanelDishModel, List<OrderViewModel> tmpOrderModels, ref OrderViewModel foundDishOrder)
+        {
+            int dishIndex = -1;
+            foreach (OrderViewModel om in tmpOrderModels)
+            {
+                // поиск индекса блюда findingDishModel в om
+                dishIndex = om.Dishes.FindIndex(d => d.Id == curPanelDishModel.Id);
+                if (dishIndex != -1)
+                {
+                    foundDishOrder = om;
+                    return dishIndex;
+                }
+            }
+            return dishIndex;
         }
 
 
@@ -950,6 +984,7 @@ namespace KDSWPFClient
                 case OrderGroupEnum.ByOrderNumber:
                     tbOrderGroup.Text = "По заказам";
                     if ((_timerBackToOrderGroupByTime != null) && (_autoBackTimersInterval > 0d)) _timerBackToOrderGroupByTime.Start();
+                    _isRelayout = true;
                     break;
 
                 default:

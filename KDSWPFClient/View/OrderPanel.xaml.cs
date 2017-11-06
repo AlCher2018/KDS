@@ -212,5 +212,17 @@ namespace KDSWPFClient.View
             else
                 return null;
         }
+
+        internal int DishPanelsCount()
+        {
+            int retVal = 0;
+            foreach (UIElement item in this.stkDishes.Children)
+            {
+                if (item is DishPanel) retVal++;
+            }
+
+            return retVal;
+        }
+
     }  // class
 }

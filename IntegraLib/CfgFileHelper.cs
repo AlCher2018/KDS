@@ -147,6 +147,15 @@ namespace IntegraLib
             return retVal;
         }
 
+        public static SolidColorBrush GetBrushFromCfgFile(string cfgKey, string defaultBrushName)
+        {
+            string cfgValue = GetAppSetting(cfgKey);
+            if (cfgValue.IsNull())
+                return GetBrushByName(defaultBrushName);
+            else
+                return GetBrushByName(cfgValue, defaultBrushName);
+        }
+
         public static SolidColorBrush GetBrushByName(string brushName, string defaultBrushName = null)
         {
             SolidColorBrush retVal = null;

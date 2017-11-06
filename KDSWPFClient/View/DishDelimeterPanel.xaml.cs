@@ -39,8 +39,8 @@ namespace KDSWPFClient.View
         {
             InitializeComponent();
 
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d);
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontSize = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d));
+            double fontScale = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d));
             if (fontScale == 0d) fontScale = 1.0d;
 
             fontSize *= fontScale;
