@@ -122,11 +122,14 @@ namespace KDSWPFClient.View
                 #endregion
 
                 OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo, bSplit);
+
+                dishStartIndex = -1;  // для последующих заказов - все блюда
+                if (ordPanel == null) continue;
+
                 // получить реальные размеры панели заказа
                 if (_shiftForward) _canvas.Children.Add(ordPanel);
                 else _canvas.Children.Insert(0, ordPanel);
                 ordPanel.UpdateLayout();
-                dishStartIndex = -1;  // все блюда
 
                 // 2. Размещение панели на странице
                 // помещается ли вся панель заказа без разрывов в свободное место
@@ -340,14 +343,15 @@ namespace KDSWPFClient.View
                             {
                                 _canvas.Children.Remove(curPanel);
                                 // а первую панель подтягиваем кверху
-                                _canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
+                                curTopValue = 0d;
+                                setPanelLeftTop((FrameworkElement)_canvas.Children[0]);
                             }
                             // разбиваем панель, добавляем в начало разделитель продолжения заказа
                             else
                             {
                                 DishDelimeterPanel delimPanel = createContinuePanel(false);
                                 // удалить первый блок
-                                if (curPanel.ActualHeight + delimPanel.Height > freeHeight)
+                                if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
                                 {
                                     _shiftForward = true; // смещаясь вперед
                                     curBlock = getNextItemsBlock(ordPanel);
@@ -363,6 +367,10 @@ namespace KDSWPFClient.View
                                 }
                                 else
                                     curPanel.InsertDelimiter(0, delimPanel);
+
+                                // установить Top=0 для текущей панели
+                                curTopValue = 0d;
+                                setPanelLeftTop(curPanel);
                             }
                             // перенос панели на предыдущую страницу
                             _pageBreak = true;
@@ -448,6 +456,8 @@ namespace KDSWPFClient.View
 
         private OrderPanel createOrderPanel(OrderViewModel orderModel, int dishIdxFrom, int dishIdxTo, bool isTailSplit)
         {
+            if (dishIdxFrom > dishIdxTo) return null;
+
             OrderPanel ordPanel = new OrderPanel(orderModel, 0, _colWidth, (dishIdxFrom==0 ? true: false));
             // не с первого блюда - добавляем разделитель продолжения на предыд.странице
             if (dishIdxFrom != 0) ordPanel.AddDelimiter(createContinuePanel(false));
