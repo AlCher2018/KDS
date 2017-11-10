@@ -555,7 +555,8 @@ namespace KDSWPFClient
             // делать ДО переноса панелей из канвы размещения в канву отображения
             if (!bShiftDirForward && _pageHelper.NeedRelayout())
             {
-                orderStartIndex = 0; dishStartIndex = 0;
+                //orderStartIndex = 0; dishStartIndex = 0;
+                getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
                 _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
             }
@@ -591,6 +592,7 @@ namespace KDSWPFClient
             orderIndex = -1; dishIndex = -1;
 
             // источник панелей - или bufferOrderPanels, или vbxOrders.Child
+            // предпочтение bufferOrderPanels, если там не пусто
             UIElementCollection pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
                 ? ((Canvas)vbxOrders.Child).Children
                 : this.bufferOrderPanels.Children;

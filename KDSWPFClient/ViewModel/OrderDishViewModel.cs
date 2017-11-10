@@ -91,9 +91,11 @@ namespace KDSWPFClient.ViewModel
             DelayedStartTime = svcOrderDish.DelayedStartTime;
             EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
+
             WaitingTimerString = svcOrderDish.WaitingTimerString;
 
             setLocalDTFields();
+            this.ViewTimerString = getViewTimerString();
         }
 
         private void setLocalDTFields()
@@ -203,6 +205,7 @@ namespace KDSWPFClient.ViewModel
                     timerString = _strCookingEstimated;
                 }
                 else
+                    // по умолчанию отправить 
                     timerString = "";
             }
 

@@ -221,10 +221,10 @@ namespace KDSWPFClient.View
                     else
                     {
                         // перед добавлением новой панели заказа, установить принудительно для первой панели Top=0
-                        if ((_canvas.Children.Count > 0) && ((double)_canvas.Children[0].GetValue(Canvas.TopProperty) != 0d))
-                        {
+                        //if ((_canvas.Children.Count > 0) && ((double)_canvas.Children[0].GetValue(Canvas.TopProperty) != 0d))
+                        //{
                             //_canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
-                        }
+                        //}
                         _canvas.Children.Insert(0, curPanel);
                     }
                     curPanel.UpdateLayout();
@@ -386,7 +386,7 @@ namespace KDSWPFClient.View
                                 if (_canvas.Children.Count > 1)
                                 {
                                     UIElement panel2 = _canvas.Children[1];
-                                    int panel2ColIndex = GetColumnIndex(panel2);
+                                    int panel2ColIndex = ((OrderPanel)panel2).CanvasColumnIndex;
                                     if ((panel2ColIndex == curColIndex) && ((double)panel2.GetValue(Canvas.TopProperty) != 0d))
                                     {
                                         panel2.SetValue(Canvas.TopProperty, 0d);
@@ -429,7 +429,11 @@ namespace KDSWPFClient.View
         private void setPanelLeftTop(FrameworkElement panel)
         {
             panel.SetValue(Canvas.TopProperty, curTopValue);
-            panel.SetValue(Canvas.LeftProperty, getLeftProperty());
+
+            // сохранить в панели номер колонки
+            if (panel is OrderPanel) ((OrderPanel)panel).CanvasColumnIndex = curColIndex;
+            double left = ((curColIndex - 1) * _colWidth) + (curColIndex * _colMargin);
+            panel.SetValue(Canvas.LeftProperty, left);
         }
 
         private double getFreeHeight()
@@ -488,11 +492,6 @@ namespace KDSWPFClient.View
             return ordPanel;
         }
 
-        // получить Left из индекса колонки
-        private double getLeftProperty()
-        {
-            return ((curColIndex - 1) * _colWidth) + (curColIndex * _colMargin);
-        }
         // получить индекс колонки панели из Left
         internal int GetColumnIndex(UIElement panel)
         {
@@ -505,14 +504,14 @@ namespace KDSWPFClient.View
                 return -1;
         }
 
-        // признак повторного размещения: первая панель не в первой колонке или много места в первой колонке
+        // TODO возвращает признак повторного размещения при движении назад: много свободного места
         internal bool NeedRelayout()
         {
             // нет панелей - выход
             if (this.OrderPanels.Count == 0) return false;
 
             UIElement panel1 = this.OrderPanels[0];
-            int panel1ColIndex = GetColumnIndex(panel1);
+            int panel1ColIndex = ((OrderPanel)panel1).CanvasColumnIndex;
 
             // только одна панель в первой колонке - не переразмещаем
             if ((this.OrderPanels.Count == 1) && (panel1ColIndex == 1))
@@ -526,7 +525,7 @@ namespace KDSWPFClient.View
 
             // в первой колонке более одной панели - НЕ переразмещаем
             UIElement panel2 = this.OrderPanels[1];
-            int panel2ColIndex = GetColumnIndex(panel2);
+            int panel2ColIndex = ((OrderPanel)panel2).CanvasColumnIndex;
             if (panel2ColIndex == 1) return false;
 
             // в первой колонке только одна панель - находим свободное место

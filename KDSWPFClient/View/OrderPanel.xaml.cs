@@ -29,6 +29,8 @@ namespace KDSWPFClient.View
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int ItemsCount { get { return this.DishPanels.Count; } }
 
+        public int CanvasColumnIndex { get; set; }
+
         public OrderPanelHeader HeaderPanel {
             get
             {
