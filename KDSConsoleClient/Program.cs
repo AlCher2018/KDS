@@ -13,6 +13,13 @@ namespace KDSConsoleClient
     {
         static void Main(string[] args)
         {
+            //DateTime _dtStop, _dtStart;
+            //_dtStart = DateTime.MinValue;
+            //System.Threading.Thread.Sleep(2000);
+            //_dtStop = DateTime.Now;
+            //int sec = Convert.ToInt32((_dtStop - _dtStart).TotalSeconds);
+
+
             Type tt = typeof(ConfigurationManager);
 
             KDSServiceClient _getClient;

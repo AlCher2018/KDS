@@ -48,7 +48,7 @@ namespace KDSService.AppModel
         {
             get
             {
-                return (_dtStop.IsZero()) ? 0 : Convert.ToInt32((_dtStop - _dtStart).TotalSeconds);
+                return (_dtStop.IsZero() || _dtStart.IsZero()) ? 0 : Convert.ToInt32((_dtStop - _dtStart).TotalSeconds);
             }
         }
 

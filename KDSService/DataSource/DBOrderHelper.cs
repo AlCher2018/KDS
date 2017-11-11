@@ -125,29 +125,42 @@ namespace KDSService.DataSource
                 }
 
                 // узнать общий статус всех (оставшихся) блюд
-                int idStatus;
+                int intAllDishesStatus, newOrderStatusId;
                 foreach (Order order in _dbOrders)
                 {
-                    idStatus = getStatusAllDishesInt(order.Dishes);
+                    intAllDishesStatus = getStatusAllDishesInt(order.Dishes);
+                    newOrderStatusId = order.OrderStatusId;
 
-                    if ((idStatus != -1) && (order.OrderStatusId != idStatus))
+                    if ((intAllDishesStatus != -1) && (order.OrderStatusId != intAllDishesStatus))
                     {
                         sqlText = null;
-                        if (idStatus == 0)  // все блюда в ожидании, а заказ не в готовке
+                        if (intAllDishesStatus == 0)  // все блюда в ожидании, а заказ не в готовке
                         {
+                            // сбрасываем статус заказа в Cooking
                             if (order.OrderStatusId != 1)
+                            {
                                 sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 1 WHERE (Id={0})", order.Id);
+                                newOrderStatusId = 1;
+                            }
                         }
-                        else if (idStatus == 3)  // если Выдан, то менять и QueueStatusId
+                        else if (intAllDishesStatus == 3)  // если Выдан, то менять и QueueStatusId
+                        {
                             sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 3, QueueStatusId = 2 WHERE (Id={0})", order.Id);
+                            newOrderStatusId = 3;
+                        }
                         else
-                            sqlText = string.Format("UPDATE [Order] SET OrderStatusId = {0} WHERE (Id={1})", idStatus, order.Id);
+                        {
+                            sqlText = string.Format("UPDATE [Order] SET OrderStatusId = {0} WHERE (Id={1})", intAllDishesStatus, order.Id);
+                            newOrderStatusId = intAllDishesStatus;
+                        }
 
                         if (sqlText != null)
                         {
-                            AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
+                            AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, intAllDishesStatus);
 
                             db.Database.ExecuteSqlCommand(sqlText);
+                            // для обновленя внутренней коллекции уже измененным значением
+                            order.OrderStatusId = newOrderStatusId;  
                         }
                     }
                 }
