@@ -24,6 +24,7 @@ namespace KDSWPFClient
         private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
+        int openTimeoutSeconds = (int)AppPropsHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
 
         // **** СЛОВАРИ
         //   статусов
@@ -69,6 +70,7 @@ namespace KDSWPFClient
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
                 setBindingBuffers(getBinding);
+                getBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
 
                 string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
@@ -120,6 +122,7 @@ namespace KDSWPFClient
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
+                setBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
                 setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
                 setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
                 string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");

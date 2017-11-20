@@ -168,6 +168,8 @@ namespace KDSWPFClient
             tbDishStatusFilter.Width = hRow; tbDishStatusFilter.Height = wRow;
             tbDishStatusFilter.FontSize = 0.35d * wRow;
             tbDishStatusFilter.Margin = leftTbMargin;
+
+            SplashScreen.Splasher.CloseSplash();
         }
 
         protected override void OnClosing(CancelEventArgs e)

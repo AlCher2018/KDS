@@ -91,6 +91,10 @@
     <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />
+    <Compile Include="SplashScreen\DispatcherHelper.cs" />
+    <Compile Include="SplashScreen\MessageListener.cs" />
+    <Compile Include="SplashScreen\Splasher.cs" />
+    <Compile Include="SplashScreen\SplashScreen.xaml.cs" />
     <Compile Include="View\BrushConverter.cs" />
     <Compile Include="View\BrushHelper.cs" />
     <Compile Include="View\ColorLegend.xaml.cs">
@@ -138,6 +142,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="SplashScreen\SplashScreen.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\ColorLegend.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -202,6 +210,7 @@
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="SplashScreen\source.txt" />
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
