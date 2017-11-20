@@ -145,9 +145,13 @@ namespace KDSWPFClient
             // размер канвы для панелей заказов
             recalcOrderPanelsLayot();
             _pages = new OrdersPages(vbxOrders);
-            // постраничная отрисовка
-            _pageHelper = new OrderPageHelper(bufferOrderPanels);
-            _pageHelper.ResetOrderPanelSize();
+            if (_viewByPage)
+            {
+                // постраничная отрисовка
+                _pageHelper = new OrderPageHelper(bufferOrderPanels);
+                _pageHelper.ResetOrderPanelSize();
+                _pageHelper.ResetMaxDishesCountOnPage();
+            }
 
             // настройки кнопок пользов.группировки и фильтрации
             double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
@@ -426,6 +430,7 @@ namespace KDSWPFClient
         #endregion
 
 
+        // перерисовать заказы
         private void repaintOrders(string reason)
         {
             if (_pages == null) return;
@@ -441,7 +446,6 @@ namespace KDSWPFClient
             }
             else
             {
-                // добавить заказы
                 _pages.AddOrdersPanels(_viewOrders);
             }
 
@@ -767,7 +771,7 @@ namespace KDSWPFClient
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
-            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + ":" + s.Value));
+            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + "=" + s.Value));
             AppLib.WriteLogClientAction("   changed: " + sLogMsg);
 
             //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
@@ -794,17 +798,24 @@ namespace KDSWPFClient
                     setOrderStatusFilterTab();
                 }
 
+                string repaintReason = "";
+                bool resetMaxDishesCountOnPage = false;
                 if (cfgEdit.AppNewSettings.ContainsKey("IsShowOrderStatusByAllShownDishes"))
                 {
-                    repaintOrders("change config parameter IsShowOrderStatusByAllShownDishes");
+                    repaintReason = "change config parameter IsShowOrderStatusByAllShownDishes";
                 }
 
                 // масштаб шрифта
                 // перерисовать полностью, т.к. по таймеру может все не обновиться
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
-                    AppPropsHelper.SetAppGlobalValue("AppFontScale", cfgEdit.AppNewSettings["AppFontScale"].ToDouble());
-                    repaintOrders("change config parameter AppFontScale");  
+                    double newAppFontScale = cfgEdit.AppNewSettings["AppFontScale"].ToDouble();
+                    AppPropsHelper.SetAppGlobalValue("AppFontScale", newAppFontScale);
+                    if (_viewByPage)
+                    {
+                        resetMaxDishesCountOnPage = true;
+                    }
+                    repaintReason = "change config parameter AppFontScale";
                 }
 
                 // кол-во колонок заказов
@@ -812,11 +823,15 @@ namespace KDSWPFClient
                 {
                     recalcOrderPanelsLayot();
                     if (_viewByPage)
+                    {
                         _pageHelper.ResetOrderPanelSize();
+                        resetMaxDishesCountOnPage = true;
+                    }
                     else
+                    {
                         _pages.ResetOrderPanelSize();
-
-                    repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
+                    }
+                    repaintReason = "change config parameter OrdersColumnsCount";
                 }
 
                 // интервал таймера сброса группировки заказов по номерам
@@ -846,6 +861,9 @@ namespace KDSWPFClient
                     _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                     _wavPlayer.LoadAsync();
                 }
+
+                if (resetMaxDishesCountOnPage) _pageHelper.ResetMaxDishesCountOnPage();
+                if (!repaintReason.IsNull()) { repaintOrders(repaintReason); }
 
             }
             cfgEdit = null;
@@ -1218,10 +1236,5 @@ namespace KDSWPFClient
         #endregion
 
     }  // class MainWindow
-
-    public enum LeafDirectionEnum
-    {
-        NoLeaf=0, Forward=1, Backward=2
-    }
 
 }

@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppModel\AppActionEnum.cs" />
+    <Compile Include="AppModel\ClientDataFilter.cs" />
     <Compile Include="AppModel\ClientInfo.cs" />
     <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="AppModel\ModelDicts.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="AppModel\OrderGroupEnum.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
+    <Compile Include="AppModel\LeafDirectionEnum.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
     <Compile Include="DataSource\DBOrderHelper.cs" />

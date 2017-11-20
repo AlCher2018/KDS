@@ -273,17 +273,9 @@ namespace KDSWPFClient
 
             List<OrderModel> retVal = null;
             // запрос данных от службы
+            // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
+            // информация для ограничения объема возвращаемых данных: конечные Id заказа и блюда, направление листания (leaf) и приблизительное количество элементов.
             retVal = _getClient.GetOrders(_machineName, clientStatuses, clientDeps, ordersGroupBy);
-
-            //if ((retVal != null) && (retVal.Count > 0))
-            //{
-            //    int iD = 0, iO = 0;
-            //    retVal.ForEach(o =>
-            //    {
-            //        iO++; iD += o.Dishes.Count;
-            //    });
-            //    long memSize = GetObjectSize(retVal[0]);
-            //}
 
             return retVal;
         }

@@ -18,11 +18,13 @@ namespace KDSWPFClient.View
     {
         private Canvas _canvas;
         // для расчета размещения панелей заказов на канве
-        private int _pageColsCount;
+        private int _pageColsCount;   // кол-во колонок на странице
         private double _colWidth, _colHeight, _colMargin;
         private double _hdrTopMargin;
         private double _ordHeaderMinHeight, _continuePanelHeight;
         private bool _shiftForward;
+        private static int _maxDishesCountOnPage;   // максимальное кол-во однострочных блюд на странице
+        public static int MaxDishesCountOnPage { get { return _maxDishesCountOnPage; } }
 
         private bool _pageBreak;
         public bool PageBreak { get { return _pageBreak; } }
@@ -58,6 +60,26 @@ namespace KDSWPFClient.View
 
             _canvas.Children.Clear();
             minHeaderPanel = null;
+        }
+
+        public void ResetMaxDishesCountOnPage()
+        {
+            // создать элемент заказа (блюдо)
+            OrderDishViewModel dishModel = new OrderDishViewModel();
+            dishModel.DishName = "QWERTY";
+            dishModel.Quantity = 1;
+            // создать панель элемента
+            DishPanel dshPnl = new DishPanel(dishModel);
+            dshPnl.Width = _colWidth;
+            // вычислить его высоту
+            _canvas.Children.Add(dshPnl);
+            _canvas.UpdateLayout();
+            double h = dshPnl.ActualHeight;
+            _canvas.Children.Clear();
+
+            // вычислить кол-во элементов на странице
+            _maxDishesCountOnPage = Convert.ToInt32(Math.Floor((_pageColsCount * _colHeight) / h));
+            AppLib.WriteLogTraceMessage(" - reset order items count to " + _maxDishesCountOnPage.ToString());
         }
 
         /// <summary>
@@ -585,6 +607,7 @@ namespace KDSWPFClient.View
                 Background = BrushHelper.AppBrushes["delimiterBreakPage"].Background,
                 Foreground = BrushHelper.AppBrushes["delimiterBreakPage"].Foreground
             };
+            //newDelimPanel.MouseDown
 
             // измерить высоту панели, т.е. получить ActualHeight
             _canvas.Children.Add(newDelimPanel);

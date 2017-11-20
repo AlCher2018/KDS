@@ -370,6 +370,7 @@ namespace KDSWPFClient.Lib
         internal static void SetWinSizeToMainWinSize(Window win)
         {
             Window mWin = Application.Current.MainWindow;
+
             // размеры
             if (win.Width != mWin.ActualWidth) win.Width = mWin.ActualWidth;
             if (win.Height != mWin.ActualHeight) win.Height = mWin.ActualHeight;

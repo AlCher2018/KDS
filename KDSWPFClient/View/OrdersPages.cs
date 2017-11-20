@@ -58,30 +58,6 @@ namespace KDSWPFClient.View
             _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
         }
 
-        public int GetMaxDishesCountOnPage()
-        {
-            int retVal = 0;
-            double h = _uiPanel.ActualHeight;
-            double w = _uiPanel.ActualWidth;
-
-            Canvas tmpCanvas = new Canvas();
-            OrderDishViewModel dishModel = new OrderDishViewModel();
-            dishModel.DishName = "QWERTY";
-            DishPanel dshPnl = new DishPanel(dishModel);
-            dshPnl.Width = _colWidth;
-            tmpCanvas.Children.Add(dshPnl);
-            _uiPanel.Child = tmpCanvas;
-            _uiPanel.UpdateLayout();
-
-            double dishHeight = dshPnl.DesiredSize.Height;
-
-            _uiPanel.Child = null;
-            dshPnl = null;
-            tmpCanvas = null;
-
-            return retVal;
-        }
-
         // добавить все заказы и определить кол-во страниц
         public void AddOrdersPanels(List<OrderViewModel> orders)
         {

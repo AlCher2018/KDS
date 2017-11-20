@@ -7,13 +7,13 @@
         Background="Orange" BorderBrush="DarkOrange" BorderThickness="3" ShowInTaskbar="False" ResizeMode="NoResize">
     <Grid>
         <Label Margin="19,22,17,80" Name="label1" FontSize="48" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Foreground="MintCream">
-            <Label.BitmapEffect>
-                <OuterGlowBitmapEffect GlowSize="15" />
-            </Label.BitmapEffect>
+            <Label.Effect>
+                <DropShadowEffect BlurRadius="30" Opacity="1" ShadowDepth="0" Direction="0"/>
+            </Label.Effect>
             Загрузка КДС-клиента
         </Label>
-        <Label Margin="19,0,17,15" Name="label2" FontSize="22" VerticalAlignment="Bottom"
-               Content="{Binding Source={x:Static local:MessageListener.Instance},Path=Message}" Foreground="White">
+        <Label Margin="19,0,17,25" Name="label2" FontSize="20" VerticalAlignment="Bottom"
+               Content="{Binding Source={x:Static local:MessageListener.Instance},Path=Message}" Foreground="Blue">
         </Label>
     </Grid>
 </Window>

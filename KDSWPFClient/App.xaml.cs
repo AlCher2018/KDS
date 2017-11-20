@@ -103,7 +103,7 @@ namespace KDSWPFClient
 
             // и получить словари и настройки от службы
             MessageListener.Instance.ReceiveMessage("Получаю словари и настройки от службы KDSService...");
-            System.Threading.Thread.Sleep(1000);
+            System.Threading.Thread.Sleep(500);
             AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - START");
             if (dataProvider.SetDictDataFromService() == false)
             {
@@ -120,7 +120,7 @@ namespace KDSWPFClient
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             MessageListener.Instance.ReceiveMessage("Получаю из config-файла режим работы КДС...");
-            System.Threading.Thread.Sleep(1000);
+            System.Threading.Thread.Sleep(500);
             KDSModeHelper.Init();
 
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
@@ -134,6 +134,7 @@ namespace KDSWPFClient
             MessageListener.Instance.ReceiveMessage("Инициализация окна приложения...");
             System.Threading.Thread.Sleep(1000);
             MainWindow mainWindow = new MainWindow(args);
+            app.MainWindow = mainWindow;
             app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
