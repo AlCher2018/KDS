@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.ServiceReference1;
+﻿
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.Lib;
 using IntegraLib;
 using System;
@@ -13,6 +14,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.IO.Compression;
+using SplashScreen;
+using System.Threading;
 
 namespace KDSWPFClient
 {
@@ -32,10 +35,25 @@ namespace KDSWPFClient
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            // splash
+            Splasher.Splash = new SplashScreen.SplashScreen();
+            Splasher.ShowSplash();
+            //for (int i = 0; i < 5000; i += 1)
+            //{
+            //    MessageListener.Instance.ReceiveMessage(string.Format("Load module {0}", i));
+            //    Thread.Sleep(1);
+            //}
+            //string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
+            //SplashScreen splashScreen = null;
+            //SplashScreen splashScreen = new SplashScreen(fileName);
+            //splashScreen.Show(true);
+
+            MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
             AppLib.InitAppLogger();
 
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
             AppLib.WriteLogInfoMessage("Версия файла {0}: {1}", GetAppFileName(), GetAppVersion());
+            MessageListener.Instance.ReceiveMessage("Получение параметров окружения...");
             AppLib.WriteLogInfoMessage(GetEnvironmentString());
 
             // установить текущий каталог на папку с приложением
@@ -47,34 +65,35 @@ namespace KDSWPFClient
             }
 
             // check registration
+            MessageListener.Instance.ReceiveMessage("Проверка защиты ПО...");
             if (ProtectedProgramm() == false) Environment.Exit(1);
 
             KDSWPFClient.App app = new KDSWPFClient.App();
 
             getAppLayout();
-            // splash
-            //string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            //SplashScreen splashScreen = null;
-            //SplashScreen splashScreen = new SplashScreen(fileName);
-            //splashScreen.Show(true);
 
             // настройка приложения
+            MessageListener.Instance.ReceiveMessage("Получение параметров приложения...");
             app.InitializeComponent();  // определенные в app.xaml
 
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
             AppLib.WriteLogInfoMessage("App settings from config file: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // создать каналы
+            bool isSuccess;
+            MessageListener.Instance.ReceiveMessage("Создание канала получения данных...");
             AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - START");
             AppDataProvider dataProvider = new AppDataProvider();
-            bool isSuccess = dataProvider.CreateGetChannel();
-            // КДСы могут быть уже запущены, а служба еще нет!
+            isSuccess = dataProvider.CreateGetChannel();
             if (!isSuccess) AppLib.WriteLogErrorMessage("Ошибка создания Get-канала: " + dataProvider.ErrorMessage);
-            isSuccess  = dataProvider.CreateSetChannel();
+
+            MessageListener.Instance.ReceiveMessage("Создание канала установки данных...");
+            isSuccess = dataProvider.CreateSetChannel();
             if (!isSuccess) AppLib.WriteLogErrorMessage("Ошибка создания Set-канала: " + dataProvider.ErrorMessage);
             AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - FINISH");
-            
+
             // и получить словари и настройки от службы
+            MessageListener.Instance.ReceiveMessage("Получаю словари и настройки от службы KDSService...");
             AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - START");
             isSuccess = dataProvider.SetDictDataFromService();
             if (!isSuccess) AppLib.WriteLogErrorMessage("Data provider error: " + dataProvider.ErrorMessage);
@@ -83,15 +102,17 @@ namespace KDSWPFClient
             AppPropsHelper.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
+            MessageListener.Instance.ReceiveMessage("Получаю из config-файла режим работы КДС...");
             KDSModeHelper.Init();
 
-            // основное окно приложения
-            MainWindow mainWindow = new MainWindow(args);
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
             AppPropsHelper.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
             // окно изменения статуса
             AppPropsHelper.SetAppGlobalValue("StateChangeWindow", new StateChange());
 
+            // основное окно приложения
+            MessageListener.Instance.ReceiveMessage("Инициализация окна приложения...");
+            MainWindow mainWindow = new MainWindow(args);
             app.Run(mainWindow);
 
             if (dataProvider != null) { dataProvider.Dispose(); dataProvider = null; }
@@ -222,6 +243,9 @@ namespace KDSWPFClient
 
             cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderStatusByAllShownDishes");
             AppPropsHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
+
+            // таймаут открытия канала
+            AppPropsHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);
         }
 
         // открыть/закрыть легенду цветов таймеров

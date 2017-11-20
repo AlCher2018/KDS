@@ -1,0 +1,1 @@
+﻿https://www.codeproject.com/Articles/38291/Implement-Splash-Screen-with-WPF
