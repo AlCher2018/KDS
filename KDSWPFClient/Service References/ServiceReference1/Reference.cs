@@ -11,8 +11,8 @@
 namespace KDSWPFClient.ServiceReference1 {
     using System.Runtime.Serialization;
     using System;
-    
-    
+    using View;
+
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderStatusModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
@@ -215,6 +215,147 @@ namespace KDSWPFClient.ServiceReference1 {
         }
     }
     
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="ClientDataFilter", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    [System.SerializableAttribute()]
+    public partial class ClientDataFilter : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
+        
+        [System.NonSerializedAttribute()]
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int ApproxMaxDishesCountOnPageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<int> DepIDsListField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int EndpointOrderIDField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int EndpointOrderItemIDField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private KDSWPFClient.ServiceReference1.OrderGroupEnum GroupByField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirectionField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<int> StatusesListField;
+        
+        [global::System.ComponentModel.BrowsableAttribute(false)]
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
+            get {
+                return this.extensionDataField;
+            }
+            set {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int ApproxMaxDishesCountOnPage {
+            get {
+                return this.ApproxMaxDishesCountOnPageField;
+            }
+            set {
+                if ((this.ApproxMaxDishesCountOnPageField.Equals(value) != true)) {
+                    this.ApproxMaxDishesCountOnPageField = value;
+                    this.RaisePropertyChanged("ApproxMaxDishesCountOnPage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<int> DepIDsList {
+            get {
+                return this.DepIDsListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.DepIDsListField, value) != true)) {
+                    this.DepIDsListField = value;
+                    this.RaisePropertyChanged("DepIDsList");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EndpointOrderID {
+            get {
+                return this.EndpointOrderIDField;
+            }
+            set {
+                if ((this.EndpointOrderIDField.Equals(value) != true)) {
+                    this.EndpointOrderIDField = value;
+                    this.RaisePropertyChanged("EndpointOrderID");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EndpointOrderItemID {
+            get {
+                return this.EndpointOrderItemIDField;
+            }
+            set {
+                if ((this.EndpointOrderItemIDField.Equals(value) != true)) {
+                    this.EndpointOrderItemIDField = value;
+                    this.RaisePropertyChanged("EndpointOrderItemID");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public KDSWPFClient.ServiceReference1.OrderGroupEnum GroupBy {
+            get {
+                return this.GroupByField;
+            }
+            set {
+                if ((this.GroupByField.Equals(value) != true)) {
+                    this.GroupByField = value;
+                    this.RaisePropertyChanged("GroupBy");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirection {
+            get {
+                return this.LeafDirectionField;
+            }
+            set {
+                if ((this.LeafDirectionField.Equals(value) != true)) {
+                    this.LeafDirectionField = value;
+                    this.RaisePropertyChanged("LeafDirection");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<int> StatusesList {
+            get {
+                return this.StatusesListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.StatusesListField, value) != true)) {
+                    this.StatusesListField = value;
+                    this.RaisePropertyChanged("StatusesList");
+                }
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
+    
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderGroupEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     public enum OrderGroupEnum : int {
@@ -226,12 +367,25 @@ namespace KDSWPFClient.ServiceReference1 {
         ByOrderNumber = 1,
     }
     
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LeafDirectionEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    public enum LeafDirectionEnum : int {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        NoLeaf = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Forward = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Backward = 2,
+    }
+    
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, KDSWPFClient.View.IContainIDField
-    {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -436,7 +590,7 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, KDSWPFClient.View.IContainIDField {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -740,10 +894,10 @@ namespace KDSWPFClient.ServiceReference1 {
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy);
+        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy);
+        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
         System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName);
@@ -801,12 +955,12 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.GetDepartmentsAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy) {
-            return base.Channel.GetOrders(machineName, clientStatusIDs, clientDepIDs, clientGroupBy);
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+            return base.Channel.GetOrders(machineName, clientFilter);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, System.Collections.Generic.List<int> clientStatusIDs, System.Collections.Generic.List<int> clientDepIDs, KDSWPFClient.ServiceReference1.OrderGroupEnum clientGroupBy) {
-            return base.Channel.GetOrdersAsync(machineName, clientStatusIDs, clientDepIDs, clientGroupBy);
+        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+            return base.Channel.GetOrdersAsync(machineName, clientFilter);
         }
         
         public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName) {

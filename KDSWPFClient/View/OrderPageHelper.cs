@@ -77,8 +77,8 @@ namespace KDSWPFClient.View
             double h = dshPnl.ActualHeight;
             _canvas.Children.Clear();
 
-            // вычислить кол-во элементов на странице
-            _maxDishesCountOnPage = Convert.ToInt32(Math.Floor((_pageColsCount * _colHeight) / h));
+            // вычислить кол-во элементов на странице, округлить до ближайшего наибольшего
+            _maxDishesCountOnPage = Convert.ToInt32(Math.Ceiling((_pageColsCount * _colHeight) / h));
             AppLib.WriteLogTraceMessage(" - reset order items count to " + _maxDishesCountOnPage.ToString());
         }
 

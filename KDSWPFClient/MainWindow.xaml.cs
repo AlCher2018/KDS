@@ -33,7 +33,7 @@ namespace KDSWPFClient
         private double _screenWidth, _screenHeight;
 
         private Timer _timer;
-        private short _canInvokeUpdateOrders;
+        private bool _mayGetData;
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
         private double _autoBackTimersInterval;     // интервал для таймеров возврата
@@ -70,7 +70,6 @@ namespace KDSWPFClient
         private Timer _adminTimer;
         private DateTime _adminDate;
 
-        private bool _mayGetData;
 
         // звуки
         System.Media.SoundPlayer _wavPlayer;
@@ -112,7 +111,7 @@ namespace KDSWPFClient
             // основной таймер опроса сервиса
             _timer = new Timer(1000) { AutoReset = false };
             _timer.Elapsed += _timer_Elapsed;
-            _timer.Start(); _canInvokeUpdateOrders = -1;
+            _timer.Start();
 
             // кнопки переключения страниц
             btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
@@ -187,50 +186,99 @@ namespace KDSWPFClient
         }
 
         // основной таймер отображения панелей заказов
-        // запускается каждые 100 мсек
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //DateTime dt = DateTime.Now;
-            //short seconds = (short)dt.Second;  // от 0 до 59
-            //if ((dt.Millisecond <= 200) && (_canInvokeUpdateOrders != seconds))
+            //if (dt.Millisecond <= 200)
             //{
-                _timer.Stop();
-                //_canInvokeUpdateOrders = seconds;
-                _mayGetData = false;
-                try
-                {
-                    // потеря связи со службой
-                    if (_dataProvider.EnableGetChannel == false)
-                    {
-                        AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
-                        _mayGetData = _dataProvider.CreateGetChannel();
-                    }
-                    else
-                        _mayGetData = true;
-                }
-                catch (Exception ex)
-                {
-                    AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", AppLib.GetShortErrMessage(ex));
-                }
-
-                this.Dispatcher.Invoke(new Action(updateOrders));
-
+            // обновление по месту
+            this.Dispatcher.Invoke(new Action<LeafDirectionEnum>(getOrdersFromService), LeafDirectionEnum.NoLeaf);
+            //getOrdersFromService(LeafDirectionEnum.NoLeaf);
             //}
-
-            _timer.Start();  // т.к. AutoReset = false !!!
-        }  // method
+        }
 
 
-        // *** Основной метод получения заказов от службы ***
-        private void updateOrders()
+        // получение данных от службы, учитывая условия, задаваемые конкретным клиентом
+        private void getOrdersFromService(LeafDirectionEnum leafDirection)
         {
-            //int maxLines = _pages.GetMaxDishesCountOnPage();
+            if (_timer.Enabled) _timer.Stop();
+
+            _mayGetData = false;
+            try
+            {
+                // потеря связи со службой
+                if (_dataProvider.EnableGetChannel == false)
+                {
+                    AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
+                    _mayGetData = _dataProvider.CreateGetChannel();
+                }
+                else
+                    _mayGetData = true;
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", AppLib.GetShortErrMessage(ex));
+            }
 
             if (_mayGetData)
             {
                 if (tblChannelErrorMessage.Visibility == Visibility.Visible)
                     tblChannelErrorMessage.Visibility = Visibility.Hidden;
-            }
+
+                // запрос данных от службы
+                // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
+                // информация для ограничения объема возвращаемых данных: конечные Id заказа и блюда, направление листания (leaf) и приблизительное количество элементов.
+                ClientDataFilter clientFilter = new ClientDataFilter();
+                List<int> statusesIDs = _orderStatesLooper.Current.States.Select(e => (int)e).ToList();
+                clientFilter.StatusesList = statusesIDs;
+                List<int> clientDeps = (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
+                clientFilter.DepIDsList = clientDeps;
+                clientFilter.GroupBy = _orderGroupLooper.Current;
+
+                clientFilter.LeafDirection = leafDirection;
+                clientFilter.ApproxMaxDishesCountOnPage = OrderPageHelper.MaxDishesCountOnPage;
+
+                int orderStartIndex, dishStartIndex;
+                bool fromFirstPanel = ((leafDirection == LeafDirectionEnum.NoLeaf) 
+                    || (leafDirection == LeafDirectionEnum.Backward));
+                getModelIndexesFromViewContainer(fromFirstPanel, out orderStartIndex, out dishStartIndex);
+                clientFilter.EndpointOrderID = orderStartIndex;
+                clientFilter.EndpointOrderItemID = dishStartIndex;
+
+                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", Environment.MachineName, clientFilter.ToString());
+                try
+                {
+                    _svcOrders = _dataProvider.GetOrders(clientFilter);
+                    // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
+                    // уменьшить интервал таймера до 100 мсек
+                    if (_svcOrders == null)
+                    {
+                        if (_timer.Interval != 90)
+                        {
+                            _timer.Interval = 90;
+                            AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
+                        }
+                        AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
+                    }
+                    else
+                    {
+                        AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
+                        // вернуться на стандартный интервал в 1 сек
+                        if (_timer.Interval != 1000)
+                        {
+                            _timer.Interval = 1000;
+                            AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
+                        }
+
+                        // обновить данные во внутренней коллекции
+                        updateOrders(leafDirection);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", AppLib.GetShortErrMessage(ex));
+                }
+            }  // if (_mayGetData)
 
             // очистить канву от заказов и отобразить сообщение об ошибке связи
             else
@@ -239,45 +287,15 @@ namespace KDSWPFClient
                 _pages.ClearPages();
                 if (_viewOrders.Count > 0) _viewOrders.Clear();
                 AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
-                return;
             }
 
+            _timer.Start();
+        }
+
+        // обновление данных во внутренней коллекции и на экране
+        private void updateOrders(LeafDirectionEnum leafDirection)
+        {
             DateTime dtTmr1 = DateTime.Now;
-
-            // получить заказы от сервиса
-            List<int> statusesIDs = _orderStatesLooper.Current.States.Select(e => (int)e).ToList();
-            List<int> clientDeps = (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
-            AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}', '{2}', '{3}') - START", Environment.MachineName, string.Join(",", statusesIDs), string.Join(",", clientDeps), _orderGroupLooper.Current.ToString());
-            try
-            {
-                _svcOrders = _dataProvider.GetOrders(statusesIDs, clientDeps, _orderGroupLooper.Current);
-            }
-            catch (Exception ex)
-            {
-                AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", AppLib.GetShortErrMessage(ex));
-                return;
-            }
-
-            // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
-            // уменьшить интервал таймера до 100 мсек
-            if (_svcOrders == null)
-            {
-                if (_timer.Interval != 90)
-                {
-                    _timer.Interval = 90;
-                    AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
-                }
-                AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
-                return;
-            }
-
-            AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
-            // вернуться на стандартный интервал в 1 сек
-            if (_timer.Interval != 1000)
-            {
-                _timer.Interval = 1000;
-                AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
-            }
 
             // условие проигрывания мелодии при появлении нового заказа
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
@@ -337,8 +355,10 @@ namespace KDSWPFClient
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
             if (!isViewRepaint2 && !_viewByPage)
                 isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
+            
             // перерисовать полностью
-            if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
+            if (isViewRepaint2 == true)
+                repaintOrders("update Orders from KDS service", leafDirection);
 
             AppLib.WriteLogOrderDetails("svc.GetOrders(...) - FINISH - " + (DateTime.Now - dtTmr1).ToString());
 
@@ -431,7 +451,7 @@ namespace KDSWPFClient
 
 
         // перерисовать заказы
-        private void repaintOrders(string reason)
+        private void repaintOrders(string reason, LeafDirectionEnum leafDirection)
         {
             if (_pages == null) return;
 
@@ -442,7 +462,7 @@ namespace KDSWPFClient
 
             if (_viewByPage)
             {
-                repaintOrdersNew(LeafDirectionEnum.NoLeaf);
+                repaintOrdersNew(leafDirection);
             }
             else
             {
@@ -599,10 +619,18 @@ namespace KDSWPFClient
 
             // источник панелей - или bufferOrderPanels, или vbxOrders.Child
             // предпочтение bufferOrderPanels, если там не пусто
-            UIElementCollection pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
-                ? ((Canvas)vbxOrders.Child).Children
-                : this.bufferOrderPanels.Children;
-            if (pnlSource.Count == 0) return;
+            UIElementCollection pnlSource = null;
+            try
+            {
+                pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
+                    ? ((Canvas)vbxOrders.Child).Children
+                    : this.bufferOrderPanels.Children;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            if ((pnlSource != null) && (pnlSource.Count == 0)) return;
 
             OrderPanel edgeOrderPanel; // граничная панель заказа
             DishPanel edgeDishPanel;   // граничная панель блюда
@@ -690,7 +718,8 @@ namespace KDSWPFClient
         {
             if (_viewByPage)
             {
-                repaintOrdersNew(LeafDirectionEnum.Forward);
+                //repaintOrdersNew(LeafDirectionEnum.Forward);
+                getOrdersFromService(LeafDirectionEnum.Forward);
                 setCurrentPage();
             }
             else if (_pages.SetNextPage())
@@ -701,7 +730,8 @@ namespace KDSWPFClient
         {
             if (_viewByPage)
             {
-                repaintOrdersNew(LeafDirectionEnum.Backward);
+                //repaintOrdersNew(LeafDirectionEnum.Backward);
+                getOrdersFromService(LeafDirectionEnum.Backward);
                 setCurrentPage();
             }
             if (_pages.SetPreviousPage())
@@ -863,7 +893,10 @@ namespace KDSWPFClient
                 }
 
                 if (resetMaxDishesCountOnPage) _pageHelper.ResetMaxDishesCountOnPage();
-                if (!repaintReason.IsNull()) { repaintOrders(repaintReason); }
+                if (!repaintReason.IsNull())
+                {
+                    repaintOrders(repaintReason, LeafDirectionEnum.NoLeaf);
+                }
 
             }
             cfgEdit = null;

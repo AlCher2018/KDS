@@ -262,22 +262,9 @@ namespace KDSWPFClient
         }
         #endregion
 
-        public List<OrderModel> GetOrders(List<int> clientStatuses, List<int> clientDeps, OrderGroupEnum ordersGroupBy)
+        public List<OrderModel> GetOrders(ClientDataFilter clientFilter)
         {
-            if (_getClient.State == CommunicationState.Faulted)
-            {
-                AppLib.WriteLogTraceMessage(" - restart KDSServiceClient !!!");
-                _getClient = new KDSServiceClient();
-                _getClient.Open();
-            }
-
-            List<OrderModel> retVal = null;
-            // запрос данных от службы
-            // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
-            // информация для ограничения объема возвращаемых данных: конечные Id заказа и блюда, направление листания (leaf) и приблизительное количество элементов.
-            retVal = _getClient.GetOrders(_machineName, clientStatuses, clientDeps, ordersGroupBy);
-
-            return retVal;
+            return _getClient.GetOrders(_machineName, clientFilter);
         }
 
         /// <summary>

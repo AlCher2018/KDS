@@ -273,9 +273,9 @@ Contract: IMetadataExchange
 
         // *** ЗАПРОС ЗАКАЗОВ ОТ КЛИЕНТОВ ***
         // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа
-        public List<OrderModel> GetOrders(string machineName, List<int> clientStatusIDs, List<int> clientDepIDs, OrderGroupEnum clientGroupBy)
+        public List<OrderModel> GetOrders(string machineName, ClientDataFilter clientFilter)
         {
-            AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}', '{2}', '{3}')", machineName, string.Join(",", clientStatusIDs), string.Join(",", clientDepIDs), clientGroupBy.ToString());
+            AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
 
             // таймер чтения из БД выключен - ждем, пока не закончится чтение данных из БД
             if (_observeTimer.Enabled == false)
@@ -316,16 +316,16 @@ Contract: IMetadataExchange
                 foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
                 {
                     // блюдо проходит - берем и все его ингредиенты
-                    if (checkOrderItem(clientStatusIDs, clientDepIDs, diPair.Key))
+                    if (checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, diPair.Key))
                     {
                         validDishes.Add(diPair.Key);
                         validDishes.AddRange(diPair.Value);
                     }
                     // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
-                    else if (diPair.Value.Any(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)))
+                    else if (diPair.Value.Any(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)))
                     {
                         validDishes.Add(diPair.Key);
-                        validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientStatusIDs, clientDepIDs, ingr)));
+                        validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)));
                     }
                 }
 
@@ -352,7 +352,7 @@ Contract: IMetadataExchange
             if (retVal.Count > 0)
             {
                 // группировка по CreateDate блюд может увеличить кол-во заказов
-                if (clientGroupBy == OrderGroupEnum.ByCreateTime)
+                if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
                 {
                     // разбить заказы по датам (CreateDate)
                     SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
@@ -394,53 +394,82 @@ Contract: IMetadataExchange
                     sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
                     order.Dishes = sortedDishes;
                 }
-            }
 
-            // размер retVal в памяти
-            //long memSize = GetObjectSize(retVal);
-            //int iSize = 0;
-            //retVal.ForEach(o => iSize += o.GetInstanceSize());
+                // ограничение количества отдаваемых клиенту объектов
+                if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0) && (clientFilter.ApproxMaxDishesCountOnPage > 0))
+                {
+                    int totalItemsCount = getTotalItemsCount(retVal);
+                    if (totalItemsCount > clientFilter.ApproxMaxDishesCountOnPage) limitOrderItems(retVal, clientFilter);
+                }
+
+            }  // if (retVal.Count > 0)
 
             AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retVal.Count, (DateTime.Now - dtTmr).ToString());
             return retVal;
         }
 
-        /// <summary>
-        /// Calculates the lenght in bytes of an object 
-        /// and returns the size 
-        /// </summary>
-        /// <param name="TestObject"></param>
-        /// <returns></returns>
-        private long GetObjectSize(object TestObject)
+        private int getTotalItemsCount(List<OrderModel> ordersList)
         {
-            long retVal = 0;
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            int retVal = 0;
+            foreach (OrderModel item in ordersList)
             {
-                // сериализация в двоичный форматтер
-                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                bf.Serialize(ms, TestObject);
-                retVal = ms.Length;
-
-                // сериализация в SOAP formatter
-                // Модуль сериализации SOAP не поддерживает сериализацию стандартных типов: System.Collections.Generic.List`1[KDSService.AppModel.OrderModel].
-                //System.Runtime.Serialization.Formatters.Soap.SoapFormatter sf = new System.Runtime.Serialization.Formatters.Soap.SoapFormatter();
-                //sf.Serialize(ms, TestObject);
-                //retVal = sf.ToString().Length;
-
-                // сериализация в XML formatter
-                // Ошибка при отражении типа OrderModel[]
-                //System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(OrderModel[]));
-                //OrderModel[] oArr = ((List<OrderModel>)TestObject).ToArray();
-                //xs.Serialize(ms, oArr);
-                //retVal = xs.ToString().Length;
-
-                // JSON serialization
-                //System.Runtime.Serialization.Json.DataContractJsonSerializer js = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<OrderModel>));
-                //js.WriteObject(ms, TestObject);
-                //string sBuf = System.Text.Encoding.UTF8.GetString(ms.ToArray());
-                //retVal = sBuf.Length;
+                retVal += item.Dishes.Count;
             }
             return retVal;
+        }
+
+        // ограничение количества отдаваемых клиенту объектов
+        private void limitOrderItems(List<OrderModel> orderList, ClientDataFilter clientFilter)
+        {
+            int idxOrder;
+            idxOrder = orderList.FindIndex(om => om.Id == clientFilter.EndpointOrderID);
+            if (idxOrder > -1)   // найден такой OrderModel
+            {
+                //int idxOrderItem = -1;
+                //int i = 0;
+                //foreach (KeyValuePair<int,OrderDishModel> item in orderList[idxOrder].Dishes)
+                //{
+                //    if (item.Value.Id == clientFilter.EndpointOrderItemID) { idxOrderItem = i;  break; }
+                //    i++;
+                //}
+                //// конечное блюдо не найдено - начинаем с начала или с конца коллекции элементов заказа
+                //if (idxOrderItem == -1)
+                //    idxOrderItem = (clientFilter.LeafDirection == LeafDirectionEnum.Backward) 
+                //        ? orderList[idxOrder].Dishes.Count : 0;
+
+                // отдавать по-заказно
+                int maxItems = clientFilter.ApproxMaxDishesCountOnPage;
+                //  движение назад
+                if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
+                {
+                    // удалить заказы после idxOrder
+                    if (idxOrder < orderList.Count) orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                    // найти заказы для возврата
+                    while ((idxOrder >= 0) && (maxItems > 0))
+                    {
+                        maxItems -= orderList[idxOrder].Dishes.Count;
+                        idxOrder--;
+                    }
+                    // удалить заказы перед idxOrder
+                    if (idxOrder > 0) orderList.RemoveRange(0, idxOrder);
+                }
+
+                //  движение вперед
+                else
+                {
+                    // удалить заказы перед idxOrder
+                    if (idxOrder > 0) orderList.RemoveRange(0, idxOrder);
+                    // найти заказы для возврата
+                    idxOrder = 0;
+                    while ((idxOrder < orderList.Count) && (maxItems > 0))
+                    {
+                        maxItems -= orderList[idxOrder].Dishes.Count;
+                        idxOrder++;
+                    }
+                    // удалить заказы после idxOrder
+                    if (idxOrder < orderList.Count) orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                }
+            }
         }
 
         private bool checkOrderItem(List<int> clientStatusIDs, List<int> clientDepIDs, OrderDishModel orderItem)
