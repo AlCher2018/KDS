@@ -46,6 +46,11 @@ namespace KDSWPFClient
         // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
         private ListLooper<KDSUserStatesSet> _orderStatesLooper;
 
+        // клиентский фильтр, передаваемый службе для получения ограниченного объема информации
+        ClientDataFilter _clientFilter;
+        // буфер для ответа службы
+        ServiceResponce _svcResp;
+
         // страницы заказов
         private OrdersPages _pages;
         private OrderPageHelper _pageHelper;
@@ -69,7 +74,6 @@ namespace KDSWPFClient
         private int _adminBitMask;
         private Timer _adminTimer;
         private DateTime _adminDate;
-
 
         // звуки
         System.Media.SoundPlayer _wavPlayer;
@@ -96,8 +100,10 @@ namespace KDSWPFClient
             // класс для циклического перебора группировки заказов
             // в коде используется ТЕКУЩИЙ объект, но на вкладках отображается СЛЕДУЮЩИЙ !!!
             _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByCreateTime, OrderGroupEnum.ByOrderNumber });
+            _clientFilter = new ClientDataFilter();
             setOrderGroupTab();
             setOrderStatusFilterTab();
+            _clientFilter.DepIDsList = getClientDepsList();
 
             // отступы панели заказов (ViewBox) внутри родительской панели
             double verMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
@@ -228,27 +234,22 @@ namespace KDSWPFClient
                 // запрос данных от службы
                 // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
                 // информация для ограничения объема возвращаемых данных: конечные Id заказа и блюда, направление листания (leaf) и приблизительное количество элементов.
-                ClientDataFilter clientFilter = new ClientDataFilter();
-                List<int> statusesIDs = _orderStatesLooper.Current.States.Select(e => (int)e).ToList();
-                clientFilter.StatusesList = statusesIDs;
-                List<int> clientDeps = (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
-                clientFilter.DepIDsList = clientDeps;
-                clientFilter.GroupBy = _orderGroupLooper.Current;
+                _clientFilter.LeafDirection = leafDirection;
+                if (_clientFilter.ApproxMaxDishesCountOnPage != OrderPageHelper.MaxDishesCountOnPage)
+                    _clientFilter.ApproxMaxDishesCountOnPage = OrderPageHelper.MaxDishesCountOnPage;
 
-                clientFilter.LeafDirection = leafDirection;
-                clientFilter.ApproxMaxDishesCountOnPage = OrderPageHelper.MaxDishesCountOnPage;
-
-                int orderStartIndex, dishStartIndex;
+                int orderStartId, dishStartId;
                 bool fromFirstPanel = ((leafDirection == LeafDirectionEnum.NoLeaf) 
                     || (leafDirection == LeafDirectionEnum.Backward));
-                getModelIndexesFromViewContainer(fromFirstPanel, out orderStartIndex, out dishStartIndex);
-                clientFilter.EndpointOrderID = orderStartIndex;
-                clientFilter.EndpointOrderItemID = dishStartIndex;
+                getModelIdFromViewContainer(fromFirstPanel, out orderStartId, out dishStartId);
+                _clientFilter.EndpointOrderID = orderStartId;
+                _clientFilter.EndpointOrderItemID = dishStartId;
 
-                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", Environment.MachineName, clientFilter.ToString());
+                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", Environment.MachineName,  clientDataFilterToString(_clientFilter));
                 try
                 {
-                    _svcOrders = _dataProvider.GetOrders(clientFilter);
+                    _svcResp = _dataProvider.GetOrders(_clientFilter);
+                    _svcOrders = _svcResp.OrdersList;
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
                     if (_svcOrders == null)
@@ -291,6 +292,17 @@ namespace KDSWPFClient
 
             _timer.Start();
         }
+
+        private string clientDataFilterToString(ClientDataFilter source)
+        {
+            string s1 = (source.StatusesList == null) ? "" : string.Join(",", source.StatusesList);
+            string s2 = (source.DepIDsList == null) ? "" : string.Join(",", source.DepIDsList);
+
+            string retVal = string.Format("StatusesList={0}; DepIDsList={1}; GroupBy={2}; EndpointOrderID={3}; EndpointOrderItemID={4}; LeafDirection={5}", s1, s2, source.GroupBy.ToString(), source.EndpointOrderID, source.EndpointOrderItemID, source.LeafDirection.ToString());
+
+            return retVal;
+        }
+
 
         // обновление данных во внутренней коллекции и на экране
         private void updateOrders(LeafDirectionEnum leafDirection)
@@ -350,12 +362,12 @@ namespace KDSWPFClient
             }
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
-            AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
-
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
             if (!isViewRepaint2 && !_viewByPage)
                 isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
-            
+
+            AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+
             // перерисовать полностью
             if (isViewRepaint2 == true)
                 repaintOrders("update Orders from KDS service", leafDirection);
@@ -597,7 +609,7 @@ namespace KDSWPFClient
                 orderFinishIndex = orderStartIndex; dishFinishIndex = dishStartIndex;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
             }
-            System.Diagnostics.Debug.Print("** конечные индексы: order {0}, dish {1}", orderFinishIndex, dishFinishIndex);
+            //System.Diagnostics.Debug.Print("** конечные индексы: order {0}, dish {1}", orderFinishIndex, dishFinishIndex);
 
             // кнопки листания
             _viewPrevPageButton = ((orderStartIndex > 0) || (dishStartIndex > 0));
@@ -610,6 +622,9 @@ namespace KDSWPFClient
                 OrderViewModel lastOrder = _viewOrders.LastOrDefault();
                 if (lastOrder != null) _viewNextPageButton = (dishFinishIndex < (lastOrder.Dishes.Count - 1));
             }
+            // из объекта, возвращаемого службой
+            if (!_viewPrevPageButton) _viewPrevPageButton = _svcResp.isExistsPrevOrders;
+            if (!_viewNextPageButton) _viewNextPageButton = _svcResp.isExistsNextOrders;
         }
 
         // индексы или первого, или последнего элемента, в зависимости от флажка fromFirstItem
@@ -626,7 +641,7 @@ namespace KDSWPFClient
                     ? ((Canvas)vbxOrders.Child).Children
                     : this.bufferOrderPanels.Children;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -680,6 +695,39 @@ namespace KDSWPFClient
             }
             if (orderIndex == -1) dishIndex = -1;
         }
+
+        // id или первого, или последнего элемента заказ/блюдо, в зависимости от флажка fromFirstItem
+        private void getModelIdFromViewContainer(bool fromFirstItem, out int orderId, out int dishId)
+        {
+            orderId = -1; dishId = -1;
+
+            // источник панелей - или bufferOrderPanels, или vbxOrders.Child
+            // предпочтение bufferOrderPanels, если там не пусто
+            UIElementCollection pnlSource = null;
+            try
+            {
+                pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
+                    ? ((Canvas)vbxOrders.Child).Children
+                    : this.bufferOrderPanels.Children;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            if ((pnlSource != null) && (pnlSource.Count == 0)) return;
+
+            int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
+            // граничная панель заказа
+            OrderPanel edgeOrderPanel = (OrderPanel)pnlSource[i];
+            OrderViewModel curPanelOrderModel = edgeOrderPanel.OrderViewModel;  // OrderViewModel из панели
+            orderId = curPanelOrderModel.Id;
+
+            // граничная панель блюда
+            DishPanel edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
+            OrderDishViewModel curPanelDishModel = edgeDishPanel.DishView;  // OrderDishViewModel из панели
+            dishId = curPanelDishModel.Id;
+        }
+
 
         // поиск граничной панели блюда в панели заказа, с пропуском разделителей
         private DishPanel findEdgeDishPanel(OrderPanel edgeOrderPanel, bool fromFirstItem)
@@ -809,6 +857,7 @@ namespace KDSWPFClient
             {
                 if (cfgEdit.AppNewSettings.ContainsKey("depUIDs"))
                 {
+                    _clientFilter.DepIDsList = getClientDepsList();
                 }
 
                 // обновить фильтр блюд
@@ -902,6 +951,11 @@ namespace KDSWPFClient
             cfgEdit = null;
 
             _timer.Start();
+        }
+
+        private List<int> getClientDepsList()
+        {
+            return (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
         }
 
         private void setWindowsTitle()
@@ -1010,6 +1064,9 @@ namespace KDSWPFClient
                 tbDishStatusFilter.Text = statesSet.Name;
                 tbDishStatusFilter.Foreground = statesSet.FontBrush;
             }
+
+            List<int> statusesIDs = _orderStatesLooper.Current.States.Select(e => (int)e).ToList();
+            _clientFilter.StatusesList = statusesIDs;
         }
 
         // *************************
@@ -1029,6 +1086,7 @@ namespace KDSWPFClient
         {
             //OrderGroupEnum eOrderGroup = _orderGroupLooper.GetNextObject();
             OrderGroupEnum eOrderGroup = _orderGroupLooper.Current; // отображать текущий объект!!
+            _clientFilter.GroupBy = eOrderGroup;
 
             switch (eOrderGroup)
             {

@@ -262,7 +262,7 @@ namespace KDSWPFClient
         }
         #endregion
 
-        public List<OrderModel> GetOrders(ClientDataFilter clientFilter)
+        public ServiceResponce GetOrders(ClientDataFilter clientFilter)
         {
             return _getClient.GetOrders(_machineName, clientFilter);
         }

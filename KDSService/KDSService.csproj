@@ -92,6 +92,7 @@
     <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\LeafDirectionEnum.cs" />
+    <Compile Include="AppModel\ServiceResponce.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
     <Compile Include="DataSource\DBOrderHelper.cs" />

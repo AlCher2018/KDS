@@ -41,7 +41,7 @@
   <xs:element name="GetOrdersResponse">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q4="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="GetOrdersResult" nillable="true" type="q4:ArrayOfOrderModel" />
+        <xs:element xmlns:q4="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="GetOrdersResult" nillable="true" type="q4:ServiceResponce" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>

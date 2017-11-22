@@ -60,6 +60,14 @@
     </xs:restriction>
   </xs:simpleType>
   <xs:element name="LeafDirectionEnum" nillable="true" type="tns:LeafDirectionEnum" />
+  <xs:complexType name="ServiceResponce">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="OrdersList" nillable="true" type="tns:ArrayOfOrderModel" />
+      <xs:element minOccurs="0" name="isExistsNextOrders" type="xs:boolean" />
+      <xs:element minOccurs="0" name="isExistsPrevOrders" type="xs:boolean" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ServiceResponce" nillable="true" type="tns:ServiceResponce" />
   <xs:complexType name="ArrayOfOrderModel">
     <xs:sequence>
       <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderModel" nillable="true" type="tns:OrderModel" />

@@ -383,9 +383,86 @@ namespace KDSWPFClient.ServiceReference1 {
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="ServiceResponce", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    [System.SerializableAttribute()]
+    public partial class ServiceResponce : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
+        
+        [System.NonSerializedAttribute()]
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersListField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool isExistsNextOrdersField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool isExistsPrevOrdersField;
+        
+        [global::System.ComponentModel.BrowsableAttribute(false)]
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
+            get {
+                return this.extensionDataField;
+            }
+            set {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersList {
+            get {
+                return this.OrdersListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.OrdersListField, value) != true)) {
+                    this.OrdersListField = value;
+                    this.RaisePropertyChanged("OrdersList");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool isExistsNextOrders {
+            get {
+                return this.isExistsNextOrdersField;
+            }
+            set {
+                if ((this.isExistsNextOrdersField.Equals(value) != true)) {
+                    this.isExistsNextOrdersField = value;
+                    this.RaisePropertyChanged("isExistsNextOrders");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool isExistsPrevOrders {
+            get {
+                return this.isExistsPrevOrdersField;
+            }
+            set {
+                if ((this.isExistsPrevOrdersField.Equals(value) != true)) {
+                    this.isExistsPrevOrdersField = value;
+                    this.RaisePropertyChanged("isExistsPrevOrders");
+                }
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -894,10 +971,10 @@ namespace KDSWPFClient.ServiceReference1 {
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
+        KDSWPFClient.ServiceReference1.ServiceResponce GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
+        System.Threading.Tasks.Task<KDSWPFClient.ServiceReference1.ServiceResponce> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
         System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName);
@@ -955,11 +1032,11 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.GetDepartmentsAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+        public KDSWPFClient.ServiceReference1.ServiceResponce GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
             return base.Channel.GetOrders(machineName, clientFilter);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+        public System.Threading.Tasks.Task<KDSWPFClient.ServiceReference1.ServiceResponce> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
             return base.Channel.GetOrdersAsync(machineName, clientFilter);
         }
         

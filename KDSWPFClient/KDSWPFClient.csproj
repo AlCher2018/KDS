@@ -214,10 +214,10 @@
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderModel.datasource">
+    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderStatusModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderStatusModel.datasource">
+    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.ServiceResponce.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
     <None Include="Service References\ServiceReference1\Reference.svcmap">

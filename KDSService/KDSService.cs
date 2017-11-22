@@ -273,7 +273,7 @@ Contract: IMetadataExchange
 
         // *** ЗАПРОС ЗАКАЗОВ ОТ КЛИЕНТОВ ***
         // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа
-        public List<OrderModel> GetOrders(string machineName, ClientDataFilter clientFilter)
+        public ServiceResponce GetOrders(string machineName, ClientDataFilter clientFilter)
         {
             AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
 
@@ -285,7 +285,9 @@ Contract: IMetadataExchange
                 return null;
             }
 
-            List<OrderModel> retVal = new List<OrderModel>();
+            // "хвосты" по умолчанию - false, набор List<OrderModel> создается в конструкторе ServiceResponce
+            ServiceResponce retVal = new ServiceResponce();
+            List<OrderModel> retValList = retVal.OrdersList;
             DateTime dtTmr = DateTime.Now;
 
             // временные буферы
@@ -340,7 +342,7 @@ Contract: IMetadataExchange
                     }
 
                     // и добавить к результату правильный заказ
-                    retVal.Add(validOrder);
+                    retValList.Add(validOrder);
                 }
 
             }  // foreach OrderModel
@@ -349,7 +351,7 @@ Contract: IMetadataExchange
             getClientInfo(machineName).GetOrdersFlag = false;
             
             // группировка и сортировка retVal
-            if (retVal.Count > 0)
+            if (retValList.Count > 0)
             {
                 // группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
@@ -357,7 +359,7 @@ Contract: IMetadataExchange
                     // разбить заказы по датам (CreateDate)
                     SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
                     List<DateTime> dtList;
-                    foreach (OrderModel order in retVal)
+                    foreach (OrderModel order in retValList)
                     {
                         dtList = order.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
                         foreach (DateTime dtCreate in dtList)
@@ -366,12 +368,12 @@ Contract: IMetadataExchange
                         }
                     }
                     // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
-                    if (retVal.Count == sortedOrders.Count)
-                        retVal = sortedOrders.Values.ToList();
+                    if (retValList.Count == sortedOrders.Count)
+                        retValList = sortedOrders.Values.ToList();
                     // иначе создать заново выходный список заказов с блюдами
                     else
                     {
-                        retVal.Clear();
+                        retValList.Clear();
                         OrderModel tmpOrder;
                         foreach (var ord in sortedOrders)
                         {
@@ -382,14 +384,14 @@ Contract: IMetadataExchange
                             foreach (var tmpDish in ord.Value.Dishes.Values.Where(d => d.CreateDate == ord.Key))
                                 tmpOrder.Dishes.Add(tmpDish.Id, tmpDish);
                             // добавить заказ в выходную коллекцию
-                            retVal.Add(tmpOrder);
+                            retValList.Add(tmpOrder);
                         }
                     }
                 }
 
                 // сортировка по номеру подачи и Id
                 Dictionary<int, OrderDishModel> sortedDishes;
-                foreach (OrderModel order in retVal)
+                foreach (OrderModel order in retValList)
                 {
                     sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
                     order.Dishes = sortedDishes;
@@ -398,13 +400,16 @@ Contract: IMetadataExchange
                 // ограничение количества отдаваемых клиенту объектов
                 if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0) && (clientFilter.ApproxMaxDishesCountOnPage > 0))
                 {
-                    int totalItemsCount = getTotalItemsCount(retVal);
-                    if (totalItemsCount > clientFilter.ApproxMaxDishesCountOnPage) limitOrderItems(retVal, clientFilter);
+                    int totalItemsCount = getTotalItemsCount(retValList);
+                    if (totalItemsCount > clientFilter.ApproxMaxDishesCountOnPage)
+                    {
+                        limitOrderItems(retVal, clientFilter);
+                    }
                 }
 
             }  // if (retVal.Count > 0)
 
-            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retVal.Count, (DateTime.Now - dtTmr).ToString());
+            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
             return retVal;
         }
 
@@ -419,10 +424,16 @@ Contract: IMetadataExchange
         }
 
         // ограничение количества отдаваемых клиенту объектов
-        private void limitOrderItems(List<OrderModel> orderList, ClientDataFilter clientFilter)
+        private void limitOrderItems(ServiceResponce svcResp, ClientDataFilter clientFilter)
         {
             int idxOrder;
-            idxOrder = orderList.FindIndex(om => om.Id == clientFilter.EndpointOrderID);
+            List<OrderModel> orderList = svcResp.OrdersList;
+            // найти индекс элемента коллекции заказов, 
+            // у которого order.Id==clientFilter.OrderId && dish.Id==clientFilter.DishId
+            // элементов order.Id==clientFilter.OrderId может быть несколько при группировке по времени
+            idxOrder = orderList.FindIndex(om => 
+                (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
+
             if (idxOrder > -1)   // найден такой OrderModel
             {
                 //int idxOrderItem = -1;
@@ -443,7 +454,11 @@ Contract: IMetadataExchange
                 if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
                 {
                     // удалить заказы после idxOrder
-                    if (idxOrder < orderList.Count) orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                    if (idxOrder < orderList.Count)
+                    {
+                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
+                        svcResp.isExistsNextOrders = true;
+                    }
                     // найти заказы для возврата
                     while ((idxOrder >= 0) && (maxItems > 0))
                     {
@@ -451,14 +466,22 @@ Contract: IMetadataExchange
                         idxOrder--;
                     }
                     // удалить заказы перед idxOrder
-                    if (idxOrder > 0) orderList.RemoveRange(0, idxOrder);
+                    if (idxOrder > 0)
+                    {
+                        orderList.RemoveRange(0, idxOrder);
+                        svcResp.isExistsPrevOrders = true;
+                    }
                 }
 
                 //  движение вперед
                 else
                 {
                     // удалить заказы перед idxOrder
-                    if (idxOrder > 0) orderList.RemoveRange(0, idxOrder);
+                    if (idxOrder > 0)
+                    {
+                        orderList.RemoveRange(0, idxOrder);
+                        svcResp.isExistsPrevOrders = true;
+                    }
                     // найти заказы для возврата
                     idxOrder = 0;
                     while ((idxOrder < orderList.Count) && (maxItems > 0))
@@ -467,7 +490,11 @@ Contract: IMetadataExchange
                         idxOrder++;
                     }
                     // удалить заказы после idxOrder
-                    if (idxOrder < orderList.Count) orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                    if (idxOrder < (orderList.Count - 1))
+                    {
+                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                        svcResp.isExistsNextOrders = true;
+                    }
                 }
             }
         }
