@@ -8,6 +8,7 @@
     <Application.Resources>
         <!-- конвертеры -->
         <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
+        <locLib:AddParamValueConverter x:Key="addParamConv"/>
         <locLib:GetMargin x:Key="getMargin"/>
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
         <locLib:IsNullConverter x:Key="isNullConverter"/>

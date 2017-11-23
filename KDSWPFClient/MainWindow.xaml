@@ -56,24 +56,39 @@
                 </Border>
 
                 <!-- кнопка переключения состояний -->
-                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbOrderGroup_MouseDown" Background="Transparent">
-                    <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <RotateTransform Angle="-90"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
+                <Border x:Name="btnOrderGroup" Grid.Row="1" 
+                        BorderBrush="DarkGray" BorderThickness="2"
+                        Background="Transparent"
+                        PreviewMouseDown="tbOrderGroup_MouseDown"
+                        CornerRadius="{Binding ActualWidth, ElementName=grdUserConfig, ConverterParameter=0.2;0;0;0.2, Converter={StaticResource getCornerRadius}, Mode=OneWay}" 
+                        Margin="{Binding Path=ActualWidth, ElementName=grdUserConfig, Converter={StaticResource getMargin}, ConverterParameter='0.2;0;0;0', Mode=OneWay}"
+                        >
+                    <Canvas RenderTransformOrigin="0,0" VerticalAlignment="Bottom">
+                        <Viewbox Width="{Binding ElementName=btnOrderGroup, Path=ActualHeight, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Height="{Binding ElementName=btnOrderGroup, Path=ActualWidth, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Stretch="Uniform">
+                            <TextBlock x:Name="tbOrderGroup" Text="По времени"  TextWrapping="Wrap" FontWeight="Bold" Margin="{Binding ElementName=grdUserConfig, Path=ActualWidth, Mode=OneWay, Converter={StaticResource getMargin}, ConverterParameter=0.15;0;0.15;0.07}"/>
+                        </Viewbox>
+                        <Canvas.RenderTransform>
+                            <RotateTransform Angle="-90"/>
+                        </Canvas.RenderTransform>
+                    </Canvas>
                 </Border>
 
-                <Border x:Name="btnDishStatusFilter" Grid.Row="3" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbDishStatusFilter_MouseDown">
-                    <TextBlock x:Name="tbDishStatusFilter" Text="В процессе" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-80,-28" Width="110">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <RotateTransform Angle="-90"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
+                <!-- кнопка переключения статусов -->
+                <Border x:Name="btnDishStatusFilter" Grid.Row="3"
+                        BorderBrush="DarkGray" BorderThickness="2"
+                        PreviewMouseDown="tbDishStatusFilter_MouseDown"
+                        CornerRadius="{Binding ActualWidth, ElementName=grdUserConfig, ConverterParameter=0.2;0;0;0.2, Converter={StaticResource getCornerRadius}, Mode=OneWay}" 
+                        Margin="{Binding Path=ActualWidth, ElementName=grdUserConfig, Converter={StaticResource getMargin}, ConverterParameter='0.2;0;0;0', Mode=OneWay}"
+                        >
+                    <Canvas RenderTransformOrigin="0,0" VerticalAlignment="Bottom">
+                        <Viewbox Width="{Binding ElementName=btnDishStatusFilter, Path=ActualHeight, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Height="{Binding ElementName=btnDishStatusFilter, Path=ActualWidth, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Stretch="Uniform">
+                            <TextBlock x:Name="tbDishStatusFilter" Text="В процессе" TextWrapping="Wrap" FontWeight="Bold" Margin="{Binding ElementName=grdUserConfig, Path=ActualWidth, Mode=OneWay, Converter={StaticResource getMargin}, ConverterParameter=0.15;0;0.15;0.07}"/>
+                        </Viewbox>
+                        <Canvas.RenderTransform>
+                            <RotateTransform Angle="-90"/>
+                        </Canvas.RenderTransform>
+                    </Canvas>
+
                 </Border>
 
                 <Border x:Name="brdCFG" Panel.ZIndex="10" VerticalAlignment="Top" Background="LightGray" BorderBrush="DarkGray" BorderThickness="1" PreviewMouseUp="btnDBG_Click" Visibility="Hidden">

@@ -49,16 +49,7 @@ namespace KDSWPFClient.View
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            decimal decValue = (decimal)value;
-            int intValue = (int)decValue;
-            string retVal = "";
-
-            if ((decValue - intValue) > 0m) // есть дробная часть
-                retVal = decValue.ToString("#0.00");
-            else
-                retVal = intValue.ToString();
-
-            return retVal;
+            return System.Convert.ToSingle(value).ToString(CultureInfo.InvariantCulture);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -92,13 +83,31 @@ namespace KDSWPFClient.View
         }
     }
 
+    [ValueConversion(typeof(double), typeof(double))]
+    public class AddParamValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double dBuf = 0f;
+            string sParam = parameter.ToString();
+            dBuf = sParam.ToDouble();
+
+            return System.Convert.ToDouble(value) + dBuf;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value;
+        }
+    }
+
     // конвертер возвращает Thickness, параметры которого рассчиываются из переданного значения и строки коэффициентов сторон L-T-R-B
     [ValueConversion(typeof(double), typeof(Thickness))]
     public class GetMargin : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            double left = 5d, top = 3d, right = 0d, bottom = 0d, val = (double)value;
+            double left = 0d, top = 0d, right = 0d, bottom = 0d, val = (double)value;
             string sParam = (string)parameter;
             string[] aParam = null;
             if (sParam.Contains(',')) aParam = ((string)parameter).Split(',');

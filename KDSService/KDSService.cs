@@ -398,13 +398,11 @@ Contract: IMetadataExchange
                 }
 
                 // ограничение количества отдаваемых клиенту объектов
-                if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0) && (clientFilter.ApproxMaxDishesCountOnPage > 0))
+                if ((clientFilter.EndpointOrderID > 0) 
+                    || (clientFilter.EndpointOrderItemID > 0)
+                    || (clientFilter.ApproxMaxDishesCountOnPage > 0))
                 {
-                    int totalItemsCount = getTotalItemsCount(retValList);
-                    if (totalItemsCount > clientFilter.ApproxMaxDishesCountOnPage)
-                    {
-                        limitOrderItems(retVal, clientFilter);
-                    }
+                    limitOrderItems(retVal, clientFilter);
                 }
 
             }  // if (retVal.Count > 0)
@@ -428,11 +426,17 @@ Contract: IMetadataExchange
         {
             int idxOrder;
             List<OrderModel> orderList = svcResp.OrdersList;
+
             // найти индекс элемента коллекции заказов, 
             // у которого order.Id==clientFilter.OrderId && dish.Id==clientFilter.DishId
             // элементов order.Id==clientFilter.OrderId может быть несколько при группировке по времени
-            idxOrder = orderList.FindIndex(om => 
+            if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0))
+            {
+                idxOrder = orderList.FindIndex(om =>
                 (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
+            }
+            else
+                idxOrder = 0;
 
             if (idxOrder > -1)   // найден такой OrderModel
             {
@@ -453,20 +457,26 @@ Contract: IMetadataExchange
                 //  движение назад
                 if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
                 {
-                    // удалить заказы после idxOrder
-                    if (idxOrder < orderList.Count)
-                    {
-                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
-                        svcResp.isExistsNextOrders = true;
-                    }
+                    if ((idxOrder > 0) && (clientFilter.EndpointOrderItemID == 0)) idxOrder--;
                     // найти заказы для возврата
                     while ((idxOrder >= 0) && (maxItems > 0))
                     {
                         maxItems -= orderList[idxOrder].Dishes.Count;
                         idxOrder--;
                     }
-                    // удалить заказы перед idxOrder
-                    if (idxOrder > 0)
+                    // если дошли до начала набора и НЕ выбрали все maxItems
+                    if ((idxOrder < 0) && (maxItems > 0))
+                    {
+                        // то выбираем вперед maxItems элементов
+                        idxOrder = 0; maxItems = clientFilter.ApproxMaxDishesCountOnPage;
+                        while ((idxOrder < orderList.Count) && (maxItems > 0))
+                        {
+                            maxItems -= orderList[idxOrder].Dishes.Count;
+                            idxOrder++;
+                        }
+                    }
+                    // иначе, удалить заказы перед idxOrder
+                    else
                     {
                         orderList.RemoveRange(0, idxOrder);
                         svcResp.isExistsPrevOrders = true;
@@ -476,6 +486,11 @@ Contract: IMetadataExchange
                 //  движение вперед
                 else
                 {
+                    // сместить индекс вперед, если граничное блюдо - последнее
+                    if ((clientFilter.LeafDirection == LeafDirectionEnum.Forward) 
+                        && (orderList[idxOrder].Dishes.Last().Value.Id == clientFilter.EndpointOrderItemID))
+                        idxOrder++;
+
                     // удалить заказы перед idxOrder
                     if (idxOrder > 0)
                     {
@@ -492,7 +507,7 @@ Contract: IMetadataExchange
                     // удалить заказы после idxOrder
                     if (idxOrder < (orderList.Count - 1))
                     {
-                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder);
+                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
                         svcResp.isExistsNextOrders = true;
                     }
                 }
