@@ -354,6 +354,7 @@ Contract: IMetadataExchange
             if (retValList.Count > 0)
             {
                 // группировка по CreateDate блюд может увеличить кол-во заказов
+                #region группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
                 {
                     // разбить заказы по датам (CreateDate)
@@ -387,6 +388,13 @@ Contract: IMetadataExchange
                             retValList.Add(tmpOrder);
                         }
                     }
+                }
+                #endregion
+                
+                // группировка по номеру заказа
+                else if (clientFilter.GroupBy == OrderGroupEnum.ByOrderNumber)
+                {
+                    retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
                 }
 
                 // сортировка по номеру подачи и Id
@@ -457,6 +465,7 @@ Contract: IMetadataExchange
                 //  движение назад
                 if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
                 {
+                    int preOrderIdx = idxOrder;
                     if ((idxOrder > 0) && (clientFilter.EndpointOrderItemID == 0)) idxOrder--;
                     // найти заказы для возврата
                     while ((idxOrder >= 0) && (maxItems > 0))
@@ -474,12 +483,24 @@ Contract: IMetadataExchange
                             maxItems -= orderList[idxOrder].Dishes.Count;
                             idxOrder++;
                         }
+                        // остальные - удалить
+                        if (idxOrder < (orderList.Count - 1))
+                        {
+                            orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
+                            svcResp.isExistsNextOrders = true;
+                        }
                     }
                     // иначе, удалить заказы перед idxOrder
                     else
                     {
                         orderList.RemoveRange(0, idxOrder);
                         svcResp.isExistsPrevOrders = true;
+                        // и после preOrderIdx
+                        if (preOrderIdx < (orderList.Count - 1))
+                        {
+                            orderList.RemoveRange(preOrderIdx + 1, orderList.Count - preOrderIdx - 1);
+                            svcResp.isExistsNextOrders = true;
+                        }
                     }
                 }
 

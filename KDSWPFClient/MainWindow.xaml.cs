@@ -81,8 +81,7 @@ namespace KDSWPFClient
 
         // делегаты на методы, вызываемые из таймеров
         Action<LeafDirectionEnum> _getOrdersFromServiceDelegate;
-        Action<bool> _setOrderGroupTabDelegate;
-        Action _setCurrentPageDelegate;
+        Action _setFirstPageDelegate, _setOrderGroupByTimeDelegate;
 
 
         // CONSTRUCTOR
@@ -104,14 +103,16 @@ namespace KDSWPFClient
             _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
 
-            _setOrderGroupTabDelegate = new Action<bool>(setOrderGroupTab);
-            _setCurrentPageDelegate = new Action(setCurrentPage);
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
             _timerBackToOrderGroupByTime = new Timer() { AutoReset = false };
-            _timerBackToOrderGroupByTime.Elapsed += setInitPageAndOrdersGroup;
+            _setOrderGroupByTimeDelegate = new Action(setOrdersGroupByTime);
+            _timerBackToOrderGroupByTime.Elapsed += 
+                (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_setOrderGroupByTimeDelegate);
             // таймер возврата на первую страницу
             _timerBackToFirstPage = new Timer() { AutoReset = false };
-            _timerBackToFirstPage.Elapsed += setInitPageAndOrdersGroup;
+            _setFirstPageDelegate = new Action(setFirstPage);
+            _timerBackToFirstPage.Elapsed += 
+                (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_setFirstPageDelegate);
             setBackTimersInterval();
 
             // основной таймер опроса сервиса
@@ -275,8 +276,32 @@ namespace KDSWPFClient
                             AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
                         }
 
-                        // обновить данные во внутренней коллекции
+                        // обновить данные во внутренней коллекции и обновить экран/панели
                         updateOrders(leafDirection);
+
+                        // TODO при листании назад:
+                        if (leafDirection == LeafDirectionEnum.Backward)
+                        {
+                            // взять из первого контейнера Ид заказа/блюда
+                            int orderStartId, dishStartId;
+                            getModelIdFromViewContainer(true, out orderStartId, out dishStartId);
+                            _clientFilter.EndpointOrderID = orderStartId;
+                            _clientFilter.EndpointOrderItemID = dishStartId;
+                            // эмулировать чтение данных по таймеру
+                            leafDirection = LeafDirectionEnum.NoLeaf;
+                            _clientFilter.LeafDirection = leafDirection;
+                            _svcResp = _dataProvider.GetOrders(_clientFilter);
+                            while (_svcResp == null)
+                            {
+                                System.Threading.Thread.Sleep(50);
+                                _svcResp = _dataProvider.GetOrders(_clientFilter);
+                            }
+                            _svcOrders = _svcResp.OrdersList;
+                            // обновить внутреннюю коллекцию
+                            _forceFromFirstOrder = true;
+                            updateOrders(leafDirection);
+                        }
+
                     }
                 }
                 catch (Exception ex)
@@ -319,12 +344,13 @@ namespace KDSWPFClient
             // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
             // которых нет в preOrdersId, т.е. новые? (поиск по Id)
             int[] curOrdersId = _svcOrders.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-            if ((_preOrdersId.Count > 0) 
-                || ((_preOrdersId.Count==0) && (_svcOrders.Count != 0)))
+            if ((_preOrdersId.Count > 0)
+                || ((_preOrdersId.Count == 0) && (_svcOrders.Count != 0)))
             {
                 foreach (int curId in curOrdersId)
-                    if (!_preOrdersId.Contains(curId)) {
-                        _wavPlayer.Play() ; break;
+                    if (!_preOrdersId.Contains(curId))
+                    {
+                        _wavPlayer.Play(); break;
                     }
                 _preOrdersId.Clear();
             }
@@ -339,18 +365,7 @@ namespace KDSWPFClient
             bool isViewRepaint2 = false;
             try
             {
-                isViewRepaint2 = updateViewOrdersList(_svcOrders);
-
-                // при листании назад, если первая панель на экране НЕ отображает первый заказ,
-                // то сразу же перерисовываем (таймер в 1 мсек), не ожидая стандартного интервала
-                if (leafDirection == LeafDirectionEnum.Backward)
-                {
-                    int orderId, dishId;
-                    getModelIdFromViewContainer(true, out orderId, out dishId);
-                    if ((_viewOrders[0].Dishes.Count > 0) && (isViewRepaint2 == true)
-                        && ((_viewOrders[0].Id != orderId) || (_viewOrders[0].Dishes[0].Id != dishId))) 
-                        _timer.Interval = 1;
-                }
+                isViewRepaint2 = updateViewOrdersList();
             }
             catch (Exception ex)
             {
@@ -367,7 +382,7 @@ namespace KDSWPFClient
                 if (item.StatusAllowedDishes != allDishesStatus)
                 {
                     item.StatusAllowedDishes = allDishesStatus;
-                    //isViewRepaint2 = true;
+                    isViewRepaint2 = true;
                 }
 
                 if ((item.StatusAllowedDishes != StatusEnum.None) 
@@ -386,7 +401,7 @@ namespace KDSWPFClient
             AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
 
             // перерисовать полностью
-            if (isViewRepaint2 == true)
+            if (isViewRepaint2)
                 repaintOrders("update Orders from KDS service", leafDirection);
 
             AppLib.WriteLogOrderDetails("svc.GetOrders(...) - FINISH - " + (DateTime.Now - dtTmr1).ToString());
@@ -414,18 +429,18 @@ namespace KDSWPFClient
 
         #region updateViewOrdersList()
         // обновить _viewOrders данными из svcOrders
-        private bool updateViewOrdersList(List<OrderModel> svcOrders)
+        private bool updateViewOrdersList()
         {
             bool isViewRepaint = false;
             OrderViewModel curViewOrder;
             int index = -1;  // порядковый номер
-            if (_viewOrders.Count > svcOrders.Count)
+            if (_viewOrders.Count > _svcOrders.Count)
             {
-                int delIndexFrom = (svcOrders.Count == 0) ? 0 : svcOrders.Count - 1;
-                _viewOrders.RemoveRange(delIndexFrom, _viewOrders.Count - svcOrders.Count);
+                int delIndexFrom = (_svcOrders.Count == 0) ? 0 : _svcOrders.Count - 1;
+                _viewOrders.RemoveRange(delIndexFrom, _viewOrders.Count - _svcOrders.Count);
                 isViewRepaint = true;
             }
-            foreach (OrderModel om in svcOrders)
+            foreach (OrderModel om in _svcOrders)
             {
                 index++;
                 // добавить
@@ -839,11 +854,18 @@ namespace KDSWPFClient
                 }
             }
 
+            // перезапуск всех автотаймеров
+            // таймер возврата в группировку по времени
+            if ((_timerBackToOrderGroupByTime != null) && (_autoBackTimersInterval > 0d))
+            {
+                if (_timerBackToOrderGroupByTime.Enabled) _timerBackToOrderGroupByTime.Stop();
+                if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _timerBackToOrderGroupByTime.Start();
+            }
             // таймер возврата на первую страницу
             if ((_timerBackToFirstPage != null) && (_autoBackTimersInterval > 0d))
             {
                 if (_timerBackToFirstPage.Enabled) _timerBackToFirstPage.Stop();
-                if (_pages.CurrentPageIndex > 1) _timerBackToFirstPage.Start();
+                if (_viewPrevPageButton) _timerBackToFirstPage.Start();
             }
         }
 
@@ -1027,20 +1049,21 @@ namespace KDSWPFClient
             _timer.Start();
         }
 
-        private void setInitPageAndOrdersGroup(object sender, ElapsedEventArgs e)
+
+        private void setFirstPage()
         {
-            if (_orderGroupLooper.Current != OrderGroupEnum.ByCreateTime)
+            if (_viewPrevPageButton)
             {
-                if (_timerBackToFirstPage.Enabled) _timerBackToFirstPage.Stop();
-                _orderGroupLooper.Current = OrderGroupEnum.ByCreateTime;
-                this.Dispatcher.Invoke(_setOrderGroupTabDelegate, true);
-            }
-            if (_pages.CurrentPageIndex > 1)
-            {
-                if (_timerBackToOrderGroupByTime.Enabled) _timerBackToOrderGroupByTime.Stop();
                 _pages.SetFirstPage();
-                this.Dispatcher.Invoke(_setCurrentPageDelegate);
+                _forceFromFirstOrder = true;
+                getOrdersFromService(LeafDirectionEnum.Forward);
             }
+        }
+
+        private void setOrdersGroupByTime()
+        {
+            _orderGroupLooper.Current = OrderGroupEnum.ByCreateTime;
+            setOrderGroupTab(true);
         }
 
         private void setBackTimersInterval()
