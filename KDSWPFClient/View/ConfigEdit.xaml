@@ -111,6 +111,14 @@
                     <ScaleTransform ScaleX="1.5" ScaleY="1.5" />
                 </Setter.Value>
             </Setter>
+            <Style.Triggers>
+                <Trigger Property="CheckBox.IsEnabled" Value="True">
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+                <Trigger Property="CheckBox.IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="DarkGray"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style TargetType="{x:Type TextBox}">
@@ -153,7 +161,8 @@
 
             <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 
-            <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (независимо от блюда) или блюда на допнаправлении кликом по строке блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+            <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (блюда на допнаправлении) НЕЗАВИСИМО от родительского блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12" Checked="cbxIngrClickable_Checked" Unchecked="cbxIngrClickable_Unchecked" />
+            <CheckBox x:Name="cbxIngrShowTimer" Content="- отображать таймер для подчиненной позиции" Margin="40,5,0,0" VerticalAlignment="Center" TextBlock.FontSize="10"/>
 
             <CheckBox x:Name="cbxShowOrderStatusByAllShownDishes" Content="отображать ли заголовок ЗАКАЗА тем же статусом, что и все, ОТОБРАЖАЕМЫЕ на данном КДС-е, блюда/ингредиенты" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 

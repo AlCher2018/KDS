@@ -352,13 +352,24 @@ namespace KDSWPFClient.View
                                 else
                                 {
                                     DishDelimeterPanel delimPanel = createContinuePanel(false);
-                                    // удалить первый блок
+                                    // удалить первый блок из текущей панели
                                     if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
                                     {
-                                        curBlock = getNextItemsBlock(ordPanel, true, true);
+                                        curBlock = getNextItemsBlock(curPanel, true, true);
                                         if (curBlock != null)
                                         {
-                                            curPanel.InsertDelimiter(0, delimPanel);
+                                            // нет элементов в тек.панели - удалить текущую панель и сделать текущей следующую панель на странице
+                                            if (curPanel.ItemsCount == 0)
+                                            {
+                                                _canvas.Children.Remove(curPanel);
+                                                if (_canvas.Children.Count > 0)
+                                                    curPanel = (OrderPanel)_canvas.Children[0];
+                                                else
+                                                    curPanel = null;
+                                            }
+                                            // иначе вставляем разделитель переноса на пред.страницу
+                                            else
+                                                curPanel.InsertDelimiter(0, delimPanel);
                                         }
                                         else
                                         {
@@ -367,11 +378,14 @@ namespace KDSWPFClient.View
                                     }
                                     else
                                         curPanel.InsertDelimiter(0, delimPanel);
-                                    curPanel.UpdateLayout();
 
-                                    // установить Top=0 для текущей панели
-                                    curTopValue = 0d;
-                                    setPanelLeftTop(curPanel);
+                                    if (curPanel != null)
+                                    {
+                                        curPanel.UpdateLayout();
+                                        // установить Top=0 для текущей панели
+                                        curTopValue = 0d;
+                                        setPanelLeftTop(curPanel);
+                                    }
                                 }
                             }
                             // перенос панели на предыдущую страницу
@@ -549,7 +563,7 @@ namespace KDSWPFClient.View
                 return -1;
         }
 
-        // TODO возвращает признак повторного размещения при движении назад: 
+        // возвращает признак повторного размещения при движении назад: 
         // много свободного места на панели временного размещения _canvas
         internal bool NeedRelayout()
         {

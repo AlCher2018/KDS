@@ -281,7 +281,7 @@ namespace KDSService.AppModel
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} ({1}) - FINISH", AppEnv.GetShortErrMessage(ex), sqlText);
+                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} ({1}) - FINISH", ErrorHelper.GetShortErrMessage(ex), sqlText);
                 }
 
                 return retVal;

@@ -214,7 +214,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = AppLib.GetShortErrMessage(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
 
             return retVal;
@@ -257,7 +257,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = AppLib.GetShortErrMessage(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
         }
         #endregion
@@ -324,7 +324,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = AppLib.GetShortErrMessage(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
             return retVal;
@@ -340,7 +340,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = AppLib.GetShortErrMessage(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
         }

@@ -179,8 +179,20 @@ namespace KDSWPFClient.ViewModel
             }
         }
 
+
+        // время, отображаемое на панели блюда
         private string getViewTimerString()
         {
+            // для ИНГРЕДИЕНТОВ
+            if ((this.ParentUID != null) && (this.ParentUID.Length > 0))
+            {
+                // отключен флажок НЕЗАВИСИМОСТИ (IsIngredientsIndependent == false) и ВЫКЛЮЧЕН флажок показа таймера ShowTimerOnDependIngr
+                bool b1 = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false),
+                     b2 = (bool)AppPropsHelper.GetAppGlobalValue("ShowTimerOnDependIngr", false);
+                bool isShowTimer = b1 || (!b1 && b2);
+                if (isShowTimer == false) { return null; }
+            }
+
             // текущее значение таймера
             string timerString = this.WaitingTimerString;
             // состояние "Ожидание" начала готовки

@@ -391,6 +391,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool IsExistsNewOrderField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersListField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -406,6 +409,19 @@ namespace KDSWPFClient.ServiceReference1 {
             }
             set {
                 this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool IsExistsNewOrder {
+            get {
+                return this.IsExistsNewOrderField;
+            }
+            set {
+                if ((this.IsExistsNewOrderField.Equals(value) != true)) {
+                    this.IsExistsNewOrderField = value;
+                    this.RaisePropertyChanged("IsExistsNewOrder");
+                }
             }
         }
         
@@ -462,7 +478,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField  {
+    public partial class OrderModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
@@ -667,7 +684,8 @@ namespace KDSWPFClient.ServiceReference1 {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
     [System.Runtime.Serialization.DataContractAttribute(Name="OrderDishModel", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
     [System.SerializableAttribute()]
-    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField {
+    public partial class OrderDishModel : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged, IContainIDField
+    {
         
         [System.NonSerializedAttribute()]
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;

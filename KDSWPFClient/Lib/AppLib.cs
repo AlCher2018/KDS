@@ -144,6 +144,7 @@ namespace KDSWPFClient.Lib
         //}
 
 
+        #region WPF UI interface
         public static Point GetWindowTopLeftPoint(Window window)
         {
             double left, top;
@@ -165,51 +166,6 @@ namespace KDSWPFClient.Lib
 
             return new Point(left, top);
         }
-
-
-        public static bool SeeHardware(string fileName, string cpu)
-        {
-            if (fileName.IsNull()) return false;
-
-            XElement doc = getInitFileXML(fileName);
-            if (doc == null) return false;
-
-            string proccessors = doc.Descendants("Cpu").Attributes("Key").First<XAttribute>().Value;
-
-            return (proccessors == cpu);
-        }
-
-
-        private static XElement getInitFileXML(string fileName)
-        {
-            string result = Password.DecryptFileToString(fileName);
-
-            if ((result == null) || (result.StartsWith("ERROR")))
-            {
-                AppLib.WriteLogErrorMessage(result);
-                return null;
-            }
-
-            XElement retVal = null;
-            try
-            {
-                retVal = XElement.Parse(result);
-            }
-            catch (Exception)
-            {
-            }
-
-            return retVal;
-        }
-
-        internal static string GetShortErrMessage(Exception ex)
-        {
-            string retVal = ex.Message;
-            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
-            return retVal;
-        }
-
-        #region WPF UI interface
 
         public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight = 0d)
         {

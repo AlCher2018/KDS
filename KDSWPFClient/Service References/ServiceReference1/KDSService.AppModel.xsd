@@ -62,6 +62,7 @@
   <xs:element name="LeafDirectionEnum" nillable="true" type="tns:LeafDirectionEnum" />
   <xs:complexType name="ServiceResponce">
     <xs:sequence>
+      <xs:element minOccurs="0" name="IsExistsNewOrder" type="xs:boolean" />
       <xs:element minOccurs="0" name="OrdersList" nillable="true" type="tns:ArrayOfOrderModel" />
       <xs:element minOccurs="0" name="isExistsNextOrders" type="xs:boolean" />
       <xs:element minOccurs="0" name="isExistsPrevOrders" type="xs:boolean" />

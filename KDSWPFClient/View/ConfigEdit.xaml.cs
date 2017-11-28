@@ -115,6 +115,7 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             _cfgValKeeper.AddPreValue("OrderHeaderClickable", true, cbxOrderHeaderClickable);
             _cfgValKeeper.AddPreValue("IsIngredientsIndependent", true, cbxIngrClickable);
+            _cfgValKeeper.AddPreValue("ShowTimerOnDependIngr", true, cbxIngrShowTimer);
             _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
 
             // получить от службы
@@ -741,6 +742,17 @@ namespace KDSWPFClient.View
         private void btnRestartWithoutArgs_Click(object sender, RoutedEventArgs e)
         {
             AppEnvironment.RestartApplication();
+        }
+
+        private void cbxIngrClickable_Checked(object sender, RoutedEventArgs e)
+        {
+            if (cbxIngrShowTimer.IsChecked ?? false) cbxIngrShowTimer.IsChecked = false;
+            cbxIngrShowTimer.IsEnabled = false;
+        }
+
+        private void cbxIngrClickable_Unchecked(object sender, RoutedEventArgs e)
+        {
+            cbxIngrShowTimer.IsEnabled = true;
         }
     }  // class ConfigEdit
 }

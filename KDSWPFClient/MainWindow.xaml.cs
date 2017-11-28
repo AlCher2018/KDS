@@ -221,7 +221,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", AppLib.GetShortErrMessage(ex));
+                AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", ErrorHelper.GetShortErrMessage(ex));
             }
 
             if (_mayGetData)
@@ -279,7 +279,7 @@ namespace KDSWPFClient
                         // обновить данные во внутренней коллекции и обновить экран/панели
                         updateOrders(leafDirection);
 
-                        // TODO при листании назад:
+                        // при листании назад:
                         if (leafDirection == LeafDirectionEnum.Backward)
                         {
                             // взять из первого контейнера Ид заказа/блюда
@@ -298,7 +298,7 @@ namespace KDSWPFClient
                             }
                             _svcOrders = _svcResp.OrdersList;
                             // обновить внутреннюю коллекцию
-                            _forceFromFirstOrder = true;
+                            //_forceFromFirstOrder = true;
                             updateOrders(leafDirection);
                         }
 
@@ -306,7 +306,7 @@ namespace KDSWPFClient
                 }
                 catch (Exception ex)
                 {
-                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", AppLib.GetShortErrMessage(ex));
+                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ErrorHelper.GetShortErrMessage(ex));
                 }
 
                 if (_forceFromFirstOrder) _forceFromFirstOrder = false;
@@ -341,20 +341,7 @@ namespace KDSWPFClient
             DateTime dtTmr1 = DateTime.Now;
 
             // условие проигрывания мелодии при появлении нового заказа
-            // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
-            // которых нет в preOrdersId, т.е. новые? (поиск по Id)
-            int[] curOrdersId = _svcOrders.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-            if ((_preOrdersId.Count > 0)
-                || ((_preOrdersId.Count == 0) && (_svcOrders.Count != 0)))
-            {
-                foreach (int curId in curOrdersId)
-                    if (!_preOrdersId.Contains(curId))
-                    {
-                        _wavPlayer.Play(); break;
-                    }
-                _preOrdersId.Clear();
-            }
-            _preOrdersId.AddRange(curOrdersId);
+            if (_svcResp.IsExistsNewOrder) _wavPlayer.Play();
 
             // *** ОБНОВИТЬ _viewOrdes (для отображения на экране) ДАННЫМИ ИЗ svcOrders (получено из БД)
             // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
@@ -394,6 +381,11 @@ namespace KDSWPFClient
             }
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
+            // условия перерисовки
+            if (_svcResp.IsExistsNewOrder == true)
+            {
+                isViewRepaint2 = true; _forceFromFirstOrder = true;
+            }
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
             if (!isViewRepaint2 && !_viewByPage)
                 isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
@@ -1070,6 +1062,7 @@ namespace KDSWPFClient
         {
             // интервал таймера взять из config-файла
             string cfgStr = CfgFileHelper.GetAppSetting("AutoReturnOrdersGroupByTime");
+
             // и перевести в мсек
             _autoBackTimersInterval = 1000d * ((cfgStr.IsNull()) ? 0d : cfgStr.ToDouble());
             if (_autoBackTimersInterval > 0d)

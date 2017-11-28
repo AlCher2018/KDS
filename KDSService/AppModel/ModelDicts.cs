@@ -59,7 +59,7 @@ namespace KDSService.AppModel
             }
             catch (Exception ex)
             {
-                errMsg = AppEnv.GetShortErrMessage(ex);
+                errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
             return retVal;
         }  // method

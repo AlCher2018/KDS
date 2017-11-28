@@ -57,8 +57,15 @@ namespace KDSService
 
             // инициализация приложения
             AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
+
+            // информация о файлах и сборках
+            AppEnv.WriteLogInfoMessage(" - host-файл: '{0}', ver. {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("KDSService");
+            AppEnv.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+            asmInfo.LoadInfo("IntegraLib");
+            AppEnv.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
-            AppEnv.WriteLogInfoMessage("   - версия файла {0}: {1}", AppEnv.GetAppFileName(),  AppEnv.GetAppVersion());
             isResultOk = AppEnv.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
@@ -353,6 +360,22 @@ Contract: IMetadataExchange
             // группировка и сортировка retVal
             if (retValList.Count > 0)
             {
+                // для каждого клиента хранить набор Id заказов из БД для определения появления нового заказа (проигрывание мелодии на клиенте)
+                int[] uniqOrdersId = retValList.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
+                ClientInfo client = getClientInfo(machineName);
+                bool isExistsNewOrder = ((client.CurrentOrderIdsList.Count == 0) && (uniqOrdersId.Length > 0));
+                if (!isExistsNewOrder)
+                {
+                    foreach (int curId in uniqOrdersId)
+                        if (!client.CurrentOrderIdsList.Contains(curId))
+                        {
+                            isExistsNewOrder = true; break;
+                        }
+                    client.CurrentOrderIdsList.Clear();
+                }
+                client.CurrentOrderIdsList.AddRange(uniqOrdersId);
+                retVal.IsExistsNewOrder = isExistsNewOrder;
+
                 // группировка по CreateDate блюд может увеличить кол-во заказов
                 #region группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
@@ -397,12 +420,18 @@ Contract: IMetadataExchange
                     retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
                 }
 
-                // сортировка по номеру подачи и Id
+                // сортировка блюд в заказах по номеру подачи
                 Dictionary<int, OrderDishModel> sortedDishes;
                 foreach (OrderModel order in retValList)
                 {
                     sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
                     order.Dishes = sortedDishes;
+                }
+
+                if (retVal.IsExistsNewOrder)
+                {
+                    clientFilter.EndpointOrderID = retValList[0].Id;
+                    clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
                 }
 
                 // ограничение количества отдаваемых клиенту объектов
@@ -432,7 +461,7 @@ Contract: IMetadataExchange
         // ограничение количества отдаваемых клиенту объектов
         private void limitOrderItems(ServiceResponce svcResp, ClientDataFilter clientFilter)
         {
-            int idxOrder;
+            int idxOrder = -1;
             List<OrderModel> orderList = svcResp.OrdersList;
 
             // найти индекс элемента коллекции заказов, 
@@ -443,94 +472,91 @@ Contract: IMetadataExchange
                 idxOrder = orderList.FindIndex(om =>
                 (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
             }
-            else
-                idxOrder = 0;
+            // если не найден такой OrderModel, то начинаем с первого элемента
+            if (idxOrder == -1) idxOrder = 0;
 
-            if (idxOrder > -1)   // найден такой OrderModel
+            //int idxOrderItem = -1;
+            //int i = 0;
+            //foreach (KeyValuePair<int,OrderDishModel> item in orderList[idxOrder].Dishes)
+            //{
+            //    if (item.Value.Id == clientFilter.EndpointOrderItemID) { idxOrderItem = i;  break; }
+            //    i++;
+            //}
+            //// конечное блюдо не найдено - начинаем с начала или с конца коллекции элементов заказа
+            //if (idxOrderItem == -1)
+            //    idxOrderItem = (clientFilter.LeafDirection == LeafDirectionEnum.Backward) 
+            //        ? orderList[idxOrder].Dishes.Count : 0;
+
+            // отдавать по-заказно
+            int maxItems = clientFilter.ApproxMaxDishesCountOnPage;
+            //  движение назад
+            if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
             {
-                //int idxOrderItem = -1;
-                //int i = 0;
-                //foreach (KeyValuePair<int,OrderDishModel> item in orderList[idxOrder].Dishes)
-                //{
-                //    if (item.Value.Id == clientFilter.EndpointOrderItemID) { idxOrderItem = i;  break; }
-                //    i++;
-                //}
-                //// конечное блюдо не найдено - начинаем с начала или с конца коллекции элементов заказа
-                //if (idxOrderItem == -1)
-                //    idxOrderItem = (clientFilter.LeafDirection == LeafDirectionEnum.Backward) 
-                //        ? orderList[idxOrder].Dishes.Count : 0;
-
-                // отдавать по-заказно
-                int maxItems = clientFilter.ApproxMaxDishesCountOnPage;
-                //  движение назад
-                if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
+                int preOrderIdx = idxOrder;
+                if ((idxOrder > 0) && (clientFilter.EndpointOrderItemID == 0)) idxOrder--;
+                // найти заказы для возврата
+                while ((idxOrder >= 0) && (maxItems > 0))
                 {
-                    int preOrderIdx = idxOrder;
-                    if ((idxOrder > 0) && (clientFilter.EndpointOrderItemID == 0)) idxOrder--;
-                    // найти заказы для возврата
-                    while ((idxOrder >= 0) && (maxItems > 0))
-                    {
-                        maxItems -= orderList[idxOrder].Dishes.Count;
-                        idxOrder--;
-                    }
-                    // если дошли до начала набора и НЕ выбрали все maxItems
-                    if ((idxOrder < 0) && (maxItems > 0))
-                    {
-                        // то выбираем вперед maxItems элементов
-                        idxOrder = 0; maxItems = clientFilter.ApproxMaxDishesCountOnPage;
-                        while ((idxOrder < orderList.Count) && (maxItems > 0))
-                        {
-                            maxItems -= orderList[idxOrder].Dishes.Count;
-                            idxOrder++;
-                        }
-                        // остальные - удалить
-                        if (idxOrder < (orderList.Count - 1))
-                        {
-                            orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
-                            svcResp.isExistsNextOrders = true;
-                        }
-                    }
-                    // иначе, удалить заказы перед idxOrder
-                    else
-                    {
-                        orderList.RemoveRange(0, idxOrder);
-                        svcResp.isExistsPrevOrders = true;
-                        // и после preOrderIdx
-                        if (preOrderIdx < (orderList.Count - 1))
-                        {
-                            orderList.RemoveRange(preOrderIdx + 1, orderList.Count - preOrderIdx - 1);
-                            svcResp.isExistsNextOrders = true;
-                        }
-                    }
+                    maxItems -= orderList[idxOrder].Dishes.Count;
+                    idxOrder--;
                 }
-
-                //  движение вперед
-                else
+                // если дошли до начала набора и НЕ выбрали все maxItems
+                if ((idxOrder < 0) && (maxItems > 0))
                 {
-                    // сместить индекс вперед, если граничное блюдо - последнее
-                    if ((clientFilter.LeafDirection == LeafDirectionEnum.Forward) 
-                        && (orderList[idxOrder].Dishes.Last().Value.Id == clientFilter.EndpointOrderItemID))
-                        idxOrder++;
-
-                    // удалить заказы перед idxOrder
-                    if (idxOrder > 0)
-                    {
-                        orderList.RemoveRange(0, idxOrder);
-                        svcResp.isExistsPrevOrders = true;
-                    }
-                    // найти заказы для возврата
-                    idxOrder = 0;
+                    // то выбираем вперед maxItems элементов
+                    idxOrder = 0; maxItems = clientFilter.ApproxMaxDishesCountOnPage;
                     while ((idxOrder < orderList.Count) && (maxItems > 0))
                     {
                         maxItems -= orderList[idxOrder].Dishes.Count;
                         idxOrder++;
                     }
-                    // удалить заказы после idxOrder
+                    // остальные - удалить
                     if (idxOrder < (orderList.Count - 1))
                     {
                         orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
                         svcResp.isExistsNextOrders = true;
                     }
+                }
+                // иначе, удалить заказы перед idxOrder
+                else
+                {
+                    orderList.RemoveRange(0, idxOrder);
+                    svcResp.isExistsPrevOrders = true;
+                    // и после preOrderIdx
+                    if (preOrderIdx < (orderList.Count - 1))
+                    {
+                        orderList.RemoveRange(preOrderIdx + 1, orderList.Count - preOrderIdx - 1);
+                        svcResp.isExistsNextOrders = true;
+                    }
+                }
+            }
+
+            //  движение вперед
+            else
+            {
+                // сместить индекс вперед, если граничное блюдо - последнее
+                if ((clientFilter.LeafDirection == LeafDirectionEnum.Forward)
+                    && (orderList[idxOrder].Dishes.Last().Value.Id == clientFilter.EndpointOrderItemID))
+                    idxOrder++;
+
+                // удалить заказы перед idxOrder
+                if (idxOrder > 0)
+                {
+                    orderList.RemoveRange(0, idxOrder);
+                    svcResp.isExistsPrevOrders = true;
+                }
+                // найти заказы для возврата
+                idxOrder = 0;
+                while ((idxOrder < orderList.Count) && (maxItems > 0))
+                {
+                    maxItems -= orderList[idxOrder].Dishes.Count;
+                    idxOrder++;
+                }
+                // удалить заказы после idxOrder
+                if (idxOrder < (orderList.Count - 1))
+                {
+                    orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
+                    svcResp.isExistsNextOrders = true;
                 }
             }
         }

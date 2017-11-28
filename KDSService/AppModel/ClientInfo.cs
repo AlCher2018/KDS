@@ -16,5 +16,15 @@ namespace KDSService.AppModel
 
         // флаг инициирования клиентом изменения данных в БД
         public bool SetDataFlag { get; set; }
-    }
+
+        // набор уникальных Id заказов
+        private List<int> _currentOrderIdsList;
+        public List<int> CurrentOrderIdsList { get { return _currentOrderIdsList; } }
+
+        public ClientInfo()
+        {
+            _currentOrderIdsList = new List<int>(0);
+        }
+
+    }  // class
 }

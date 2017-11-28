@@ -49,7 +49,7 @@ namespace KDSConsoleSvcHost
             WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // доступная память
-            WriteLogInfoMessage("Доступная память: {0} Mb", GetAvailableRAM());
+            WriteLogInfoMessage("Доступная память: {0} Mb", AppEnvironment.getAvailableRAM());
 
             return true;
         }
@@ -130,16 +130,6 @@ namespace KDSConsoleSvcHost
             AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
-        public static string GetShortErrMessage(Exception ex)
-        {
-            string retVal = ex.Message;
-
-            if (ex.InnerException != null) retVal += " Inner message: " + ex.InnerException.Message;
-            retVal += ex.Source;
-
-            return retVal;
-        }
-
 
         // проверка базы данных
         internal static bool CheckDBConnection(Type dbType, out string errMsg)
@@ -207,7 +197,7 @@ namespace KDSConsoleSvcHost
             }
             catch (Exception ex)
             {
-                errMsg = AppEnv.GetShortErrMessage(ex);
+                errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
 
             return retVal;
@@ -270,51 +260,6 @@ namespace KDSConsoleSvcHost
         {
             _logger.Error(format, paramArray);
         }
-
-        #endregion
-
-        #region system info
-        // in Mb
-        public static int GetAvailableRAM()
-        {
-            int retVal = 0;
-
-            // class get memory size in kB
-            System.Management.ManagementObjectSearcher mgmtObjects = new System.Management.ManagementObjectSearcher("Select * from Win32_OperatingSystem");
-            foreach (var item in mgmtObjects.Get())
-            {
-                //System.Diagnostics.Debug.Print("FreePhysicalMemory:" + item.Properties["FreeVirtualMemory"].Value);
-                //System.Diagnostics.Debug.Print("FreeVirtualMemory:" + item.Properties["FreeVirtualMemory"].Value);
-                //System.Diagnostics.Debug.Print("TotalVirtualMemorySize:" + item.Properties["TotalVirtualMemorySize"].Value);
-                retVal = (Convert.ToInt32(item.Properties["FreeVirtualMemory"].Value)) / 1024;
-            }
-            return retVal;  // in Mb
-        }
-
-        public static string GetAppFileName()
-        {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            return assembly.ManifestModule.Name;
-        }
-
-        public static string GetAppFullFile()
-        {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            return assembly.Location;
-        }
-
-        public static string GetAppDirectory()
-        {
-            return AppDomain.CurrentDomain.BaseDirectory;
-        }
-
-        public static string GetAppVersion()
-        {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            return fvi.FileVersion;
-        }
-
 
         #endregion
 

@@ -10,9 +10,12 @@ namespace KDSService.AppModel
     {
         public List<OrderModel> OrdersList { get; set; }
 
-        // флаги наличия "хвостов" в базе для возврата из клиенту для отображения кнопок листания
+        // флаги наличия "хвостов" в базе для возврата их клиенту для отображения кнопок листания
         public bool isExistsPrevOrders { get; set; }
         public bool isExistsNextOrders { get; set; }
+
+        // признак наличия нового заказа для данного клиента
+        public bool IsExistsNewOrder { get; set; }
 
         public ServiceResponce()
         {

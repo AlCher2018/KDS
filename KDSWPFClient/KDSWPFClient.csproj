@@ -55,6 +55,10 @@
     <ApplicationIcon>monitor7.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IntegraLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.9\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
@@ -62,6 +66,9 @@
     <Reference Include="NumericUpDown">
       <HintPath>..\NumericUpDown.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="pswLib">
+      <HintPath>..\..\Integra libs\Integra PSW\pswLib\bin\Release\pswLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -210,6 +217,7 @@
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Tasks.txt" />
     <Resource Include="SplashScreen\source.txt" />
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
@@ -359,12 +367,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\IntegraLib\IntegraLib.csproj">
-      <Project>{68445753-040e-4d30-8063-1f494d7370c4}</Project>
-      <Name>IntegraLib</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

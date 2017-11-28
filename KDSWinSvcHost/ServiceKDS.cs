@@ -19,7 +19,6 @@ namespace KDSWinSvcHost
             InitializeComponent();
 
             this.AutoLog = true;
-            //_logFile = @"d:\KDSWinSvc.log";
             _logFile = getAppPath() + "Logs\\kdsWinService.log";
 
 #if (DEBUG)
@@ -30,6 +29,18 @@ namespace KDSWinSvcHost
         protected override void OnStart(string[] args)
         {
             putToSvcLog("*** Запуск Windows-службы КДС ***");
+
+            // защита PSW-файлом
+            pswLib.CheckProtectedResult checkProtectedResult;
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSService.psw", out checkProtectedResult) == false)
+            {
+                putToSvcLog(checkProtectedResult.LogMessage);
+                putToSvcLog(checkProtectedResult.CustomMessage);
+                Environment.Exit(2);
+                return;
+            }
+
+
             // 1. Инициализация сервисного класса KDSService
             try
             {

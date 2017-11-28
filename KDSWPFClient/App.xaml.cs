@@ -46,14 +46,31 @@ namespace KDSWPFClient
             //SplashScreen splashScreen = new SplashScreen(fileName);
             //splashScreen.Show(true);
 
+            // текст в MessageListener.Instance прибинден к текстовому полю на сплэше
             MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
             AppLib.InitAppLogger();
 
+            // защита PSW-файлом
+            pswLib.CheckProtectedResult checkProtectedResult;
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient.psw", out checkProtectedResult) == false)
+            {
+                AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
+                appExit(2, checkProtectedResult.CustomMessage);
+                return;
+            }
+
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
+
             MessageListener.Instance.ReceiveMessage("Получение версии приложения...");
-            AppLib.WriteLogInfoMessage("Версия файла {0}: {1}", GetAppFileName(), GetAppVersion());
+            AppLib.WriteLogInfoMessage("Инициализация KDS-клиента...");
+
+            // информация о файлах и сборках
+            AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
+            AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
+
             MessageListener.Instance.ReceiveMessage("Получение параметров окружения...");
-            AppLib.WriteLogInfoMessage(GetEnvironmentString());
+            AppLib.WriteLogInfoMessage(AppEnvironment.GetEnvironmentString());
 
             // установить текущий каталог на папку с приложением
             string curDir = System.IO.Directory.GetCurrentDirectory();
@@ -64,10 +81,6 @@ namespace KDSWPFClient
                 AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
                 System.IO.Directory.SetCurrentDirectory(appDir);
             }
-
-            // check registration
-            MessageListener.Instance.ReceiveMessage("Проверка защиты ПО...");
-            if (ProtectedProgramm() == false) Environment.Exit(1);
 
             KDSWPFClient.App app = new KDSWPFClient.App();
 
@@ -141,59 +154,14 @@ namespace KDSWPFClient
             AppLib.WriteLogInfoMessage("************  End KDS Client (WPF)  *************");
         }  // Main()
 
-        private static string GetAppFileName()
+        private static void appExit(int exitCode, string errMsg)
         {
-            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            return assembly.ManifestModule.Name;
-        }
-
-        private static string GetAppVersion()
-        {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            return fvi.FileVersion;
-        }
-
-        private static string GetEnvironmentString()
-        {
-            return string.Format("Environment: machine={0}, user={1}, current directory={2}, OS version={3}, isOS64bit={4}, processor count={5}, free RAM={6} Mb",
-                Environment.MachineName, Environment.UserName, Environment.CurrentDirectory, Environment.OSVersion, Environment.Is64BitOperatingSystem, Environment.ProcessorCount, Hardware.getAvailableRAM());
-        }
-
-
-        private static bool ProtectedProgramm()
-        {
-            // файл E_init.PSW должен находиться в папке приложения
-            string fileName = AppEnvironment.GetAppDirectory() + "E_init.PSW";
-            string cpuid = Hardware.getCPUID();
-            string msg = string.Format("Ваш продукт не зарегистрирован.\nСообщите этот код службе поддержки\nтел: +380 (44)384-3213 (050)447-4476\n\n\t{0}\n\n(the number has been copied to the clipboard)", cpuid);
-
-            if (File.Exists(fileName) == false)
+            if ((exitCode != 0) && (errMsg.IsNull() == false))
             {
-                // 2017-10-04 создать psw-файл для клиента
-                Password.CreatePSWFile(fileName, cpuid);
-
-                //AppLib.WriteLogErrorMessage(string.Format("Не найден файл: {0}, key {1}", fileName, cpuid));
-                //Clipboard.Clear();
-                //Clipboard.SetText(cpuid, TextDataFormat.Text);
-                //MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                //return false;
+                MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
             }
-
-            if (AppLib.SeeHardware(fileName, cpuid))
-            {
-                return true;
-            }
-            else
-            {
-                AppLib.WriteLogErrorMessage(string.Format("Софт не прошел проверку в ProtectedProgramm(), key {0}", cpuid));
-                Clipboard.Clear();
-                Clipboard.SetText(cpuid, TextDataFormat.Text);
-                MessageBox.Show(msg, "Проверка регистрации", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return false;
-            }
+            Environment.Exit(exitCode);
         }
-
 
         private static void getAppLayout()
         {
@@ -269,8 +237,11 @@ namespace KDSWPFClient
 
             cfgValue = CfgFileHelper.GetAppSetting("OrderHeaderClickable");
             AppPropsHelper.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
+
             cfgValue = CfgFileHelper.GetAppSetting("IsIngredientsIndependent");
             AppPropsHelper.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("ShowTimerOnDependIngr");
+            AppPropsHelper.SetAppGlobalValue("ShowTimerOnDependIngr", cfgValue.ToBool());
 
             cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderStatusByAllShownDishes");
             AppPropsHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
