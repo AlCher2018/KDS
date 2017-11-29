@@ -21,6 +21,23 @@ namespace ClientOrderQueue
         {
             AppLib.WriteLogInfoMessage("****  Start application  ****");
 
+            // защита PSW-файлом
+            pswLib.CheckProtectedResult checkProtectedResult;
+            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue.psw", out checkProtectedResult) == false)
+            {
+                AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
+                appExit(2, checkProtectedResult.CustomMessage);
+                return;
+            }
+
+            App app = new App();
+
+            // splash
+            getAppLayout();
+            string fileName = (WpfHelper.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
+            SplashScreen splashScreen = new SplashScreen(fileName);
+            splashScreen.Show(true);
+
             // информация о файлах и сборках
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
             ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
@@ -29,16 +46,9 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("Системное окружение: " + AppEnvironment.GetEnvironmentString());
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
-            App app = new App();
             // флажки для логов
             string cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
             WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
-
-            // splash
-            getAppLayout();
-            string fileName = (WpfHelper.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            SplashScreen splashScreen = new SplashScreen(fileName);
-            splashScreen.Show(true);
 
             // проверить доступность БД
             if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
@@ -89,6 +99,14 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("****  End application  ****");
         }
 
+        private static void appExit(int exitCode, string errMsg)
+        {
+            if ((exitCode != 0) && (errMsg.IsNull() == false))
+            {
+                MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+            }
+            Environment.Exit(exitCode);
+        }
 
         private static void getAppLayout()
         {

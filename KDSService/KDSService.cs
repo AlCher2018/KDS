@@ -500,10 +500,11 @@ Contract: IMetadataExchange
                     maxItems -= orderList[idxOrder].Dishes.Count;
                     idxOrder--;
                 }
-                // если дошли до начала набора и НЕ выбрали все maxItems
-                if ((idxOrder < 0) && (maxItems > 0))
+                // если дошли до начала набора
+                if (idxOrder < 0)
                 {
-                    // то выбираем вперед maxItems элементов
+                    svcResp.isExistsPrevOrders = false;
+                    // то выбираем вперед maxItems элементов с начала набора
                     idxOrder = 0; maxItems = clientFilter.ApproxMaxDishesCountOnPage;
                     while ((idxOrder < orderList.Count) && (maxItems > 0))
                     {
@@ -520,8 +521,8 @@ Contract: IMetadataExchange
                 // иначе, удалить заказы перед idxOrder
                 else
                 {
-                    orderList.RemoveRange(0, idxOrder);
                     svcResp.isExistsPrevOrders = true;
+                    orderList.RemoveRange(0, idxOrder);
                     // и после preOrderIdx
                     if (preOrderIdx < (orderList.Count - 1))
                     {
@@ -559,6 +560,7 @@ Contract: IMetadataExchange
                     svcResp.isExistsNextOrders = true;
                 }
             }
+
         }
 
         private bool checkOrderItem(List<int> clientStatusIDs, List<int> clientDepIDs, OrderDishModel orderItem)

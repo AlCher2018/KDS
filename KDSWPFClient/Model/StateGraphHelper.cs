@@ -151,10 +151,10 @@ namespace KDSWPFClient.Model
                     retVal = "Зафиксированные";
                     break;
                 case OrderStatusEnum.CancelConfirmed:
-                    retVal = "Отмена подтверждена";
+                    retVal = "ПодтвОтмена";
                     break;
                 case OrderStatusEnum.ReadyConfirmed:
-                    retVal = "Готовность подтверждена";
+                    retVal = "ПодтвГотов";
                     break;
                 default:
                     break;

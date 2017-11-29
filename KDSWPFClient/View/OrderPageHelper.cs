@@ -581,7 +581,11 @@ namespace KDSWPFClient.View
                 return false;
             }
             // а если первая панель не в первой колонке, то переразмещаем
-            if (panel1ColIndex != 1) return true;
+            if (panel1ColIndex != 1)
+                return true;
+            // перед первой панелью есть пустое место
+            else if ((double)((OrderPanel)panel1).GetValue(Canvas.TopProperty) != 0d)
+                return true;
 
             bool retVal = false;
             // несколько панелей - цикл по панелям на странице

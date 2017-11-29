@@ -78,6 +78,8 @@ namespace KDSWPFClient
                 EndpointAddress getEndpointAddress = new EndpointAddress(addr);
 
                 _getClient = new KDSServiceClient(getBinding, getEndpointAddress);
+                // для отладки службы из-под клиента увеличить время операции
+                _getClient.InnerChannel.OperationTimeout = new TimeSpan(0,20,0);
 
                 _getClient.Open();
                 logClientInfo(_getClient);

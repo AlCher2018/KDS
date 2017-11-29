@@ -49,6 +49,8 @@ namespace ClientOrderQueue.Lib
         // установить глобальное значение приложения (в свойствах приложения)
         public static void SetAppGlobalValue(string key, object value)
         {
+            if (System.Windows.Application.Current == null) return;
+
             IDictionary dict = System.Windows.Application.Current.Properties;
             if (dict.Contains(key) == false)  // если еще нет значения в словаре
             {

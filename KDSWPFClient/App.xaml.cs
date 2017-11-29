@@ -50,6 +50,8 @@ namespace KDSWPFClient
             MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
             AppLib.InitAppLogger();
 
+            AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
+
             // защита PSW-файлом
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient.psw", out checkProtectedResult) == false)
@@ -58,8 +60,6 @@ namespace KDSWPFClient
                 appExit(2, checkProtectedResult.CustomMessage);
                 return;
             }
-
-            AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
 
             MessageListener.Instance.ReceiveMessage("Получение версии приложения...");
             AppLib.WriteLogInfoMessage("Инициализация KDS-клиента...");
