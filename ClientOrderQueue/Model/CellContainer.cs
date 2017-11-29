@@ -1,4 +1,5 @@
 ﻿using ClientOrderQueue.Lib;
+using IntegraLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -77,7 +78,7 @@ namespace ClientOrderQueue.Model
             // здесь, т.к. часть полей инициализируется через свойства класса, ПОСЛЕ конструктора
             if (_isShowOrderEstimateTime)
             {
-                _waitTextLangs = (string[])AppLib.GetAppGlobalValue("PanelWaitText");
+                _waitTextLangs = (string[])WpfHelper.GetAppGlobalValue("PanelWaitText");
                 _timer = new Timer() { Interval = 1000d };
                 _timer.Elapsed += _timer_Elapsed;
             }

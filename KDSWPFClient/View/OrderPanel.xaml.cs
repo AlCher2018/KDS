@@ -75,8 +75,8 @@ namespace KDSWPFClient.View
             }
 
             // установить шрифт текстовых блоков в заголовке таблицы блюд
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             _fontSize = fontSize * fontScale;
             IEnumerable<TextBlock> tbs = grdTblHeader.Children.OfType<TextBlock>();
             foreach (TextBlock tb in tbs)

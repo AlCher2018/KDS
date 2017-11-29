@@ -44,7 +44,7 @@ namespace KDSWPFClient.Model
         }
         private static void initDefinedKDSModes()
         {
-            bool useReadyConfirmedState = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool useReadyConfirmedState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
 
             // повар
             #region Повар

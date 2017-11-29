@@ -187,8 +187,8 @@ namespace KDSWPFClient.ViewModel
             if ((this.ParentUID != null) && (this.ParentUID.Length > 0))
             {
                 // отключен флажок НЕЗАВИСИМОСТИ (IsIngredientsIndependent == false) и ВЫКЛЮЧЕН флажок показа таймера ShowTimerOnDependIngr
-                bool b1 = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false),
-                     b2 = (bool)AppPropsHelper.GetAppGlobalValue("ShowTimerOnDependIngr", false);
+                bool b1 = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false),
+                     b2 = (bool)WpfHelper.GetAppGlobalValue("ShowTimerOnDependIngr", false);
                 bool isShowTimer = b1 || (!b1 && b2);
                 if (isShowTimer == false) { return null; }
             }
@@ -237,11 +237,11 @@ namespace KDSWPFClient.ViewModel
                 else
                 {
                     // из глобальных настроек
-                    bool isUseReadyConfirmed = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+                    bool isUseReadyConfirmed = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
                     if ((!isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready))
                         || (isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed)))
                     {
-                        int expTake = (int)AppPropsHelper.GetAppGlobalValue("ExpectedTake");
+                        int expTake = (int)WpfHelper.GetAppGlobalValue("ExpectedTake");
                         if (expTake > 0)
                         {
                             tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);

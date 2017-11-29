@@ -129,7 +129,7 @@ namespace KDSWPFClient
             else
                 AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - FINISH");
 
-            AppPropsHelper.SetAppGlobalValue("AppDataProvider", dataProvider);
+            WpfHelper.SetAppGlobalValue("AppDataProvider", dataProvider);
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             MessageListener.Instance.ReceiveMessage("Получаю из config-файла режим работы КДС...");
@@ -139,9 +139,9 @@ namespace KDSWPFClient
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
             MessageListener.Instance.ReceiveMessage("Создаю служебные окна...");
             System.Threading.Thread.Sleep(500);
-            AppPropsHelper.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
+            WpfHelper.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
             // окно изменения статуса
-            AppPropsHelper.SetAppGlobalValue("StateChangeWindow", new StateChange());
+            WpfHelper.SetAppGlobalValue("StateChangeWindow", new StateChange());
 
             // основное окно приложения
             MessageListener.Instance.ReceiveMessage("Инициализация окна приложения...");
@@ -165,8 +165,8 @@ namespace KDSWPFClient
 
         private static void getAppLayout()
         {
-            AppPropsHelper.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
-            AppPropsHelper.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
+            WpfHelper.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
+            WpfHelper.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
         }
 
         
@@ -175,86 +175,86 @@ namespace KDSWPFClient
             string cfgValue;
 
             cfgValue = CfgFileHelper.GetAppSetting("KDSServiceHostName");
-            AppPropsHelper.SetAppGlobalValue("KDSServiceHostName", cfgValue);
+            WpfHelper.SetAppGlobalValue("KDSServiceHostName", cfgValue);
 
             cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
-            AppPropsHelper.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
             cfgValue = CfgFileHelper.GetAppSetting("TraceOrdersDetails");
-            AppPropsHelper.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
             cfgValue = CfgFileHelper.GetAppSetting("IsLogClientAction");
-            AppPropsHelper.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
             //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
             cfgValue = CfgFileHelper.GetAppSetting("OrdersColumnsCount");
-            AppPropsHelper.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
+            WpfHelper.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
             //   отступ сверху/снизу для панели заказов
             cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelTopBotMargin");
-            AppPropsHelper.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            WpfHelper.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
             //   отступ между заказами по вертикали
             cfgValue = CfgFileHelper.GetAppSetting("OrderPanelTopMargin");
-            AppPropsHelper.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
+            WpfHelper.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
             //   отступ между заказами по горизонтали
             cfgValue = CfgFileHelper.GetAppSetting("OrderPanelLeftMargin");
-            AppPropsHelper.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
+            WpfHelper.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
             // кнопки прокрутки страниц
             cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelScrollButtonSize");
-            AppPropsHelper.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
+            WpfHelper.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
 
             cfgValue = CfgFileHelper.GetAppSetting("AppFontScale");
-            AppPropsHelper.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1.0d : cfgValue.ToDouble());
+            WpfHelper.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1.0d : cfgValue.ToDouble());
 
             // различные текстовые строки
             cfgValue = CfgFileHelper.GetAppSetting("DishesSupplyName");
-            AppPropsHelper.SetAppGlobalValue("DishesSupplyName", (cfgValue == null) ? "Подача" : cfgValue);
+            WpfHelper.SetAppGlobalValue("DishesSupplyName", (cfgValue == null) ? "Подача" : cfgValue);
             cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderNextPage");
-            AppPropsHelper.SetAppGlobalValue("ContinueOrderNextPage", (cfgValue == null) ? "Продолж. см.на СЛЕДУЮЩЕЙ стр." : cfgValue);
+            WpfHelper.SetAppGlobalValue("ContinueOrderNextPage", (cfgValue == null) ? "Продолж. см.на СЛЕДУЮЩЕЙ стр." : cfgValue);
             cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderPrevPage");
-            AppPropsHelper.SetAppGlobalValue("ContinueOrderPrevPage", (cfgValue == null) ? "Начало см.на ПРЕДЫДУЩЕЙ стр." : cfgValue);
+            WpfHelper.SetAppGlobalValue("ContinueOrderPrevPage", (cfgValue == null) ? "Начало см.на ПРЕДЫДУЩЕЙ стр." : cfgValue);
 
             // ** ЗАГОЛОВОК ЗАКАЗА
             // шрифты для панели заказа
-            AppPropsHelper.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
-            AppPropsHelper.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
-            AppPropsHelper.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
-            AppPropsHelper.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
-            AppPropsHelper.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
+            WpfHelper.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
+            WpfHelper.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
+            WpfHelper.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
+            WpfHelper.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
+            WpfHelper.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
             //    шрифт заголовка таблицы блюд
-            AppPropsHelper.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
+            WpfHelper.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
             // ** СТРОКА БЛЮДА
             // шрифт строки блюда
-            AppPropsHelper.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
+            WpfHelper.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
             // минимальная высота строки блюда
-            double dishLineMinHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight") / 20d;
-            AppPropsHelper.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
+            double dishLineMinHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight") / 20d;
+            WpfHelper.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
             
             // шрифт разделителя блюд (напр. Подача **)
             cfgValue = CfgFileHelper.GetAppSetting("OrderPanelItemsDelimiterFontSize");
-            AppPropsHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", (cfgValue == null)? 16 : cfgValue.ToInt());
+            WpfHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", (cfgValue == null)? 16 : cfgValue.ToInt());
 
             cfgValue = CfgFileHelper.GetAppSetting("NewOrderAudioAttention");
-            if (cfgValue != null) AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
+            if (cfgValue != null) WpfHelper.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
 
             cfgValue = CfgFileHelper.GetAppSetting("OrderHeaderClickable");
-            AppPropsHelper.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
 
             cfgValue = CfgFileHelper.GetAppSetting("IsIngredientsIndependent");
-            AppPropsHelper.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
             cfgValue = CfgFileHelper.GetAppSetting("ShowTimerOnDependIngr");
-            AppPropsHelper.SetAppGlobalValue("ShowTimerOnDependIngr", cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("ShowTimerOnDependIngr", cfgValue.ToBool());
 
             cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderStatusByAllShownDishes");
-            AppPropsHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
+            WpfHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
 
             // таймаут открытия канала
-            AppPropsHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);
+            WpfHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);
         }
 
         // открыть/закрыть легенду цветов таймеров
         internal static void OpenColorLegendWindow()
         {
-            ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
-            if ((colorLegendWin != null) && !AppLib.IsOpenWindow("ColorLegend")) colorLegendWin.Show();
+            ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
+            if ((colorLegendWin != null) && !WpfHelper.IsOpenWindow("ColorLegend")) colorLegendWin.Show();
         }
 
 
@@ -295,18 +295,18 @@ namespace KDSWPFClient
                 // открываем окно изменения статуса
                 if (allowedStates.Count != 0)
                 {
-                    StateChange win = (StateChange)AppPropsHelper.GetAppGlobalValue("StateChangeWindow");
+                    StateChange win = (StateChange)WpfHelper.GetAppGlobalValue("StateChangeWindow");
                     win.CurrentState = currentState;
                     win.Order = orderModel;
                     win.Dish = dishModel;
                     win.AllowedStates = allowedStates;
-                    AppLib.SetWinSizeToMainWinSize(win);
+                    WpfHelper.SetWinSizeToMainWinSize(win);
 
                     win.ShowDialog();
                     AppLib.WriteLogClientAction("Close StateChange win, result: {0}", win.CurrentState.ToString());
 
                     // изменить статус
-                    AppDataProvider dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
+                    AppDataProvider dataProvider = (AppDataProvider)WpfHelper.GetAppGlobalValue("AppDataProvider");
                     OrderStatusEnum newState = win.CurrentState;
                     if ((newState != OrderStatusEnum.None) && (newState != currentState) && (dataProvider != null))
                     {
@@ -372,7 +372,7 @@ namespace KDSWPFClient
         private static void changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
             // эта настройка от КДС-сервиса
-            bool isConfirmedReadyState = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool isConfirmedReadyState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
 
             // изменить статус блюда
             dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);

@@ -24,7 +24,7 @@ namespace KDSWPFClient
         private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
-        int openTimeoutSeconds = (int)AppPropsHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
+        int openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
 
         // **** СЛОВАРИ
         //   статусов
@@ -72,7 +72,7 @@ namespace KDSWPFClient
                 setBindingBuffers(getBinding);
                 getBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
 
-                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
                 EndpointAddress getEndpointAddress = new EndpointAddress(addr);
@@ -125,7 +125,7 @@ namespace KDSWPFClient
                 setBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
                 setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
                 setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
-                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8734/KDSCommandService", hostName);
                 EndpointAddress setEndpointAddress = new EndpointAddress(addr);
@@ -189,23 +189,23 @@ namespace KDSWPFClient
                     string s1;
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
-                        AppPropsHelper.SetAppGlobalValue(pair.Key, pair.Value);
+                        WpfHelper.SetAppGlobalValue(pair.Key, pair.Value);
                         if (sBuf.Length > 0) sBuf += "; ";
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
 
                     // получить и преобразовать сложные типы из строк
                     //    TimeSpan
-                    s1 = (string)AppPropsHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
-                    if (!s1.IsNull()) AppPropsHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
+                    s1 = (string)WpfHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!s1.IsNull()) WpfHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
 
                     //    HashSet<int>
-                    s1 = (string)AppPropsHelper.GetAppGlobalValue("UnusedDepartments");
+                    s1 = (string)WpfHelper.GetAppGlobalValue("UnusedDepartments");
                     if (!s1.IsNull())
                     {
                         int[] iArr = s1.Split(',').Select(s => s.ToInt()).ToArray();
                         List<int> hsInt = new List<int>(iArr);
-                        AppPropsHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
+                        WpfHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
                     }
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
@@ -336,7 +336,7 @@ namespace KDSWPFClient
             try
             {
                 _getClient.SetExpectedTakeValue(_machineName, value);
-                AppPropsHelper.SetAppGlobalValue("ExpectedTakeValue", value);
+                WpfHelper.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
             {

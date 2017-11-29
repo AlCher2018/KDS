@@ -67,7 +67,7 @@ namespace KDSWPFClient.View
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
             string key = null;
             
-            if (((bool)AppPropsHelper.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes")) 
+            if (((bool)WpfHelper.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes")) 
                 && (status2 != StatusEnum.None) && (status2 != StatusEnum.WaitingCook) && (status2 != status1))
                 key = status2.ToString();
             else

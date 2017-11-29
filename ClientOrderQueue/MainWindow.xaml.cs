@@ -1,5 +1,6 @@
 ﻿using ClientOrderQueue.Lib;
 using ClientOrderQueue.Model;
+using IntegraLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,24 +30,24 @@ namespace ClientOrderQueue
             InitializeComponent();
 
             _appOrders = new List<AppOrder>();
-            _unUsedDeps = (HashSet<int>)AppLib.GetAppGlobalValue("UnusedDepartments");
+            _unUsedDeps = (HashSet<int>)WpfHelper.GetAppGlobalValue("UnusedDepartments");
 
             // кисти заголовка окна
-            brdTitle.Background = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleBackground");
-            tbMainTitle.Foreground = (SolidColorBrush)AppLib.GetAppGlobalValue("WinTitleForeground");
+            brdTitle.Background = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleBackground");
+            tbMainTitle.Foreground = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleForeground");
 
             // кисти для панелей заказов
-            _cellBrushes = (Brush[])AppLib.GetAppGlobalValue("PanelBackgroundBrushes");
+            _cellBrushes = (Brush[])WpfHelper.GetAppGlobalValue("PanelBackgroundBrushes");
 
-            string statusReadyAudioFile = AppLib.GetFullFileName(AppLib.GetAppSetting("AudioPath"), AppLib.GetAppSetting("StatusReadyAudioFile"));
+            string statusReadyAudioFile = AppEnvironment.GetFullFileName(CfgFileHelper.GetAppSetting("AudioPath"), CfgFileHelper.GetAppSetting("StatusReadyAudioFile"));
             if (System.IO.File.Exists(statusReadyAudioFile))
             {
                 simpleSound = new System.Media.SoundPlayer(statusReadyAudioFile);
             }
 
-            _isShowClientName = (bool)AppLib.GetAppGlobalValue("IsShowClientName");
-            _isShowCookingTime = (bool)AppLib.GetAppGlobalValue("IsShowOrderEstimateTime");
-            _cookingEstMinutes = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
+            _isShowClientName = (bool)WpfHelper.GetAppGlobalValue("IsShowClientName");
+            _isShowCookingTime = (bool)WpfHelper.GetAppGlobalValue("IsShowOrderEstimateTime");
+            _cookingEstMinutes = (double)WpfHelper.GetAppGlobalValue("OrderEstimateTime", 0d);
 
             this.Loaded += MainWindow_Loaded;
             setAppLayout();
@@ -71,7 +72,7 @@ namespace ClientOrderQueue
             Size mainGridSize = getMainGridSize();
             int rowsCount = grid.RowDefinitions.Count, colsCount = grid.ColumnDefinitions.Count;
 
-            string stateReadyImageFile = (string)AppLib.GetAppGlobalValue("StatusReadyImageFile");
+            string stateReadyImageFile = (string)WpfHelper.GetAppGlobalValue("StatusReadyImageFile");
 
             double cellWidth = mainGridSize.Width / (double)colsCount, 
                 cellHeight = mainGridSize.Height / (double)rowsCount;
@@ -88,11 +89,11 @@ namespace ClientOrderQueue
                         IsShowClientName = _isShowClientName,
                         IsShowCookingTime = _isShowCookingTime,
 
-                        TitleLangs = (string)AppLib.GetAppGlobalValue("StatusTitle"),
-                        CookingTimeTitleLangs = (string)AppLib.GetAppGlobalValue("PanelWaitText"),
-                        Status1Langs = (string)AppLib.GetAppGlobalValue("Status1Langs"),
-                        Status2Langs = (string)AppLib.GetAppGlobalValue("Status2Langs"),
-                        Status3Langs = (string)AppLib.GetAppGlobalValue("Status3Langs")
+                        TitleLangs = (string)WpfHelper.GetAppGlobalValue("StatusTitle"),
+                        CookingTimeTitleLangs = (string)WpfHelper.GetAppGlobalValue("PanelWaitText"),
+                        Status1Langs = (string)WpfHelper.GetAppGlobalValue("Status1Langs"),
+                        Status2Langs = (string)WpfHelper.GetAppGlobalValue("Status2Langs"),
+                        Status3Langs = (string)WpfHelper.GetAppGlobalValue("Status3Langs")
                     };
                     if (stateReadyImageFile != null) cc.StateReadyImagePath = stateReadyImageFile;
 
@@ -165,7 +166,7 @@ namespace ClientOrderQueue
             int[] delIds = _appOrders.Select(o => o.Id).Except(dbIds).ToArray();
             _appOrders.RemoveAll(o => delIds.Contains(o.Id));
             // добавить новые
-            double estDT = (double)AppLib.GetAppGlobalValue("OrderEstimateTime", 0d);
+            double estDT = (double)WpfHelper.GetAppGlobalValue("OrderEstimateTime", 0d);
             AppOrder curAppOrd;
             foreach (Order dbOrd in orders)
             {
@@ -329,18 +330,18 @@ namespace ClientOrderQueue
 
         private void setAppLayout()
         {
-            string bgImageFile = AppLib.GetAppSetting("ImagesPath");
+            string bgImageFile = CfgFileHelper.GetAppSetting("ImagesPath");
 
-            if (AppLib.IsAppVerticalLayout)
+            if (WpfHelper.IsAppVerticalLayout)
             {
-                bgImageFile = AppLib.GetFullFileName(bgImageFile, "bg 3ver 1080x1920 background.png");
+                bgImageFile = AppEnvironment.GetFullFileName(bgImageFile, "bg 3ver 1080x1920 background.png");
                 // пересоздать кол-во строк и столбцов
                 transposeGrid(G15);
                 transposeGrid(G24);
             }
             else
             {
-                bgImageFile = AppLib.GetFullFileName(bgImageFile, "bg 3hor 1920x1080 background.png");
+                bgImageFile = AppEnvironment.GetFullFileName(bgImageFile, "bg 3hor 1920x1080 background.png");
             }
 
             setBackgroundImage(bgImageFile); // фон
@@ -360,14 +361,14 @@ namespace ClientOrderQueue
         private void setLayoutAfterLoaded()
         {
             // main title
-            double fontSize = ((AppLib.IsAppVerticalLayout) ? 0.4 : 0.5) * brdTitle.ActualHeight;
+            double fontSize = ((WpfHelper.IsAppVerticalLayout) ? 0.4 : 0.5) * brdTitle.ActualHeight;
             tbMainTitle.FontSize = fontSize;
 
             // logo image
-            string logoFile = AppLib.GetAppSetting("LogoImage");
+            string logoFile = CfgFileHelper.GetAppSetting("LogoImage");
             if (logoFile != null)
             {
-                logoFile = AppLib.GetFullFileName((string)AppLib.GetAppGlobalValue("ImagesPath", ""), logoFile);
+                logoFile = AppEnvironment.GetFullFileName((string)WpfHelper.GetAppGlobalValue("ImagesPath", ""), logoFile);
                 double d1 = 0.15 * brdTitle.ActualHeight;
                 imgLogo.Source = ImageHelper.GetBitmapImage(logoFile);
                 imgLogo.Margin = new Thickness(0,d1,0,d1);
@@ -379,7 +380,7 @@ namespace ClientOrderQueue
             // фон
             backgroundImage.Source = ImageHelper.GetBitmapImage(bgImageFile);
             // яркость фона
-            string opacity = AppLib.GetAppSetting("MenuBackgroundBrightness");
+            string opacity = CfgFileHelper.GetAppSetting("MenuBackgroundBrightness");
             if (opacity != null)
             {
                 backgroundImage.Opacity = opacity.ToDouble();
@@ -389,8 +390,8 @@ namespace ClientOrderQueue
         private Size getMainGridSize()
         {
             double gridW=0, gridH=0;
-            gridW = (double)AppLib.GetAppGlobalValue("screenWidth");
-            gridH = AppLib.GetRowHeightAbsValue(mainGrid, 1, (double)AppLib.GetAppGlobalValue("screenHeight"));
+            gridW = (double)WpfHelper.GetAppGlobalValue("screenWidth");
+            gridH = WpfHelper.GetRowHeightAbsValue(mainGrid, 1, (double)WpfHelper.GetAppGlobalValue("screenHeight"));
 
             return new Size(gridW, gridH);
         }

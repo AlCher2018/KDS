@@ -43,15 +43,15 @@ namespace KDSWPFClient.View
             grdDishLine.DataContext = _dishView;
 
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
-            _isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
+            _isIngrIndepend = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
             dishView.PropertyChanged += DishView_PropertyChanged;
 
             //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
             //base.MinHeight = dishLineMinHeight;
 
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale",1.0d);
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale",1.0d);
+            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
             _fontSize = fontSize * fontScale;
 
             // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
@@ -162,7 +162,7 @@ namespace KDSWPFClient.View
             else if (!_isDish)
             {
                 // IsIngredientsIndependent может меняться динамически, поэтому проверяем каждый раз
-                bool b1 = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
+                bool b1 = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
                 if (!b1)
                 {
                     AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по ингр/допНП не разрешен в IsIngredientsIndependent)");
@@ -171,7 +171,7 @@ namespace KDSWPFClient.View
             }
 
             OrderViewModel orderView = null;
-            FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
+            FrameworkElement orderPanel = WpfHelper.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
             AppLib.WriteLogClientAction("{0} - open StateChange window for dishId {1} ({2})", sLogMsg, _dishView.Id, _dishView.DishName);

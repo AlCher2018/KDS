@@ -78,24 +78,24 @@ namespace KDSWPFClient.View
 
             grdHeader.DataContext = order;
 
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
 
-            double fSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
+            double fSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
             tbTableLabel1.FontSize = fSize;
             tbTableLabel2.FontSize = fSize;
             tbOrderDateLabel.FontSize = fSize;
             tbOrderCookingCounterLabel.FontSize = fSize;
 
-            tbTableName.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");  // 14d
-            tbOrderNumber.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");  // 14d
-            tbWaiter.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");  // 12d
+            tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");  // 14d
+            tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");  // 14d
+            tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");  // 12d
             tbOrderDate.FontSize = tbTableName.FontSize;
 
-            tbOrderCookingCounter.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
+            tbOrderCookingCounter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
 
             if (!order.DivisionColorRGB.IsNull())
             {
-                brdDivisionMark.Fill = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
+                brdDivisionMark.Fill = WpfHelper.GetBrushFromRGBString(order.DivisionColorRGB);
             }
         }
 
@@ -104,7 +104,7 @@ namespace KDSWPFClient.View
             string sLogMsg = "click on order HEADER";
 
             // 1. настройка в config-файле для заголовка заказа
-            if ((bool)AppPropsHelper.GetAppGlobalValue("OrderHeaderClickable", false) == false)
+            if ((bool)WpfHelper.GetAppGlobalValue("OrderHeaderClickable", false) == false)
             {
                 AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по заголовку не разрешен в OrderHeaderClickable)");
                 return;

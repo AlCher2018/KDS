@@ -1,20 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Configuration;
-using System.Collections;
 using System.Windows;
-using System.Windows.Controls;
-using System.Data;
-using System.Data.SqlClient;
 using KDSWPFClient.ServiceReference1;
-using System.Xml.Linq;
-using System.Windows.Media;
 using KDSWPFClient.ViewModel;
 using KDSWPFClient.View;
-using System.Reflection;
 using IntegraLib;
 
 namespace KDSWPFClient.Lib
@@ -40,24 +30,24 @@ namespace KDSWPFClient.Lib
         // стандартные действия службы
         public static void WriteLogTraceMessage(string msg)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false) && !msg.IsNull()) _appLogger.Trace(msg);
+            if ((bool)WpfHelper.GetAppGlobalValue("IsWriteTraceMessages", false) && !msg.IsNull()) _appLogger.Trace(msg);
         }
         public static void WriteLogTraceMessage(string format, params object[] args)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false)) _appLogger.Trace(format, args);
+            if ((bool)WpfHelper.GetAppGlobalValue("IsWriteTraceMessages", false)) _appLogger.Trace(format, args);
         }
 
         // подробная информация о преобразованиях списка заказов, полученных клиентом от службы
         public static void WriteLogOrderDetails(string msg)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false) 
-                && (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails", false))
+            if ((bool)WpfHelper.GetAppGlobalValue("IsWriteTraceMessages", false) 
+                && (bool)WpfHelper.GetAppGlobalValue("TraceOrdersDetails", false))
                 _appLogger.Trace(msg);
         }
         public static void WriteLogOrderDetails(string format, params object[] paramArray)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsWriteTraceMessages", false)
-                && (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails", false))
+            if ((bool)WpfHelper.GetAppGlobalValue("IsWriteTraceMessages", false)
+                && (bool)WpfHelper.GetAppGlobalValue("TraceOrdersDetails", false))
             {
                 string msg = string.Format(format, paramArray);
                 _appLogger.Trace(msg);
@@ -67,12 +57,12 @@ namespace KDSWPFClient.Lib
         // сообщения о действиях клиента
         public static void WriteLogClientAction(string msg)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsLogClientAction", false))
+            if ((bool)WpfHelper.GetAppGlobalValue("IsLogClientAction", false))
                 _appLogger.Trace("cltAct|" + msg);
         }
         public static void WriteLogClientAction(string format, params object[] paramArray)
         {
-            if ((bool)AppPropsHelper.GetAppGlobalValue("IsLogClientAction", false))
+            if ((bool)WpfHelper.GetAppGlobalValue("IsLogClientAction", false))
                 _appLogger.Trace("cltAct|" + string.Format(format, paramArray));
         }
 
@@ -144,159 +134,6 @@ namespace KDSWPFClient.Lib
         //}
 
 
-        #region WPF UI interface
-        public static Point GetWindowTopLeftPoint(Window window)
-        {
-            double left, top;
-            if (window.WindowState == WindowState.Maximized)
-            {
-                var leftField = typeof(Window).GetField("_actualLeft", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                left = (double)leftField.GetValue(window);
-            }
-            else
-                left = window.Left;
-
-            if (window.WindowState == WindowState.Maximized)
-            {
-                var leftField = typeof(Window).GetField("_actualTop", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                top = (double)leftField.GetValue(window);
-            }
-            else
-                top = window.Top;
-
-            return new Point(left, top);
-        }
-
-        public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight = 0d)
-        {
-            if (totalHeight == 0d) totalHeight = grid.Height;
-
-            double cntStars = grid.RowDefinitions.Sum(r => r.Height.Value);
-            return grid.RowDefinitions[iRow].Height.Value / cntStars * totalHeight;
-        }
-
-        public static bool IsAppVerticalLayout
-        {
-            get
-            {
-                double appWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
-                double appHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
-                return (appWidth < appHeight);
-            }
-        }
-
-        public static FrameworkElement FindVisualParent(FrameworkElement elementFrom, Type findType, string elementName)
-        {
-            if (elementFrom == null) return null;
-
-            DependencyObject parent = elementFrom;
-
-            bool isContinue; string sName;
-            while (parent != null)
-            {
-                if (!(parent is DependencyObject)) break;
-
-                isContinue = false;
-                sName = (parent as FrameworkElement).Name;
-
-                if ((findType != null) && !parent.GetType().Equals(findType)) isContinue = true;
-                if (!isContinue && !elementName.IsNull() && !sName.IsNull() && !elementName.Equals(sName)) isContinue = true;
-
-                if (isContinue)
-                {
-                    parent = VisualTreeHelper.GetParent(parent);
-
-                    if (parent == null) break;
-                    if ((parent is Window) || (parent is Page)) { parent = null; break; }
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return (parent == null) ? null : parent as FrameworkElement;
-        }
-
-        public static void AssignFontSizeByMeasureHeight(TextBlock tbAssigning, Size measuredSize, double requiredHeight, bool isSubtractSideMarginsAsFontSize)
-        {
-            double initWidth = measuredSize.Width;
-            if (isSubtractSideMarginsAsFontSize) measuredSize.Width = initWidth - 2d * tbAssigning.FontSize;
-
-            tbAssigning.Measure(measuredSize);
-            while (tbAssigning.DesiredSize.Height > requiredHeight)
-            {
-                tbAssigning.FontSize *= 0.9;
-                if (isSubtractSideMarginsAsFontSize) measuredSize.Width = initWidth - 2d * tbAssigning.FontSize;
-
-                tbAssigning.Measure(measuredSize);
-            }
-
-            if ((requiredHeight / tbAssigning.DesiredSize.Height) > 1.5)
-            {
-                tbAssigning.FontSize *= 1.1;
-            }
-        }
-
-        // вернуть кисть из ресурса приложения
-        // если ключа нет, то в зависимости от параметра isDefaultWhite возвращается белая (для фона) или черная (для текста) кисть
-        public static Brush GetAppResourcesBrush(string resKey, bool isDefaultWhite = true)
-        {
-            ResourceDictionary resDict = App.Current.Resources;
-            object resVal = resDict[resKey];
-
-            Brush retVal;
-            if (!(resVal is Brush) || (resVal == null))
-                retVal = new SolidColorBrush(isDefaultWhite ? Colors.White : Colors.Black);
-            else
-                retVal = (Brush)resVal;
-
-            return retVal;
-        }
-
-        public static bool IsOpenWindow(string typeName, string objName = null)
-        {
-            bool retVal = false;
-            foreach (Window win in App.Current.Windows)
-            {
-                if ((win.GetType().Name.Equals(typeName)) && (string.IsNullOrEmpty(objName) ? true : win.Name.Equals(objName)))
-                {
-                    retVal = (win.Visibility == Visibility.Visible);
-                    break;
-                }
-            }
-
-            return retVal;
-        }
-
-        // закрыть все открытые окна, кроме главного окна
-        // проще перечислить, какие надо закрывать, а какие прятать
-        public static void CloseChildWindows()
-        {
-            foreach (Window win in App.Current.Windows)
-            {
-                Type winType = win.GetType();
-                if (winType.Name == "MainWindow") continue;
-                PropertyInfo pInfo = winType.GetProperty("Host");
-                if (pInfo == null) win.Close();
-            }  // for each
-        }  // method
-
-        public static Brush GetBrushFromRGBString(string rgb)
-        {
-            string[] sArr = rgb.Split(',');
-            if (sArr.Count() != 3) return new SolidColorBrush(Color.FromRgb(0, 0, 0));
-
-            byte r = 0, g = 0, b = 0;
-            byte.TryParse(sArr[0], out r);
-            byte.TryParse(sArr[1], out g);
-            byte.TryParse(sArr[2], out b);
-
-            return new SolidColorBrush(Color.FromRgb(r, g, b));
-        }
-
-        #endregion
-
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
 
@@ -322,20 +159,6 @@ namespace KDSWPFClient.Lib
             return ts;
         }
 
-        // установить размер окна (параметр) в размеры главного окна приложения
-        internal static void SetWinSizeToMainWinSize(Window win)
-        {
-            Window mWin = Application.Current.MainWindow;
-
-            // размеры
-            if (win.Width != mWin.ActualWidth) win.Width = mWin.ActualWidth;
-            if (win.Height != mWin.ActualHeight) win.Height = mWin.ActualHeight;
-
-            // положение
-            Point topLeftPoint = AppLib.GetWindowTopLeftPoint(mWin);
-            if (win.Top != topLeftPoint.Y) win.Top = topLeftPoint.Y;
-            if (win.Left != topLeftPoint.X) win.Left = topLeftPoint.X;
-        }
 
         /// <summary>
         /// соединение двух ОТСОРТИРОВАННЫХ массивов
@@ -435,7 +258,7 @@ namespace KDSWPFClient.Lib
             if ((dishes == null) || (dishes.Count == 0)) return StatusEnum.None;
 
             int statId = -1;
-            AppDataProvider dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
+            AppDataProvider dataProvider = (AppDataProvider)WpfHelper.GetAppGlobalValue("AppDataProvider");
             foreach (OrderDishViewModel modelDish in dishes)
             {
                 if (dataProvider.Departments[modelDish.DepartmentId].IsViewOnKDS)
@@ -451,7 +274,7 @@ namespace KDSWPFClient.Lib
         // принадлежит ли переданный Ид цеха разрешенным цехам на этом КДСе
         internal static bool IsDepViewOnKDS(int depId, AppDataProvider dataProvider = null)
         {
-            if (dataProvider == null) dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
+            if (dataProvider == null) dataProvider = (AppDataProvider)WpfHelper.GetAppGlobalValue("AppDataProvider");
 
             return dataProvider.Departments[depId].IsViewOnKDS;
         }

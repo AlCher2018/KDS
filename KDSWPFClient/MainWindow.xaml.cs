@@ -91,8 +91,8 @@ namespace KDSWPFClient
 
             this.Loaded += MainWindow_Loaded;
 
-            _screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
-            _screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
+            _screenWidth = (double)WpfHelper.GetAppGlobalValue("screenWidth");
+            _screenHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight");
 
             this.Top = 0; this.Left = 0;
             this.Width = _screenWidth; this.Height = _screenHeight;
@@ -100,7 +100,7 @@ namespace KDSWPFClient
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
-            _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
+            _dataProvider = (AppDataProvider)WpfHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
 
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
@@ -130,7 +130,7 @@ namespace KDSWPFClient
             _clientFilter.DepIDsList = getClientDepsList();
 
             // отступы панели заказов (ViewBox) внутри родительской панели
-            double verMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
+            double verMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
             this.vbxOrders.Margin = new Thickness(0, verMargin, 0, verMargin);
             this.bufferOrderPanels.Margin = new Thickness(0, verMargin, 0, verMargin);
 
@@ -138,7 +138,7 @@ namespace KDSWPFClient
             _viewOrders = new List<OrderViewModel>();
 
             // кнопки переключения страниц
-            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
+            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
 
             // временные коллекции
             _delOrderIds = new List<OrderModel>();
@@ -151,7 +151,7 @@ namespace KDSWPFClient
 
             // звук предупреждения о появлении нового заказа
             _wavPlayer = new System.Media.SoundPlayer();
-            var wavFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
+            var wavFile = WpfHelper.GetAppGlobalValue("NewOrderAudioAttention");
             if (wavFile != null)
             {
                 _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
@@ -185,7 +185,7 @@ namespace KDSWPFClient
             {
                 _timer.Stop(); _timer.Dispose();
             }
-            AppLib.CloseChildWindows();
+            WpfHelper.CloseChildWindows();
             base.OnClosing(e);
         }
 
@@ -514,17 +514,17 @@ namespace KDSWPFClient
         private void recalcOrderPanelsLayot()
         {
             //   кол-во столбцов заказов
-            int cntCols = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            int cntCols = Convert.ToInt32(WpfHelper.GetAppGlobalValue("OrdersColumnsCount"));
 
             //   ширина столбцов заказов и расстояния между столбцами
             double pnlWidth = vbxOrders.ActualWidth;
             // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
             // где, koef = доля поля от ширины колонки
-            double koef = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
+            double koef = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
             double colWidth = Math.Floor(pnlWidth / (cntCols + koef * (cntCols + 1)));
             double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
-            AppPropsHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppPropsHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+            WpfHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            WpfHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
         }
 
         private void repaintOrdersNew(LeafDirectionEnum shiftDirection)
@@ -917,7 +917,7 @@ namespace KDSWPFClient
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
                     double newAppFontScale = cfgEdit.AppNewSettings["AppFontScale"].ToDouble();
-                    AppPropsHelper.SetAppGlobalValue("AppFontScale", newAppFontScale);
+                    WpfHelper.SetAppGlobalValue("AppFontScale", newAppFontScale);
                     if (_viewByPage)
                     {
                         resetMaxDishesCountOnPage = true;
@@ -960,7 +960,7 @@ namespace KDSWPFClient
                 {
                     string wavFile = cfgEdit.AppNewSettings["NewOrderAudioAttention"];
                     // сохранить в свойствах приложения 
-                    AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
+                    WpfHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
                     // в config-файле
                     string errMsg;
                     CfgFileHelper.SaveAppSettings("NewOrderAudioAttention", wavFile,out errMsg);
@@ -1286,9 +1286,9 @@ namespace KDSWPFClient
 
         private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (AppLib.IsOpenWindow("ColorLegend"))
+            if (WpfHelper.IsOpenWindow("ColorLegend"))
             {
-                ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
+                ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
                 if (colorLegendWin != null) colorLegendWin.Hide();
             }
         }

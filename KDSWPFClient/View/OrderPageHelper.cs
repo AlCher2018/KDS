@@ -43,10 +43,10 @@ namespace KDSWPFClient.View
 
         public void ResetOrderPanelSize()
         {
-            _pageColsCount = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
-            _colWidth = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnWidth"));
-            _colMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnMargin"));
-            _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
+            _pageColsCount = Convert.ToInt32(WpfHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            _colWidth = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersColumnWidth"));
+            _colMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersColumnMargin"));
+            _hdrTopMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrderPanelTopMargin"));
             _colHeight = _canvas.ActualHeight;  // высота столбца
 
             OrderPanel minHeaderPanel = new OrderPanel(null, 0, _colWidth, false);
@@ -293,7 +293,8 @@ namespace KDSWPFClient.View
                         {
                             // в текущей панели нет элементов или только одна панель DishPanel - 
                             // переносим панель в следующую колонку
-                            if ((curPanel.DishPanels.Count == 0) || (curPanel.DishPanelsCount() == 1))
+                            //if ((curPanel.DishPanels.Count == 0) || (curPanel.DishPanelsCount() == 1))
+                            if (curPanel.DishPanels.Count == 0)
                             {
                                 curPanel.AddDishes(curBlock);   // добавить текущий блок элементов
                                 curPanel.UpdateLayout();
@@ -525,7 +526,7 @@ namespace KDSWPFClient.View
             // не с первого блюда - добавляем разделитель продолжения на предыд.странице
             if (dishIdxFrom != 0) ordPanel.AddDelimiter(createContinuePanel(false));
 
-            string supplyName = AppPropsHelper.GetAppGlobalValue("DishesSupplyName", "подача").ToString();
+            string supplyName = WpfHelper.GetAppGlobalValue("DishesSupplyName", "подача").ToString();
             OrderDishViewModel dishModel;
             int curFiling = 0;
             for (int i = dishIdxFrom; i <= dishIdxTo; i++)
@@ -624,8 +625,8 @@ namespace KDSWPFClient.View
         private DishDelimeterPanel createContinuePanel(bool isForward)
         {
             string text = (isForward) 
-                ? AppPropsHelper.GetAppGlobalValue("ContinueOrderNextPage", "see next page").ToString()
-                : AppPropsHelper.GetAppGlobalValue("ContinueOrderPrevPage", "see prev page").ToString();
+                ? WpfHelper.GetAppGlobalValue("ContinueOrderNextPage", "see next page").ToString()
+                : WpfHelper.GetAppGlobalValue("ContinueOrderPrevPage", "see prev page").ToString();
             DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
             {
                 Text = text,

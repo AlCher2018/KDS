@@ -24,7 +24,7 @@ namespace KDSWPFClient.View
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
 
             // собрать кисти в список для легенды
-            bool isUseReadyConfirm = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool isUseReadyConfirm = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
             List<BrushesPair> context = new List<BrushesPair>();
             foreach (KeyValuePair<string, BrushesPair> item in appBrushes)
             {
