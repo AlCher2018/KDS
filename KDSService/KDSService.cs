@@ -576,7 +576,7 @@ Contract: IMetadataExchange
             }
         }
 
-        // **** настройки из config-файла хоста
+        // **** настройки из config-файла сервиса
         public Dictionary<string, object> GetHostAppSettings(string machineName)
         {
             string logMsg = "GetHostAppSettings(): ";
@@ -591,6 +591,7 @@ Contract: IMetadataExchange
 
                 retval.Add("ExpectedTake", AppProperties.GetIntProperty("ExpectedTake"));
                 retval.Add("UseReadyConfirmedState", AppProperties.GetBoolProperty("UseReadyConfirmedState"));
+                retval.Add("AutoGotoReadyConfirmPeriod", AppProperties.GetIntProperty("AutoGotoReadyConfirmPeriod"));
                 retval.Add("TakeCancelledInAutostartCooking", AppProperties.GetBoolProperty("TakeCancelledInAutostartCooking"));
                 retval.Add("TimeOfAutoCloseYesterdayOrders", ts1.ToString());
                 retval.Add("UnusedDepartments", s2);

@@ -65,6 +65,8 @@ namespace KDSWPFClient.View
                 cbx18.Visibility = Visibility.Visible;
                 cbx28.Visibility = Visibility.Visible;
                 cbx83.Visibility = Visibility.Visible;
+                cbx82.Visibility = Visibility.Visible;
+                cbx81.Visibility = Visibility.Visible;
             }
             else
             {
@@ -73,6 +75,8 @@ namespace KDSWPFClient.View
                 cbx18.Visibility = Visibility.Collapsed;
                 cbx28.Visibility = Visibility.Collapsed;
                 cbx83.Visibility = Visibility.Collapsed;
+                cbx82.Visibility = Visibility.Collapsed;
+                cbx81.Visibility = Visibility.Collapsed;
             }
 
             // заполнить комбобокс звуковых файлов

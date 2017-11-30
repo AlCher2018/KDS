@@ -53,6 +53,10 @@ namespace KDSWPFClient.View
                         Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyBack", "Orange"),
                         Foreground = CfgFileHelper.GetBrushFromCfgFile("statusReadyFore", "Black") } },
 
+                { OrderStatusEnum.ReadyConfirmed.ToString()+OrderStatusEnum.Ready.ToString(),
+                    new View.BrushesPair() {Name="Отображается таймер автоматического перехода в ПодтвГотово", LegendText="00:00:00",
+                        Background = Brushes.Orange, Foreground = Brushes.Green } },
+
                 { OrderStatusEnum.Ready.ToString()+"minus",
                     new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", LegendText="-00:00:00",
                         Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyOverBack", "Orange"),

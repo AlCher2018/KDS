@@ -87,6 +87,8 @@ namespace KDSConsoleSvcHost
 
             // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
             AppProperties.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
+            // Время, в СЕКУНДАХ, автоматического перехода из Готово в ПодтвГотово, при включенном ПодтвГотово (UseReadyConfirmedState = true). Если отсутствует или равно 0, то автоматического перехода не будет.
+            AppProperties.SetProperty("AutoGotoReadyConfirmPeriod", cfg["AutoGotoReadyConfirmPeriod"].ToInt());
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
             AppProperties.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());

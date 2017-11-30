@@ -137,6 +137,8 @@ namespace KDSService.AppModel
         private OrderModel _modelOrder;
 
         private bool _isDish, _isUseReadyConfirmed;
+        private int _autoGotoReadyConfirmPeriod;
+        private DateTime _dtReadyStatusInput;
         private OrderDishModel _parentDish;
 
         #endregion
@@ -175,6 +177,7 @@ namespace KDSService.AppModel
 
             _isDish = ParentUid.IsNull();
             _isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
+            _autoGotoReadyConfirmPeriod = AppProperties.GetIntProperty("AutoGotoReadyConfirmPeriod");
 
             // словарь дат входа в состояние
             _dtEnterStatusDict = new Dictionary<OrderStatusEnum, DateTime>();
@@ -260,9 +263,19 @@ namespace KDSService.AppModel
                     _tsCookingEstimated = TimeSpan.FromSeconds(EstimatedTime);
                 }
 
+                // автоматическая установка состояний
                 OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
+                // TODO автоматический переход из Готово в ПодтвГотово
+                if ((_isUseReadyConfirmed == true) && (_autoGotoReadyConfirmPeriod > 0)
+                    && (newStatus == OrderStatusEnum.Ready) && (_dtReadyStatusInput.IsZero() == false)
+                    && ((DateTime.Now - _dtReadyStatusInput).TotalSeconds >= _autoGotoReadyConfirmPeriod)
+                    )
+                {
+                    _dtReadyStatusInput.SetZero();
+                    newStatus = OrderStatusEnum.ReadyConfirmed;
+                }
 
                 UpdateStatus(newStatus);
 
@@ -285,6 +298,13 @@ namespace KDSService.AppModel
             if (this.Status == newStatus)
             {
                 return false;
+            }
+
+            // автоматический переход из Готово в ПодтвГотово: вход в режим отслеживания нахождения в состоянии Готов
+            if ((_isUseReadyConfirmed == true) && (_autoGotoReadyConfirmPeriod > 0)
+                && (newStatus == OrderStatusEnum.Ready) && (this.Status != OrderStatusEnum.Ready))
+            {
+                _dtReadyStatusInput = DateTime.Now;
             }
 
             string sLogMsg = string.Format(" - DISH.UpdateStatus() Id {0}/{1}, from {2} to {3}", this.Id, this.Name, this.Status.ToString(), newStatus.ToString());
@@ -341,7 +361,8 @@ namespace KDSService.AppModel
                         {
                             _dbRunTimeRecord.ReadyDate = DateTime.MinValue;
                         }
-                        if (_isUseReadyConfirmed && (preStatus == OrderStatusEnum.ReadyConfirmed) && (newStatus == OrderStatusEnum.Cooking))
+                        if (_isUseReadyConfirmed && (preStatus == OrderStatusEnum.ReadyConfirmed) 
+                            && ((newStatus == OrderStatusEnum.Cooking) || (newStatus == OrderStatusEnum.Ready)))
                         {
                             _dbRunTimeRecord.ReadyConfirmedDate = DateTime.MinValue;
                         }

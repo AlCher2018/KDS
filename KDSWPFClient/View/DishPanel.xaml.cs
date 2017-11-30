@@ -45,7 +45,7 @@ namespace KDSWPFClient.View
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
-            dishView.PropertyChanged += DishView_PropertyChanged;
+            _dishView.PropertyChanged += DishView_PropertyChanged;
 
             //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
             //base.MinHeight = dishLineMinHeight;
@@ -121,6 +121,10 @@ namespace KDSWPFClient.View
                 {
                     brushKey = "estimateCook";
                 }
+            }
+            else if ((_dishView.Status == OrderStatusEnum.Ready) && _dishView.EnableTimerToAutoReadyConfirm)
+            {
+                brushKey = OrderStatusEnum.ReadyConfirmed.ToString() + OrderStatusEnum.Ready.ToString();
             }
             else
             {
