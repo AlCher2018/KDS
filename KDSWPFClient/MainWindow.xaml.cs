@@ -206,7 +206,6 @@ namespace KDSWPFClient
         // получение данных от службы, учитывая условия, задаваемые конкретным клиентом
         private void getOrdersFromService(LeafDirectionEnum leafDirection)
         {
-            if (_leafing == true) return;
             if (_timer.Enabled) _timer.Stop();
 
             _mayGetData = false;

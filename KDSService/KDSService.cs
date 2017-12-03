@@ -443,7 +443,7 @@ Contract: IMetadataExchange
 
 
                 string ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
-                AppEnv.WriteLogTraceMessage(machineName, " - orders for client ({0}): {1}", retValList.Count, ids);
+                AppEnv.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
                 // ограничение количества отдаваемых клиенту объектов
                 if ((clientFilter.EndpointOrderID > 0) 
                     || (clientFilter.EndpointOrderItemID > 0)
@@ -452,7 +452,7 @@ Contract: IMetadataExchange
                     limitOrderItems(retVal, clientFilter);
 
                     ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
-                    AppEnv.WriteLogTraceMessage(machineName, " - limit orders for client({0}): {1}", retValList.Count, ids);
+                    AppEnv.WriteLogTraceMessage(" - limit orders for client({0}): {1}", retValList.Count, ids);
                 }
 
             }  // if (retVal.Count > 0)
