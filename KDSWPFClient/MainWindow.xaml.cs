@@ -37,6 +37,7 @@ namespace KDSWPFClient
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
         private double _autoBackTimersInterval;     // интервал для таймеров возврата
+        private bool _leafing;                      // признак процесса листания
 
         private AppDataProvider _dataProvider;
         private DishesFilter _dishesFilter = DishesFilter.Instance;
@@ -205,6 +206,7 @@ namespace KDSWPFClient
         // получение данных от службы, учитывая условия, задаваемые конкретным клиентом
         private void getOrdersFromService(LeafDirectionEnum leafDirection)
         {
+            if (_leafing == true) return;
             if (_timer.Enabled) _timer.Stop();
 
             _mayGetData = false;
@@ -787,6 +789,9 @@ namespace KDSWPFClient
         // *** кнопки листания страниц ***
         private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (_leafing == true) return;
+
+            _leafing = true;
             if (_viewByPage)
             {
                 getOrdersFromService(LeafDirectionEnum.Backward);
@@ -794,10 +799,14 @@ namespace KDSWPFClient
             }
             if (_pages.SetPreviousPage())
                 setCurrentPage();
+            _leafing = false;
         }
 
         private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (_leafing == true) return;
+
+            _leafing = true;
             if (_viewByPage)
             {
                 getOrdersFromService(LeafDirectionEnum.Forward);
@@ -805,6 +814,7 @@ namespace KDSWPFClient
             }
             else if (_pages.SetNextPage())
                 setCurrentPage();
+            _leafing = false;
         }
 
         // отображение кнопок с номерами страниц и вкл/выкл таймера возврата на первую страницу

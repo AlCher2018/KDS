@@ -369,11 +369,15 @@ Contract: IMetadataExchange
                     foreach (int curId in uniqOrdersId)
                         if (!client.CurrentOrderIdsList.Contains(curId))
                         {
+                            AppEnv.WriteLogTraceMessage(" - new order id - {0}", curId);
                             isExistsNewOrder = true; break;
                         }
-                    client.CurrentOrderIdsList.Clear();
                 }
-                client.CurrentOrderIdsList.AddRange(uniqOrdersId);
+                if (isExistsNewOrder)
+                {
+                    if (client.CurrentOrderIdsList.Count > 0) client.CurrentOrderIdsList.Clear();
+                    client.CurrentOrderIdsList.AddRange(uniqOrdersId);
+                }
                 retVal.IsExistsNewOrder = isExistsNewOrder;
 
                 // группировка по CreateDate блюд может увеличить кол-во заказов
@@ -393,7 +397,10 @@ Contract: IMetadataExchange
                     }
                     // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
                     if (retValList.Count == sortedOrders.Count)
+                    {
                         retValList = sortedOrders.Values.ToList();
+                        retVal.OrdersList = retValList;
+                    }
                     // иначе создать заново выходный список заказов с блюдами
                     else
                     {
@@ -434,12 +441,18 @@ Contract: IMetadataExchange
                     clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
                 }
 
+
+                string ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
+                AppEnv.WriteLogTraceMessage(machineName, " - orders for client ({0}): {1}", retValList.Count, ids);
                 // ограничение количества отдаваемых клиенту объектов
                 if ((clientFilter.EndpointOrderID > 0) 
                     || (clientFilter.EndpointOrderItemID > 0)
                     || (clientFilter.ApproxMaxDishesCountOnPage > 0))
                 {
                     limitOrderItems(retVal, clientFilter);
+
+                    ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
+                    AppEnv.WriteLogTraceMessage(machineName, " - limit orders for client({0}): {1}", retValList.Count, ids);
                 }
 
             }  // if (retVal.Count > 0)
@@ -471,6 +484,7 @@ Contract: IMetadataExchange
             {
                 idxOrder = orderList.FindIndex(om =>
                 (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
+                AppEnv.WriteLogTraceMessage("   - limit from OrderId={0} & OrderDishId={1}, order {2}", clientFilter.EndpointOrderID, clientFilter.EndpointOrderItemID, ((idxOrder==-1)?"NOT found":"FOUND"));
             }
             // если не найден такой OrderModel, то начинаем с первого элемента
             if (idxOrder == -1) idxOrder = 0;
@@ -532,7 +546,7 @@ Contract: IMetadataExchange
                 }
             }
 
-            //  движение вперед
+            //  движение вперед или по месту
             else
             {
                 // сместить индекс вперед, если граничное блюдо - последнее
