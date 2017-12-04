@@ -56,6 +56,7 @@ namespace KDSWPFClient
         {
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
+            _machineName += "." + App.ClientName;
         }
 
         public bool CreateGetChannel()

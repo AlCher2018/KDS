@@ -90,7 +90,7 @@ namespace KDSWPFClient.View
         /// <param name="dishIndex">Индекс блюда, начиная с которогу будут строиться панели</param>
         /// <param name="isPanelsForward">Признак того, что коллекция orders будет листаться вперед, от стартовой позиции к концу набора</param>
         /// <returns></returns>
-        internal void DrawOrderPanelsOnPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward)
+        internal void DrawOrderPanelsOnPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward, bool keepSplitOrderOnLastColumnByForward)
         {
             _canvas.Children.Clear();
 
@@ -163,7 +163,7 @@ namespace KDSWPFClient.View
                 else
                 {
                     _canvas.Children.Remove(ordPanel);
-                    splitOrderViewPanels(ordPanel);
+                    splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward);
                 }
 
                 freeHeight = getFreeHeight();
@@ -177,7 +177,7 @@ namespace KDSWPFClient.View
         // панели записываются на канву временного размещения
         // входные параметры: 
         //  - OrderPanel ordPanel // сплошная панель, которую надо разбить по колонкам 
-        private void splitOrderViewPanels(OrderPanel ordPanel)
+        private void splitOrderViewPanels(OrderPanel ordPanel, bool keepSplitOrderOnLastColumnByForward)
         {
             OrderPanel curPanel=null;
             string orderLogInfo = string.Format("id: {0}, index: {1}, number: {2}, dishes: {3}", ordPanel.OrderViewModel.Id, ordPanel.OrderViewModel.Index, ordPanel.OrderViewModel.Number, ordPanel.OrderViewModel.Dishes.Count);
@@ -255,7 +255,7 @@ namespace KDSWPFClient.View
                         if (curColIndex == _pageColsCount)
                         {
                             // если панель заказа в последней колонке является продолжением заказа, т.е. HeaderPanel==null, то обрываем заказ и добавляем разделитель продолжения
-                            if (curPanel.HeaderPanel == null)
+                            if (((curPanel.HeaderPanel == null) || keepSplitOrderOnLastColumnByForward) && (curPanel.ItemsCount > 0))
                             {
                                 // добавляем в конце разделитель продолжения заказа
                                 DishDelimeterPanel delimPanel = createContinuePanel(true);
@@ -265,13 +265,15 @@ namespace KDSWPFClient.View
                                     _shiftForward = false; // смещаясь назад
                                     curBlock = getNextItemsBlock(curPanel, true); // поиск блока и удаление его
                                     _shiftForward = true; // восстановить смещение
-                                    if (curBlock != null)
+                                    // если текущая панель не пустая, то добавляем панель переноса
+                                    if ((curBlock != null) && (curPanel.ItemsCount > 0))
                                     {
                                         curPanel.AddDelimiter(delimPanel);
                                     }
+                                    // иначе полностью переносим панель заказа в след.страницу
                                     else
                                     {
-                                        AppLib.WriteLogErrorMessage("layout order panels on the canvas: не могу удалить последний блок панели для размещения разделителя продолжения заказа на след.странице: " +  orderLogInfo);
+                                        _canvas.Children.Remove(curPanel);
                                     }
                                 }
                                 else
@@ -323,70 +325,50 @@ namespace KDSWPFClient.View
                         // из первого столбца
                         if (curColIndex == 1)
                         {
-                            // если не помещается хвост из менее, чем 3 элемента
-                            // или не помещается в 1/3 часть колонки, то переносим всю панель 
-                            if (ordPanel.ItemsCount < 3)
+                            // если в текущей панели еще нет строк, то переносим всю панель на предыдущий лист
+                            // удалив текущую пустую панель
+                            if (curPanel.ItemsCount == 0)
                             {
-                                // удалить все панели текущего заказа
-                                while (curPanel.OrderViewModel == ordPanel.OrderViewModel)
-                                {
-                                    _canvas.Children.Remove(curPanel);
-                                    if (_canvas.Children.Count == 0) break;
-                                    curPanel = (OrderPanel)_canvas.Children[0];
-                                }
-                                // а первую панель подтягиваем кверху
-                                //curTopValue = 0d;
-                                //if ((double)curPanel.GetValue(Canvas.TopProperty) != 0d) curPanel.SetValue(Canvas.TopProperty, 0d);
+                                _canvas.Children.Remove(curPanel);
                             }
-
-                            // разбиваем панель
+                            // если в текущей панели уже есть блюда, т.е. есть что оставлять на текущей странице, 
+                            // то добавляем в начало разделитель продолжения заказа
                             else
                             {
-                                // если в текущей панели еще нет строк, то переносим всю панель на предыдущий лист
-                                // удалив текущую пустую панель
-                                if (curPanel.ItemsCount == 0)
+                                DishDelimeterPanel delimPanel = createContinuePanel(false);
+                                // удалить первый блок из текущей панели
+                                if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
                                 {
-                                    _canvas.Children.Remove(curPanel);
-                                }
-                                // если в текущей панели уже есть блюда, т.е. есть что оставлять на текущей странице, 
-                                // то добавляем в начало разделитель продолжения заказа
-                                else
-                                {
-                                    DishDelimeterPanel delimPanel = createContinuePanel(false);
-                                    // удалить первый блок из текущей панели
-                                    if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
+                                    curBlock = getNextItemsBlock(curPanel, true, true);
+                                    if (curBlock != null)
                                     {
-                                        curBlock = getNextItemsBlock(curPanel, true, true);
-                                        if (curBlock != null)
+                                        // нет элементов в тек.панели - удалить текущую панель и сделать текущей следующую панель на странице
+                                        if (curPanel.ItemsCount == 0)
                                         {
-                                            // нет элементов в тек.панели - удалить текущую панель и сделать текущей следующую панель на странице
-                                            if (curPanel.ItemsCount == 0)
-                                            {
-                                                _canvas.Children.Remove(curPanel);
-                                                if (_canvas.Children.Count > 0)
-                                                    curPanel = (OrderPanel)_canvas.Children[0];
-                                                else
-                                                    curPanel = null;
-                                            }
-                                            // иначе вставляем разделитель переноса на пред.страницу
+                                            _canvas.Children.Remove(curPanel);
+                                            if (_canvas.Children.Count > 0)
+                                                curPanel = (OrderPanel)_canvas.Children[0];
                                             else
-                                                curPanel.InsertDelimiter(0, delimPanel);
+                                                curPanel = null;
                                         }
+                                        // иначе вставляем разделитель переноса на пред.страницу
                                         else
-                                        {
-                                            AppLib.WriteLogErrorMessage("layout order panels on the canvas: не могу удалить первый блок панели для размещения разделителя начала заказа на предыд.странице: " + orderLogInfo);
-                                        }
+                                            curPanel.InsertDelimiter(0, delimPanel);
                                     }
                                     else
-                                        curPanel.InsertDelimiter(0, delimPanel);
-
-                                    if (curPanel != null)
                                     {
-                                        curPanel.UpdateLayout();
-                                        // установить Top=0 для текущей панели
-                                        curTopValue = 0d;
-                                        setPanelLeftTop(curPanel);
+                                        AppLib.WriteLogErrorMessage("layout order panels on the canvas: не могу удалить первый блок панели для размещения разделителя начала заказа на предыд.странице: " + orderLogInfo);
                                     }
+                                }
+                                else
+                                    curPanel.InsertDelimiter(0, delimPanel);
+
+                                if (curPanel != null)
+                                {
+                                    curPanel.UpdateLayout();
+                                    // установить Top=0 для текущей панели
+                                    curTopValue = 0d;
+                                    setPanelLeftTop(curPanel);
                                 }
                             }
                             // перенос панели на предыдущую страницу

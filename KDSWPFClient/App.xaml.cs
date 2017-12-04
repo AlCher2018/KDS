@@ -22,8 +22,8 @@ namespace KDSWPFClient
     /// </summary>
     public partial class App : Application
     {
-        // тестовая задержка
-        //private static Random rnd = new Random();
+        public static string ClientName;
+
 
         /// <summary>
         /// Application Entry Point.
@@ -56,13 +56,30 @@ namespace KDSWPFClient
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient.psw", out checkProtectedResult) == false)
             {
-                AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
                 appExit(2, checkProtectedResult.CustomMessage);
-                return;
             }
 
             MessageListener.Instance.ReceiveMessage("Получение версии приложения...");
             AppLib.WriteLogInfoMessage("Инициализация KDS-клиента...");
+
+            // проверка наличия уникального имени клиента в конфиг-файле
+            string cfgValue = CfgFileHelper.GetAppSetting("KDSClientName");
+            if (cfgValue.IsNull() == true)
+            {
+                cfgValue = "Не указано имя КДС-клиента в файле AppSettings.config.";
+                appExit(3, cfgValue);
+            }
+            if (cfgValue.Equals("uniqClientName", StringComparison.OrdinalIgnoreCase))
+            {
+#if DEBUG==false
+                cfgValue = "Измените имя КДС-клиента в файле AppSettings.config";
+                appExit(3, cfgValue);
+#endif
+            }
+            KDSWPFClient.App app = new KDSWPFClient.App();
+            WpfHelper.SetAppGlobalValue("KDSClientName", cfgValue);
+            App.ClientName = System.Convert.ToString(WpfHelper.GetAppGlobalValue("KDSClientName"));
+            AppLib.WriteLogInfoMessage(" - имя КДС-клиента: {0}", App.ClientName);
 
             // информация о файлах и сборках
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
@@ -81,8 +98,6 @@ namespace KDSWPFClient
                 AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
                 System.IO.Directory.SetCurrentDirectory(appDir);
             }
-
-            KDSWPFClient.App app = new KDSWPFClient.App();
 
             getAppLayout();
 
@@ -156,10 +171,10 @@ namespace KDSWPFClient
 
         private static void appExit(int exitCode, string errMsg)
         {
-            if ((exitCode != 0) && (errMsg.IsNull() == false))
-            {
-                MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
-            }
+            AppLib.WriteLogErrorMessage("Аварийное завершение программы: " + errMsg);
+
+            MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+
             Environment.Exit(exitCode);
         }
 

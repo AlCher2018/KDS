@@ -282,6 +282,8 @@ Contract: IMetadataExchange
         // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа
         public ServiceResponce GetOrders(string machineName, ClientDataFilter clientFilter)
         {
+            ClientInfo curClient = getClientInfo(machineName);
+
             AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
 
             // таймер чтения из БД выключен - ждем, пока не закончится чтение данных из БД
@@ -304,7 +306,7 @@ Contract: IMetadataExchange
             Dictionary<OrderDishModel, List<OrderDishModel>> dishIngr = new Dictionary<OrderDishModel, List<OrderDishModel>>();
 
             // установить флаг чтения заказов из внутренней коллекции клиентом machineName
-            getClientInfo(machineName).GetOrdersFlag = true;
+            curClient.GetOrdersFlag = true;
 
             // получить в retVal отфильтрованные заказы
             foreach (OrderModel order in _ordersModel.Orders.Values)
@@ -355,19 +357,18 @@ Contract: IMetadataExchange
             }  // foreach OrderModel
 
             // сбросить флаг чтения заказов из внутренней коллекции клиентом machineName
-            getClientInfo(machineName).GetOrdersFlag = false;
+            curClient.GetOrdersFlag = false;
             
             // группировка и сортировка retVal
             if (retValList.Count > 0)
             {
                 // для каждого клиента хранить набор Id заказов из БД для определения появления нового заказа (проигрывание мелодии на клиенте)
                 int[] uniqOrdersId = retValList.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-                ClientInfo client = getClientInfo(machineName);
-                bool isExistsNewOrder = ((client.CurrentOrderIdsList.Count == 0) && (uniqOrdersId.Length > 0));
+                bool isExistsNewOrder = ((curClient.CurrentOrderIdsList.Count == 0) && (uniqOrdersId.Length > 0));
                 if (!isExistsNewOrder)
                 {
                     foreach (int curId in uniqOrdersId)
-                        if (!client.CurrentOrderIdsList.Contains(curId))
+                        if (!curClient.CurrentOrderIdsList.Contains(curId))
                         {
                             AppEnv.WriteLogTraceMessage(" - new order id - {0}", curId);
                             isExistsNewOrder = true; break;
@@ -375,8 +376,8 @@ Contract: IMetadataExchange
                 }
                 if (isExistsNewOrder)
                 {
-                    if (client.CurrentOrderIdsList.Count > 0) client.CurrentOrderIdsList.Clear();
-                    client.CurrentOrderIdsList.AddRange(uniqOrdersId);
+                    if (curClient.CurrentOrderIdsList.Count > 0) curClient.CurrentOrderIdsList.Clear();
+                    curClient.CurrentOrderIdsList.AddRange(uniqOrdersId);
                 }
                 retVal.IsExistsNewOrder = isExistsNewOrder;
 

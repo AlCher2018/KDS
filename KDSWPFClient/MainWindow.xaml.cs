@@ -30,6 +30,7 @@ namespace KDSWPFClient
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
+        private string _clientName;
         private double _screenWidth, _screenHeight;
 
         private Timer _timer;
@@ -65,6 +66,8 @@ namespace KDSWPFClient
         private List<OrderViewModel> _viewOrders;  // для отображения на экране
         // признак принудительной отрисовки с первого элемента коллекции заказов
         private bool _forceFromFirstOrder = false;
+        // разбивать заказ в последней колонке при движении вперед (или по месту) 
+        private bool _keepSplitOrderOnLastColumnByForward = false;
 
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;  // для удаления заказов
@@ -92,6 +95,7 @@ namespace KDSWPFClient
 
             this.Loaded += MainWindow_Loaded;
 
+            _clientName = Environment.MachineName + "." + App.ClientName;
             _screenWidth = (double)WpfHelper.GetAppGlobalValue("screenWidth");
             _screenHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight");
 
@@ -251,7 +255,7 @@ namespace KDSWPFClient
                     _clientFilter.EndpointOrderID = orderStartId;
                     _clientFilter.EndpointOrderItemID = dishStartId;
                 }
-                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", Environment.MachineName,  clientDataFilterToString(_clientFilter));
+                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", _clientName, clientDataFilterToString(_clientFilter));
                 try
                 {
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
@@ -340,6 +344,7 @@ namespace KDSWPFClient
         private void updateOrders(LeafDirectionEnum leafDirection)
         {
             DateTime dtTmr1 = DateTime.Now;
+            string repaintReason=null;
 
             // условие проигрывания мелодии при появлении нового заказа
             if (_svcResp.IsExistsNewOrder) _wavPlayer.Play();
@@ -354,6 +359,7 @@ namespace KDSWPFClient
             try
             {
                 isViewRepaint2 = updateViewOrdersList();
+                if (isViewRepaint2) repaintReason = "update Orders from KDS service";
             }
             catch (Exception ex)
             {
@@ -380,6 +386,7 @@ namespace KDSWPFClient
                     isViewRepaint2 = true;
                 }
             }
+            if (isViewRepaint2) repaintReason = "delete Orders with not allowed statuses";
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
             // условия перерисовки
@@ -391,11 +398,19 @@ namespace KDSWPFClient
             if (!isViewRepaint2 && !_viewByPage)
                 isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
 
+            if (!isViewRepaint2 && (leafDirection != LeafDirectionEnum.NoLeaf))
+            {
+                isViewRepaint2 = true; repaintReason = string.Format("move to {0} page", (leafDirection== LeafDirectionEnum.Backward ? "PREV" : "NEXT"));
+            }
+
             AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
 
             // перерисовать полностью
             if (isViewRepaint2)
-                repaintOrders("update Orders from KDS service", leafDirection);
+            {
+                if (repaintReason.IsNull()) repaintReason = "update Orders from KDS service";
+                repaintOrders(repaintReason, leafDirection);
+            }
 
             AppLib.WriteLogOrderDetails("svc.GetOrders(...) - FINISH - " + (DateTime.Now - dtTmr1).ToString());
 
@@ -609,7 +624,7 @@ namespace KDSWPFClient
             #endregion
             System.Diagnostics.Debug.Print("** начальные индексы: order {0}, dish {1}", orderStartIndex, dishStartIndex);
 
-            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
+            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
             // если при листании назад, первая панель находится НЕ в первой колонке, 
             // или, наоборот, в первой колонке и свободного места более половины,
             // то разместить заново с первой колонки вперед
@@ -620,7 +635,7 @@ namespace KDSWPFClient
                 //orderStartIndex = 0; dishStartIndex = 0;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
-                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward);
+                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
             }
             #endregion
             movePanelsToView(); // перенос панелей в область просмотра
@@ -793,6 +808,7 @@ namespace KDSWPFClient
             _leafing = true;
             if (_viewByPage)
             {
+                _keepSplitOrderOnLastColumnByForward = true;
                 getOrdersFromService(LeafDirectionEnum.Backward);
                 setCurrentPage();
             }
@@ -808,6 +824,7 @@ namespace KDSWPFClient
             _leafing = true;
             if (_viewByPage)
             {
+                _keepSplitOrderOnLastColumnByForward = false;
                 getOrdersFromService(LeafDirectionEnum.Forward);
                 setCurrentPage();
             }
