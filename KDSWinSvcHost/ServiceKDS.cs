@@ -30,9 +30,9 @@ namespace KDSWinSvcHost
         {
             putToSvcLog("*** Запуск Windows-службы КДС ***");
 
-            // защита PSW-файлом
+            // ЗАЩИТА PSW-файлом
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("KDSService.psw", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSService", out checkProtectedResult) == false)
             {
                 putToSvcLog(checkProtectedResult.LogMessage);
                 putToSvcLog(checkProtectedResult.CustomMessage);

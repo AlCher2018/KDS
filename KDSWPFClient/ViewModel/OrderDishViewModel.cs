@@ -80,8 +80,8 @@ namespace KDSWPFClient.ViewModel
         {
             // из глобальных настроек
             _isUseReadyConfirmed = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
-            _expTakeTS = TimeSpan.FromSeconds((int)WpfHelper.GetAppGlobalValue("ExpectedTake"));
-            _autoGotoReadyConfirmTS = TimeSpan.FromSeconds((int)WpfHelper.GetAppGlobalValue("AutoGotoReadyConfirmPeriod", 0));
+            _expTakeTS = TimeSpan.FromSeconds(System.Convert.ToInt32(WpfHelper.GetAppGlobalValue("ExpectedTake")));
+            _autoGotoReadyConfirmTS = TimeSpan.FromSeconds(System.Convert.ToInt32(WpfHelper.GetAppGlobalValue("AutoGotoReadyConfirmPeriod", 0)));
         }
         public OrderDishViewModel(OrderDishModel svcOrderDish, int index): this()
         {

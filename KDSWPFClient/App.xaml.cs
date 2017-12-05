@@ -54,7 +54,7 @@ namespace KDSWPFClient
 
             // защита PSW-файлом
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient.psw", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult) == false)
             {
                 appExit(2, checkProtectedResult.CustomMessage);
             }
