@@ -4,13 +4,16 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceProcess;
+using IntegraLib;
+
 
 namespace KDSWinSvcHost
 {
     public partial class ServiceKDS : ServiceBase
     {
         // лог для приложений без UI
-        private string _logFile;
+//        private string _logFile;
+        private string _svcInstallLog;
 
         KDSService.KDSServiceClass service;
 
@@ -19,7 +22,7 @@ namespace KDSWinSvcHost
             InitializeComponent();
 
             this.AutoLog = true;
-            _logFile = getAppPath() + "Logs\\kdsWinService.log";
+            _svcInstallLog = AppEnvironment.GetFullSpecialFileNameInAppDir("InstallLog", null, true);
 
 #if (DEBUG)
             OnStart(null);
@@ -45,7 +48,7 @@ namespace KDSWinSvcHost
             try
             {
                 // config file
-                string cfgFile = getAppPath() + "KDSService.config";
+                string cfgFile = CfgFileHelper.GetAppConfigFile("KDSService");
                 putToSvcLog("Инициализация сервисного класса KDSService...");
                 service = new KDSService.KDSServiceClass();
                 service.InitService(cfgFile);
@@ -84,10 +87,6 @@ namespace KDSWinSvcHost
             putToSvcLog("**** Остановка Windows-службы КДС ****");
         }
 
-        private string getAppPath()
-        {
-            return AppDomain.CurrentDomain.BaseDirectory;
-        }
 
         private void exitApplication(int exitCode)
         {
@@ -101,10 +100,12 @@ namespace KDSWinSvcHost
             //Console.WriteLine(msg);
 
             // для приложений без UI
+            if (_svcInstallLog.IsNull()) return;
+
             StreamWriter sw = null;
             try
             {
-                sw = new StreamWriter(_logFile, true);
+                sw = new StreamWriter(_svcInstallLog, true);
                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ": " + msg;
                 sw.WriteLine(msg);
             }
