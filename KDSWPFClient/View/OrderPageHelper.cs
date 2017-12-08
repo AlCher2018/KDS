@@ -114,8 +114,10 @@ namespace KDSWPFClient.View
                 ((_shiftForward) ? iOrd < orders.Count : iOrd >= 0) && (!_pageBreak);
                 iOrd += (_shiftForward) ? 1 : -1)
             {
+
                 // текущий заказ
                 orderModel = orders[iOrd];
+                DebugTimer.Init(string.Format("- заказ {0} ...", orderModel.Number.ToString()));
                 bSplit = false;
 
                 // 1. создать панель заказа со всеми блюдами и разделителями подач
@@ -167,6 +169,7 @@ namespace KDSWPFClient.View
                 }
 
                 freeHeight = getFreeHeight();
+                DebugTimer.GetInterval();
             }
 
             // в обратном направлении для первого заказа curTopValue = 0

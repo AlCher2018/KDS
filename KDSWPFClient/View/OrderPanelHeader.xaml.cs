@@ -80,18 +80,17 @@ namespace KDSWPFClient.View
 
             double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
 
-            double fSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
+            double fSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");
             tbTableLabel1.FontSize = fSize;
             tbTableLabel2.FontSize = fSize;
             tbOrderDateLabel.FontSize = fSize;
             tbOrderCookingCounterLabel.FontSize = fSize;
 
-            tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");  // 14d
-            tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");  // 14d
-            tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");  // 12d
-            tbOrderDate.FontSize = tbTableName.FontSize;
-
-            tbOrderCookingCounter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
+            tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");
+            tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");
+            tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");
+            tbOrderDate.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderCreateDateFontSize");
+            tbOrderCookingCounter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");
 
             if (!order.DivisionColorRGB.IsNull())
             {

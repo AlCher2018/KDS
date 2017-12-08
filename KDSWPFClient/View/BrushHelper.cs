@@ -20,80 +20,56 @@ namespace KDSWPFClient.View
         // создать в статическом конструкторе
         static BrushHelper()
         {
-            _appBrushes = new Dictionary<string, BrushesPair>()
-            {
-                {OrderStatusEnum.None.ToString(),
-                    new View.BrushesPair() {Name="~Состояние неопределено", Background = Brushes.WhiteSmoke, Foreground=Brushes.Black} },
+            _appBrushes = new Dictionary<string, BrushesPair>();
+        }
 
-                { OrderStatusEnum.WaitingCook.ToString(),
-                    new View.BrushesPair() {Name="ОЖИДАНИЕ начала готовки: Ручной запуск начала приготовления.", Background=Brushes.Plum, Foreground = Brushes.Black} },
+        public static void FillAppBrushes()
+        {
+            addBrushesPair(OrderStatusEnum.None.ToString(), "~Состояние неопределено", null, null, Brushes.Black, Brushes.WhiteSmoke);
 
-                { "estimateCook",
-                    new View.BrushesPair() {Name="ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", LegendText = "00:00:00", 
-                        Background = CfgFileHelper.GetBrushFromCfgFile("estimateCookBack", "Plum"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("estimateCookFore", "Navy")} },
+            addBrushesPair(OrderStatusEnum.WaitingCook.ToString(), "ОЖИДАНИЕ начала готовки: Ручной запуск начала приготовления.", "", "waitingCook", Brushes.Black, Brushes.Plum);
 
-                { "estimateStart",
-                    new View.BrushesPair() { Name = "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", LegendText = "00:00:00",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("estimateStartBack", "DeepSkyBlue"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("estimateStartFore", "Yellow") } },
+            addBrushesPair("estimateCook", "ПЛАНОВОЕ ВРЕМЯ приготовления: блюдо находится в ожидании ручного запуска начала приготовления", "00:00:00", "estimateCook", Brushes.Navy, Brushes.Plum);
 
-                { OrderStatusEnum.Cooking.ToString(),
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", LegendText="00:00:00",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("statusCookingBack", "Green"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusCookingFore", "Yellow") } },
+            addBrushesPair("estimateStart", "ОТЛОЖЕННЫЙ СТАРТ: автоматический старт начала приготовления после окончания отсчета.", "00:00:00", "estimateStart", Brushes.Yellow, Brushes.DeepSkyBlue);
 
-                { OrderStatusEnum.Cooking.ToString()+"minus",
-                    new View.BrushesPair() {Name="Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени",  LegendText="-00:00:00",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("statusCookingOverBack", "DarkGreen"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusCookingOverFore", "Red") } },
+            addBrushesPair(OrderStatusEnum.Cooking.ToString(), "Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает оставшееся время приготовления", "00:00:00", "statusCooking", Brushes.Yellow, Brushes.Green);
 
-                { OrderStatusEnum.Ready.ToString(),
-                    new View.BrushesPair() {Name="Отображается таймер обратного отсчета планового времени выноса блюда", LegendText="00:00:00",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyBack", "Orange"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusReadyFore", "Black") } },
+            addBrushesPair(OrderStatusEnum.Cooking.ToString() + "minus", "Блюдо находится В ПРОЦЕССЕ приготовления: таймер показывает количество просроченного времени", "-00:00:00", "statusCookingOver", Brushes.Red, Brushes.DarkGreen);
 
-                { OrderStatusEnum.ReadyConfirmed.ToString()+OrderStatusEnum.Ready.ToString(),
-                    new View.BrushesPair() {Name="Отображается таймер автоматического перехода в ПодтвГотово", LegendText="00:00:00",
-                        Background = Brushes.Orange, Foreground = Brushes.Green } },
+            addBrushesPair(OrderStatusEnum.Ready.ToString(), "Отображается таймер обратного отсчета планового времени выноса блюда", "00:00:00", "statusReady", Brushes.Black, Brushes.Orange);
 
-                { OrderStatusEnum.Ready.ToString()+"minus",
-                    new View.BrushesPair() {Name="Отображается таймер просроченного времени выноса блюда", LegendText="-00:00:00",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("statusReadyOverBack", "Orange"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("statusReadyOverFore", "Red") } },
+            addBrushesPair(OrderStatusEnum.ReadyConfirmed.ToString() + OrderStatusEnum.Ready.ToString(), "Отображается таймер автоматического перехода в ПодтвГотово", "00:00:00", "readyConfirmedReady", Brushes.Green, Brushes.Orange);
 
-                { OrderStatusEnum.ReadyConfirmed.ToString(),
-                    new View.BrushesPair() {Name="Подтверждение готовности: отображается таймер обратного отсчета планового времени выноса блюда", Background=Brushes.Gold, Foreground = Brushes.Black, LegendText="00:00:00" } },
+            addBrushesPair(OrderStatusEnum.Ready.ToString() + "minus", "Отображается таймер просроченного времени выноса блюда", "-00:00:00", "statusReadyOver", Brushes.Red, Brushes.Orange);
 
-                { OrderStatusEnum.ReadyConfirmed.ToString()+"minus",
-                    new View.BrushesPair() {Name="Подтверждение готовности: отображается таймер просроченного времени выноса блюда", Background=Brushes.Gold, Foreground = Brushes.Red, LegendText="-00:00:00" } },
+            addBrushesPair(OrderStatusEnum.ReadyConfirmed.ToString(), "Подтверждение готовности: отображается таймер обратного отсчета планового времени выноса блюда", "00:00:00", "readyConfirmed", Brushes.Black, Brushes.Gold);
 
-                { OrderStatusEnum.Cancelled.ToString(),
-                    new View.BrushesPair() {Name="Блюдо/заказ ОТМЕНЕНО", Background=Brushes.Salmon, Foreground = Brushes.Black} },
+            addBrushesPair(OrderStatusEnum.ReadyConfirmed.ToString() + "minus", "Подтверждение готовности: отображается таймер просроченного времени выноса блюда", "-00:00:00", "readyConfirmedOver", Brushes.Red, Brushes.Gold);
 
-                { OrderStatusEnum.Took.ToString(),
-                    new View.BrushesPair() {Name="~Блюдо/заказ ВЫДАНО", Background=Brushes.Blue, Foreground = Brushes.White } },
+            addBrushesPair(OrderStatusEnum.Cancelled.ToString(), "Блюдо/заказ ОТМЕНЕНО", null, "statusCancelled", Brushes.Black, Brushes.Salmon);
 
-                { OrderStatusEnum.Commit.ToString(),
-                    new View.BrushesPair() {Name="~Блюдо/заказ ЗАФИКСИРОВАНО", Background=Brushes.DarkBlue, Foreground = Brushes.Yellow } },
+            addBrushesPair(OrderStatusEnum.Took.ToString(), "~Блюдо/заказ ВЫДАНО", null, "statusTook", Brushes.White, Brushes.Blue);
 
-                { OrderStatusEnum.CancelConfirmed.ToString(),
-                    new View.BrushesPair() {Name="~Отмена ПОДТВЕРЖДЕНА", Background=Brushes.DarkBlue, Foreground = Brushes.Yellow } },
+            addBrushesPair(OrderStatusEnum.Commit.ToString(), "~Блюдо/заказ ЗАФИКСИРОВАНО", null, "statusCommit", Brushes.Yellow, Brushes.DarkBlue);
+            
+            addBrushesPair(OrderStatusEnum.CancelConfirmed.ToString(), "~Отмена ПОДТВЕРЖДЕНА", null, "statusCancelConfirmed", Brushes.Yellow, Brushes.DarkBlue);
 
-                { "orderHeaderTimer",
-                    new View.BrushesPair() {Name="~Таймер в заголовке заказа", Background=Brushes.YellowGreen, Foreground = Brushes.Black} },
+            addBrushesPair("orderHeaderTimer", "~Таймер в заголовке заказа", null, "orderHeaderTimer", Brushes.Black, Brushes.YellowGreen);
 
-                { "dishLineBase",
-                    new View.BrushesPair() {Name="~Строка блюда", Background=Brushes.White, Foreground = Brushes.Black} },
+            addBrushesPair("dishLineBase", "~Строка блюда", null, "dishLineBase", Brushes.Black, Brushes.White);
+            addBrushesPair("ingrLineBase", "~Строка ингредиента", null, "ingrLineBase", Brushes.DarkViolet, Brushes.White);
 
-                { "ingrLineBase",
-                    new View.BrushesPair() {Name="~Строка ингредиента", Background=Brushes.White, Foreground = Brushes.DarkViolet } },
+            addBrushesPair("delimiterBreakPage", "~Разделитель разрыва заказа на странице", null, "pageBreak", Brushes.White, Brushes.Blue);
+        }
 
-                { "delimiterBreakPage",
-                    new View.BrushesPair() {Name="~Разделитель разрыва заказа на странице",
-                        Background = CfgFileHelper.GetBrushFromCfgFile("pageBreakBack", "Blue"),
-                        Foreground = CfgFileHelper.GetBrushFromCfgFile("pageBreakFore", "White") } }
-            };
+        private static void addBrushesPair(string dictionaryKey, string brushPairName, string legendText, string cfgElementName, Brush foregroundBrush, Brush backgroundBrush)
+        {
+            BrushesPair bp;
+            bp = new BrushesPair() { Name = brushPairName, LegendText = legendText };
+            bp.SetBrushes(cfgElementName, foregroundBrush, backgroundBrush);
+
+            _appBrushes.Add(dictionaryKey, bp);
         }
 
         // использовать для внешних обращений
@@ -112,6 +88,34 @@ namespace KDSWPFClient.View
         public Brush Background { get; set; }
 
         public Brush Foreground { get; set; }
+
+        public void SetBrushes(string cfgElementName, Brush defaultForeBrush, Brush defaultBackBrush)
+        {
+            if (string.IsNullOrEmpty(cfgElementName))
+            {
+                Foreground = defaultForeBrush; Background = defaultBackBrush;
+            }
+            // иначе берем из config-файла, значение: [строка цвета шрифта];[строка цвета фона]
+            else
+            {
+                string cfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+                if (string.IsNullOrEmpty(cfgValue))
+                {
+                    Foreground = defaultForeBrush; Background = defaultBackBrush;
+                }
+                else
+                {
+                    string[] cfgVals = cfgValue.Split('|');
+
+                    Foreground = DrawHelper.GetBrushByName(cfgVals[0]);
+
+                    if (cfgVals.Length > 1)
+                        Background = DrawHelper.GetBrushByName(cfgVals[1]);
+                    else
+                        Background = defaultBackBrush;
+                }
+            }
+        }
 
     }  // class BrushesPair
 

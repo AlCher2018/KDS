@@ -29,7 +29,7 @@ namespace KDSWPFClient.View
         internal OrderDishViewModel DishView { get { return _dishView; } }
 
         private bool _isDish, _isIngrIndepend;
-        private double _fontSize, _padd;
+        private double _padd;
         private string _currentBrushKey;
         //private DishPanel _parentPanel;
 
@@ -47,31 +47,26 @@ namespace KDSWPFClient.View
 
             _dishView.PropertyChanged += DishView_PropertyChanged;
 
-            //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
-            //base.MinHeight = dishLineMinHeight;
-
             double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale",1.0d);
-            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
-            _fontSize = fontSize * fontScale;
+            double fontSizeDishName = (double)WpfHelper.GetAppGlobalValue("ordPnlDishNameFontSize");
 
-            // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
-            // this.SetValue(TextBlock.FontSizeProperty, _fontSize);   
-            this.tbDishIndex.FontSize = 0.8 * _fontSize;
-            //this.tbDishFilingNumber.FontSize = _fontSize;
-            this.tbDishName.FontSize = _fontSize;
+            this.tbDishIndex.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishIndexFontSize");
+            this.tbDishName.FontSize = fontScale * (_isDish 
+                ? (double)WpfHelper.GetAppGlobalValue("ordPnlDishNameFontSize") 
+                : (double)WpfHelper.GetAppGlobalValue("ordPnlIngrNameFontSize"));
             // модификаторы
             if (dishView.Comment.IsNull() == false)
             {
                 this.tbComment.Text = string.Format("\n({0})", dishView.Comment);
-                this.tbComment.FontSize = 0.9 * _fontSize;
+                this.tbComment.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishCommentFontSize");
             }
-            this.tbDishQuantity.FontSize = 1.1 * _fontSize;
+            this.tbDishQuantity.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishQuantityFontSize");
 
-            tbDishStatusTS.FontSize = _fontSize;
+            tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");
             tbDishStatusTS.FontWeight = FontWeights.Bold;
 
-            _padd = 0.5 * fontSize;  // от немасштабного фонта
-            brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
+            _padd = 0.5 * fontSizeDishName;  // от размера фонта наименования блюда
+            brdMain.Padding = new Thickness(0, 0.5 *_padd, 0, 0.5 *_padd);
             brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
 
             // рамка вокруг таймера

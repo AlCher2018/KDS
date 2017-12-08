@@ -47,7 +47,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;Release</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -212,6 +212,7 @@
     </Compile>
     <Content Include="AppSettings.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

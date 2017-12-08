@@ -515,6 +515,7 @@ namespace KDSWPFClient
             if (_viewByPage)
             {
                 repaintOrdersNew(leafDirection);
+                Debug.Print(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
             }
             else
             {
@@ -632,12 +633,17 @@ namespace KDSWPFClient
             // делать ДО переноса панелей из канвы размещения в канву отображения
             if (!bShiftDirForward && _pageHelper.NeedRelayout())
             {
+                DebugTimer.Init("- пересоздание страницы при листании назад...");
+
                 //orderStartIndex = 0; dishStartIndex = 0;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
                 _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+                DebugTimer.GetInterval();
+
             }
             #endregion
+
             movePanelsToView(); // перенос панелей в область просмотра
 
             // при листании вперед, получить индексы последних заказ/блюдо на странице

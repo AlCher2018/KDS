@@ -71,7 +71,7 @@ namespace KDSWPFClient
             }
             if (cfgValue.Equals("uniqClientName", StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG==false
+#if (Release==false) && (DEBUG == false)
                 cfgValue = "Измените имя КДС-клиента в файле AppSettings.config";
                 appExit(3, cfgValue);
 #endif
@@ -187,83 +187,106 @@ namespace KDSWPFClient
         
         private static void setAppGlobalValues()
         {
-            string cfgValue;
+            // Имя или ip-адрес компьютера, на котором запущена КДС-служба
+            setGlobStringValueFromCfg("KDSServiceHostName", "localhost");
+            setGlobStringValueFromCfg("KDSClientName", "uniqClientName");  // УНИКАЛЬНОЕ ИМЯ КДС-КЛИЕНТА
 
-            cfgValue = CfgFileHelper.GetAppSetting("KDSServiceHostName");
-            WpfHelper.SetAppGlobalValue("KDSServiceHostName", cfgValue);
-
-            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
-            WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
-            cfgValue = CfgFileHelper.GetAppSetting("TraceOrdersDetails");
-            WpfHelper.SetAppGlobalValue("TraceOrdersDetails", (cfgValue == null) ? false : cfgValue.ToBool());
-            cfgValue = CfgFileHelper.GetAppSetting("IsLogClientAction");
-            WpfHelper.SetAppGlobalValue("IsLogClientAction", (cfgValue == null) ? false : cfgValue.ToBool());
+            // звуковой файл, проигрываемый при появлении нового заказа
+            setGlobStringValueFromCfg("NewOrderAudioAttention");
+            // кликабельность заголовка заказа
+            setGlobBoolValueFromCfg("OrderHeaderClickable");
+            // кликабельность ингредиента НЕЗАВИСИМО от родительского блюда
+            setGlobBoolValueFromCfg("IsIngredientsIndependent");
+            // отображать ли на ЗАВИСИМЫХ ингредиентах таймеры
+            setGlobBoolValueFromCfg("ShowTimerOnDependIngr");
+            // отображать ли заголовок ЗАКАЗА тем же статусом, что и ВСЕ, ОТОБРАЖАЕМЫЕ НА ДАННОМ КДС-е, блюда/ингредиенты
+            setGlobBoolValueFromCfg("IsShowOrderStatusByAllShownDishes");
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
-            //   кол-во столбцов заказов, если нет в config-е, то сохранить значение по умолчанию
-            cfgValue = CfgFileHelper.GetAppSetting("OrdersColumnsCount");
-            WpfHelper.SetAppGlobalValue("OrdersColumnsCount", (cfgValue == null) ? 4 : cfgValue.ToInt());
-            //   отступ сверху/снизу для панели заказов
-            cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelTopBotMargin");
-            WpfHelper.SetAppGlobalValue("OrdersPanelTopBotMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
-            //   отступ между заказами по вертикали
-            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelTopMargin");
-            WpfHelper.SetAppGlobalValue("OrderPanelTopMargin", (cfgValue == null) ? 30 : cfgValue.ToInt());
-            //   отступ между заказами по горизонтали
-            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelLeftMargin");
-            WpfHelper.SetAppGlobalValue("OrderPanelLeftMargin", (cfgValue == null) ? 0.15 : cfgValue.ToDouble());
-            // кнопки прокрутки страниц
-            cfgValue = CfgFileHelper.GetAppSetting("OrdersPanelScrollButtonSize");
-            WpfHelper.SetAppGlobalValue("OrdersPanelScrollButtonSize", (cfgValue == null) ? 100 : cfgValue.ToInt());
-
-            cfgValue = CfgFileHelper.GetAppSetting("AppFontScale");
-            WpfHelper.SetAppGlobalValue("AppFontScale", (cfgValue == null) ? 1.0d : cfgValue.ToDouble());
-
-            // различные текстовые строки
-            cfgValue = CfgFileHelper.GetAppSetting("DishesSupplyName");
-            WpfHelper.SetAppGlobalValue("DishesSupplyName", (cfgValue == null) ? "Подача" : cfgValue);
-            cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderNextPage");
-            WpfHelper.SetAppGlobalValue("ContinueOrderNextPage", (cfgValue == null) ? "Продолж. см.на СЛЕДУЮЩЕЙ стр." : cfgValue);
-            cfgValue = CfgFileHelper.GetAppSetting("ContinueOrderPrevPage");
-            WpfHelper.SetAppGlobalValue("ContinueOrderPrevPage", (cfgValue == null) ? "Начало см.на ПРЕДЫДУЩЕЙ стр." : cfgValue);
+            setGlobIntValueFromCfg("OrdersColumnsCount", 4);        // кол-во столбцов заказов
+            // масштабный коэффициент размера шрифтов панели заказа
+            setGlobDoubleValueFromCfg("AppFontScale", 1.0d);
+            setGlobIntValueFromCfg("OrdersPanelTopBotMargin", 40);  // отступ сверху/снизу для панели заказов, в пикселях
+            setGlobIntValueFromCfg("OrderPanelTopMargin", 50);      // отступ между заказами по вертикали, в пикселях
+            // отступ между заказами по горизонтали, в доли от ширины панели заказа
+            setGlobDoubleValueFromCfg("OrderPanelLeftMargin", 0.15d);
+            // кнопки прокрутки страниц, в пикселях
+            setGlobDoubleValueFromCfg("OrdersPanelScrollButtonSize", 100d);
 
             // ** ЗАГОЛОВОК ЗАКАЗА
-            // шрифты для панели заказа
-            WpfHelper.SetAppGlobalValue("ordPnlHdrLabelFontSize", 14d);
-            WpfHelper.SetAppGlobalValue("ordPnlHdrTableNameFontSize", 20d);
-            WpfHelper.SetAppGlobalValue("ordPnlHdrOrderNumberFontSize", 22d);
-            WpfHelper.SetAppGlobalValue("ordPnlHdrWaiterNameFontSize", 14d);
-            WpfHelper.SetAppGlobalValue("ordPnlHdrOrderTimerFontSize", 24d);
-            //    шрифт заголовка таблицы блюд
-            WpfHelper.SetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
+            // шрифты для панели заголовка заказа
+            setGlobDoubleValueFromCfg("OrderPanelHdrLabelFontSize", 14d, "ordPnlHdrLabelFontSize"); // метки полей
+            setGlobDoubleValueFromCfg("OrderPanelHdrTableNameFontSize", 20d, "ordPnlHdrTableNameFontSize"); // имя стола
+            setGlobDoubleValueFromCfg("OrderPanelHdrOrderNumberFontSize", 22d, "ordPnlHdrOrderNumberFontSize"); // номер заказа
+            setGlobDoubleValueFromCfg("OrderPanelHdrWaiterNameFontSize", 14d, "ordPnlHdrWaiterNameFontSize"); // имя официанта
+            setGlobDoubleValueFromCfg("OrderPanelHdrOrderCreateDateFontSize", 20d, "ordPnlHdrOrderCreateDateFontSize"); // дата создания заказа
+            setGlobDoubleValueFromCfg("OrderPanelHdrOrderTimerFontSize", 24d, "ordPnlHdrOrderTimerFontSize"); // таймер заказа
+            // шрифт шапки таблицы блюд
+            setGlobDoubleValueFromCfg("OrderPanelDishTblHeaderFontSize", 10d, "ordPnlDishTblHeaderFontSize");
             // ** СТРОКА БЛЮДА
             // шрифт строки блюда
-            WpfHelper.SetAppGlobalValue("ordPnlDishLineFontSize", 20d);
-            // минимальная высота строки блюда
-            double dishLineMinHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight") / 20d;
-            WpfHelper.SetAppGlobalValue("ordPnlDishLineMinHeight", dishLineMinHeight);
-            
-            // шрифт разделителя блюд (напр. Подача **)
-            cfgValue = CfgFileHelper.GetAppSetting("OrderPanelItemsDelimiterFontSize");
-            WpfHelper.SetAppGlobalValue("ordPnlDishDelimiterFontSize", (cfgValue == null)? 16 : cfgValue.ToInt());
+            setGlobDoubleValueFromCfg("OrderPanelDishIndexFontSize", 16d, "ordPnlDishIndexFontSize");
+            setGlobDoubleValueFromCfg("OrderPanelDishNameFontSize", 20d, "ordPnlDishNameFontSize");
+            setGlobDoubleValueFromCfg("OrderPanelIngrNameFontSize", 20d, "ordPnlIngrNameFontSize");
+            setGlobDoubleValueFromCfg("OrderPanelDishCommentFontSize", 18d, "ordPnlDishCommentFontSize");
+            setGlobDoubleValueFromCfg("OrderPanelDishQuantityFontSize", 22d, "ordPnlDishQuantityFontSize");
+            setGlobDoubleValueFromCfg("OrderPanelDishTimerFontSize", 20d, "ordPnlDishTimerFontSize");
 
-            cfgValue = CfgFileHelper.GetAppSetting("NewOrderAudioAttention");
-            if (cfgValue != null) WpfHelper.SetAppGlobalValue("NewOrderAudioAttention", cfgValue);
+            // шрифт разделителя блюд (напр. Подача ** или Продол.см.на след.стр.)
+            setGlobDoubleValueFromCfg("OrderPanelItemsDelimiterFontSize", 16d, "ordPnlDishDelimiterFontSize");
 
-            cfgValue = CfgFileHelper.GetAppSetting("OrderHeaderClickable");
-            WpfHelper.SetAppGlobalValue("OrderHeaderClickable", cfgValue.ToBool());
+            // различные текстовые строки
+            setGlobStringValueFromCfg("DishesSupplyName", "Подача");
+            setGlobStringValueFromCfg("ContinueOrderNextPage", "Продолж. см.на СЛЕДУЮЩЕЙ стр.");
+            setGlobStringValueFromCfg("ContinueOrderPrevPage", "Начало см.на ПРЕДЫДУЩЕЙ стр.");
 
-            cfgValue = CfgFileHelper.GetAppSetting("IsIngredientsIndependent");
-            WpfHelper.SetAppGlobalValue("IsIngredientsIndependent", cfgValue.ToBool());
-            cfgValue = CfgFileHelper.GetAppSetting("ShowTimerOnDependIngr");
-            WpfHelper.SetAppGlobalValue("ShowTimerOnDependIngr", cfgValue.ToBool());
-
-            cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderStatusByAllShownDishes");
-            WpfHelper.SetAppGlobalValue("IsShowOrderStatusByAllShownDishes", cfgValue.ToBool());
+            // флаги типов записей журнала приложения
+            setGlobBoolValueFromCfg("IsWriteTraceMessages", true);
+            setGlobBoolValueFromCfg("TraceOrdersDetails", true);
+            setGlobBoolValueFromCfg("IsLogClientAction", true);
 
             // таймаут открытия канала
             WpfHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);
+
+            // кисти читаются в служ.классе BrushHelper
+            BrushHelper.FillAppBrushes();
         }
+
+
+        #region get value from config and put it to global vars set
+        private static void setGlobStringValueFromCfg(string cfgElementName, string defaultValue = null, string globVarName = null)
+        {
+            string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+
+            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
+               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue));
+        }
+
+        private static void setGlobBoolValueFromCfg(string cfgElementName, bool defaultValue = false, string globVarName = null)
+        {
+            string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+
+            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
+               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToBool()));
+        }
+
+        private static void setGlobIntValueFromCfg(string cfgElementName, int defaultValue = 0, string globVarName = null)
+        {
+            string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+
+            WpfHelper.SetAppGlobalValue( ((globVarName == null) ? cfgElementName : globVarName), 
+               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToInt()) );
+        }
+
+        private static void setGlobDoubleValueFromCfg(string cfgElementName, double defaultValue = 0d, string globVarName = null)
+        {
+            string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+
+            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
+               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToDouble()));
+        }
+        #endregion
+
 
         // открыть/закрыть легенду цветов таймеров
         internal static void OpenColorLegendWindow()

@@ -49,7 +49,14 @@ namespace KDSService.AppModel
         {
             get
             {
-                return (_dtStop.IsZero()) ? 0 : Convert.ToInt32((_dtStop - _dtStart).TotalSeconds);
+                int retVal = 0;
+                if (_dtStop.IsZero() == false)
+                {
+                    double dVal = (_dtStop - _dtStart).TotalSeconds;
+                    if ((dVal >= int.MinValue) && (dVal <= int.MaxValue)) retVal = Convert.ToInt32(dVal);
+                }
+                
+                return retVal;
             }
         }
 
