@@ -19,6 +19,7 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl == false
     /// <summary>
     /// Interaction logic for OrderPanelHeader.xaml
     /// </summary>
@@ -27,7 +28,8 @@ namespace KDSWPFClient.View
         public OrderPanelHeader(OrderViewModel order, double width)
         {
             InitializeComponent();
-
+            
+            this.MouseUp += root_MouseUp;
             grdHeader.DataContext = order;
 
             // стили и кисти
@@ -42,8 +44,12 @@ namespace KDSWPFClient.View
             if (!key.IsNull() && BrushHelper.AppBrushes.ContainsKey(key))
             {
                 brPair = BrushHelper.AppBrushes[key];
-                grdHeader.Background = brPair.Background;
-                grdHeader.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+                brdHrdTableRow.Background = brPair.Background;
+                brdHrdTableRow.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+                brdHdrWaiter.Background = brPair.Background;
+                brdHdrWaiter.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+                brdHdrOrderTime.Background = brPair.Background;
+                brdHdrOrderTime.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
             }
             // уголки рамок
             brdHrdTableRow.CornerRadius = new CornerRadius(0.03 * width, 0.03 * width, 0, 0);
@@ -105,4 +111,5 @@ namespace KDSWPFClient.View
             e.Handled = true;
         }
     }// class 
+#endif
 }

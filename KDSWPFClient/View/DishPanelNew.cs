@@ -27,6 +27,8 @@ namespace KDSWPFClient.View
         private double _padd;
         private string _currentBrushKey;
         //private DishPanel _parentPanel;
+        private Border brdTimer;
+        private TextBlock tbDishStatusTS;
 #endregion
 
 
@@ -56,28 +58,25 @@ namespace KDSWPFClient.View
             this.Child = grdDishLine;
             // содержание грида - 4 строки
             // 0. № п/п
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new System.Windows.GridLength(0.2d, System.Windows.GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.2d, GridUnitType.Star) });
             // 1. наименование блюда
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new System.Windows.GridLength(1.0d, System.Windows.GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1.0d, GridUnitType.Star) });
             // 2. количество
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new System.Windows.GridLength(0.35d, System.Windows.GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.35d, GridUnitType.Star) });
             // 3. таймер состояния
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new System.Windows.GridLength(0.8d, System.Windows.GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.8d, GridUnitType.Star) });
 
             // индекс блюда
-            TextBlock tbDishIndex = new TextBlock();
+            TextBlock tbDishIndex = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             tbDishIndex.SetValue(Grid.ColumnProperty, 0);
-            tbDishIndex.TextAlignment = System.Windows.TextAlignment.Center;
             Binding bind = new Binding("Index") { Source = _dishView, Converter = new IsZeroConverter() };
             tbDishIndex.SetBinding(TextBlock.TextProperty, bind);
-            tbDishIndex.VerticalAlignment = System.Windows.VerticalAlignment.Center;
             tbDishIndex.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishIndexFontSize");
             grdDishLine.Children.Add(tbDishIndex);
 
             // имя блюда: текст и комментарий
-            TextBlock tbDish = new TextBlock();
+            TextBlock tbDish = new TextBlock() { TextAlignment = TextAlignment.Left, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
             tbDish.SetValue(Grid.ColumnProperty, 1);
-            tbDish.TextWrapping = System.Windows.TextWrapping.Wrap;
 
             Run tbDishName = new Run() { FontWeight = FontWeights.Bold };
             //   блюдо
@@ -106,39 +105,29 @@ namespace KDSWPFClient.View
                 tbComment.Text = string.Format("\n({0})", dishView.Comment);
                 tbComment.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishCommentFontSize");
             }
-
-            tbDish.VerticalAlignment = System.Windows.VerticalAlignment.Center;
             grdDishLine.Children.Add(tbDish);
 
             // количество
-            TextBlock tbDishQuantity = new TextBlock();
+            TextBlock tbDishQuantity = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
             tbDishQuantity.SetValue(Grid.ColumnProperty, 2);
             bind = new Binding("Quantity") { Source=_dishView, Converter = new DishQuantityToStringConverter()};
             tbDishQuantity.SetBinding(TextBlock.TextProperty, bind);
-            tbDishQuantity.FontWeight = FontWeights.Bold;
-            tbDishQuantity.VerticalAlignment = VerticalAlignment.Center;
-            tbDishQuantity.TextAlignment = TextAlignment.Center;
-            tbDishQuantity.TextWrapping = TextWrapping.Wrap;
             tbDishQuantity.Margin = new Thickness(0, 0, 3, 0);
             tbDishQuantity.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishQuantityFontSize");
             grdDishLine.Children.Add(tbDishQuantity);
 
             // рамка таймера
-            Border brdTimer = new Border();
+            brdTimer = new Border();
             brdTimer.SetValue(Grid.ColumnProperty, 3);
             brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
             brdTimer.Margin = new Thickness(0, 0, 3, 0);
             double timerCornerRadius = 0.015 * this.Width;
             brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
             // текстовый блок таймера
-            TextBlock tbDishStatusTS = new TextBlock();
+            tbDishStatusTS = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
             bind = new Binding("ViewTimerString") {Source = _dishView };
             tbDishStatusTS.SetBinding(TextBlock.TextProperty, bind);
             tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");
-            tbDishStatusTS.FontWeight = FontWeights.Bold;
-            tbDishStatusTS.HorizontalAlignment = HorizontalAlignment.Center;
-            tbDishStatusTS.VerticalAlignment = VerticalAlignment.Center;
-            tbDishStatusTS.TextWrapping = TextWrapping.Wrap;
             brdTimer.Child = tbDishStatusTS;
 
             grdDishLine.Children.Add(brdTimer);
@@ -197,8 +186,8 @@ namespace KDSWPFClient.View
 
                 if (brPair != null)
                 {
-                    //brdTimer.Background = brPair.Background;
-                    //tbDishStatusTS.Foreground = brPair.Foreground;
+                    brdTimer.Background = brPair.Background;
+                    tbDishStatusTS.Foreground = brPair.Foreground;
                 }
             }
         }

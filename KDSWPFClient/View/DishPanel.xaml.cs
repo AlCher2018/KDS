@@ -40,10 +40,11 @@ namespace KDSWPFClient.View
             this.Width = panelWidth;
             InitializeComponent();
 
+            this.MouseUp += root_MouseUp;
             _dishView = dishView;
             //_parentPanel = parentPanel;
             grdDishLine.DataContext = _dishView;
-    MouseUp="root_MouseUp"
+    
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
