@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="KDSWPFClient.View.DishPanel"
+﻿<UserControl x:Class="KDSWPFClient.View.DishPanel_old"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -8,7 +8,6 @@
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" Name="root"
              d:DesignHeight="60" d:DesignWidth="300"
-             MouseUp="root_MouseUp"
              >
 
     <UserControl.Resources>
@@ -40,8 +39,7 @@
 
             <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity, Converter={StaticResource dishQuantityToStringConverter}}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,3,0"/>
 
-            <Border x:Name="brdTimer" Grid.Column="3" Margin="0,0,3,0"
-                    CornerRadius="{Binding ActualWidth, ConverterParameter=0.015, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}">
+            <Border x:Name="brdTimer" Grid.Column="3" Margin="0,0,3,0">
                 <TextBlock x:Name="tbDishStatusTS" Text="{Binding ViewTimerString}" HorizontalAlignment="Center" TextWrapping="Wrap"/>
             </Border>
 

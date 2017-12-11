@@ -20,6 +20,7 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl==false
     /// <summary>
     /// Interaction logic for DishPanel.xaml
     /// </summary>
@@ -34,14 +35,15 @@ namespace KDSWPFClient.View
         //private DishPanel _parentPanel;
 
 
-        public DishPanel(OrderDishViewModel dishView)  // DishPanel parentPanel = null
+        public DishPanel(OrderDishViewModel dishView, double panelWidth)
         {
+            this.Width = panelWidth;
             InitializeComponent();
 
             _dishView = dishView;
             //_parentPanel = parentPanel;
             grdDishLine.DataContext = _dishView;
-
+    MouseUp="root_MouseUp"
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
             _isIngrIndepend = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
@@ -67,7 +69,10 @@ namespace KDSWPFClient.View
 
             _padd = 0.5 * fontSizeDishName;  // от размера фонта наименования блюда
             brdMain.Padding = new Thickness(0, 0.5 *_padd, 0, 0.5 *_padd);
+
             brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
+            double timerCornerRadius = 0.015 * this.Width;
+            brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
 
             // рамка вокруг таймера
             setTimerBorder();
@@ -181,4 +186,5 @@ namespace KDSWPFClient.View
         }
 
     }  // class
+#endif
 }

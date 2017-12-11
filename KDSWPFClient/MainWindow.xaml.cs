@@ -311,7 +311,7 @@ namespace KDSWPFClient
                 }
                 catch (Exception ex)
                 {
-                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ErrorHelper.GetShortErrMessage(ex));
+                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.ToString()); // ErrorHelper.GetShortErrMessage(ex)
                 }
 
                 if (_forceFromFirstOrder) _forceFromFirstOrder = false;
@@ -515,7 +515,6 @@ namespace KDSWPFClient
             if (_viewByPage)
             {
                 repaintOrdersNew(leafDirection);
-                Debug.Print(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
             }
             else
             {
@@ -547,8 +546,9 @@ namespace KDSWPFClient
         private void repaintOrdersNew(LeafDirectionEnum shiftDirection)
         {
             #region найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
+            DateTime dtTmr = DateTime.Now;
             // найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
-            int orderStartIndex=-1, dishStartIndex=-1;
+            int orderStartIndex =-1, dishStartIndex=-1;
             int orderFinishIndex=-1, dishFinishIndex=-1;
             bool bShiftDirForward = true;
 
@@ -622,29 +622,29 @@ namespace KDSWPFClient
                     //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count - 1))) dishStartIndex++;
                 }
             }
+            AppLib.WriteLogOrderDetails("   - find Id order/dish draw from, dir {0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
             #endregion
-            System.Diagnostics.Debug.Print("** начальные индексы: order {0}, dish {1}", orderStartIndex, dishStartIndex);
 
+            dtTmr = DateTime.Now;
             _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+            AppLib.WriteLogOrderDetails("  - DRAW {0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+
             // если при листании назад, первая панель находится НЕ в первой колонке, 
             // или, наоборот, в первой колонке и свободного места более половины,
             // то разместить заново с первой колонки вперед
-            #region redraw
             // делать ДО переноса панелей из канвы размещения в канву отображения
             if (!bShiftDirForward && _pageHelper.NeedRelayout())
             {
-                DebugTimer.Init("- пересоздание страницы при листании назад...");
-
-                //orderStartIndex = 0; dishStartIndex = 0;
+                dtTmr = DateTime.Now;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
                 _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-                DebugTimer.GetInterval();
-
+                AppLib.WriteLogOrderDetails("  - REDRAW forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
             }
-            #endregion
 
+            dtTmr = DateTime.Now;
             movePanelsToView(); // перенос панелей в область просмотра
+            AppLib.WriteLogOrderDetails("   - move panels to view canvas - {0}", (DateTime.Now - dtTmr).ToString());
 
             // при листании вперед, получить индексы последних заказ/блюдо на странице
             if (bShiftDirForward) getModelIndexesFromViewContainer(false, out orderFinishIndex, out dishFinishIndex);
@@ -654,7 +654,6 @@ namespace KDSWPFClient
                 orderFinishIndex = orderStartIndex; dishFinishIndex = dishStartIndex;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
             }
-            //System.Diagnostics.Debug.Print("** конечные индексы: order {0}, dish {1}", orderFinishIndex, dishFinishIndex);
 
             // кнопки листания
             _viewPrevPageButton = ((orderStartIndex > 0) || (dishStartIndex > 0));

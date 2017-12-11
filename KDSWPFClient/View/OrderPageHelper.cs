@@ -69,8 +69,7 @@ namespace KDSWPFClient.View
             dishModel.DishName = "QWERTY";
             dishModel.Quantity = 1;
             // создать панель элемента
-            DishPanel dshPnl = new DishPanel(dishModel);
-            dshPnl.Width = _colWidth;
+            DishPanel dshPnl = new DishPanel(dishModel, _colWidth);
             // вычислить его высоту
             _canvas.Children.Add(dshPnl);
             _canvas.UpdateLayout();
@@ -145,27 +144,34 @@ namespace KDSWPFClient.View
                 }
                 #endregion
 
+                DateTime dtTmr = DateTime.Now;
                 OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo, bSplit);
+                AppLib.WriteLogTraceMessage("   - create order panel N {0} - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString());
 
                 dishStartIndex = -1;  // для последующих заказов - все блюда
                 if (ordPanel == null) continue;
 
                 // получить реальные размеры панели заказа
+                dtTmr = DateTime.Now;
                 if (_shiftForward) _canvas.Children.Add(ordPanel);
                 else _canvas.Children.Insert(0, ordPanel);
                 ordPanel.UpdateLayout();
+                AppLib.WriteLogTraceMessage("   - get size order panel N {0} - {1}", orderModel.Number, (DateTime.Now-dtTmr).ToString());
 
                 // 2. Размещение панели на странице
                 // помещается ли вся панель заказа без разрывов в свободное место
+                dtTmr = DateTime.Now;
                 if (ordPanel.ActualHeight < freeHeight)
                 {
-                    setLastPanelPosition(ordPanel);
+                    setLastPanelPosition(ordPanel, ordPanel.ActualHeight);
+                    AppLib.WriteLogTraceMessage("     - layout whole one column - {0}", (DateTime.Now - dtTmr).ToString());
                 }
                 // надо разбивать панель
                 else
                 {
                     _canvas.Children.Remove(ordPanel);
                     splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward);
+                    AppLib.WriteLogTraceMessage("     - split two columns - {0}", (DateTime.Now - dtTmr).ToString());
                 }
 
                 freeHeight = getFreeHeight();
@@ -182,7 +188,8 @@ namespace KDSWPFClient.View
         //  - OrderPanel ordPanel // сплошная панель, которую надо разбить по колонкам 
         private void splitOrderViewPanels(OrderPanel ordPanel, bool keepSplitOrderOnLastColumnByForward)
         {
-            OrderPanel curPanel=null;
+            OrderPanel curPanel = null;
+            double panelHeight = 0d;
             string orderLogInfo = string.Format("id: {0}, index: {1}, number: {2}, dishes: {3}", ordPanel.OrderViewModel.Id, ordPanel.OrderViewModel.Index, ordPanel.OrderViewModel.Number, ordPanel.OrderViewModel.Dishes.Count);
 
             // цикл по блокам заказа, смещая curDishIndex, пока curDishIndex не дойдет до граничного значения в соотв.напр-и
@@ -196,26 +203,20 @@ namespace KDSWPFClient.View
                 // выбрали все блоки - установить координаты последней панели и выйти
                 if (curBlock == null)
                 {
-                    setLastPanelPosition(curPanel);
+                    setLastPanelPosition(curPanel, panelHeight);
                     break;  // нормальный выход - выбраны все элементы панели
                 }
 
-                // создать панель
+                // создать панель без заголовка, в которую будем переносить панели блюд
                 if (curPanel == null)
                 {
                     curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
-                    if (_shiftForward)
-                        _canvas.Children.Add(curPanel);
-                    else
-                    {
-                        // перед добавлением новой панели заказа, установить принудительно для первой панели Top=0
-                        //if ((_canvas.Children.Count > 0) && ((double)_canvas.Children[0].GetValue(Canvas.TopProperty) != 0d))
-                        //{
-                            //_canvas.Children[0].SetValue(Canvas.TopProperty, 0d);
-                        //}
-                        _canvas.Children.Insert(0, curPanel);
-                    }
-                    curPanel.UpdateLayout();
+#if useUpdateLayout
+                    //curPanel.UpdateLayout();
+#else
+                    panelHeight = ordPanel.brdTblHeader.ActualHeight;  // только шапка таблицы
+#endif
+                    _canvas.Children.Add(curPanel);
                 }
 
                 // добавить заголовок заказа в панель, если при прямом проходе блок самый первый 
@@ -224,18 +225,29 @@ namespace KDSWPFClient.View
                 {
                     OrderPanelHeader header = ordPanel.DetachHeader();
                     curPanel.HeaderPanel = header;
+#if useUpdateLayout
                     curPanel.UpdateLayout();
+#else
+                    panelHeight += curPanel.HeaderPanel.ActualHeight;  // заголовок заказа и шапка таблицы
+#endif
                 }
 
                 curBlockHeight = getBlockHeight(curBlock);
-                // при обратном проходе и отсутствии элементов в ordPanel, к curBlockHeight прибавить высоту заголовка
-                if (!_shiftForward && (ordPanel.ItemsCount == 0)) curBlockHeight += ordPanel.HeaderHeight;
+                // при обратном проходе и отсутствии элементов в ordPanel, 
+                // к curBlockHeight прибавить только высоту заголовка и шапку таблицы
+                if (!_shiftForward && (ordPanel.ItemsCount == 0)) curBlockHeight += ordPanel.HeaderPanel.ActualHeight;
 
                 // анализ размещения блока в свободном месте
+#if useUpdateLayout
                 if (curPanel.ActualHeight + curBlockHeight <= freeHeight)
+#else
+                if (panelHeight + curBlockHeight <= freeHeight)
+#endif
                 {
                     if (_shiftForward)
+                    {
                         curPanel.AddDishes(curBlock);        // добавить текущий блок элементов к панели заказа
+                    }
                     else
                     {
                         curPanel.InsertDishes(0, curBlock);  // вставить блок в начало коллекции
@@ -243,17 +255,21 @@ namespace KDSWPFClient.View
                         if ((ordPanel.ItemsCount == 0) && (curPanel.HeaderPanel == null) && (ordPanel.HeaderPanel != null))
                         {
                             OrderPanelHeader header = ordPanel.DetachHeader();
-                            curPanel.HeaderPanel = header;
+                            curPanel.HeaderPanel = header;  // высота заголовка заказа уже есть в curBlockHeight
                         }
                     }
+#if useUpdateLayout
                     curPanel.UpdateLayout();
+#else
+                    panelHeight += curBlockHeight;
+#endif
                 }
                 // переход в следующий/предыдущий столбец
                 else
                 {
                     if (_shiftForward)
                     {
-                        #region движение вперед
+#region движение вперед
                         // из последнего столбца
                         if (curColIndex == _pageColsCount)
                         {
@@ -263,15 +279,26 @@ namespace KDSWPFClient.View
                                 // добавляем в конце разделитель продолжения заказа
                                 DishDelimeterPanel delimPanel = createContinuePanel(true);
                                 // удалить последний блок
-                                if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
+#if useUpdateLayout
+    if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
+#else
+                                if (panelHeight + _continuePanelHeight > freeHeight)
+#endif
                                 {
                                     _shiftForward = false; // смещаясь назад
                                     curBlock = getNextItemsBlock(curPanel, true); // поиск блока и удаление его
+#if useUpdateLayout == false
+                                    curBlockHeight = getBlockHeight(curBlock);
+                                    panelHeight -= curBlockHeight;
+#endif
                                     _shiftForward = true; // восстановить смещение
                                     // если текущая панель не пустая, то добавляем панель переноса
                                     if ((curBlock != null) && (curPanel.ItemsCount > 0))
                                     {
                                         curPanel.AddDelimiter(delimPanel);
+#if useUpdateLayout == false
+                                        panelHeight += _continuePanelHeight;
+#endif
                                     }
                                     // иначе полностью переносим панель заказа в след.страницу
                                     else
@@ -280,8 +307,16 @@ namespace KDSWPFClient.View
                                     }
                                 }
                                 else
+                                {
                                     curPanel.AddDelimiter(delimPanel);
+#if useUpdateLayout == false
+                                    panelHeight += _continuePanelHeight;
+#endif
+                                }
+
+#if useUpdateLayout
                                 curPanel.UpdateLayout();
+#endif
                                 setPanelLeftTop(curPanel);
                             }
                             // иначе полностью переносим панель заказа в след.страницу
@@ -302,29 +337,39 @@ namespace KDSWPFClient.View
                             if (curPanel.DishPanels.Count == 0)
                             {
                                 curPanel.AddDishes(curBlock);   // добавить текущий блок элементов
+#if useUpdateLayout
                                 curPanel.UpdateLayout();
+#else
+                                panelHeight += curBlockHeight;
+#endif
                                 curColIndex++; curTopValue = 0d;
                             }
                             // размещение предыдущей панели по текущим координатам и создание новой панели
                             else
                             {
                                 setPanelLeftTop(curPanel);
-                                // новая панель
+
+                                // новая панель без заголовка заказа
                                 curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
                                 curPanel.AddDishes(curBlock);   // добавить текущий блок элементов
-                                _canvas.Children.Add(curPanel);
+#if useUpdateLayout
                                 curPanel.UpdateLayout();
+#else
+                                panelHeight = ordPanel.brdTblHeader.ActualHeight;  // только шапка таблицы
+                                panelHeight += curBlockHeight;
+#endif
+                                _canvas.Children.Add(curPanel);
                                 // координаты следующего столбца
                                 curColIndex++; curTopValue = 0d;
                             }
                             freeHeight = getFreeHeight();
                         }
-                        #endregion
+#endregion
                     }
 
                     else
                     {
-                        #region движение назад
+#region движение назад
                         // из первого столбца
                         if (curColIndex == 1)
                         {
@@ -340,9 +385,14 @@ namespace KDSWPFClient.View
                             {
                                 DishDelimeterPanel delimPanel = createContinuePanel(false);
                                 // удалить первый блок из текущей панели
-                                if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
+                                //if (curPanel.ActualHeight + delimPanel.ActualHeight > freeHeight)
+                                if (panelHeight + _continuePanelHeight > freeHeight)
                                 {
                                     curBlock = getNextItemsBlock(curPanel, true, true);
+#if useUpdateLayout == false
+                                    curBlockHeight = getBlockHeight(curBlock);
+                                    panelHeight -= curBlockHeight;
+#endif
                                     if (curBlock != null)
                                     {
                                         // нет элементов в тек.панели - удалить текущую панель и сделать текущей следующую панель на странице
@@ -356,7 +406,12 @@ namespace KDSWPFClient.View
                                         }
                                         // иначе вставляем разделитель переноса на пред.страницу
                                         else
+                                        {
                                             curPanel.InsertDelimiter(0, delimPanel);
+#if useUpdateLayout == false
+                                            panelHeight += _continuePanelHeight;
+#endif
+                                        }
                                     }
                                     else
                                     {
@@ -364,11 +419,18 @@ namespace KDSWPFClient.View
                                     }
                                 }
                                 else
+                                {
                                     curPanel.InsertDelimiter(0, delimPanel);
+#if useUpdateLayout == false
+                                    panelHeight += _continuePanelHeight;
+#endif
+                                }
 
                                 if (curPanel != null)
                                 {
+#if useUpdateLayout
                                     curPanel.UpdateLayout();
+#endif
                                     // установить Top=0 для текущей панели
                                     curTopValue = 0d;
                                     setPanelLeftTop(curPanel);
@@ -396,6 +458,9 @@ namespace KDSWPFClient.View
                                 }
                                 // добавить текущий блок элементов в переносимую панель
                                 curPanel.InsertDishes(0, curBlock);
+#if useUpdateLayout == false
+                                panelHeight += curBlockHeight;
+#endif
                             }
 
                             // размещение предыдущей панели по текущим координатам и создание новой панели
@@ -403,9 +468,14 @@ namespace KDSWPFClient.View
                             {
                                 curTopValue = 0d;
                                 setPanelLeftTop(curPanel);
+
                                 // новая панель
                                 curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
                                 curPanel.InsertDishes(0, curBlock);   // добавить текущий блок элементов
+#if useUpdateLayout == false
+                                panelHeight = ordPanel.brdTblHeader.ActualHeight;
+                                panelHeight += curBlockHeight;
+#endif
                                 _canvas.Children.Insert(0, curPanel);
                             }
 
@@ -414,12 +484,17 @@ namespace KDSWPFClient.View
                             {
                                 OrderPanelHeader header = ordPanel.DetachHeader();
                                 curPanel.HeaderPanel = header;
+#if useUpdateLayout == false
+                                panelHeight += curPanel.HeaderPanel.ActualHeight;
+#endif
                             }
+#if useUpdateLayout
                             curPanel.UpdateLayout();
+#endif
                             curColIndex--; curTopValue = _colHeight;
                             freeHeight = getFreeHeight();
                         }
-                        #endregion
+#endregion
                     }
                 }
             }
@@ -427,17 +502,26 @@ namespace KDSWPFClient.View
             return;
         }
 
-        private void setLastPanelPosition(OrderPanel curPanel)
+        private void setLastPanelPosition(OrderPanel curPanel, double panelHeight)
         {
             // при смещении назад, curTopValue указывает на Bottom панели
+#if useUpdateLayout
             if (!_shiftForward) curTopValue -= curPanel.ActualHeight;
+#else
+            if (!_shiftForward) curTopValue -= panelHeight;
+#endif
 
             setPanelLeftTop(curPanel);
 
             // при движение вперед, сместить Top на величину _hdrTopMargin
             if (_shiftForward)
             {
+#if useUpdateLayout
                 curTopValue += curPanel.ActualHeight;
+#else
+                curTopValue += panelHeight;
+#endif
+
                 curTopValue += _hdrTopMargin;
                 if (curTopValue > _colHeight)
                 {
@@ -488,9 +572,14 @@ namespace KDSWPFClient.View
 
         private double getPanelHeight(OrderPanel panel)
         {
-            panel.UpdateLayout();
+            double retVal = panel.ActualHeight;
+            if ((retVal == 0d) || retVal.Equals(double.NaN))
+            {
+                panel.UpdateLayout();
+                retVal =  panel.ActualHeight ;
+            }
 
-            return panel.ActualHeight;
+            return retVal;
         }
 
         private double getBlockHeight(List<UIElement> curBlock)
@@ -527,7 +616,7 @@ namespace KDSWPFClient.View
                     ordPanel.AddDelimiter(newDelimPanel);
                 }
                 // панель блюда
-                DishPanel dishPanel = new DishPanel(dishModel);
+                DishPanel dishPanel = new DishPanel(dishModel, _colWidth);
                 ordPanel.AddDish(dishPanel);
             }
 

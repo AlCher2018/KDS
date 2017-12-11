@@ -113,7 +113,7 @@ namespace KDSWPFClient.View
                 }
 
                 //if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
-                dshPnl = new DishPanel(dishModel);  // , curDshPnl
+                dshPnl = new DishPanel(dishModel, _colWidth);  // , curDshPnl
                 //if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
 
                 // добавить строку заказа в стек
