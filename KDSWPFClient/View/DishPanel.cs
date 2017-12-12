@@ -36,9 +36,7 @@ namespace KDSWPFClient.View
         public DishPanel(OrderDishViewModel dishView, double panelWidth)
         {
             this.Width = panelWidth;
-            BrushesPair brPair = BrushHelper.AppBrushes["dishLineBase"];
-            this.Background = brPair.Background;
-            this.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+            this.SnapsToDevicePixels = true;
             this.BorderBrush = Brushes.DarkBlue;
             this.BorderThickness = new System.Windows.Thickness(1,0,1,1);
             this.MouseUp += root_MouseUp;
@@ -58,13 +56,13 @@ namespace KDSWPFClient.View
             this.Child = grdDishLine;
             // содержание грида - 4 строки
             // 0. № п/п
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.2d, GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(8d, GridUnitType.Star) });
             // 1. наименование блюда
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1.0d, GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(43d, GridUnitType.Star) });
             // 2. количество
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.35d, GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(15d, GridUnitType.Star) });
             // 3. таймер состояния
-            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.8d, GridUnitType.Star) });
+            grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(34d, GridUnitType.Star) });
 
             // индекс блюда
             TextBlock tbDishIndex = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -77,19 +75,23 @@ namespace KDSWPFClient.View
             // имя блюда: текст и комментарий
             TextBlock tbDish = new TextBlock() { TextAlignment = TextAlignment.Left, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
             tbDish.SetValue(Grid.ColumnProperty, 1);
-
             Run tbDishName = new Run() { FontWeight = FontWeights.Bold };
             //   блюдо
+            BrushesPair brPair;
             if (_isDish)
             {
                 tbDishName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishNameFontSize");
+                brPair = BrushHelper.AppBrushes["dishLineBase"];
             }
             //    ингредиент
             else
             {
                 tbDishName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlIngrNameFontSize");
                 brPair = BrushHelper.AppBrushes["ingrLineBase"];
-                tbDishName.Background = brPair.Background;
+            }
+            if (brPair != null)
+            {
+                this.Background = brPair.Background;
                 tbDishName.Foreground = brPair.Foreground;
             }
             bind = new Binding("DishName") { Source = _dishView };
@@ -124,7 +126,7 @@ namespace KDSWPFClient.View
             double timerCornerRadius = 0.015 * this.Width;
             brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
             // текстовый блок таймера
-            tbDishStatusTS = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
+            tbDishStatusTS = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
             bind = new Binding("ViewTimerString") {Source = _dishView };
             tbDishStatusTS.SetBinding(TextBlock.TextProperty, bind);
             tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");

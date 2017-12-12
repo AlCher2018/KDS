@@ -105,10 +105,8 @@ namespace KDSWPFClient.View
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel()
-                    { Text = "Подача " + curFiling.ToString(), DontTearOffNext = true, Background = Brushes.AliceBlue };
-                    if (curFiling == 1) newDelimPanel.Foreground = Brushes.Red; else newDelimPanel.Foreground = Brushes.Blue;
-
+                    Brush foreground = (curFiling == 1) ? Brushes.Red : Brushes.Blue;
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel(_colWidth, foreground, Brushes.AliceBlue, "Подача " + curFiling.ToString()) { DontTearOffNext = true };
                     ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
                 }
 

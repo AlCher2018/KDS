@@ -57,7 +57,7 @@ namespace KDSWPFClient.View
             Thickness rowMargin = new Thickness(0.02 * width, 0, 0.02 * width, 0);
             tblTable.Margin = rowMargin;
             tblOrderNumber.Margin = rowMargin;
-            grdHdrWaiter.Margin = rowMargin;
+            tbWaiter.Margin = rowMargin;
             grdHdrOrderTime.Margin = rowMargin;
 
             // таймер

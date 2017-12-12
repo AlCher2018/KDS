@@ -66,6 +66,8 @@ namespace KDSWPFClient.View
         public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
         {
             base.Width = width;
+            this.SnapsToDevicePixels = true;
+
             _order = orderView;
             if (_order != null) orderView.ViewPanel = this;
             _pageIndex = pageIndex;
@@ -74,6 +76,10 @@ namespace KDSWPFClient.View
             double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
             _fontSize = fontSize * fontScale;
+            // стиль текстовых блоков
+            Style tblStyle = new Style(typeof(TextBlock));
+            tblStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
+            tblStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
 
             this.BorderThickness = new Thickness(0d);
 
@@ -99,9 +105,6 @@ namespace KDSWPFClient.View
 
             // 1. заголовок таблицы блюд
             brdTblHeader = new Border() { Background = Brushes.AliceBlue, BorderBrush = Brushes.DarkBlue, BorderThickness = new Thickness(1, 0, 1, 1) };
-            Style tblStyle = new Style(typeof(TextBlock));
-            tblStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
-            tblStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
             brdTblHeader.SetValue(Grid.RowProperty, 1);
             Grid grdTblHeader = new Grid();
             // 0. № п/п
@@ -112,16 +115,16 @@ namespace KDSWPFClient.View
             grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.3d, GridUnitType.Star) });
             // 3. таймер состояния
             grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.8d, GridUnitType.Star) });
-            TextBlock tblIndex = new TextBlock() { Text = "№", FontSize = _fontSize };
-            tblIndex.SetValue(Grid.ColumnProperty, 0);
-            TextBlock tblDishName = new TextBlock() { Text = "Блюдо", FontSize = _fontSize };
-            tblDishName.SetValue(Grid.ColumnProperty, 1);
-            TextBlock tblQty = new TextBlock() { Text = "Кол-во", FontSize = _fontSize };
-            tblQty.SetValue(Grid.ColumnProperty, 2);
-            TextBlock tblTimer = new TextBlock() { Text = "Время", FontSize = _fontSize };
-            tblTimer.SetValue(Grid.ColumnProperty, 3);
+            TextBlock tblIndex = new TextBlock() { Text = "№", FontSize = _fontSize, Style = tblStyle };
+            tblIndex.SetValue(Grid.ColumnProperty, 0); grdTblHeader.Children.Add(tblIndex);
+            TextBlock tblDishName = new TextBlock() { Text = "Блюдо", FontSize = _fontSize, Style = tblStyle };
+            tblDishName.SetValue(Grid.ColumnProperty, 1); grdTblHeader.Children.Add(tblDishName);
+            TextBlock tblQty = new TextBlock() { Text = "Кол-во", FontSize = _fontSize, Style = tblStyle };
+            tblQty.SetValue(Grid.ColumnProperty, 2); grdTblHeader.Children.Add(tblQty);
+            TextBlock tblTimer = new TextBlock() { Text = "Время", FontSize = _fontSize, Style = tblStyle };
+            tblTimer.SetValue(Grid.ColumnProperty, 3); grdTblHeader.Children.Add(tblTimer);
+            brdTblHeader.Child = grdTblHeader;
             grdOrderPanel.Children.Add(brdTblHeader);
-            brdTblHeader.Child = grdOrderPanel;
 
             // 2. строка блюд
             stkDishes = new StackPanel();

@@ -26,6 +26,7 @@ namespace KDSWPFClient.View
         {
             _order = order;
             this.Width = width;
+            this.SnapsToDevicePixels = true;
 
             Binding binding;
             BrushesPair brPair;
@@ -96,7 +97,14 @@ namespace KDSWPFClient.View
                 brdHdrWaiter.Background = brPairHeader.Background;
                 brdHdrWaiter.SetValue(TextBlock.ForegroundProperty, brPairHeader.Foreground);
             }
-            TextBlock tbWaiter = new TextBlock() { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeights.Bold, Margin = rowMargin };
+            TextBlock tbWaiter = new TextBlock()
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                TextWrapping = TextWrapping.Wrap,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0.02 * width, 0, 0.02 * width, 0)
+            };
             tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");
             binding = new Binding("Waiter") {Source = _order };
             tbWaiter.SetBinding(TextBlock.TextProperty, binding);
@@ -156,7 +164,7 @@ namespace KDSWPFClient.View
             WrapPanel pnlOrderTimer = new WrapPanel() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             TextBlock tbOrderTimerLabel = new TextBlock() { Text="Прошло: ", FontSize = labelFontSize, FontStretch = FontStretches.Condensed};
             pnlOrderTimer.Children.Add(tbOrderTimerLabel);
-            TextBlock tbOrderTimer = new TextBlock() { FontWeight = FontWeights.Black, TextWrapping = TextWrapping.Wrap};
+            TextBlock tbOrderTimer = new TextBlock() { FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap};
             tbOrderTimer.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");
             binding = new Binding("WaitingTimerString") { Source = _order};
             tbOrderTimer.SetBinding(TextBlock.TextProperty, binding);

@@ -47,7 +47,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;useUpdateLayout</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -107,6 +107,7 @@
     <Compile Include="View\ColorLegend.xaml.cs">
       <DependentUpon>ColorLegend.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\DishDelimeterPanel.cs" />
     <Compile Include="View\DishDelimeterPanel.xaml.cs">
       <DependentUpon>DishDelimeterPanel.xaml</DependentUpon>
     </Compile>

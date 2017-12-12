@@ -45,9 +45,7 @@
 
         <!-- официант -->
         <Border x:Name="brdHdrWaiter" Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0">
-            <Grid x:Name="grdHdrWaiter">
-                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,0,0,5"/>
-            </Grid>
+            <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left"/>
         </Border>
 
         <!-- метка отдела -->

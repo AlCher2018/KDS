@@ -21,20 +21,20 @@
         <Grid x:Name="grdDishLine">
             <Grid.ColumnDefinitions>
                 <!-- 0. № п/п -->
-                <ColumnDefinition Width="0.2*"/>
+                <ColumnDefinition Width="8*"/>
                 <!-- 1. наименование блюда -->
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="43*"/>
                 <!-- 2. количество -->
-                <ColumnDefinition Width="0.35*"/>
+                <ColumnDefinition Width="15*"/>
                 <!-- 3. таймер состояния -->
-                <ColumnDefinition Width="0.8*"/>
+                <ColumnDefinition Width="34*"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock x:Name="tbDishIndex" Grid.Column="0" TextAlignment="Center" Text="{Binding Index, Converter={StaticResource isZeroConverter}}"/>
             
-            <TextBlock Grid.Column="1" TextWrapping="Wrap" Foreground="DarkBlue">
+            <TextBlock Grid.Column="1" TextWrapping="Wrap">
                 <Run x:Name="tbDishName" Text="{Binding DishName}"/>
-                <Run x:Name="tbComment" FontStyle="Italic" FontWeight="Normal"/>
+                <Run x:Name="tbComment" Text="{Binding Comment}" FontStyle="Italic" FontWeight="Normal"/>
             </TextBlock>
 
             <TextBlock x:Name="tbDishQuantity" Grid.Column="2" Text="{Binding Quantity, Converter={StaticResource dishQuantityToStringConverter}}" FontWeight="Bold" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,3,0"/>

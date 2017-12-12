@@ -17,6 +17,7 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl == false
     /// <summary>
     /// Interaction logic for DishDelimeterPanel.xaml
     /// </summary>
@@ -35,7 +36,7 @@ namespace KDSWPFClient.View
         // признаки поведения элемента
         public bool DontTearOffNext;
 
-        public DishDelimeterPanel()
+        public DishDelimeterPanel(double width, Brush foreground, Brush background, string text)
         {
             InitializeComponent();
 
@@ -49,4 +50,5 @@ namespace KDSWPFClient.View
         }
 
     }  // class
+#endif
 }
