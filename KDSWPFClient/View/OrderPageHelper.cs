@@ -214,7 +214,7 @@ namespace KDSWPFClient.View
 #if useUpdateLayout
                     //curPanel.UpdateLayout();
 #else
-                    panelHeight = ordPanel.brdTblHeader.ActualHeight;  // только шапка таблицы
+                    panelHeight = ordPanel.DishTableHeaderHeight;  // только шапка таблицы
 #endif
                     _canvas.Children.Add(curPanel);
                 }
@@ -355,7 +355,7 @@ namespace KDSWPFClient.View
 #if useUpdateLayout
                                 curPanel.UpdateLayout();
 #else
-                                panelHeight = ordPanel.brdTblHeader.ActualHeight;  // только шапка таблицы
+                                panelHeight = ordPanel.DishTableHeaderHeight;  // только шапка таблицы
                                 panelHeight += curBlockHeight;
 #endif
                                 _canvas.Children.Add(curPanel);
@@ -473,7 +473,7 @@ namespace KDSWPFClient.View
                                 curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
                                 curPanel.InsertDishes(0, curBlock);   // добавить текущий блок элементов
 #if useUpdateLayout == false
-                                panelHeight = ordPanel.brdTblHeader.ActualHeight;
+                                panelHeight = ordPanel.DishTableHeaderHeight;
                                 panelHeight += curBlockHeight;
 #endif
                                 _canvas.Children.Insert(0, curPanel);

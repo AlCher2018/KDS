@@ -1,39 +1,42 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using KDSWPFClient.Lib;
+using KDSWPFClient.ViewModel;
 using System;
-using System.Timers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using KDSWPFClient.ViewModel;
-using System.Diagnostics;
-using IntegraLib;
 
 namespace KDSWPFClient.View
 {
-#if notUserControl == false
+#if notUserControl
 
-    /// <summary>
-    /// Interaction logic for OrderPanel.xaml
-    /// </summary>
-    public partial class OrderPanel : UserControl
+    public class OrderPanel : Border
     {
-        private double _fontSize;
+        #region fields & properties
+        private Grid grdHeader;
+        private Border brdTblHeader;
+        private StackPanel stkDishes;
+
+        private OrderViewModel _order;
         private int _pageIndex;
-        private OrderViewModel _orderView;
+
         private Size _size;
+        private double _fontSize;
 
         // высота панели заказа
         public double PanelHeight { get { return this.ActualHeight; } }
         public double HeaderHeight { get { return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight; } }
+        public double DishTableHeaderHeight { get { return this.brdTblHeader.ActualHeight; } }
 
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int ItemsCount { get { return this.DishPanels.Count; } }
 
         public int CanvasColumnIndex { get; set; }
-
-        public OrderPanelHeader HeaderPanel {
+        public OrderPanelHeader HeaderPanel
+        {
             get
             {
                 return (this.grdHeader.Children.Count == 0) ? null : (OrderPanelHeader)this.grdHeader.Children[0];
@@ -52,39 +55,80 @@ namespace KDSWPFClient.View
             }
         }
 
-
-        public OrderViewModel OrderViewModel { get { return _orderView; } }
+        public OrderViewModel OrderViewModel { get { return _order; } }
 
         public int PageIndex { get { return _pageIndex; } }
 
-        // ctor
+        #endregion
+
+
+        // CTOR
         public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
         {
-            InitializeComponent();
-
-            _pageIndex = pageIndex; base.Width = width;
+            base.Width = width;
+            _order = orderView;
+            if (_order != null) orderView.ViewPanel = this;
+            _pageIndex = pageIndex;
             _size = new Size(base.Width, double.PositiveInfinity);
+            // установить шрифт текстовых блоков в заголовке таблицы блюд
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize", 10d);
+            _fontSize = fontSize * fontScale;
 
-            _orderView = orderView;
-            if (orderView != null) orderView.ViewPanel = this;
+            this.BorderThickness = new Thickness(0d);
 
+            Grid grdOrderPanel = new Grid();
+            // 0.строка заголовка заказа, может содержать OrderPanelHeader
+            grdOrderPanel.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Auto)});
+            // 1. заголовок таблицы блюд
+            grdOrderPanel.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Auto)});
+            // 2. строка блюд
+            grdOrderPanel.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(0, GridUnitType.Auto) });
+
+            // 0.строка заголовка заказа, может содержать OrderPanelHeader
+            grdHeader = new Grid();
+            grdHeader.SetValue(Grid.RowProperty, 0);
+            // создать заголовок заказа
             if (isCreateHeaderPanel)
             {
-                // создать заголовок заказа
-                OrderPanelHeader hdrPnl = new OrderPanelHeader(_orderView, width);
+                OrderPanelHeader hdrPnl = new OrderPanelHeader(_order, width);
                 // и добавить его к заказу
                 this.grdHeader.Children.Add(hdrPnl);
             }
+            grdOrderPanel.Children.Add(grdHeader);
 
-            // установить шрифт текстовых блоков в заголовке таблицы блюд
-            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
-            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
-            _fontSize = fontSize * fontScale;
-            IEnumerable<TextBlock> tbs = grdTblHeader.Children.OfType<TextBlock>();
-            foreach (TextBlock tb in tbs)
-            {
-                tb.FontSize = _fontSize;
-            }
+            // 1. заголовок таблицы блюд
+            brdTblHeader = new Border() { Background = Brushes.AliceBlue, BorderBrush = Brushes.DarkBlue, BorderThickness = new Thickness(1, 0, 1, 1) };
+            Style tblStyle = new Style(typeof(TextBlock));
+            tblStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center));
+            tblStyle.Setters.Add(new Setter(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center));
+            brdTblHeader.SetValue(Grid.RowProperty, 1);
+            Grid grdTblHeader = new Grid();
+            // 0. № п/п
+            grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.2d, GridUnitType.Star)});
+            // 1. наименование блюда
+            grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1.0d, GridUnitType.Star)});
+            // 2. количество 
+            grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.3d, GridUnitType.Star) });
+            // 3. таймер состояния
+            grdTblHeader.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(0.8d, GridUnitType.Star) });
+            TextBlock tblIndex = new TextBlock() { Text = "№", FontSize = _fontSize };
+            tblIndex.SetValue(Grid.ColumnProperty, 0);
+            TextBlock tblDishName = new TextBlock() { Text = "Блюдо", FontSize = _fontSize };
+            tblDishName.SetValue(Grid.ColumnProperty, 1);
+            TextBlock tblQty = new TextBlock() { Text = "Кол-во", FontSize = _fontSize };
+            tblQty.SetValue(Grid.ColumnProperty, 2);
+            TextBlock tblTimer = new TextBlock() { Text = "Время", FontSize = _fontSize };
+            tblTimer.SetValue(Grid.ColumnProperty, 3);
+            grdOrderPanel.Children.Add(brdTblHeader);
+            brdTblHeader.Child = grdOrderPanel;
+
+            // 2. строка блюд
+            stkDishes = new StackPanel();
+            stkDishes.SetValue(Grid.RowProperty, 2);
+            grdOrderPanel.Children.Add(stkDishes);
+
+            this.Child = grdOrderPanel;
 
             //if (!orderView.DivisionColorRGB.IsNull())
             //{
@@ -92,8 +136,7 @@ namespace KDSWPFClient.View
             //    brdOrder.BorderThickness = new Thickness(10d);
             //    brdOrder.CornerRadius = (isCreateHeaderPanel) ? new CornerRadius(15d,15d,0,0) : new CornerRadius(0);
             //}
-        }
-
+        }  // CTOR
 
         // добавить блюдо в панель заказа и измерить высоту строки блюда
         public void AddDish(DishPanel dishPanel)
@@ -151,12 +194,12 @@ namespace KDSWPFClient.View
             totalHeight -= dishPanel.DesiredSize.Height;
 
             // если не пусто, то это ингредиент и содержит значение родительского Uid
-            string parentUid = dishPanel.DishView.ParentUID;  
+            string parentUid = dishPanel.DishView.ParentUID;
 
             UIElement uiElem;
             bool isMove;
             // сохраняем в массиве разделитель подач или все ингредиенты вместе с блюдом
-            for (int i = idx-1; i >= 0; i--)
+            for (int i = idx - 1; i >= 0; i--)
             {
                 uiElem = stkDishes.Children[i];
 
@@ -169,9 +212,9 @@ namespace KDSWPFClient.View
                 {
                     DishPanel dsPnl = (uiElem as DishPanel);
                     isMove = (dsPnl.DishView.UID == parentUid) && dsPnl.DishView.ParentUID.IsNull(); // признак блюда
-                   //((uiElem as DishPanel).DishView.ParentUID == parentUid)))
+                                                                                                     //((uiElem as DishPanel).DishView.ParentUID == parentUid)))
                 }
-                
+
                 // - или выходим за рамки по вертикали
                 if (!isMove && (Math.Ceiling(totalHeight) >= cnvHeight)) isMove = true;
 
@@ -181,7 +224,7 @@ namespace KDSWPFClient.View
                     this.stkDishes.Children.Remove(uiElem);
                     totalHeight -= uiElem.DesiredSize.Height;
                 }
-                else 
+                else
                     break;
             }
             if (retVal.Count > 1) retVal.Reverse();
@@ -228,6 +271,6 @@ namespace KDSWPFClient.View
             return retVal;
         }
 
-    }  // class
+    }  // class OrderPanel
 #endif
 }

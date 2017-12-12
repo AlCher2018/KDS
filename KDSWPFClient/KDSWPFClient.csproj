@@ -110,11 +110,12 @@
     <Compile Include="View\DishDelimeterPanel.xaml.cs">
       <DependentUpon>DishDelimeterPanel.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\DishPanelNew.cs" />
+    <Compile Include="View\DishPanel.cs" />
     <Compile Include="View\IContainIdField.cs" />
     <Compile Include="View\IContainInnerCollection.cs" />
     <Compile Include="View\IJoinSortedCollection.cs" />
     <Compile Include="View\OrderPageHelper.cs" />
+    <Compile Include="View\OrderPanel.cs" />
     <Compile Include="View\OrderPanelHeader.cs" />
     <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
