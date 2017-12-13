@@ -419,6 +419,19 @@ Contract: IMetadataExchange
                             retValList.Add(tmpOrder);
                         }
                     }
+
+                    // сортировка заказов по убыванию времени заказа
+                    string sortMode = Convert.ToString(AppProperties.GetProperty("SortOrdersByCreateDate"));
+                    if (sortMode == "Desc")
+                    {
+                        retValList.Sort((om1, om2) => 
+                        {
+                            if (om1.CreateDate < om2.CreateDate) return 1;
+                            else if (om1.CreateDate > om2.CreateDate) return -1;
+                            else return 0;
+                        }
+                        );
+                    }
                 }
                 #endregion
                 
