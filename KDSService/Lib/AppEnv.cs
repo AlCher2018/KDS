@@ -75,6 +75,12 @@ namespace KDSConsoleSvcHost
             NameValueCollection cfg = ConfigurationManager.AppSettings;
             string value;
 
+            // режим сортировки заказов
+            string ordersSortMode = "Desc";
+            value = cfg["SortOrdersByCreateDate"];
+            if ((value != null) && (value.Equals("Asc", StringComparison.OrdinalIgnoreCase))) ordersSortMode = "Asc";
+            AppProperties.SetProperty("SortOrdersByCreateDate", ordersSortMode);
+
             if ((value = cfg["IsWriteTraceMessages"]) != null)
                 AppProperties.SetProperty("IsWriteTraceMessages", value.ToBool());
             if ((value = cfg["TraceOrdersDetails"]) != null)
