@@ -20,6 +20,18 @@ namespace KDSWPFClient.View
         #region fields & properties
         OrderViewModel _order;
 
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
         #endregion
 
         public OrderPanelHeader(OrderViewModel order, double width)
@@ -28,7 +40,6 @@ namespace KDSWPFClient.View
             this.Width = width;
             this.SnapsToDevicePixels = true;
 
-            Binding binding;
             BrushesPair brPair;
             // кисть заголовка
             BrushesPair brPairHeader = getHeaderBrushes();
@@ -66,10 +77,11 @@ namespace KDSWPFClient.View
             tblTable.SetValue(Grid.ColumnProperty, 0);
             Run tbTableLabel1 = new Run() { Text= "Стол №: ", FontSize = labelFontSize };
             tblTable.Inlines.Add(tbTableLabel1);
-            Run tbTableName = new Run() { FontWeight = FontWeights.Bold };
+            Run tbTableName = new Run() {
+                FontWeight = FontWeights.Bold,
+                Text = _order.TableName
+            };
             tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");
-            binding = new Binding("TableName") { Source = _order};
-            tbTableName.SetBinding(Run.TextProperty, binding);
             tblTable.Inlines.Add(tbTableName);
             grdHdrTableRow.Children.Add(tblTable);
             //  номер заказа
@@ -78,10 +90,11 @@ namespace KDSWPFClient.View
             TextBlock tblOrderNumber = new TextBlock() { HorizontalAlignment= HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = rowMargin };
             Run tbTableLabel2 = new Run() { Text= "Заказ №: ", FontSize = labelFontSize };
             tblOrderNumber.Inlines.Add(tbTableLabel2);
-            Run tbOrderNumber = new Run() { FontWeight = FontWeights.Bold };
+            Run tbOrderNumber = new Run() {
+                FontWeight = FontWeights.Bold,
+                Text = _order.Number.ToString()
+            };
             tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");
-            binding = new Binding("Number") { Source = _order};
-            tbOrderNumber.SetBinding(Run.TextProperty, binding);
             tblOrderNumber.Inlines.Add(tbOrderNumber);
             brdOrderNumber.Child = tblOrderNumber;
             grdHdrTableRow.Children.Add(brdOrderNumber);
@@ -103,11 +116,10 @@ namespace KDSWPFClient.View
                 HorizontalAlignment = HorizontalAlignment.Left,
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0.02 * width, 0, 0.02 * width, 0)
+                Margin = new Thickness(0.02 * width, 0, 0.02 * width, 0),
+                Text = _order.Waiter
             };
             tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");
-            binding = new Binding("Waiter") {Source = _order };
-            tbWaiter.SetBinding(TextBlock.TextProperty, binding);
             brdHdrWaiter.Child = tbWaiter;
             this.Children.Add(brdHdrWaiter);
 
@@ -143,10 +155,13 @@ namespace KDSWPFClient.View
             pnlOrderDate.SetValue(Grid.ColumnProperty, 0);
             TextBlock tbOrderDateLabel = new TextBlock() { Text = "Создан в: ", FontSize = labelFontSize, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left};
             pnlOrderDate.Children.Add(tbOrderDateLabel);
-            TextBlock tbOrderDate = new TextBlock() { FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap};
+            TextBlock tbOrderDate = new TextBlock() {
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Text = _order.CreateDate.ToPanelString()
+            };
             tbOrderDate.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderCreateDateFontSize");
-            binding = new Binding("CreateDate") { Source = _order, Converter = new ViewDateConverter() };
-            tbOrderDate.SetBinding(TextBlock.TextProperty, binding);
             pnlOrderDate.Children.Add(tbOrderDate);
             grdHdrOrderTime.Children.Add(pnlOrderDate);
             //  таймер
@@ -161,14 +176,17 @@ namespace KDSWPFClient.View
                 brdOrderTimer.Background = brPair.Background;
                 brdOrderTimer.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
             }
+            // панель элементов
             WrapPanel pnlOrderTimer = new WrapPanel() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             TextBlock tbOrderTimerLabel = new TextBlock() { Text="Прошло: ", FontSize = labelFontSize, FontStretch = FontStretches.Condensed};
             pnlOrderTimer.Children.Add(tbOrderTimerLabel);
+
             TextBlock tbOrderTimer = new TextBlock() { FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap};
             tbOrderTimer.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");
-            binding = new Binding("WaitingTimerString") { Source = _order};
+            Binding binding = new Binding("WaitingTimerString") { Source = _order};
             tbOrderTimer.SetBinding(TextBlock.TextProperty, binding);
             pnlOrderTimer.Children.Add(tbOrderTimer);
+
             brdOrderTimer.Child = pnlOrderTimer;
             grdHdrOrderTime.Children.Add(brdOrderTimer);
 

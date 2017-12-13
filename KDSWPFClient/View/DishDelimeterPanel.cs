@@ -16,6 +16,17 @@ namespace KDSWPFClient.View
         //   не отрывать от следующего
         public bool DontTearOffNext { get; set; }
 
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
 
         // CTOR
         public DishDelimeterPanel(double width, Brush foreground, Brush background, string text)

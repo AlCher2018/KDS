@@ -37,7 +37,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;notUserControl</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;notUserControl; fromActualHeight</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -92,6 +92,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="Lib\WpfHelper.cs" />
     <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Model\DishesFilter.cs" />

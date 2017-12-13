@@ -27,9 +27,34 @@ namespace KDSWPFClient.View
         private double _fontSize;
 
         // высота панели заказа
-        public double PanelHeight { get { return this.ActualHeight; } }
-        public double HeaderHeight { get { return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight; } }
-        public double DishTableHeaderHeight { get { return this.brdTblHeader.ActualHeight; } }
+        public double PanelHeight {
+            get {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
+        public double HeaderHeight {
+            get {
+#if fromActualHeight
+                return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight;
+#else
+                return this.grdHeader.DesiredSize.Height + this.brdTblHeader.DesiredSize.Height;
+#endif
+            }
+        }
+        public double DishTableHeaderHeight {
+            get {
+#if fromActualHeight
+                return this.brdTblHeader.ActualHeight;
+#else
+                return this.brdTblHeader.DesiredSize.Height;
+#endif
+            }
+        }
 
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int ItemsCount { get { return this.DishPanels.Count; } }
@@ -59,7 +84,7 @@ namespace KDSWPFClient.View
 
         public int PageIndex { get { return _pageIndex; } }
 
-        #endregion
+#endregion
 
 
         // CTOR
@@ -189,13 +214,16 @@ namespace KDSWPFClient.View
         internal UIElement[] RemoveDish(DishPanel dishPanel, double topValue, double cnvHeight)
         {
             int idx = stkDishes.Children.IndexOf(dishPanel);
-            double totalHeight = topValue + this.DesiredSize.Height;
+            double totalHeight = topValue + this.PanelHeight;
 
             List<UIElement> retVal = new List<UIElement>();
             retVal.Add(dishPanel);
             this.stkDishes.Children.Remove(dishPanel);
+#if fromActualHeight
+            totalHeight -= dishPanel.ActualHeight;
+#else
             totalHeight -= dishPanel.DesiredSize.Height;
-
+#endif
             // если не пусто, то это ингредиент и содержит значение родительского Uid
             string parentUid = dishPanel.DishView.ParentUID;
 
@@ -225,7 +253,11 @@ namespace KDSWPFClient.View
                 {
                     retVal.Add(uiElem);
                     this.stkDishes.Children.Remove(uiElem);
+#if fromActualHeight
+                    totalHeight -= ((FrameworkElement)uiElem).ActualHeight;
+#else
                     totalHeight -= uiElem.DesiredSize.Height;
+#endif
                 }
                 else
                     break;
@@ -276,4 +308,4 @@ namespace KDSWPFClient.View
 
     }  // class OrderPanel
 #endif
-}
+                }

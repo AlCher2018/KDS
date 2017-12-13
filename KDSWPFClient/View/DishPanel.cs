@@ -4,6 +4,7 @@ using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,7 +30,20 @@ namespace KDSWPFClient.View
         //private DishPanel _parentPanel;
         private Border brdTimer;
         private TextBlock tbDishStatusTS;
-#endregion
+
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
+        #endregion
 
 
         // CTOR
@@ -65,17 +79,22 @@ namespace KDSWPFClient.View
             grdDishLine.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(34d, GridUnitType.Star) });
 
             // индекс блюда
-            TextBlock tbDishIndex = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            TextBlock tbDishIndex = new TextBlock() {
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Text = (_dishView.Index == 0) ? null : _dishView.Index.ToString()
+            };
             tbDishIndex.SetValue(Grid.ColumnProperty, 0);
-            Binding bind = new Binding("Index") { Source = _dishView, Converter = new IsZeroConverter() };
-            tbDishIndex.SetBinding(TextBlock.TextProperty, bind);
             tbDishIndex.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishIndexFontSize");
             grdDishLine.Children.Add(tbDishIndex);
 
             // имя блюда: текст и комментарий
             TextBlock tbDish = new TextBlock() { TextAlignment = TextAlignment.Left, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
             tbDish.SetValue(Grid.ColumnProperty, 1);
-            Run tbDishName = new Run() { FontWeight = FontWeights.Bold };
+            Run tbDishName = new Run() {
+                FontWeight = FontWeights.Bold,
+                Text = _dishView.DishName
+            };
             //   блюдо
             BrushesPair brPair;
             if (_isDish)
@@ -94,26 +113,32 @@ namespace KDSWPFClient.View
                 this.Background = brPair.Background;
                 tbDishName.Foreground = brPair.Foreground;
             }
-            bind = new Binding("DishName") { Source = _dishView };
-            tbDishName.SetBinding(Run.TextProperty, bind);
             tbDish.Inlines.Add(tbDishName);
-            Run tbComment = new Run() { FontWeight = FontWeights.Normal, FontStyle = FontStyles.Italic };
-            bind = new Binding("Comment") { Source = _dishView };
-            tbComment.SetBinding(Run.TextProperty, bind);
-            tbDish.Inlines.Add(tbComment);
-            // модификаторы
             if (dishView.Comment.IsNull() == false)
             {
-                tbComment.Text = string.Format("\n({0})", dishView.Comment);
+                Run tbComment = new Run()
+                {
+                    FontWeight = FontWeights.Normal,
+                    FontStyle = FontStyles.Italic,
+                    Text = Environment.NewLine + string.Format("{0}", _dishView.Comment)
+                };
+                if (brPair != null)
+                {
+                    tbComment.Foreground = brPair.Foreground;
+                }
                 tbComment.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishCommentFontSize");
+                tbDish.Inlines.Add(tbComment);
             }
             grdDishLine.Children.Add(tbDish);
 
             // количество
-            TextBlock tbDishQuantity = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
+            TextBlock tbDishQuantity = new TextBlock() {
+                TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                FontWeight = FontWeights.Bold,
+                TextWrapping = TextWrapping.Wrap,
+                Text = _dishView.Quantity.ToString(CultureInfo.InvariantCulture)
+            };
             tbDishQuantity.SetValue(Grid.ColumnProperty, 2);
-            bind = new Binding("Quantity") { Source=_dishView, Converter = new DishQuantityToStringConverter()};
-            tbDishQuantity.SetBinding(TextBlock.TextProperty, bind);
             tbDishQuantity.Margin = new Thickness(0, 0, 3, 0);
             tbDishQuantity.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishQuantityFontSize");
             grdDishLine.Children.Add(tbDishQuantity);
@@ -127,7 +152,7 @@ namespace KDSWPFClient.View
             brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
             // текстовый блок таймера
             tbDishStatusTS = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
-            bind = new Binding("ViewTimerString") {Source = _dishView };
+            Binding bind = new Binding("ViewTimerString") {Source = _dishView };
             tbDishStatusTS.SetBinding(TextBlock.TextProperty, bind);
             tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");
             brdTimer.Child = tbDishStatusTS;

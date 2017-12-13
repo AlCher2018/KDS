@@ -633,14 +633,14 @@ namespace KDSWPFClient
             // или, наоборот, в первой колонке и свободного места более половины,
             // то разместить заново с первой колонки вперед
             // делать ДО переноса панелей из канвы размещения в канву отображения
-            if (!bShiftDirForward && _pageHelper.NeedRelayout())
-            {
-                dtTmr = DateTime.Now;
-                getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
-                bShiftDirForward = true;
-                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-                AppLib.WriteLogOrderDetails("  - REDRAW forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
-            }
+            //if (!bShiftDirForward && _pageHelper.NeedRelayout())
+            //{
+            //    dtTmr = DateTime.Now;
+            //    getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+            //    bShiftDirForward = true;
+            //    _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+            //    AppLib.WriteLogOrderDetails("  - REDRAW forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
+            //}
 
             dtTmr = DateTime.Now;
             movePanelsToView(); // перенос панелей в область просмотра
