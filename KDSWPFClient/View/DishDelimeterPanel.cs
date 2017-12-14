@@ -12,6 +12,9 @@ namespace KDSWPFClient.View
 #if notUserControl
     public class DishDelimeterPanel : Border
     {
+        // тип разделителя
+        public DishDelimeterPanelTypeEnum DelimeterType { get; set; }
+
         // признаки поведения элемента
         //   не отрывать от следующего
         public bool DontTearOffNext { get; set; }

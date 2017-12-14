@@ -226,7 +226,7 @@ namespace KDSWPFClient.View
             // цикл по блокам заказа, смещая curDishIndex, пока curDishIndex не дойдет до граничного значения в соотв.напр-и
             double freeHeight = getFreeHeight();
             double curBlockHeight;
-            List<UIElement> curBlock;
+            List<FrameworkElement> curBlock;
 
             while (true)
             {
@@ -242,7 +242,7 @@ namespace KDSWPFClient.View
                 if (curPanel == null)
                 {
                     curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
-                    _canvas.Children.Add(curPanel);
+                    if (_shiftForward) _canvas.Children.Add(curPanel); else _canvas.Children.Insert(0, curPanel);
                     // измерить панель
                     measurePanel(curPanel);
                     curPanelHeight = curPanel.PanelHeight;
@@ -259,12 +259,13 @@ namespace KDSWPFClient.View
 
                 curBlockHeight = getBlockHeight(curBlock);
                 // при обратном проходе и отсутствии элементов в ordPanel, 
-                // к curBlockHeight прибавить только высоту заголовка
+                // к curBlockHeight прибавить высоту заголовка и шапки таблицы блюд
                 if (!_shiftForward 
                     && ((ordPanel.ItemsCount == 0) && (curPanel.HeaderPanel == null) && (ordPanel.HeaderPanel != null))
                     )
                 {
                     curBlockHeight += ordPanel.HeaderHeight;
+                    if (curPanel.ItemsCount == 0) curBlockHeight += ordPanel.DishTableHeaderHeight;
                 }
 
                 // анализ размещения блока в свободном месте
@@ -387,20 +388,43 @@ namespace KDSWPFClient.View
                                 _canvas.Children.Remove(curPanel);
                             }
                             // если в текущей панели уже есть блюда, т.е. есть что оставлять на текущей странице, 
-                            // то добавляем в начало разделитель продолжения заказа
+                            // то добавляем в начало разделитель продолжения заказа и разделитель подачи
                             else
                             {
-                                DishDelimeterPanel delimPanel = createContinuePanel(false);
+                                DishDelimeterPanel contPanel = createContinuePanel(false);
+                                double delimPanelsHeight = _continuePanelHeight;
+
+                                bool existsFilingPanel = false;
+                                DishDelimeterPanel filingPanel = null;
+                                int filingNumber = 0;
+                                if (curPanel.DishPanels[0] is DishDelimeterPanel)
+                                {
+                                    existsFilingPanel = ((curPanel.DishPanels[0] as DishDelimeterPanel).DelimeterType == DishDelimeterPanelTypeEnum.FilingNumber);
+                                    if (curPanel.DishPanels[1] is DishPanel)
+                                        filingNumber = (curPanel.DishPanels[1] as DishPanel).DishView.FilingNumber;
+                                }
+                                else if (curPanel.DishPanels[0] is DishPanel)
+                                {
+                                    filingNumber = (curPanel.DishPanels[0] as DishPanel).DishView.FilingNumber;
+                                }
+                                if (!existsFilingPanel)
+                                {
+                                    filingPanel = createFilingPanel(filingNumber);
+                                    // измерить высоту панели номера подачи
+                                    measurePanel(filingPanel);
+                                    double pnlHeight = getBlockHeight(new FrameworkElement[] { filingPanel });
+                                    delimPanelsHeight += pnlHeight;
+                                }
+
+                                bool keepPanel = false;
                                 // если разделитель не помещается, то удалить первый блок из текущей панели
-                                if (curPanel.PanelHeight + _continuePanelHeight > freeHeight)
+                                if (curPanelHeight + delimPanelsHeight > freeHeight)
                                 {
                                     curBlock = getNextItemsBlock(curPanel, true, true);
                                     // после удаления первого блока из текущ.панели остались блюда - добавляем разделитель
                                     if ((curBlock != null) && (curPanel.ItemsCount > 0))
                                     {
-                                        curPanel.InsertDelimiter(0, delimPanel);
-                                        curTopValue = 0d;
-                                        setPanelLeftTop(curPanel);
+                                        keepPanel = true;
                                     }
                                     // иначе удаляем весь заказ со страницы - будет отрисован на предыду.странице
                                     else
@@ -408,10 +432,16 @@ namespace KDSWPFClient.View
                                         _canvas.Children.Remove(curPanel);
                                     }
                                 }
-                                // иначе, просто вставить разделитель
                                 else
                                 {
-                                    curPanel.InsertDelimiter(0, delimPanel);
+                                    keepPanel = true;
+                                }
+
+                                // вставить разделители
+                                if (keepPanel)
+                                {
+                                    curPanel.InsertDelimiter(0, contPanel);
+                                    if (!existsFilingPanel) curPanel.InsertDelimiter(0, filingPanel);
                                     curTopValue = 0d;
                                     setPanelLeftTop(curPanel);
                                 }
@@ -465,13 +495,18 @@ namespace KDSWPFClient.View
             return;
         }
 
-        private void measurePanel(OrderPanel curPanel)
+        private void measurePanel(FrameworkElement panel)
         {
+            bool onCanvas = (panel.Parent != null);
+            if (!onCanvas) _canvas.Children.Add(panel);
+
 #if fromActualHeight
-            curPanel.UpdateLayout();
+            panel.UpdateLayout();
 #else
-            curPanel.Measure(_sizeMeasure);
+            panel.Measure(_sizeMeasure);
 #endif
+
+            if (!onCanvas) _canvas.Children.Remove(panel);
         }
 
         private void setLastPanelPosition(OrderPanel curPanel, double panelHeight = 0d)
@@ -487,7 +522,7 @@ namespace KDSWPFClient.View
             // при движение вперед, сместить Top на величину _hdrTopMargin
             if (_shiftForward)
             {
-                curTopValue += curPanel.PanelHeight;
+                curTopValue += ((panelHeight == 0d) ? curPanel.PanelHeight : panelHeight);
 
                 curTopValue += _hdrTopMargin;
                 if (curTopValue > _colHeight)
@@ -538,13 +573,13 @@ namespace KDSWPFClient.View
         }
 
         // элементы в curBlock-е уже должны быть измерены
-        private double getBlockHeight(List<UIElement> curBlock)
+        private double getBlockHeight(IEnumerable<FrameworkElement> curBlock)
         {
             double retVal = 0d;
-            foreach (UIElement elem in curBlock)
+            foreach (FrameworkElement elem in curBlock)
             {
 #if fromActualHeight
-                retVal += ((FrameworkElement)elem).ActualHeight;
+                retVal += elem.ActualHeight;
 #else
                 retVal += elem.DesiredSize.Height;
 #endif
@@ -560,7 +595,6 @@ namespace KDSWPFClient.View
             // не с первого блюда - добавляем разделитель продолжения на предыд.странице
             if (dishIdxFrom != 0) ordPanel.AddDelimiter(createContinuePanel(false));
 
-            string supplyName = WpfHelper.GetAppGlobalValue("DishesSupplyName", "подача").ToString();
             OrderDishViewModel dishModel;
             int curFiling = 0;
             for (int i = dishIdxFrom; i <= dishIdxTo; i++)
@@ -570,8 +604,7 @@ namespace KDSWPFClient.View
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    Brush foreground = (curFiling == 1) ? Brushes.Red : Brushes.Blue;
-                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel(_colWidth, foreground, Brushes.AliceBlue, supplyName + " " + curFiling.ToString()) { DontTearOffNext = true };
+                    DishDelimeterPanel newDelimPanel = createFilingPanel(curFiling);
                     ordPanel.AddDelimiter(newDelimPanel);
                 }
                 // панель блюда
@@ -660,7 +693,7 @@ namespace KDSWPFClient.View
                     {
                         freeSpace = _colHeight - (prePanelTop + prePanelHeight);
                         // высота первого блока следующей панели
-                        List<UIElement> firstBlock = getNextItemsBlock(nextPanel, false, true);
+                        List<FrameworkElement> firstBlock = getNextItemsBlock(nextPanel, false, true);
                         h1 = getBlockHeight(firstBlock);
                         if (h1 <= freeSpace) { retVal = true; break; }
                     }
@@ -677,6 +710,19 @@ namespace KDSWPFClient.View
                 ? WpfHelper.GetAppGlobalValue("ContinueOrderNextPage", "see next page").ToString()
                 : WpfHelper.GetAppGlobalValue("ContinueOrderPrevPage", "see prev page").ToString();
             DishDelimeterPanel newDelimPanel = new DishDelimeterPanel(_colWidth, brPair.Foreground, brPair.Background, text);
+            newDelimPanel.DelimeterType = (isForward) ? DishDelimeterPanelTypeEnum.OrderContinueNext : DishDelimeterPanelTypeEnum.OrderContinuePrev;
+
+            return newDelimPanel;
+        }
+
+        private DishDelimeterPanel createFilingPanel(int filingNumber)
+        {
+            Brush foreground = (filingNumber == 1) ? Brushes.Red : Brushes.Blue;
+            string supplyName = WpfHelper.GetAppGlobalValue("DishesSupplyName", "подача").ToString();
+
+            DishDelimeterPanel newDelimPanel = new DishDelimeterPanel(_colWidth, foreground, Brushes.AliceBlue, supplyName + " " + filingNumber.ToString()) { DontTearOffNext = true };
+            newDelimPanel.DelimeterType = DishDelimeterPanelTypeEnum.FilingNumber;
+
             return newDelimPanel;
         }
 
@@ -687,20 +733,20 @@ namespace KDSWPFClient.View
         // или два ингредиента
         // isDetachItems == true - блоки отсоединяются от панели
         // forceForward - принудительный просмотр вперед, иначе направление движения зависит от _shiftForward
-        private List<UIElement> getNextItemsBlock(OrderPanel orderPanel, bool isDetachItems, bool forceForward = false)
+        private List<FrameworkElement> getNextItemsBlock(OrderPanel orderPanel, bool isDetachItems, bool forceForward = false)
         {
-            List<UIElement> retVal = new List<UIElement>();
+            List<FrameworkElement> retVal = new List<FrameworkElement>();
             bool addToBlock, endBlock=false;
             int dishesCount = 0, delimCount = 0, ingrCount = 0; // счетчики элементов блока
             bool isForward = (forceForward) ? true : _shiftForward;
             int i = ((isForward) ? 0 : orderPanel.ItemsCount - 1);
 
-            UIElement uiElem;
+            FrameworkElement uiElem;
             while ((isDetachItems) ? orderPanel.ItemsCount > 0 : i < orderPanel.DishPanels.Count)
             {
                 // в режиме отсоединения элементов берем граничный элемент
                 if (isDetachItems) i = ((isForward) ? 0 : orderPanel.ItemsCount - 1);
-                uiElem = orderPanel.DishPanels[i];
+                uiElem = (FrameworkElement)orderPanel.DishPanels[i];
                 // иначе увеличиваем индекс элемента
                 if (!isDetachItems) ++i;
                 addToBlock = true; // признак включения элемента в блок

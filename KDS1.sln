@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		KDSService.config = KDSService.config
 		KDSServiceAppSettings.config = KDSServiceAppSettings.config
 		KDSServiceDBConnection.config = KDSServiceDBConnection.config
+		Tasks.txt = Tasks.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleSvcHost", "KDSConsoleSvcHost\KDSConsoleSvcHost.csproj", "{81F4F8CB-30EC-481D-B03C-CE7B21618CE8}"

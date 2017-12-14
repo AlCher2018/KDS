@@ -40,9 +40,9 @@ namespace KDSWPFClient.View
         public double HeaderHeight {
             get {
 #if fromActualHeight
-                return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight;
+                return this.grdHeader.ActualHeight;
 #else
-                return this.grdHeader.DesiredSize.Height + this.brdTblHeader.DesiredSize.Height;
+                return this.grdHeader.DesiredSize.Height;
 #endif
             }
         }
@@ -173,14 +173,7 @@ namespace KDSWPFClient.View
         }
 
         // добавить массив элементов в стек
-        internal void AddDishes(UIElement[] dishPanels)
-        {
-            foreach (UIElement item in dishPanels)
-            {
-                this.stkDishes.Children.Add(item);
-            }
-        }
-        internal void AddDishes(List<UIElement> dishPanels)
+        internal void AddDishes(IEnumerable<UIElement> dishPanels)
         {
             foreach (UIElement item in dishPanels)
             {
@@ -192,7 +185,7 @@ namespace KDSWPFClient.View
         {
             this.stkDishes.Children.Insert(index, dishPanel);
         }
-        internal void InsertDishes(int index, List<UIElement> dishPanels)
+        internal void InsertDishes(int index, List<FrameworkElement> dishPanels)
         {
             for (int i = 0; i < dishPanels.Count; i++)
             {

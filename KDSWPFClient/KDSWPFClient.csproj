@@ -112,6 +112,7 @@
     <Compile Include="View\DishDelimeterPanel.xaml.cs">
       <DependentUpon>DishDelimeterPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\DishDelimeterPanelTypeEnum.cs" />
     <Compile Include="View\DishPanel.cs" />
     <Compile Include="View\IContainIdField.cs" />
     <Compile Include="View\IContainInnerCollection.cs" />
@@ -222,7 +223,6 @@
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Resource Include="Tasks.txt" />
     <Resource Include="SplashScreen\source.txt" />
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
