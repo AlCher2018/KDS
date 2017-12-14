@@ -26,6 +26,8 @@ namespace KDSWPFClient
         private KDSCommandServiceClient _setClient = null;
         int openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
 
+        public bool IsGetServiceData { get; set; }
+
         // **** СЛОВАРИ
         //   статусов
         private Dictionary<int, OrderStatusViewModel> _ordStatuses;
@@ -57,6 +59,7 @@ namespace KDSWPFClient
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
             _machineName += "." + App.ClientName;
+            this.IsGetServiceData = false;
         }
 
         public bool CreateGetChannel()
@@ -162,6 +165,8 @@ namespace KDSWPFClient
             bool retVal = false;
             try
             {
+                if (this.EnableGetChannel == false) CreateGetChannel();
+
                 // получить со службы статусы заказов и сохранить их в _ordStatuses
                 AppLib.WriteLogInfoMessage("  - clt: получаю словарь статусов от службы...");
                 setOrderStatusFromService();
@@ -213,6 +218,7 @@ namespace KDSWPFClient
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
 
+                this.IsGetServiceData = true;
                 retVal = true;
             }
             catch (Exception ex)

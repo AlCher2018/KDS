@@ -25,6 +25,19 @@ namespace KDSWPFClient.View
     /// </summary>
     public partial class OrderPanelHeader : UserControl
     {
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
+
         public OrderPanelHeader(OrderViewModel order, double width)
         {
             InitializeComponent();

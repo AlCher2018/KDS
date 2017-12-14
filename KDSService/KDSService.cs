@@ -367,6 +367,13 @@ Contract: IMetadataExchange
                 bool isExistsNewOrder = ((curClient.CurrentOrderIdsList.Count == 0) && (uniqOrdersId.Length > 0));
                 if (!isExistsNewOrder)
                 {
+                    // удалить из сохраненной коллекции Ид те, которых уже нет в текущей
+                    int[] excludeIds = curClient.CurrentOrderIdsList.Except(uniqOrdersId).ToArray();
+                    if (excludeIds.Length > 0)
+                    {
+                        foreach (int item in excludeIds) curClient.CurrentOrderIdsList.Remove(item);
+                    }
+
                     foreach (int curId in uniqOrdersId)
                         if (!curClient.CurrentOrderIdsList.Contains(curId))
                         {

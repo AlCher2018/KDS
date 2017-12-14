@@ -33,6 +33,10 @@ namespace KDSWPFClient.View
         public static readonly DependencyProperty TextProperty =
             DependencyProperty.Register("Text", typeof(string), typeof(DishDelimeterPanel), new PropertyMetadata(""));
 
+        public DishDelimeterPanelTypeEnum DelimeterType { get; set; }
+
+
+
         // признаки поведения элемента
         public bool DontTearOffNext;
 

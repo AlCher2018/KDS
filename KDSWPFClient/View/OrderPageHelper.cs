@@ -181,31 +181,26 @@ namespace KDSWPFClient.View
                 dtTmr = DateTime.Now;
 #if fromActualHeight
                 ordPanel.UpdateLayout();  // тяжелая операция
-                AppLib.WriteLogTraceMessage("   - measure size by UpdateLayout, panel N {0} ({2}) - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString(), ordPanel.PanelHeight);
+                AppLib.WriteLogTraceMessage("   - measure size by UpdateLayout, panel N {0} - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString());
 #else
                 // get DesiredSize
                 ordPanel.Measure(_sizeMeasure);  // немного легче, чем UpdateLayout
-                AppLib.WriteLogTraceMessage("   - measure size by Measure/DesiredSize, panel N {0} ({2}) - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString(), ordPanel.PanelHeight);
+                AppLib.WriteLogTraceMessage("   - measure size by Measure/DesiredSize, panel N {0} - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString());
 #endif
 
                 // 2. Размещение панели на странице
                 // помещается ли вся панель заказа без разрывов в свободное место
                 if (ordPanel.PanelHeight < freeHeight)
                 {
-                    dtTmr = DateTime.Now;
                     setLastPanelPosition(ordPanel);
-                    AppLib.WriteLogTraceMessage("     - layout whole one column - {0}", (DateTime.Now - dtTmr).ToString());
                 }
                 // надо разбивать панель
                 else
                 {
                     dtTmr = DateTime.Now;
                     _canvas.Children.Remove(ordPanel);
-                    AppLib.WriteLogTraceMessage("     - remove from canvas - {0}", (DateTime.Now - dtTmr).ToString());
-
-                    dtTmr = DateTime.Now;
                     splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward);
-                    AppLib.WriteLogTraceMessage("     - split order by columns - {0}", (DateTime.Now - dtTmr).ToString());
+                    AppLib.WriteLogTraceMessage("     - split order to some columns - {0}", (DateTime.Now - dtTmr).ToString());
                 }
 
                 freeHeight = getFreeHeight();

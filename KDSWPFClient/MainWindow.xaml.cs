@@ -218,8 +218,13 @@ namespace KDSWPFClient
                 // потеря связи со службой
                 if (_dataProvider.EnableGetChannel == false)
                 {
-                    AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
+                    AppLib.WriteLogTraceMessage("потеря связи со службой получения данных: пересоздаю get-канал...");
                     _mayGetData = _dataProvider.CreateGetChannel();
+                }
+                else if (_dataProvider.IsGetServiceData == false)
+                {
+                    AppLib.WriteLogTraceMessage("от службы не получены справочные данные: повторный запрос к службе...");
+                    _mayGetData = _dataProvider.SetDictDataFromService();
                 }
                 else
                     _mayGetData = true;
@@ -233,6 +238,18 @@ namespace KDSWPFClient
             {
                 if (tblChannelErrorMessage.Visibility == Visibility.Visible)
                     tblChannelErrorMessage.Visibility = Visibility.Hidden;
+
+                // запросить у службы отделы
+                if (_clientFilter.DepIDsList.Count == 0)
+                {
+                    AppLib.WriteLogInfoMessage("У клиента нет отображаемых цехов!");
+                    if (_dataProvider.Departments.Count == 0)
+                    {
+                        AppLib.WriteLogInfoMessage(" - от службы не получен список цехов: повторный запрос к службе...");
+                        _dataProvider.SetDictDataFromService();
+                    }
+                    _clientFilter.DepIDsList = getClientDepsList();
+                }
 
                 // запрос данных от службы
                 // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
@@ -256,9 +273,11 @@ namespace KDSWPFClient
                     _clientFilter.EndpointOrderItemID = dishStartId;
                 }
                 AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", _clientName, clientDataFilterToString(_clientFilter));
+
                 try
                 {
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
+                    
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
                     if (_svcResp == null)
@@ -272,6 +291,9 @@ namespace KDSWPFClient
                     }
                     else
                     {
+                        // условие проигрывания мелодии при появлении нового заказа
+                        if (_svcResp.IsExistsNewOrder) _wavPlayer.Play();
+
                         _svcOrders = _svcResp.OrdersList;
                         AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
                         // вернуться на стандартный интервал в 1 сек
@@ -312,6 +334,7 @@ namespace KDSWPFClient
                 catch (Exception ex)
                 {
                     AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.ToString()); // ErrorHelper.GetShortErrMessage(ex)
+                    _dataProvider.IsGetServiceData = false;
                 }
 
                 if (_forceFromFirstOrder) _forceFromFirstOrder = false;
@@ -345,9 +368,6 @@ namespace KDSWPFClient
         {
             DateTime dtTmr1 = DateTime.Now;
             string repaintReason=null;
-
-            // условие проигрывания мелодии при появлении нового заказа
-            if (_svcResp.IsExistsNewOrder) _wavPlayer.Play();
 
             // *** ОБНОВИТЬ _viewOrdes (для отображения на экране) ДАННЫМИ ИЗ svcOrders (получено из БД)
             // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
@@ -657,10 +677,10 @@ namespace KDSWPFClient
 
             // кнопки листания
             _viewPrevPageButton = ((orderStartIndex > 0) || (dishStartIndex > 0));
-            if (orderFinishIndex < _viewOrders.Count-1)
-            {
+            if ((orderFinishIndex == -1) || (_viewOrders.Count == 0))
+                _viewNextPageButton = false;
+            else if (orderFinishIndex < _viewOrders.Count-1)
                 _viewNextPageButton = true;
-            }
             else
             {
                 OrderViewModel lastOrder = _viewOrders.LastOrDefault();
@@ -689,7 +709,8 @@ namespace KDSWPFClient
             {
                 throw;
             }
-            if ((pnlSource != null) && (pnlSource.Count == 0)) return;
+            if (pnlSource == null) return;
+            else if (pnlSource.Count == 0) return;
 
             OrderPanel edgeOrderPanel; // граничная панель заказа
             DishPanel edgeDishPanel;   // граничная панель блюда

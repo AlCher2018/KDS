@@ -25,8 +25,41 @@ namespace KDSWPFClient.View
         private Size _size;
 
         // высота панели заказа
-        public double PanelHeight { get { return this.ActualHeight; } }
-        public double HeaderHeight { get { return this.grdHeader.ActualHeight + this.brdTblHeader.ActualHeight; } }
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
+        public double HeaderHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.grdHeader.ActualHeight;
+#else
+                return this.grdHeader.DesiredSize.Height;
+#endif
+            }
+        }
+        public double DishTableHeaderHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.brdTblHeader.ActualHeight;
+#else
+                return this.brdTblHeader.DesiredSize.Height;
+#endif
+            }
+        }
+
 
         public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
         public int ItemsCount { get { return this.DishPanels.Count; } }
@@ -102,14 +135,7 @@ namespace KDSWPFClient.View
         }
 
         // добавить массив элементов в стек
-        internal void AddDishes(UIElement[] dishPanels)
-        {
-            foreach (UIElement item in dishPanels)
-            {
-                this.stkDishes.Children.Add(item);
-            }
-        }
-        internal void AddDishes(List<UIElement> dishPanels)
+        internal void AddDishes(IEnumerable<UIElement> dishPanels)
         {
             foreach (UIElement item in dishPanels)
             {
@@ -121,7 +147,7 @@ namespace KDSWPFClient.View
         {
             this.stkDishes.Children.Insert(index, dishPanel);
         }
-        internal void InsertDishes(int index, List<UIElement> dishPanels)
+        internal void InsertDishes(int index, List<FrameworkElement> dishPanels)
         {
             for (int i = 0; i < dishPanels.Count; i++)
             {
