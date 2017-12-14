@@ -87,6 +87,8 @@ namespace KDSWPFClient
         Action<LeafDirectionEnum> _getOrdersFromServiceDelegate;
         Action _setFirstPageDelegate, _setOrderGroupByTimeDelegate;
 
+        public bool ClickPageButton { get; set; }
+
 
         // CONSTRUCTOR
         public MainWindow(string[] args)
@@ -691,7 +693,8 @@ namespace KDSWPFClient
             if (!_viewNextPageButton) _viewNextPageButton = _svcResp.isExistsNextOrders;
         }
 
-        // индексы или первого, или последнего элемента, в зависимости от флажка fromFirstItem
+        // индексы или первого, или последнего элемента, в зависимости от флажка fromFirstItem - 
+        // индексы панелей заказа/блюда
         private void getModelIndexesFromViewContainer(bool fromFirstItem, out int orderIndex, out int dishIndex)
         {
             orderIndex = -1; dishIndex = -1;
@@ -748,6 +751,13 @@ namespace KDSWPFClient
                 // иначе берем следующую панель в заданном направлении
                 else
                 {
+                    if ((tmpOrderModels != null) && (tmpOrderModels.Count > 0))
+                    {
+                        orderIndex = _viewOrders.IndexOf(tmpOrderModels[0]);
+                        dishIndex = 0;
+                        break;
+                    }
+
                     i += ((fromFirstItem) ? 1 : -1);
                     // достигли граничного условия, индекс заказа -1
                     if ((fromFirstItem && (i >= pnlSource.Count))
@@ -811,16 +821,21 @@ namespace KDSWPFClient
         private int getDishIndex(bool fromFirstItem, OrderDishViewModel curPanelDishModel, List<OrderViewModel> tmpOrderModels, ref OrderViewModel foundDishOrder)
         {
             int dishIndex = -1;
-            foreach (OrderViewModel om in tmpOrderModels)
+
+            if (tmpOrderModels != null)
             {
-                // поиск индекса блюда findingDishModel в om
-                dishIndex = om.Dishes.FindIndex(d => d.Id == curPanelDishModel.Id);
-                if (dishIndex != -1)
+                foreach (OrderViewModel om in tmpOrderModels)
                 {
-                    foundDishOrder = om;
-                    return dishIndex;
+                    // поиск индекса блюда findingDishModel в om
+                    dishIndex = om.Dishes.FindIndex(d => d.Id == curPanelDishModel.Id);
+                    if (dishIndex != -1)
+                    {
+                        foundDishOrder = om;
+                        return dishIndex;
+                    }
                 }
             }
+
             return dishIndex;
         }
 
@@ -829,6 +844,7 @@ namespace KDSWPFClient
         // *** кнопки листания страниц ***
         private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            e.Handled = true;
             if (_leafing == true) return;
 
             _leafing = true;
@@ -841,10 +857,13 @@ namespace KDSWPFClient
             if (_pages.SetPreviousPage())
                 setCurrentPage();
             _leafing = false;
+
+            this.ClickPageButton = true;
         }
 
         private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            e.Handled = true;
             if (_leafing == true) return;
 
             _leafing = true;
@@ -1059,6 +1078,8 @@ namespace KDSWPFClient
         // *** группировка заказов
         private void tbOrderGroup_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            e.Handled = true;
+
             _timer.Stop();
             // сдвинуть текущий элемент
             _orderGroupLooper.SetNextIndex();
@@ -1075,6 +1096,8 @@ namespace KDSWPFClient
         // перебор фильтров состояний по клику на вкладке
         private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            e.Handled = true;
+
             _timer.Stop();
 
             // сдвинуть фильтр

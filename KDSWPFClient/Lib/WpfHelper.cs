@@ -14,19 +14,6 @@ using System.Windows.Threading;
 namespace KDSWPFClient.Lib
 {
 
-    #region type extensions classes
-    public static class UIElementExtensions
-    {
-        private static Action EmptyDelegate = delegate () { };
-
-        public static void Refresh(this UIElement uiElement)
-        {
-            uiElement.Dispatcher.Invoke(DispatcherPriority.Render, EmptyDelegate);
-        }
-    }  // class UIElementExtensions
-    #endregion
-
-
     public static class WpfHelper
     {
         #region свойства приложения в WPF форме

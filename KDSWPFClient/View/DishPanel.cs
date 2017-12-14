@@ -4,6 +4,7 @@ using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -223,6 +224,16 @@ namespace KDSWPFClient.View
         // клик по строке блюда/ингредиента
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
+            {
+                MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
+                if (mainWin.ClickPageButton)
+                {
+                    mainWin.ClickPageButton = false;
+                    return;
+                }
+            }
+
             string sLogMsg = "click on order ITEM";
 
             // КЛИКАБЕЛЬНОСТЬ (условия отсутствия)

@@ -56,7 +56,7 @@ namespace KDSWPFClient
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult) == false)
             {
-                appExit(2, checkProtectedResult.CustomMessage);
+                appExit(2, checkProtectedResult.LogMessage + Environment.NewLine + checkProtectedResult.CustomMessage);
             }
 
             MessageListener.Instance.ReceiveMessage("Получение версии приложения...");

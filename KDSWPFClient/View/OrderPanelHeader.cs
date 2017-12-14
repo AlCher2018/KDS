@@ -39,6 +39,7 @@ namespace KDSWPFClient.View
             _order = order;
             this.Width = width;
             this.SnapsToDevicePixels = true;
+            this.MouseUp += root_MouseUp;
 
             BrushesPair brPair;
             // кисть заголовка
@@ -212,6 +213,16 @@ namespace KDSWPFClient.View
 
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
+            {
+                MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
+                if (mainWin.ClickPageButton)
+                {
+                    mainWin.ClickPageButton = false;
+                    return;
+                }
+            }
+
             string sLogMsg = "click on order HEADER";
 
             // 1. настройка в config-файле для заголовка заказа
