@@ -61,6 +61,8 @@ namespace KDSWPFClient.ViewModel
         private bool _isDishesListUpdated;
         public bool IsInnerListUpdated { get { return _isDishesListUpdated; } }
 
+        public bool Updated { get; set; }
+
 
         // КОНСТРУКТОРЫ
         public OrderViewModel()
@@ -100,12 +102,15 @@ namespace KDSWPFClient.ViewModel
 
                 this.Dishes.Add(new OrderDishViewModel(item, curIndex));
             }
+            this.Updated = true;
             _isDishesListUpdated = true;
         }
 
 
         public void UpdateFromSvc(OrderModel svcOrder)
         {
+            if (this.Updated) this.Updated = false;
+
             if (OrderStatusId != svcOrder.OrderStatusId)
             {
                 OrderStatusId = svcOrder.OrderStatusId;
@@ -161,6 +166,7 @@ namespace KDSWPFClient.ViewModel
             // выставить флаг _isDishesListUpdated в true, если была изменена коллекция блюд или изменен порядок блюд
             // и необходимо перерисовать все панели
             _isDishesListUpdated = AppLib.JoinSortedLists<OrderDishViewModel, OrderDishModel>(Dishes, svcOrder.Dishes.Values.ToList());
+            if (_isDishesListUpdated && !this.Updated) this.Updated = true;
         }
 
 
@@ -169,6 +175,7 @@ namespace KDSWPFClient.ViewModel
         {
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(prop));
+            this.Updated = true;
         }
 
     }  // class 

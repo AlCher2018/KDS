@@ -362,32 +362,6 @@ Contract: IMetadataExchange
             // группировка и сортировка retVal
             if (retValList.Count > 0)
             {
-                // для каждого клиента хранить набор Id заказов из БД для определения появления нового заказа (проигрывание мелодии на клиенте)
-                int[] uniqOrdersId = retValList.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-                bool isExistsNewOrder = ((curClient.CurrentOrderIdsList.Count == 0) && (uniqOrdersId.Length > 0));
-                if (!isExistsNewOrder)
-                {
-                    // удалить из сохраненной коллекции Ид те, которых уже нет в текущей
-                    int[] excludeIds = curClient.CurrentOrderIdsList.Except(uniqOrdersId).ToArray();
-                    if (excludeIds.Length > 0)
-                    {
-                        foreach (int item in excludeIds) curClient.CurrentOrderIdsList.Remove(item);
-                    }
-
-                    foreach (int curId in uniqOrdersId)
-                        if (!curClient.CurrentOrderIdsList.Contains(curId))
-                        {
-                            AppEnv.WriteLogTraceMessage(" - new order id - {0}", curId);
-                            isExistsNewOrder = true; break;
-                        }
-                }
-                if (isExistsNewOrder)
-                {
-                    if (curClient.CurrentOrderIdsList.Count > 0) curClient.CurrentOrderIdsList.Clear();
-                    curClient.CurrentOrderIdsList.AddRange(uniqOrdersId);
-                }
-                retVal.IsExistsNewOrder = isExistsNewOrder;
-
                 // группировка по CreateDate блюд может увеличить кол-во заказов
                 #region группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
@@ -456,14 +430,17 @@ Contract: IMetadataExchange
                     order.Dishes = sortedDishes;
                 }
 
+                // определение появления нового заказа
+                retVal.IsExistsNewOrder = curClient.IsAppearNewOrder(retValList);
                 if (retVal.IsExistsNewOrder)
                 {
                     clientFilter.EndpointOrderID = retValList[0].Id;
                     clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
+                    AppEnv.WriteLogTraceMessage(" - новые или обновленные заказы: {0}", getOrdersLogString(curClient.NewOrdersList));
                 }
+                
 
-
-                string ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
+                string ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
                 AppEnv.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
                 // ограничение количества отдаваемых клиенту объектов
                 if ((clientFilter.EndpointOrderID > 0) 
@@ -472,7 +449,7 @@ Contract: IMetadataExchange
                 {
                     limitOrderItems(retVal, clientFilter);
 
-                    ids = (retValList.Count > 50) ? "> 50" : string.Join(",", retValList.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
+                    ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
                     AppEnv.WriteLogTraceMessage(" - limit orders for client({0}): {1}", retValList.Count, ids);
                 }
 
@@ -490,6 +467,14 @@ Contract: IMetadataExchange
                 retVal += item.Dishes.Count;
             }
             return retVal;
+        }
+
+        private string getOrdersLogString(List<OrderModel> orders)
+        {
+            return string.Join(",", 
+                orders.Select(o => 
+                    string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number.ToString(), o.Dishes.Count.ToString()))
+                );
         }
 
         // ограничение количества отдаваемых клиенту объектов

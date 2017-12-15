@@ -389,30 +389,23 @@ namespace KDSWPFClient.View
                                 DishDelimeterPanel contPanel = createContinuePanel(false);
                                 double delimPanelsHeight = _continuePanelHeight;
 
-                                bool existsFilingPanel = false;
                                 DishDelimeterPanel filingPanel = null;
-                                int filingNumber = 0;
-                                if (curPanel.DishPanels[0] is DishDelimeterPanel)
+                                curBlock = getNextItemsBlock(curPanel, true, true);
+                                if (curBlock != null)
                                 {
-                                    existsFilingPanel = ((curPanel.DishPanels[0] as DishDelimeterPanel).DelimeterType == DishDelimeterPanelTypeEnum.FilingNumber);
-                                    if (curPanel.DishPanels[1] is DishPanel)
-                                        filingNumber = (curPanel.DishPanels[1] as DishPanel).DishView.FilingNumber;
-                                }
-                                else if (curPanel.DishPanels[0] is DishPanel)
-                                {
-                                    filingNumber = (curPanel.DishPanels[0] as DishPanel).DishView.FilingNumber;
-                                }
-                                if (!existsFilingPanel)
-                                {
-                                    filingPanel = createFilingPanel(filingNumber);
-                                    // измерить высоту панели номера подачи
-                                    measurePanel(filingPanel);
-                                    double pnlHeight = getBlockHeight(new FrameworkElement[] { filingPanel });
-                                    delimPanelsHeight += pnlHeight;
+                                    int filingNumber = getFilingNumber(curBlock);
+                                    if (filingNumber != 0)
+                                    {
+                                        filingPanel = createFilingPanel(filingNumber);
+                                        // измерить высоту панели номера подачи
+                                        measurePanel(filingPanel);
+                                        double pnlHeight = getBlockHeight(new FrameworkElement[] { filingPanel });
+                                        delimPanelsHeight += pnlHeight;
+                                    }
                                 }
 
                                 bool keepPanel = false;
-                                // если разделитель не помещается, то удалить первый блок из текущей панели
+                                // если разделитель не помещается, то удалить следующий блок из текущей панели
                                 if (curPanelHeight + delimPanelsHeight > freeHeight)
                                 {
                                     curBlock = getNextItemsBlock(curPanel, true, true);
@@ -436,7 +429,7 @@ namespace KDSWPFClient.View
                                 if (keepPanel)
                                 {
                                     curPanel.InsertDelimiter(0, contPanel);
-                                    if (!existsFilingPanel) curPanel.InsertDelimiter(0, filingPanel);
+                                    if (filingPanel != null) curPanel.InsertDelimiter(0, filingPanel);
                                     curTopValue = 0d;
                                     setPanelLeftTop(curPanel);
                                 }
@@ -488,6 +481,22 @@ namespace KDSWPFClient.View
             }
 
             return;
+        }
+
+        private int getFilingNumber(List<FrameworkElement> curBlock)
+        {
+            int retVal = 0;
+
+            foreach (FrameworkElement item in curBlock)
+            {
+                if (item is DishPanel)
+                {
+                    retVal = ((DishPanel)item).DishView.FilingNumber;
+                    break;
+                }
+            }
+
+            return retVal;
         }
 
         private void measurePanel(FrameworkElement panel)

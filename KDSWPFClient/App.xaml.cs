@@ -51,12 +51,22 @@ namespace KDSWPFClient
             AppLib.InitAppLogger();
 
             AppLib.WriteLogInfoMessage("************  Start KDS Client (WPF) *************");
+            // установить текущий каталог на папку с приложением
+            string curDir = System.IO.Directory.GetCurrentDirectory();
+            if (curDir.Last() != '\\') curDir += "\\";
+            string appDir = AppEnvironment.GetAppDirectory();
+            if (curDir != appDir)
+            {
+                AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
+                System.IO.Directory.SetCurrentDirectory(appDir);
+            }
 
             // защита PSW-файлом
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult) == false)
             {
-                appExit(2, checkProtectedResult.LogMessage + Environment.NewLine + checkProtectedResult.CustomMessage);
+                string errMsg = string.Format("{0}{1}{1}{2}", checkProtectedResult.LogMessage, Environment.NewLine, checkProtectedResult.CustomMessage);
+                appExit(2, errMsg);
             }
 
             MessageListener.Instance.ReceiveMessage("Получение версии приложения...");
@@ -88,16 +98,6 @@ namespace KDSWPFClient
 
             MessageListener.Instance.ReceiveMessage("Получение параметров окружения...");
             AppLib.WriteLogInfoMessage(AppEnvironment.GetEnvironmentString());
-
-            // установить текущий каталог на папку с приложением
-            string curDir = System.IO.Directory.GetCurrentDirectory();
-            if (curDir.Last() != '\\') curDir += "\\";
-            string appDir = AppEnvironment.GetAppDirectory();
-            if (curDir != appDir)
-            {
-                AppLib.WriteLogInfoMessage("Текущий каталог изменен на папку приложения: " + appDir);
-                System.IO.Directory.SetCurrentDirectory(appDir);
-            }
 
             getAppLayout();
 

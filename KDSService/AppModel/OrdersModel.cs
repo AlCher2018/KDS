@@ -123,8 +123,8 @@ namespace KDSService.AppModel
             // получено заказов из БД
             if (_isLogOrderDetails)
             {
-                string ids = (_dbOrders.Count>50) ? "> 50" : string.Join(",", _dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
-                AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num: {1}", _dbOrders.Count, ids);
+                string ids = (_dbOrders.Count>50) ? "> 50" : getOrdersLogString(_dbOrders);
+                AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num/dishes: {1}", _dbOrders.Count, ids);
             }
 
             // цикл по полученным из БД заказам
@@ -228,8 +228,8 @@ namespace KDSService.AppModel
 
             if (_isLogOrderDetails)
             {
-                string ids = (_dbOrders.Count > 50) ? "> 50" : string.Join(",", _dbOrders.Select(o => o.Id.ToString() + "/" + o.Number.ToString()));
-                AppEnv.WriteLogOrderDetails(" - to clients {0} id/Num: {1}", _orders.Count, ids);
+                string ids = (_dbOrders.Count > 50) ? "> 50" : getOrdersLogString(_dbOrders);
+                AppEnv.WriteLogOrderDetails(" - to clients {0} id/Num/dishes: {1}", _orders.Count, ids);
             }
 
             // очистить словарь заблокированных заказов
@@ -241,6 +241,15 @@ namespace KDSService.AppModel
 
             return null;
         }  // method
+
+
+        private string getOrdersLogString(List<Order> orders)
+        {
+            return string.Join(",",
+                orders.Select(o =>
+                    string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number.ToString(), o.Dishes.Count.ToString()))
+                );
+        }
 
 
         // обновить статус вчерашних заказов

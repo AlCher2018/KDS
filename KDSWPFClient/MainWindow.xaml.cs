@@ -395,10 +395,12 @@ namespace KDSWPFClient
             foreach (OrderViewModel item in _viewOrders)
             {
                 allDishesStatus = AppLib.GetStatusAllDishesOwnDeps(item.Dishes);
-                if (item.StatusAllowedDishes != allDishesStatus)
+                if ((item.StatusAllowedDishes != allDishesStatus) 
+                    && (allDishesStatus != StatusEnum.WaitingCook))
                 {
                     item.StatusAllowedDishes = allDishesStatus;
                     isViewRepaint2 = true;
+                    AppLib.WriteLogTraceMessage("статус заказа (id {0}) для всех разрешенных блюд ({1}) изменен на статус всех блюд {2}", item.Id, item.StatusAllowedDishes.ToString(), allDishesStatus.ToString());
                 }
 
                 if ((item.StatusAllowedDishes != StatusEnum.None) 
@@ -406,9 +408,9 @@ namespace KDSWPFClient
                 {
                     _delOrderViewIds.Add(item);
                     isViewRepaint2 = true;
+                    if ((repaintReason != null) && !repaintReason.Equals("delete Orders with not allowed statuses")) repaintReason = "delete Orders with not allowed statuses";
                 }
             }
-            if (isViewRepaint2) repaintReason = "delete Orders with not allowed statuses";
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
             // условия перерисовки
@@ -483,7 +485,7 @@ namespace KDSWPFClient
                 else
                 {
                     curViewOrder = _viewOrders[index];
-                    if ((curViewOrder.Number == om.Number) && (curViewOrder.CreateDate == om.CreateDate)
+                    if ((curViewOrder.Id == om.Id) && (curViewOrder.CreateDate == om.CreateDate)
                         && compareOrderDishes(om, curViewOrder))
                     {
                         curViewOrder.UpdateFromSvc(om);
@@ -693,8 +695,8 @@ namespace KDSWPFClient
             if (!_viewNextPageButton) _viewNextPageButton = _svcResp.isExistsNextOrders;
         }
 
-        // индексы или первого, или последнего элемента, в зависимости от флажка fromFirstItem - 
-        // индексы панелей заказа/блюда
+        // берем первую или последнюю панель на странице, первое или последнее блюдо, в зависимости от флажка fromFirstItem
+        // и находим их индексы в наборе _viewOrders
         private void getModelIndexesFromViewContainer(bool fromFirstItem, out int orderIndex, out int dishIndex)
         {
             orderIndex = -1; dishIndex = -1;
@@ -715,60 +717,27 @@ namespace KDSWPFClient
             if (pnlSource == null) return;
             else if (pnlSource.Count == 0) return;
 
-            OrderPanel edgeOrderPanel; // граничная панель заказа
-            DishPanel edgeDishPanel;   // граничная панель блюда
-            OrderViewModel curPanelOrderModel;  // OrderViewModel из панели
-            OrderDishViewModel curPanelDishModel;  // OrderDishViewModel из панели
-            OrderViewModel tmpOrderModel;
-            List<OrderViewModel> tmpOrderModels;
-
-            // пройтись по всем панелям на холсте для поиска в _viewOrders индекса заказа и блюда, 
-            // которые есть в первой/последней панели заказа в контейнере
-
-            // индекс заказа
+            // индекс панели заказа
             int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
-            while (true)
-            {
-                edgeOrderPanel = (OrderPanel)pnlSource[i];
-                edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
-                if (edgeDishPanel == null) break;
+            OrderPanel edgeOrderPanel = (OrderPanel)pnlSource[i];
+            DishPanel edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
+            if (edgeDishPanel == null) return;
+            
+            // заказ (OrderViewModel) из панели
+            OrderViewModel fromPanelOrderModel = edgeOrderPanel.OrderViewModel;
+            // блюдо (OrderDishViewModel) из панели
+            OrderDishViewModel fromPanelDishModel = edgeDishPanel.DishView;
 
-                curPanelOrderModel = edgeOrderPanel.OrderViewModel;  // заказ из панели
-                curPanelDishModel = edgeDishPanel.DishView;         // блюдо из панели
-                
-                // найти все заказы в _viewOrders с таким же id - их может быть несколько
-                // в связи с группировкой по времени, при которой возможно получить 
-                // несколько панелей для одного и того же заказа, но с разным временем создания позиции заказа
-                tmpOrderModels = _viewOrders.FindAll(vOrd => vOrd.Id == curPanelOrderModel.Id);
-                // поиск блюда в найденных заказах
-                tmpOrderModel = null;
-                dishIndex = getDishIndex(fromFirstItem, curPanelDishModel, tmpOrderModels, ref tmpOrderModel);
-                if (dishIndex != -1)  // найдено
+            // найти заказ в _viewOrders с таким же id заказа и id блюда, как в панели экрана
+            foreach (OrderViewModel item in _viewOrders.FindAll(vOrd => vOrd.Id == fromPanelOrderModel.Id))
+            {
+                dishIndex = item.Dishes.FindIndex(d => d.Id == fromPanelDishModel.Id);
+                if (dishIndex != -1)
                 {
-                    orderIndex = _viewOrders.IndexOf(tmpOrderModel);
+                    orderIndex = _viewOrders.IndexOf(item);
                     break;
                 }
-                // иначе берем следующую панель в заданном направлении
-                else
-                {
-                    if ((tmpOrderModels != null) && (tmpOrderModels.Count > 0))
-                    {
-                        orderIndex = _viewOrders.IndexOf(tmpOrderModels[0]);
-                        dishIndex = 0;
-                        break;
-                    }
-
-                    i += ((fromFirstItem) ? 1 : -1);
-                    // достигли граничного условия, индекс заказа -1
-                    if ((fromFirstItem && (i >= pnlSource.Count))
-                        || (!fromFirstItem && (i < 0)))
-                    {
-                        orderIndex = -1;
-                        break;
-                    }
-                }
             }
-            if (orderIndex == -1) dishIndex = -1;
         }
 
         // id или первого, или последнего элемента заказ/блюдо, в зависимости от флажка fromFirstItem

@@ -41,7 +41,9 @@ namespace KDSWPFClient.View
             this.SnapsToDevicePixels = true;
             this.MouseUp += root_MouseUp;
 
+            Binding binding;
             BrushesPair brPair;
+
             // кисть заголовка
             BrushesPair brPairHeader = getHeaderBrushes();
             // отступы
@@ -79,9 +81,10 @@ namespace KDSWPFClient.View
             Run tbTableLabel1 = new Run() { Text= "Стол №: ", FontSize = labelFontSize };
             tblTable.Inlines.Add(tbTableLabel1);
             Run tbTableName = new Run() {
-                FontWeight = FontWeights.Bold,
-                Text = _order.TableName
+                FontWeight = FontWeights.Bold
             };
+            binding = new Binding("TableName") { Source = _order };
+            tbTableName.SetBinding(Run.TextProperty, binding);
             tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");
             tblTable.Inlines.Add(tbTableName);
             grdHdrTableRow.Children.Add(tblTable);
@@ -92,9 +95,10 @@ namespace KDSWPFClient.View
             Run tbTableLabel2 = new Run() { Text= "Заказ №: ", FontSize = labelFontSize };
             tblOrderNumber.Inlines.Add(tbTableLabel2);
             Run tbOrderNumber = new Run() {
-                FontWeight = FontWeights.Bold,
-                Text = _order.Number.ToString()
+                FontWeight = FontWeights.Bold
             };
+            binding = new Binding("Number") { Source = _order};  // , Converter = new IsZeroConverter() 
+            tbOrderNumber.SetBinding(Run.TextProperty, binding);
             tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");
             tblOrderNumber.Inlines.Add(tbOrderNumber);
             brdOrderNumber.Child = tblOrderNumber;
@@ -117,9 +121,10 @@ namespace KDSWPFClient.View
                 HorizontalAlignment = HorizontalAlignment.Left,
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0.02 * width, 0, 0.02 * width, 0),
-                Text = _order.Waiter
+                Margin = new Thickness(0.02 * width, 0, 0.02 * width, 0)
             };
+            binding = new Binding("Waiter") { Source = _order };
+            tbWaiter.SetBinding(TextBlock.TextProperty, binding);
             tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");
             brdHdrWaiter.Child = tbWaiter;
             this.Children.Add(brdHdrWaiter);
@@ -184,7 +189,7 @@ namespace KDSWPFClient.View
 
             TextBlock tbOrderTimer = new TextBlock() { FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap};
             tbOrderTimer.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");
-            Binding binding = new Binding("WaitingTimerString") { Source = _order};
+            binding = new Binding("WaitingTimerString") { Source = _order};
             tbOrderTimer.SetBinding(TextBlock.TextProperty, binding);
             pnlOrderTimer.Children.Add(tbOrderTimer);
 
