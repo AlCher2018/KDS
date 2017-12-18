@@ -164,6 +164,9 @@ namespace KDSWPFClient
                 _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
+
+            cbxDishesGroup.Visibility = (Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase)) 
+                ? Visibility.Visible : Visibility.Hidden;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -282,14 +285,17 @@ namespace KDSWPFClient
                     
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
-                    if (_svcResp == null)
+                    if ((_svcResp.OrdersList.Count == 0) && !_svcResp.ServiceErrorMessage.IsNull())
                     {
-                        if (_timer.Interval != 90)
+                        if (_svcResp.ServiceErrorMessage.StartsWith("KDS service is reading data"))
                         {
-                            _timer.Interval = 90;
-                            AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
+                            if (_timer.Interval != 90)
+                            {
+                                _timer.Interval = 90;
+                                AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
+                            }
+                            AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
                         }
-                        AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
                     }
                     else
                     {
@@ -1354,34 +1360,22 @@ namespace KDSWPFClient
             e.Handled = true;
         }
 
-        private void btnDBG_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void cbxDishesGroup_Changed(object sender, RoutedEventArgs e)
         {
-            Canvas workContainer = (Canvas)vbxOrders.Child;
-            List<FrameworkElement>
-                _panelsList1 = new List<FrameworkElement>(),
-                _panelsList2 = new List<FrameworkElement>();
-
-            if (brdCFG.Background == Brushes.LightGray)
+            if (cbxDishesGroup.IsChecked ?? false)
             {
-                // вкл режим отладки
-                brdCFG.Background = Brushes.DarkGreen;
-
-                saveOrderPanelsToList(workContainer, _panelsList1);
-                workContainer.Children.Clear();
-                saveOrderPanelsToList(bufferOrderPanels, _panelsList2);
-                bufferOrderPanels.Children.Clear();
-                // загрузка из панели размещения
-                _panelsList2.ForEach(p => workContainer.Children.Add(p));
+                _clientFilter.IsDishGroupAndSumQuatity = true;
+                AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+                getOrdersFromService(LeafDirectionEnum.NoLeaf);
             }
             else
             {
-                // выкл режим отладки
-                brdCFG.Background = Brushes.LightGray;
-                workContainer.Children.Clear();
-                _panelsList1.ForEach(p => workContainer.Children.Add(p));
-                _panelsList2.ForEach(p => bufferOrderPanels.Children.Add(p));
+                _clientFilter.IsDishGroupAndSumQuatity = false;
+                AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+                getOrdersFromService(LeafDirectionEnum.NoLeaf);
             }
         }
+
 
         // переписывание панелей из bufferOrderPanels в vbxOrders.Child
         private void movePanelsToView()

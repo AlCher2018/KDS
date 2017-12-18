@@ -240,6 +240,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private KDSWPFClient.ServiceReference1.OrderGroupEnum GroupByField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool IsDishGroupAndSumQuatityField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirectionField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -321,6 +324,19 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool IsDishGroupAndSumQuatity {
+            get {
+                return this.IsDishGroupAndSumQuatityField;
+            }
+            set {
+                if ((this.IsDishGroupAndSumQuatityField.Equals(value) != true)) {
+                    this.IsDishGroupAndSumQuatityField = value;
+                    this.RaisePropertyChanged("IsDishGroupAndSumQuatity");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
         public KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirection {
             get {
                 return this.LeafDirectionField;
@@ -397,6 +413,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersListField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string ServiceErrorMessageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private bool isExistsNextOrdersField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -434,6 +453,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.OrdersListField, value) != true)) {
                     this.OrdersListField = value;
                     this.RaisePropertyChanged("OrdersList");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string ServiceErrorMessage {
+            get {
+                return this.ServiceErrorMessageField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
+                    this.ServiceErrorMessageField = value;
+                    this.RaisePropertyChanged("ServiceErrorMessage");
                 }
             }
         }
@@ -727,6 +759,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private string ServiceErrorMessageField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string UID1CField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string UidField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -894,6 +929,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
                     this.ServiceErrorMessageField = value;
                     this.RaisePropertyChanged("ServiceErrorMessage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string UID1C {
+            get {
+                return this.UID1CField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.UID1CField, value) != true)) {
+                    this.UID1CField = value;
+                    this.RaisePropertyChanged("UID1C");
                 }
             }
         }

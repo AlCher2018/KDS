@@ -29,6 +29,9 @@ namespace KDSService.AppModel
         private List<OrderModel> _newOrdersList;
         public List<OrderModel> NewOrdersList { get { return _newOrdersList; } }
 
+        // группировка по блюдам и суммирование количества
+        public bool IsDishGroupAndSumQuatity { get; set; }
+
 
         public ClientInfo()
         {

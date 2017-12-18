@@ -91,10 +91,12 @@
 
                 </Border>
 
-                <Border x:Name="brdCFG" Panel.ZIndex="10" VerticalAlignment="Top" Background="LightGray" BorderBrush="DarkGray" BorderThickness="1" PreviewMouseUp="btnDBG_Click" Visibility="Hidden">
-                    <TextBlock x:Name="btnDBG" Text="debug" Foreground="Black" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="14" Margin="0,0,0,4"/>
-                </Border>
-
+                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom" Width="100" HorizontalAlignment="Center" Margin="0,0,0,20" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" >
+                    <TextBlock TextWrapping="Wrap" Text="группировать блюда" FontSize="10"/>
+                    <CheckBox.LayoutTransform>
+                        <RotateTransform Angle="-90"/>
+                    </CheckBox.LayoutTransform>
+                </CheckBox>
             </Grid>
         </Border>
 

@@ -431,7 +431,7 @@ Contract: IMetadataExchange
             if (_observeTimer.Enabled == false)
             {
                 AppEnv.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
-                retVal.ServiceErrorMessage = _sqlServerErrorString;
+                retVal.ServiceErrorMessage = (_sqlServerErrorString.IsNull()) ? "KDS service is reading data..." : _sqlServerErrorString;
                 // вернуть клиенту null - признак того, что надо уменьшить интервал таймера запроса данных к службе
                 return retVal;
             }
@@ -563,37 +563,51 @@ Contract: IMetadataExchange
                     retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
                 }
 
-                // группировка блюд по OrderId, DepartmentId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
+                // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
                 if (clientFilter.IsDishGroupAndSumQuatity)
                 {
-                    OrderDishModel tmpDish;
+                    #region IsDishGroupAndSumQuatity
+                    OrderDishModel tmpDish, curDish;
                     List<int> delDishKeys = new List<int>();
                     foreach (OrderModel ord in retValList)
                     {
-                        // найти одинаковые блюда, сложить их количество порций в первое блюдо с таким набором параметров и удалить их из набора блюд заказа
-                        delDishKeys.Clear();
-                        for (int i = 1; i < ord.Dishes.Count; i++)
+                        if (ord.Dishes.Count <= 1) continue;
+
+                        // найти одинаковые блюда, сложить их количество порций в первое блюдо с таким же набором параметров и удалить их из набора блюд заказа
+                        try
                         {
-                            tmpDish = ord.Dishes[i];
-                            // цикл по предыдущим блюдам для поиска первого такого же
-                            for (int j = 0; j < i; j++)
+                            delDishKeys.Clear();
+                            for (int i = 1; i < ord.Dishes.Count; i++)
                             {
-                                if (
-                                    (tmpDish.DepartmentId == ord.Dishes[j].DepartmentId)
-                                    && (tmpDish.FilingNumber == ord.Dishes[j].FilingNumber)
-                                    && (tmpDish.ParentUid == ord.Dishes[j].ParentUid)
-                                    && (tmpDish.Comment == ord.Dishes[j].Comment)
-                                    && (tmpDish.CreateDate == ord.Dishes[j].CreateDate)
-                                    && (tmpDish.UID1C == ord.Dishes[j].UID1C)
-                                    )
+                                tmpDish = ord.Dishes.ElementAt(i).Value;
+                                // цикл по предыдущим блюдам для поиска первого такого же
+                                for (int j = 0; j < i; j++)
                                 {
-                                    tmpDish.Quantity += ord.Dishes[j].Quantity;
-                                    delDishKeys.Add(ord.Dishes[j].Id);
+                                    curDish = ord.Dishes.ElementAt(j).Value;
+                                    if (
+                                        (tmpDish.DepartmentId == curDish.DepartmentId)
+                                        && (tmpDish.DishStatusId == curDish.DishStatusId)
+                                        && (tmpDish.FilingNumber == curDish.FilingNumber)
+                                        && (tmpDish.ParentUid == curDish.ParentUid)
+                                        && (tmpDish.Comment == curDish.Comment)
+                                        && (tmpDish.CreateDate == curDish.CreateDate)
+                                        && (tmpDish.UID1C == curDish.UID1C)
+                                        )
+                                    {
+                                        curDish.Quantity += tmpDish.Quantity;
+                                        delDishKeys.Add(tmpDish.Id);
+                                        break;
+                                    }
                                 }
                             }
+                            if (delDishKeys.Count != 0) delDishKeys.ForEach(dd => ord.Dishes.Remove(dd));
                         }
-                        if (delDishKeys.Count != 0) delDishKeys.ForEach(dd => ord.Dishes.Remove(dd));
+                        catch (Exception ex)
+                        {
+                            string sErr = ex.ToString();
+                        }
                     }
+                    #endregion
                 }
 
                 // сортировка блюд в заказах по номеру подачи
@@ -604,15 +618,28 @@ Contract: IMetadataExchange
                     order.Dishes = sortedDishes;
                 }
 
-                // определение появления нового заказа
+
+                // определение появления нового заказа, только если не поменялся тип группировки блюд
                 retVal.IsExistsNewOrder = curClient.IsAppearNewOrder(retValList);
                 if (retVal.IsExistsNewOrder)
                 {
                     clientFilter.EndpointOrderID = retValList[0].Id;
                     clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
-                    AppEnv.WriteLogTraceMessage(" - новые или обновленные заказы: {0}", getOrdersLogString(curClient.NewOrdersList));
+
+                    // сбросить флаг нового заказа, если прсто поменялись условия выборки:
+                    // группировка заказов, фильтр цехов, фильтр статусов, группировка блюд
+                    bool isRealNewOrder;
+                    if (curClient.IsDishGroupAndSumQuatity == clientFilter.IsDishGroupAndSumQuatity)
+                    {
+                        AppEnv.WriteLogTraceMessage(" - новые или обновленные заказы: {0}", getOrdersLogString(curClient.NewOrdersList));
+                    }
+                    else
+                    {
+                        curClient.IsDishGroupAndSumQuatity = clientFilter.IsDishGroupAndSumQuatity;
+                        curClient.NewOrdersList.Clear();
+                        retVal.IsExistsNewOrder = false;
+                    }
                 }
-                
 
                 string ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
                 AppEnv.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);

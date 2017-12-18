@@ -40,6 +40,7 @@
       <xs:element minOccurs="0" name="EndpointOrderID" type="xs:int" />
       <xs:element minOccurs="0" name="EndpointOrderItemID" type="xs:int" />
       <xs:element minOccurs="0" name="GroupBy" type="tns:OrderGroupEnum" />
+      <xs:element minOccurs="0" name="IsDishGroupAndSumQuatity" type="xs:boolean" />
       <xs:element minOccurs="0" name="LeafDirection" type="tns:LeafDirectionEnum" />
       <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="StatusesList" nillable="true" type="q2:ArrayOfint" />
     </xs:sequence>
@@ -64,6 +65,7 @@
     <xs:sequence>
       <xs:element minOccurs="0" name="IsExistsNewOrder" type="xs:boolean" />
       <xs:element minOccurs="0" name="OrdersList" nillable="true" type="tns:ArrayOfOrderModel" />
+      <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="isExistsNextOrders" type="xs:boolean" />
       <xs:element minOccurs="0" name="isExistsPrevOrders" type="xs:boolean" />
     </xs:sequence>
@@ -105,6 +107,7 @@
       <xs:element minOccurs="0" name="ParentUid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Quantity" type="xs:decimal" />
       <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="UID1C" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="WaitingTimerString" nillable="true" type="xs:string" />
     </xs:sequence>
