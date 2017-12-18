@@ -17,6 +17,9 @@ namespace KDSService.AppModel
         // признак наличия нового заказа для данного клиента
         public bool IsExistsNewOrder { get; set; }
 
+        public string ServiceErrorMessage { get; set; }
+
+
         public ServiceResponce()
         {
             this.OrdersList = new List<OrderModel>();

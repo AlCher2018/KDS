@@ -71,6 +71,9 @@ namespace KDSService.AppModel
         public int DepartmentId { get; set; }
 
         [DataMember]
+        public string UID1C { get; set; }
+
+        [DataMember]
         public string ServiceErrorMessage { get { return _serviceErrorMessage; } set { } }
 
         // форматированное представление временного промежутка для внешних клиентов
@@ -163,6 +166,7 @@ namespace KDSService.AppModel
             Comment = dbDish.Comment;
             Quantity = dbDish.Quantity;
             DelayedStartTime = dbDish.DelayedStartTime;
+            UID1C = dbDish.UID1C;
 
             // свойства объекта с зависимыми полями
 

@@ -18,6 +18,8 @@ namespace KDSService.DataSource
         public KDSEntities()
             : base("name=KDSEntities")
         {
+            // таймаут выполнения запросов к MS SQL Server - 5 секунд
+            ((IObjectContextAdapter)this).ObjectContext.CommandTimeout = 2;
         }
     
         protected override void OnModelCreating(DbModelBuilder modelBuilder)

@@ -71,7 +71,9 @@ namespace KDSService.DataSource
             using (KDSEntities db = new KDSEntities())
             {
                 // блюда заказа
+                DateTime dt1 = DateTime.Now;
                 tmpDishes.AddRange(db.Database.SqlQuery<OrderDish>(sqlText));
+                TimeSpan ts1 = DateTime.Now-dt1;
                 if (tmpDishes.Count == 0) return;
 
                 // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть

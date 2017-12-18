@@ -25,6 +25,9 @@ namespace KDSService.AppModel
         // данный параметр зависит от графических настроек клиента: количество столбцов, коэффициент масштабировния шрифтов
         public int ApproxMaxDishesCountOnPage { get; set; }
 
+        // группировка по блюдам и суммирование количества
+        public bool IsDishGroupAndSumQuatity { get; set; }
+
         public override string ToString()
         {
             string s1 = (this.StatusesList == null) ? "" : string.Join(",", this.StatusesList);

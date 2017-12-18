@@ -24,6 +24,8 @@ namespace KDSService.AppModel
         // причем Id заказа может повторяться
         private List<KeyValuePair<int, List<int>>> _currentOrderIdsList;
 
+        // временная внутренняя коллекция новых заказов для возврата вызывающему модулю 
+        // списка новых заказов для различных целей
         private List<OrderModel> _newOrdersList;
         public List<OrderModel> NewOrdersList { get { return _newOrdersList; } }
 
@@ -86,6 +88,7 @@ namespace KDSService.AppModel
 
             return retVal;
         }
+
 
         private bool findKVPair(KeyValuePair<int, List<int>> itemCheck, List<KeyValuePair<int, List<int>>> whereList)
         {

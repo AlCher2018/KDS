@@ -117,7 +117,7 @@ namespace KDSService.AppModel
             }
             catch (Exception ex)
             {
-                return ex.Message;
+                return "MSSQLServer Error: " + ErrorHelper.GetShortErrMessage(ex);
             }
 
             // получено заказов из БД

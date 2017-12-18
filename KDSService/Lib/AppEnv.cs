@@ -75,6 +75,17 @@ namespace KDSConsoleSvcHost
             NameValueCollection cfg = ConfigurationManager.AppSettings;
             string value;
 
+            // имя службы MS SQL Service, флаг перезапуска sql-службы
+            /*  <!-- наименование службы MS SQL Server, как в services.msc -->
+                <add key = "MSSQLServiceName" value = "MSSQLSERVER" />
+                <!-- флаг перезапуска sql-службы -->
+                <add key = "MSSQLServiceRestartEnable" value = "false" />
+            */
+            value = cfg["MSSQLServiceRestartEnable"];
+            AppProperties.SetProperty("MSSQLServiceRestartEnable", (value == null) ? false : value.ToBool());
+            value = cfg["MSSQLServiceName"];
+            AppProperties.SetProperty("MSSQLServiceName", (value == null) ? MSSQLService.Controller.ServiceName : value);
+
             // режим сортировки заказов
             string ordersSortMode = "Desc";
             value = cfg["SortOrdersByCreateDate"];

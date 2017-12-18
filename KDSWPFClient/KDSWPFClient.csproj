@@ -64,8 +64,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NumericUpDown">
-      <HintPath>..\NumericUpDown.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\Integra libs\CAVControlsLib\bin\Release\NumericUpDown.dll</HintPath>
     </Reference>
     <Reference Include="pswLib">
       <HintPath>..\..\Integra libs\Integra PSW\pswLib\bin\Release\pswLib.dll</HintPath>

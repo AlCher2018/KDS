@@ -10,6 +10,7 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.Timers;
+using System.ServiceProcess;
 
 
 namespace KDSService
@@ -35,6 +36,8 @@ namespace KDSService
 
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;
+
+        private string _sqlServerErrorString;
 
 
         // CTOR
@@ -70,6 +73,36 @@ namespace KDSService
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
 
+            #region проверка наличия службы MSSQLServer
+            // проверка наличия службы MSSQLServer
+            if (!MSSQLService.IsExists)
+            {
+                msg = string.Format("На компьютере ({0}) не установлен MS SQL Server!", Environment.MachineName);
+                AppEnv.WriteLogErrorMessage(msg);
+                throw new Exception(msg);
+            }
+            //ServiceController sqlService = MSSQLService.Controller;
+            string sqlSvcNameFromConfig = (string)AppProperties.GetProperty("MSSQLServiceName");
+            // если имя найденного сервиса MS SQL не совпадает с тем, что задано в config-файле, то переопределяем
+            if ((sqlSvcNameFromConfig != null) && (MSSQLService.Controller.ServiceName != sqlSvcNameFromConfig))
+            {
+                AppEnv.WriteLogTraceMessage("Имя службы MS SQL Server по умолчанию {0} не совпадает с именем службы, заданной в config-файле ({1}) - используем имя {1}.", MSSQLService.Controller.ServiceName, sqlSvcNameFromConfig);
+                if (MSSQLService.FindService(sqlSvcNameFromConfig) == false)
+                {
+                    msg = string.Format("Имя службы MS SQL Server, заданное в config-файле {0}, не найдено в системе!", sqlSvcNameFromConfig);
+                    AppEnv.WriteLogErrorMessage(msg);
+                    throw new Exception(msg);
+                }
+            }
+            AppEnv.WriteLogTraceMessage("Служба {0} находится в состоянии {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+            // попытка перезапуска службы MS SQL Server
+            if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable") 
+                && (MSSQLService.Status != ServiceControllerStatus.Running))
+            {
+                startSQLService();
+            }
+            #endregion
+
             // проверить доступность БД
             AppEnv.WriteLogInfoMessage("  Проверка доступа к базе данных...");
             isResultOk = AppEnv.CheckDBConnection(typeof(KDSEntities), out msg);
@@ -91,7 +124,6 @@ namespace KDSService
             // периодичность опроса БД - 500 в мсек
             _observeTimer = new Timer(500) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
-            StartTimer();
 
             AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
@@ -104,6 +136,58 @@ namespace KDSService
             }
 
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+        }
+
+        private static void startSQLService()
+        {
+            MSSQLService.Refresh();
+            if (MSSQLService.Status == ServiceControllerStatus.Running) return;
+
+            ServiceController sqlService = MSSQLService.Controller;
+
+            int waitCircles = 10, waitSvcActionInterval = 500;
+            DateTime dtTmr = DateTime.Now;
+
+            // сначала остановить
+            if (MSSQLService.Status != ServiceControllerStatus.Stopped)
+            {
+                sqlService.Stop();
+                sqlService.Refresh();
+                // цикл ожидания останова службы
+                while (sqlService.Status != ServiceControllerStatus.Stopped)
+                {
+                    AppEnv.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
+                    sqlService.Refresh();
+                    if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
+                    {
+                        throw new Exception(string.Format("Истек период в {0} секунд для останова службы MS SQL Server ({1})", waitCircles.ToString(), sqlService.ServiceName));
+                    }
+                }
+                AppEnv.WriteLogTraceMessage(" - служба {0} остановлена успешно.", sqlService.ServiceName);
+            }
+
+            // запуск службы
+            if (MSSQLService.Status != ServiceControllerStatus.Running)
+            {
+                AppEnv.WriteLogTraceMessage(" - запуск службы...");
+                sqlService.Start();
+                sqlService.Refresh();
+                dtTmr = DateTime.Now;
+                // цикл ожидания запуска службы
+                while (sqlService.Status != ServiceControllerStatus.Running)
+                {
+                    AppEnv.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
+                    sqlService.Refresh();
+                    if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
+                    {
+                        throw new Exception(string.Format("Истек период в {0} секунд для запуска службы MS SQL Server ({1})", waitCircles.ToString(), sqlService.ServiceName));
+                    }
+                }
+            }
+
+            AppEnv.WriteLogTraceMessage(" - статус службы {0}", sqlService.Status.ToString());
         }
 
         // создает сервис WCF, параметры канала считываются из app.config
@@ -215,13 +299,68 @@ Contract: IMetadataExchange
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
+            AppEnv.WriteLogOrderDetails("** Stop DB read timer.");
 
             // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
             if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))
             {
-                string errMsg = _ordersModel.UpdateOrders();
+                string errDBMsg = _ordersModel.UpdateOrders();
 
-                if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+                #region ошибка получения данных от MS SQL Server
+                // ошибка получения данных от MS SQL Server
+                if (errDBMsg != null)
+                {
+                    if ((_sqlServerErrorString == null) || (_sqlServerErrorString != errDBMsg))
+                        _sqlServerErrorString = errDBMsg;
+                    AppEnv.WriteLogTraceMessage("mssql|{0}", _sqlServerErrorString);
+                    
+                    // очистить внутр.набор заказов службы
+                    //_ordersModel.Orders.Clear();
+
+                    MSSQLService.Refresh();
+                    AppEnv.WriteLogTraceMessage("mssql| - статус службы {0} - {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+
+                    if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable"))
+                    {
+                        // если сервис остановлен - пытаемся запустить его
+                        if (MSSQLService.Status != ServiceControllerStatus.Running)
+                        {
+                            AppEnv.WriteLogTraceMessage("mssql| - sql server status - {0} - restart service...", MSSQLService.Status.ToString());
+                            startSQLService();
+                        }
+                        // иначе пытаемся 5 раз через 1 секунду прочитать данные из БД и обновить внутр.наборы
+                        else
+                        {
+                            int waitCircles = 5, waitSvcActionInterval = 2000;
+                            int i = 0;
+                            for (; i < waitCircles; i++)
+                            {
+                                System.Threading.Thread.Sleep(waitSvcActionInterval);
+                                AppEnv.WriteLogTraceMessage("mssql|Попытка {0} повторного чтения заказов из БД.", (i + 1).ToString());
+                                errDBMsg = _ordersModel.UpdateOrders();
+                                if (errDBMsg == null) break;
+                            }
+                            // sql-служба не ответила - перезапуск
+                            if (i >= waitCircles)
+                            {
+                                KDSWPFClient.Lib.DebugTimer.Init();
+                                errDBMsg = null;
+                                AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
+                                // попытка перезапуска службы MS SQL Server
+                                startSQLService();
+                                AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
+                                    KDSWPFClient.Lib.DebugTimer.GetInterval(),
+                                    ((errDBMsg == null) ? "" : " - " + errDBMsg)
+                                );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (_sqlServerErrorString != null) _sqlServerErrorString = null;
+                }
+                #endregion
 
                 // установить стандартный интервал опроса БД
                 if (_observeTimer.Interval != 500) _observeTimer.Interval = 500; // msec
@@ -233,6 +372,7 @@ Contract: IMetadataExchange
             }
 
             StartTimer();
+            AppEnv.WriteLogOrderDetails("** Start DB read timer.");
         }
 
 
@@ -283,6 +423,7 @@ Contract: IMetadataExchange
         public ServiceResponce GetOrders(string machineName, ClientDataFilter clientFilter)
         {
             ClientInfo curClient = getClientInfo(machineName);
+            ServiceResponce retVal = new ServiceResponce();
 
             AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
 
@@ -290,12 +431,12 @@ Contract: IMetadataExchange
             if (_observeTimer.Enabled == false)
             {
                 AppEnv.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
+                retVal.ServiceErrorMessage = _sqlServerErrorString;
                 // вернуть клиенту null - признак того, что надо уменьшить интервал таймера запроса данных к службе
-                return null;
+                return retVal;
             }
 
             // "хвосты" по умолчанию - false, набор List<OrderModel> создается в конструкторе ServiceResponce
-            ServiceResponce retVal = new ServiceResponce();
             List<OrderModel> retValList = retVal.OrdersList;
             DateTime dtTmr = DateTime.Now;
 
@@ -420,6 +561,39 @@ Contract: IMetadataExchange
                 else if (clientFilter.GroupBy == OrderGroupEnum.ByOrderNumber)
                 {
                     retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
+                }
+
+                // группировка блюд по OrderId, DepartmentId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
+                if (clientFilter.IsDishGroupAndSumQuatity)
+                {
+                    OrderDishModel tmpDish;
+                    List<int> delDishKeys = new List<int>();
+                    foreach (OrderModel ord in retValList)
+                    {
+                        // найти одинаковые блюда, сложить их количество порций в первое блюдо с таким набором параметров и удалить их из набора блюд заказа
+                        delDishKeys.Clear();
+                        for (int i = 1; i < ord.Dishes.Count; i++)
+                        {
+                            tmpDish = ord.Dishes[i];
+                            // цикл по предыдущим блюдам для поиска первого такого же
+                            for (int j = 0; j < i; j++)
+                            {
+                                if (
+                                    (tmpDish.DepartmentId == ord.Dishes[j].DepartmentId)
+                                    && (tmpDish.FilingNumber == ord.Dishes[j].FilingNumber)
+                                    && (tmpDish.ParentUid == ord.Dishes[j].ParentUid)
+                                    && (tmpDish.Comment == ord.Dishes[j].Comment)
+                                    && (tmpDish.CreateDate == ord.Dishes[j].CreateDate)
+                                    && (tmpDish.UID1C == ord.Dishes[j].UID1C)
+                                    )
+                                {
+                                    tmpDish.Quantity += ord.Dishes[j].Quantity;
+                                    delDishKeys.Add(ord.Dishes[j].Id);
+                                }
+                            }
+                        }
+                        if (delDishKeys.Count != 0) delDishKeys.ForEach(dd => ord.Dishes.Remove(dd));
+                    }
                 }
 
                 // сортировка блюд в заказах по номеру подачи
@@ -758,6 +932,7 @@ Contract: IMetadataExchange
             // таймер остановить, отписаться от события и уничтожить
             StopTimer();
             _observeTimer.Dispose();
+            MSSQLService.Dispose();
 
             AppEnv.WriteLogTraceMessage("   close ServiceHost...");
             if (_host != null)
