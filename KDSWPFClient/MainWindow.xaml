@@ -36,16 +36,14 @@
             </Border.Background>
             <Grid x:Name="grdUserConfig">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="0.2*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
+                <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,20,0,0" VerticalAlignment="Top" Click="button_Click"/>
 
-                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Bottom" Margin="0,30" Background="Transparent" Height="100"  PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
+                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Center" Margin="0,30" Background="Transparent" Height="100"   PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
                     <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Foreground="Gray" FontSize="18" RenderTransformOrigin="0.5,0.5" Margin="-28,37" Width="87">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
@@ -55,26 +53,30 @@
                     </TextBlock>
                 </Border>
 
-                <!-- кнопка переключения состояний -->
-                <Border x:Name="btnOrderGroup" Grid.Row="1" 
+                <StackPanel x:Name="pnlLeftTabs" Grid.Row="1" Background="Bisque">
+                    <Border x:Name="btnOrderGroup" 
+                            Height="120"
                         BorderBrush="DarkGray" BorderThickness="2"
                         Background="Transparent"
                         PreviewMouseDown="tbOrderGroup_MouseDown"
                         CornerRadius="{Binding ActualWidth, ElementName=grdUserConfig, ConverterParameter=0.2;0;0;0.2, Converter={StaticResource getCornerRadius}, Mode=OneWay}" 
                         Margin="{Binding Path=ActualWidth, ElementName=grdUserConfig, Converter={StaticResource getMargin}, ConverterParameter='0.2;0;0;0', Mode=OneWay}"
                         >
-                    <Canvas RenderTransformOrigin="0,0" VerticalAlignment="Bottom">
-                        <Viewbox Width="{Binding ElementName=btnOrderGroup, Path=ActualHeight, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Height="{Binding ElementName=btnOrderGroup, Path=ActualWidth, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Stretch="Uniform">
-                            <TextBlock x:Name="tbOrderGroup" Text="По времени"  TextWrapping="Wrap" FontWeight="Bold" Margin="{Binding ElementName=grdUserConfig, Path=ActualWidth, Mode=OneWay, Converter={StaticResource getMargin}, ConverterParameter=0.15;0;0.15;0.07}"/>
-                        </Viewbox>
-                        <Canvas.RenderTransform>
+                        <Canvas RenderTransformOrigin="0,0" VerticalAlignment="Bottom">
+                            <Viewbox Width="{Binding ElementName=btnOrderGroup, Path=ActualHeight, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Height="{Binding ElementName=btnOrderGroup, Path=ActualWidth, Converter={StaticResource addParamConv}, ConverterParameter=-4}" Stretch="Uniform">
+                                <TextBlock x:Name="tbOrderGroup" Text="По времени"  TextWrapping="Wrap" FontWeight="Bold" Margin="{Binding ElementName=grdUserConfig, Path=ActualWidth, Mode=OneWay, Converter={StaticResource getMargin}, ConverterParameter=0.15;0;0.15;0.07}"/>
+                            </Viewbox>
+                            <!--<Canvas.RenderTransform>
                             <RotateTransform Angle="-90"/>
-                        </Canvas.RenderTransform>
-                    </Canvas>
-                </Border>
+                        </Canvas.RenderTransform>-->
+                        </Canvas>
+                    </Border>
 
-                <!-- кнопка переключения статусов -->
-                <Border x:Name="btnDishStatusFilter" Grid.Row="3"
+                </StackPanel>
+                <!-- кнопка переключения группировки заказов -->
+
+                <!-- кнопка переключения фильтра статусов -->
+                <!--<Border x:Name="btnDishStatusFilter" Grid.Row="3"
                         BorderBrush="DarkGray" BorderThickness="2"
                         PreviewMouseDown="tbDishStatusFilter_MouseDown"
                         CornerRadius="{Binding ActualWidth, ElementName=grdUserConfig, ConverterParameter=0.2;0;0;0.2, Converter={StaticResource getCornerRadius}, Mode=OneWay}" 
@@ -89,9 +91,9 @@
                         </Canvas.RenderTransform>
                     </Canvas>
 
-                </Border>
+                </Border>-->
 
-                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom" Width="100" HorizontalAlignment="Center" Margin="0,0,0,20" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" >
+                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom" Width="100" HorizontalAlignment="Center" Margin="0,0,0,10" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" >
                     <TextBlock TextWrapping="Wrap" Text="группировать блюда" FontSize="10"/>
                     <CheckBox.LayoutTransform>
                         <RotateTransform Angle="-90"/>

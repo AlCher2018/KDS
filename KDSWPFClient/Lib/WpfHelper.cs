@@ -158,10 +158,17 @@ namespace KDSWPFClient.Lib
         #region draw&measure funcs
         public static double GetRowHeightAbsValue(Grid grid, int iRow, double totalHeight = 0d)
         {
-            if (totalHeight == 0d) totalHeight = grid.Height;
+            if (totalHeight == 0d)
+            {
+                if (grid.Height.Equals(double.NaN))
+                    totalHeight = grid.ActualHeight;
+                else
+                    totalHeight = grid.Height;
+            }
 
             double cntStars = grid.RowDefinitions.Sum(r => r.Height.Value);
-            return grid.RowDefinitions[iRow].Height.Value / cntStars * totalHeight;
+            double retVal = grid.RowDefinitions[iRow].Height.Value / cntStars * totalHeight;
+            return retVal;
         }
 
         public static void AssignFontSizeByMeasureHeight(TextBlock tbAssigning, Size measuredSize, double requiredHeight, bool isSubtractSideMarginsAsFontSize)

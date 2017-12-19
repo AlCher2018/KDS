@@ -618,35 +618,23 @@ Contract: IMetadataExchange
                     order.Dishes = sortedDishes;
                 }
 
-
-                // определение появления нового заказа, только если не поменялся тип группировки блюд
-                retVal.IsExistsNewOrder = curClient.IsAppearNewOrder(retValList);
-                if (retVal.IsExistsNewOrder)
+                // если появились новые заказы, то передать клиенту заказы с самого первого
+                retVal.IsExistsNewOrder = false;
+                if (curClient.IsAppearNewOrder(retValList))
                 {
-                    clientFilter.EndpointOrderID = retValList[0].Id;
-                    clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
-
-                    // сбросить флаг нового заказа, если прсто поменялись условия выборки:
-                    // группировка заказов, фильтр цехов, фильтр статусов, группировка блюд
-                    bool isRealNewOrder;
-                    if (curClient.IsDishGroupAndSumQuatity == clientFilter.IsDishGroupAndSumQuatity)
-                    {
-                        AppEnv.WriteLogTraceMessage(" - новые или обновленные заказы: {0}", getOrdersLogString(curClient.NewOrdersList));
-                    }
-                    else
-                    {
-                        curClient.IsDishGroupAndSumQuatity = clientFilter.IsDishGroupAndSumQuatity;
-                        curClient.NewOrdersList.Clear();
-                        retVal.IsExistsNewOrder = false;
-                    }
+                    retVal.IsExistsNewOrder = true;
+                //    clientFilter.EndpointOrderID = retValList[0].Id;
+                //    clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
                 }
 
                 string ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
                 AppEnv.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
                 // ограничение количества отдаваемых клиенту объектов
-                if ((clientFilter.EndpointOrderID > 0) 
+                if (
+                    (clientFilter.EndpointOrderID > 0) 
                     || (clientFilter.EndpointOrderItemID > 0)
-                    || (clientFilter.ApproxMaxDishesCountOnPage > 0))
+                    || (clientFilter.ApproxMaxDishesCountOnPage > 0)
+                    )
                 {
                     limitOrderItems(retVal, clientFilter);
 
@@ -684,10 +672,14 @@ Contract: IMetadataExchange
             int idxOrder = -1;
             List<OrderModel> orderList = svcResp.OrdersList;
 
+            if (svcResp.IsExistsNewOrder)
+            {
+                idxOrder = 0;
+            }
             // найти индекс элемента коллекции заказов, 
             // у которого order.Id==clientFilter.OrderId && dish.Id==clientFilter.DishId
             // элементов order.Id==clientFilter.OrderId может быть несколько при группировке по времени
-            if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0))
+            else if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0))
             {
                 idxOrder = orderList.FindIndex(om =>
                 (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));

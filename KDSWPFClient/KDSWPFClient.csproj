@@ -102,6 +102,7 @@
     <Compile Include="SplashScreen\MessageListener.cs" />
     <Compile Include="SplashScreen\Splasher.cs" />
     <Compile Include="SplashScreen\SplashScreen.xaml.cs" />
+    <Compile Include="View\AppLeftTabControl.cs" />
     <Compile Include="View\BrushConverter.cs" />
     <Compile Include="View\BrushHelper.cs" />
     <Compile Include="View\ColorLegend.xaml.cs">

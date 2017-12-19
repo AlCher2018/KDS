@@ -258,7 +258,7 @@
                                 <CheckBox x:Name="cbxState2" Tag="2" Content="Готово"/>
                                 <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
                         <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
-                                <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
+                                <CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>
                                 <CheckBox x:Name="cbxState8" Tag="8" Content="Готовность подтверждена"/>
                                 <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
                             </StackPanel>

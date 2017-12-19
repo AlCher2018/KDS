@@ -90,7 +90,12 @@ namespace KDSWPFClient.View
             grdDishLine.Children.Add(tbDishIndex);
 
             // имя блюда: текст и комментарий
-            TextBlock tbDish = new TextBlock() { TextAlignment = TextAlignment.Left, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+            TextBlock tbDish = new TextBlock()
+            {
+                TextAlignment = TextAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            };
             tbDish.SetValue(Grid.ColumnProperty, 1);
             Run tbDishName = new Run() {
                 FontWeight = FontWeights.Bold,
@@ -136,9 +141,10 @@ namespace KDSWPFClient.View
             TextBlock tbDishQuantity = new TextBlock() {
                 TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 FontWeight = FontWeights.Bold,
-                TextWrapping = TextWrapping.Wrap,
-                Text = _dishView.Quantity.ToString(CultureInfo.InvariantCulture)
+                TextWrapping = TextWrapping.Wrap
             };
+            Binding bind = new Binding("Quantity") { Source = _dishView, Converter = new DishQuantityToStringConverter() };
+            tbDishQuantity.SetBinding(TextBlock.TextProperty, bind);
             tbDishQuantity.SetValue(Grid.ColumnProperty, 2);
             tbDishQuantity.Margin = new Thickness(0, 0, 3, 0);
             tbDishQuantity.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishQuantityFontSize");
@@ -152,8 +158,14 @@ namespace KDSWPFClient.View
             double timerCornerRadius = 0.015 * this.Width;
             brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
             // текстовый блок таймера
-            tbDishStatusTS = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
-            Binding bind = new Binding("ViewTimerString") {Source = _dishView };
+            tbDishStatusTS = new TextBlock()
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontWeight = FontWeights.Bold,
+                TextWrapping = TextWrapping.Wrap
+            };
+            bind = new Binding("ViewTimerString") {Source = _dishView };
             tbDishStatusTS.SetBinding(TextBlock.TextProperty, bind);
             tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");
             brdTimer.Child = tbDishStatusTS;

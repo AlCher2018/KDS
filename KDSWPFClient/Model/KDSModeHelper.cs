@@ -218,6 +218,8 @@ namespace KDSWPFClient.Model
                     FontBrush = new SolidColorBrush(Colors.Navy)
                 };
                 curSet.States.AddRange(statesList);
+                // и удалить, если есть, Выдано
+                if (curSet.States.Contains(OrderStatusEnum.Took)) curSet.States.Remove(OrderStatusEnum.Took);
 
                 retVal.Insert(0, curSet);
             }

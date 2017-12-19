@@ -44,12 +44,13 @@ namespace KDSService.AppModel
         public bool IsAppearNewOrder(List<OrderModel> orders)
         {
             bool retVal = false;
-            
+
             // собрать уникальные Id из переданного набора заказов
             List<KeyValuePair<int, List<int>>> uniqOrdersId = getOrderIdsList(orders);
+            
             // если дата запроса превышает 5 секунд, то хранимый набор заказов считается устаревшим и уничтожается
-            if ((DateTime.Now - _lastRequestDate).TotalSeconds > 10) _currentOrderIdsList.Clear();
-            _lastRequestDate = DateTime.Now;
+            //if ((DateTime.Now - _lastRequestDate).TotalSeconds > 10) _currentOrderIdsList.Clear();
+            //_lastRequestDate = DateTime.Now;
 
             // сохраненного нет
             if (_currentOrderIdsList.Count == 0)
@@ -95,19 +96,23 @@ namespace KDSService.AppModel
 
         private bool findKVPair(KeyValuePair<int, List<int>> itemCheck, List<KeyValuePair<int, List<int>>> whereList)
         {
-            // цикл по элементам с равенством ключей
-            foreach (KeyValuePair<int, List<int>> findKeyList in whereList.Where(i => itemCheck.Key == i.Key))
-            {
-                // сравнение внутренних массивов
-                List<int> l1 = itemCheck.Value, l2 = findKeyList.Value;
-                if (((l1 == null) && (l2 != null)) || ((l1 != null) && (l2 == null))) continue;
-                if (l1.Count != l2.Count) continue;
-                for (int i = 0; i < l1.Count; i++) if (l1[i] != l2[i]) continue;
+            KeyValuePair<int, List<int>>[] foundOrderId = whereList.Where(i => itemCheck.Key == i.Key).ToArray();
 
-                // внутренние массивы одинаковые
-                return true;
-            }
-            return false;
+            return (foundOrderId.Length > 0);
+
+            // цикл по элементам с равенством ключей
+            //foreach (KeyValuePair<int, List<int>> findKeyList in whereList.Where(i => itemCheck.Key == i.Key))
+            //{
+            //    // сравнение внутренних массивов
+            //    List<int> l1 = itemCheck.Value, l2 = findKeyList.Value;
+            //    if (((l1 == null) && (l2 != null)) || ((l1 != null) && (l2 == null))) continue;
+            //    if (l1.Count != l2.Count) continue;
+            //    for (int i = 0; i < l1.Count; i++) if (l1[i] != l2[i]) continue;
+
+            //    // внутренние массивы одинаковые
+            //    return true;
+            //}
+            //return false;
         }
 
         private List<KeyValuePair<int, List<int>>> getOrderIdsList(List<OrderModel> orders)

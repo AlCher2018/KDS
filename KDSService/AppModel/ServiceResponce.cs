@@ -14,11 +14,9 @@ namespace KDSService.AppModel
         public bool isExistsPrevOrders { get; set; }
         public bool isExistsNextOrders { get; set; }
 
-        // признак наличия нового заказа для данного клиента
-        public bool IsExistsNewOrder { get; set; }
-
         public string ServiceErrorMessage { get; set; }
 
+        public bool IsExistsNewOrder { get; set; }
 
         public ServiceResponce()
         {

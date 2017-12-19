@@ -48,6 +48,7 @@ namespace KDSService.AppModel
             _allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
+            _allowedKDSStatuses.Add((int)OrderStatusEnum.Took);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);

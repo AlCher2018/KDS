@@ -202,6 +202,12 @@ namespace KDSWPFClient
             // отображать ли заголовок ЗАКАЗА тем же статусом, что и ВСЕ, ОТОБРАЖАЕМЫЕ НА ДАННОМ КДС-е, блюда/ингредиенты
             setGlobBoolValueFromCfg("IsShowOrderStatusByAllShownDishes");
 
+            // флажок группировки блюд по наименованию и суммирования количество порций
+            setGlobBoolValueFromCfg("IsDishGroupAndSumQuatity", false);
+            // флажок отрисовки вкладок фильтра статусов по-отдельности
+            setGlobBoolValueFromCfg("IsSeparateStatusTabs", false);
+           
+
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
             setGlobIntValueFromCfg("OrdersColumnsCount", 4);        // кол-во столбцов заказов
             // масштабный коэффициент размера шрифтов панели заказа
