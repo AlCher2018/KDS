@@ -121,6 +121,8 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("IsIngredientsIndependent", true, cbxIngrClickable);
             _cfgValKeeper.AddPreValue("ShowTimerOnDependIngr", true, cbxIngrShowTimer);
             _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
+            _cfgValKeeper.AddPreValue("IsMultipleStatusTabs", true, cbxMultipleStatusTabs);
+            
 
             // получить от службы
             //AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");

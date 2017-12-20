@@ -326,6 +326,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="monitor7.ico" />
+    <Resource Include="Images\dishGroup.bmp" />
     <Content Include="Images\restartApp1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

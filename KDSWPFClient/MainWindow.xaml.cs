@@ -167,8 +167,9 @@ namespace KDSWPFClient
                 _wavPlayer.LoadAsync();
             }
 
-            cbxDishesGroup.Visibility = (Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase)) 
-                ? Visibility.Visible : Visibility.Hidden;
+            bool isVis = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuatity", false);
+//            isVis = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
+            cbxDishesGroup.Visibility = (isVis) ? Visibility.Visible : Visibility.Hidden;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -299,8 +300,10 @@ namespace KDSWPFClient
                     
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
-                    if ((_svcResp.OrdersList.Count == 0) && !_svcResp.ServiceErrorMessage.IsNull())
+                    if ((_svcResp.OrdersList.Count == 0) && (!_svcResp.ServiceErrorMessage.IsNull()))
                     {
+                        string sErr = " - от службы получено 0 заказов: ";
+                        // служба еще читает данные
                         if (_svcResp.ServiceErrorMessage.StartsWith("KDS service is reading data"))
                         {
                             if (_timer.Interval != 90)
@@ -308,7 +311,12 @@ namespace KDSWPFClient
                                 _timer.Interval = 90;
                                 AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
                             }
-                            AppLib.WriteLogOrderDetails(" - служба читает данные из БД...");
+                            AppLib.WriteLogOrderDetails(sErr + "служба читает данные из БД...");
+                        }
+                        // сообщение от службы об ошибке чтения данных
+                        else
+                        {
+                            AppLib.WriteLogErrorMessage(sErr + "ошибка службы: {0}", _svcResp.ServiceErrorMessage);
                         }
                     }
                     else
@@ -347,6 +355,12 @@ namespace KDSWPFClient
                             updateOrders(leafDirection);
                         }
 
+                        // поднять флаг проигрывания мелодии при появлении новых заказов
+                        if (!_isNeedSound)
+                        {
+                            _isNeedSound = true;
+                            AppLib.WriteLogTraceMessage("-- _isNeedSound = {0}", _isNeedSound.ToString());
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -449,13 +463,13 @@ namespace KDSWPFClient
                 // не проигрывать мелодию, если только изменились условия выборки/группировки заказов
                 // - в элементах управления: кнопки листания страниц, группировка заказов, группировка блюд, фильтр статусов, 
                 // - или в окне настроек: отображаемые цеха, отображаемые статусы, 
+                AppLib.WriteLogTraceMessage("** before sound play: _isNeedSound={0}, _isInit={1}",_isNeedSound.ToString(), _isInit.ToString());
                 if (_isNeedSound || _isInit)
                 {
                     _wavPlayer.Play();
                     // принудительно перерисовать с первого полученного заказа
                     _forceFromFirstOrder = true;
                 }
-                if (!_isNeedSound) _isNeedSound = true;
 
                 // перерисовать панели заказов на экране
                 if (!isViewRepaint2) isViewRepaint2 = true;
@@ -696,7 +710,7 @@ namespace KDSWPFClient
 
             dtTmr = DateTime.Now;
             _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-            AppLib.WriteLogOrderDetails("  - DRAW {0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteLogOrderDetails("  - DrawOrderPanelsOnPage(), dir-{0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
 
             // если при листании назад, первая панель находится НЕ в первой колонке, 
             // или, наоборот, в первой колонке и свободного места более половины,
@@ -708,7 +722,7 @@ namespace KDSWPFClient
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
                 _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-                AppLib.WriteLogOrderDetails("  - REDRAW forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
+                AppLib.WriteLogOrderDetails("  - re_DrawOrderPanelsOnPage() forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
             }
 
             dtTmr = DateTime.Now;
@@ -979,10 +993,17 @@ namespace KDSWPFClient
                 }
 
                 // обновить фильтр блюд
+                bool isUpdatedTabs = false;
+                if (cfgEdit.AppNewSettings.ContainsKey("IsMultipleStatusTabs"))
+                {
+                    bool newValue = cfgEdit.AppNewSettings["IsMultipleStatusTabs"].ToBool();
+                    setStatusTabs(newValue);
+                    isUpdatedTabs = true;
+                }
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSMode"))
                 {
                     setWindowsTitle();
-                    setStatusTabs(_isMultipleStatusTabs);
+                    if (!isUpdatedTabs) setStatusTabs(_isMultipleStatusTabs);
                 }
                 else if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates") 
                     && (cfgEdit.AppNewSettings["KDSModeSpecialStates"].IsNull() == false))
@@ -990,7 +1011,7 @@ namespace KDSWPFClient
                     if (KDSModeHelper.CurrentKDSMode != KDSModeEnum.Special) KDSModeHelper.CurrentKDSMode = KDSModeEnum.Special;
 
                     setWindowsTitle();
-                    setStatusTabs(_isMultipleStatusTabs);
+                    if (!isUpdatedTabs) setStatusTabs(_isMultipleStatusTabs);
                 }
 
                 bool resetMaxDishesCountOnPage = false;
@@ -1421,7 +1442,7 @@ namespace KDSWPFClient
 
         private void updateOrderStateFilter(KDSUserStatesSet newStatesSet)
         {
-            AppLib.WriteLogClientAction("Change Status Filter to " + newStatesSet.Name);
+            AppLib.WriteLogClientAction("Change Status Filter to '{0}'", newStatesSet.Name);
             _dishesFilter.SetAllowedStatuses(newStatesSet);
 
             List<int> statusesIDs = newStatesSet.States.Select(state => (int)state).ToList();
@@ -1518,18 +1539,18 @@ namespace KDSWPFClient
         {
             if (cbxDishesGroup.IsChecked ?? false)
             {
-                //_clientFilter.IsDishGroupAndSumQuatity = true;
-                //AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+                _clientFilter.IsDishGroupAndSumQuatity = true;
+                AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
             }
             else
             {
-                //_clientFilter.IsDishGroupAndSumQuatity = false;
-                //AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+                _clientFilter.IsDishGroupAndSumQuatity = false;
+                AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
             }
 
-            //_forceFromFirstOrder = true;
-            //_isNeedSound = false;  // без проигрывания мелодии
-            //getOrdersFromService(LeafDirectionEnum.NoLeaf);
+            _forceFromFirstOrder = true;
+            _isNeedSound = false;  // без проигрывания мелодии
+            getOrdersFromService(LeafDirectionEnum.NoLeaf);
         }
 
 

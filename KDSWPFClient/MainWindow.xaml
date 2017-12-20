@@ -57,12 +57,16 @@
                 <!-- зона вкладок -->
                 <StackPanel x:Name="pnlLeftTabs" Grid.Row="3" Background="Transparent"/>
 
-                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom" Width="100" HorizontalAlignment="Center" Margin="0,0,0,10" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" >
-                    <TextBlock TextWrapping="Wrap" Text="группировать блюда" FontSize="10"/>
+                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom"  HorizontalAlignment="Center" Margin="0,0,0,10" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" Visibility="Visible" Width="50">
+                    <TextBlock TextWrapping="Wrap" Text="групп блюда" FontSize="10"/>
                     <CheckBox.LayoutTransform>
                         <RotateTransform Angle="-90"/>
                     </CheckBox.LayoutTransform>
                 </CheckBox>
+                <!--<Border x:Name="btnGroupDish" Grid.Row="4" BorderBrush="DarkGray" BorderThickness="2" Margin="3" Height="20" CornerRadius="3" VerticalAlignment="Bottom" Visibility="Hidden">
+                    <Image Source="Images\dishGroup.bmp"/>
+                </Border>-->
+
             </Grid>
         </Border>
 

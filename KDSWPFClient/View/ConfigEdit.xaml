@@ -159,7 +159,10 @@
                 <cavCtl:NumericUpDown x:Name="tbxOrdersColumnsCount" Minimum="2" Maximum="10" Value="4" Width="90" IsVisibleRange="Visible" FontSize="24" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
 
-            <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+            <Grid Margin="10,10,0,0">
+                <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Left"/>
+                <CheckBox x:Name="cbxMultipleStatusTabs" Content="- использовать отдельные вкладки для отображаемых состояний" IsThreeState="False" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Right"/>
+            </Grid>
 
             <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (блюда на допнаправлении) НЕЗАВИСИМО от родительского блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12" Checked="cbxIngrClickable_Checked" Unchecked="cbxIngrClickable_Unchecked" />
             <CheckBox x:Name="cbxIngrShowTimer" Content="- отображать таймер для подчиненной позиции" Margin="40,5,0,0" VerticalAlignment="Center" TextBlock.FontSize="10"/>
