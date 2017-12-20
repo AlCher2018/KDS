@@ -205,7 +205,7 @@ namespace KDSWPFClient
             // флажок группировки блюд по наименованию и суммирования количество порций
             setGlobBoolValueFromCfg("IsDishGroupAndSumQuatity", false);
             // флажок отрисовки вкладок фильтра статусов по-отдельности
-            setGlobBoolValueFromCfg("IsSeparateStatusTabs", false);
+            setGlobBoolValueFromCfg("IsMultipleStatusTabs", false);
            
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ

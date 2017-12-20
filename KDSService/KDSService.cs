@@ -619,10 +619,11 @@ Contract: IMetadataExchange
                 }
 
                 // если появились новые заказы, то передать клиенту заказы с самого первого
-                retVal.IsExistsNewOrder = false;
-                if (curClient.IsAppearNewOrder(retValList))
+                List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);
+                if ((newOrdersList != null) && (newOrdersList.Count > 0))
                 {
-                    retVal.IsExistsNewOrder = true;
+                    // передать клиенту перечень Id новых заказов через ;
+                    retVal.NewOrderIds = string.Join(";", newOrdersList.Select(o => o.Id.ToString()));
                 //    clientFilter.EndpointOrderID = retValList[0].Id;
                 //    clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
                 }
@@ -672,7 +673,7 @@ Contract: IMetadataExchange
             int idxOrder = -1;
             List<OrderModel> orderList = svcResp.OrdersList;
 
-            if (svcResp.IsExistsNewOrder)
+            if (svcResp.NewOrderIds.IsNull() == false)
             {
                 idxOrder = 0;
             }

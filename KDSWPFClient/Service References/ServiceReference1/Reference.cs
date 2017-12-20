@@ -407,7 +407,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private bool IsExistsNewOrderField;
+        private string NewOrderIdsField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersListField;
@@ -432,14 +432,14 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public bool IsExistsNewOrder {
+        public string NewOrderIds {
             get {
-                return this.IsExistsNewOrderField;
+                return this.NewOrderIdsField;
             }
             set {
-                if ((this.IsExistsNewOrderField.Equals(value) != true)) {
-                    this.IsExistsNewOrderField = value;
-                    this.RaisePropertyChanged("IsExistsNewOrder");
+                if ((object.ReferenceEquals(this.NewOrderIdsField, value) != true)) {
+                    this.NewOrderIdsField = value;
+                    this.RaisePropertyChanged("NewOrderIds");
                 }
             }
         }

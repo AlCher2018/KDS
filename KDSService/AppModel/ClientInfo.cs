@@ -24,11 +24,6 @@ namespace KDSService.AppModel
         // причем Id заказа может повторяться
         private List<KeyValuePair<int, List<int>>> _currentOrderIdsList;
 
-        // временная внутренняя коллекция новых заказов для возврата вызывающему модулю 
-        // списка новых заказов для различных целей
-        private List<OrderModel> _newOrdersList;
-        public List<OrderModel> NewOrdersList { get { return _newOrdersList; } }
-
         // группировка по блюдам и суммирование количества
         public bool IsDishGroupAndSumQuatity { get; set; }
 
@@ -36,27 +31,35 @@ namespace KDSService.AppModel
         public ClientInfo()
         {
             _currentOrderIdsList = new List<KeyValuePair<int, List<int>>>();
-            _newOrdersList = new List<OrderModel>();
         }
 
 
         // orders - набор заказов для отображения их клиентом
-        public bool IsAppearNewOrder(List<OrderModel> orders)
+        public List<OrderModel> IsAppearNewOrder(List<OrderModel> orders)
         {
-            bool retVal = false;
+            List<OrderModel> newOrdersList = null;
 
             // собрать уникальные Id из переданного набора заказов
             List<KeyValuePair<int, List<int>>> uniqOrdersId = getOrderIdsList(orders);
             
-            // если дата запроса превышает 5 секунд, то хранимый набор заказов считается устаревшим и уничтожается
-            //if ((DateTime.Now - _lastRequestDate).TotalSeconds > 10) _currentOrderIdsList.Clear();
-            //_lastRequestDate = DateTime.Now;
+            // если дата запроса превышает 10 секунд, то хранимый набор заказов считается устаревшим и уничтожается
+            if ((DateTime.Now - _lastRequestDate).TotalSeconds > 10) _currentOrderIdsList.Clear();
+            _lastRequestDate = DateTime.Now;
 
             // сохраненного нет
             if (_currentOrderIdsList.Count == 0)
             {
-                // а для клиента есть
-                if (uniqOrdersId.Count > 0) retVal = true;
+                // а для клиента есть - вернуть переданный набор
+                if (uniqOrdersId.Count > 0)
+                {
+                    if (newOrdersList == null)
+                        newOrdersList = new List<OrderModel>(orders);
+                    else
+                    {
+                        newOrdersList.Clear();
+                        newOrdersList.AddRange(orders);
+                    }
+                }
             }
             else
             {
@@ -73,24 +76,26 @@ namespace KDSService.AppModel
                 excludeIds.Clear(); excludeIds = null;
 
                 // поиск клиентских заказов в сохраненном наборе
-                _newOrdersList.Clear();
+                if (newOrdersList == null)
+                    newOrdersList = new List<OrderModel>();
+                else
+                    newOrdersList.Clear();
                 foreach (KeyValuePair<int, List<int>> itemCheck in uniqOrdersId)
                 {
                     if (!findKVPair(itemCheck, _currentOrderIdsList))
                     {
-                        _newOrdersList.Add(orders.FirstOrDefault(o => o.Id == itemCheck.Key));
+                        newOrdersList.Add(orders.FirstOrDefault(o => o.Id == itemCheck.Key));
                     }
                 }
-                retVal = (_newOrdersList.Count > 0);
             }
 
             // сохранить новый набор Id-ов
-            if (retVal)
+            if (newOrdersList != null)
             {
                 _currentOrderIdsList = uniqOrdersId;
             }
 
-            return retVal;
+            return newOrdersList;
         }
 
 

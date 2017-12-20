@@ -16,7 +16,8 @@ namespace KDSService.AppModel
 
         public string ServiceErrorMessage { get; set; }
 
-        public bool IsExistsNewOrder { get; set; }
+        public string NewOrderIds { get; set; }
+
 
         public ServiceResponce()
         {
