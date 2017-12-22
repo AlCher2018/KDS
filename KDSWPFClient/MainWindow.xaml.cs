@@ -93,6 +93,8 @@ namespace KDSWPFClient
 
         public bool ClickPageButton { get; set; }
 
+        private AppLeftTabControl _tabDishGroup;
+
 
         // CONSTRUCTOR
         public MainWindow(string[] args)
@@ -166,10 +168,6 @@ namespace KDSWPFClient
                 _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
-
-            bool isVis = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuatity", false);
-//            isVis = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
-            cbxDishesGroup.Visibility = (isVis) ? Visibility.Visible : Visibility.Hidden;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -193,16 +191,42 @@ namespace KDSWPFClient
             double dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1);
             _tabOrderGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, "По времени", 0d);
             _tabOrderGroup.IsEnabled = true;
+            _tabOrderGroup.IsForceCallSetHeight = true;
             _tabOrderGroup.PreviewMouseDown += tbOrderGroup_MouseDown;
             _tabOrderGroup.SetValue(Grid.RowProperty, 1);
             grdUserConfig.Children.Add(_tabOrderGroup);
             setOrderGroupTab(false);
 
-            setStatusTabs((bool)WpfHelper.GetAppGlobalValue("IsMultipleStatusTabs"));
+            // контрол группировки блюд
+            _isMultipleStatusTabs = (bool)WpfHelper.GetAppGlobalValue("IsMultipleStatusTabs");
+            bool isVisibleDishGroupControl = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuatity", false);
+            //isVisibleDishGroupControl  = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
+            //cbxDishesGroup.Visibility = (isVisibleDishGroupControl ) ? Visibility.Visible : Visibility.Hidden;
+            dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5);
+            _tabDishGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, null, 0d);
+            _tabDishGroup.IsEnabled = true;
+            _tabDishGroup.IsForceCallSetHeight = true;
+            _tabDishGroup.PreviewMouseDown += _tabDishGroup_PreviewMouseDown;
+            _tabDishGroup.SetValue(Grid.RowProperty, 5);
+            grdUserConfig.Children.Add(_tabDishGroup);
+            _tabDishGroup.Tag = "ungroup";  // текущий режим группировки блюд
+            setDishGroupTabProperties();
+            if (isVisibleDishGroupControl)
+            {
+                _tabDishGroup.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                _tabDishGroup.Visibility = Visibility.Hidden;
+                if (_isMultipleStatusTabs) pnlLeftTabs.SetValue(Grid.RowSpanProperty, 3);
+            }
+
+            setStatusTabs(_isMultipleStatusTabs);
 
             SplashScreen.Splasher.CloseSplash();
             _isInit = false;
         }
+
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -296,6 +320,7 @@ namespace KDSWPFClient
 
                 try
                 {
+
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
                     
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
@@ -1077,6 +1102,14 @@ namespace KDSWPFClient
                     _wavPlayer.LoadAsync();
                 }
 
+                if (cfgEdit.AppNewSettings.ContainsKey("IsDishGroupAndSumQuatity"))
+                {
+                    bool isDishGroupTabVisible = cfgEdit.AppNewSettings["IsDishGroupAndSumQuatity"].ToBool();
+                    dishGroupTabVisibility(isDishGroupTabVisible);
+                    setStatusTabs(_isMultipleStatusTabs);
+                }
+
+
                 if (resetMaxDishesCountOnPage) _pageHelper.ResetMaxDishesCountOnPage();
 
                 if (isRequestOrders)
@@ -1288,8 +1321,15 @@ namespace KDSWPFClient
         private void setStatusTabs(bool newTabsMode)
         {
             _isMultipleStatusTabs = newTabsMode;
+            // сохранить статус текущей вкладки
+            string curStatesSetName = null;
+            foreach (AppLeftTabControl item in pnlLeftTabs.Children.OfType<AppLeftTabControl>())
+            {
+                if (item.IsEnabled) { curStatesSetName = item.StatesSet.Name; break; }
+            }
             // удалить предыдущие вкладки
             pnlLeftTabs.Children.Clear();
+            AppLeftTabControl tab;
 
             #region высота зоны вкладок
             double[] curRowHeights = grdUserConfig.RowDefinitions.Select(row => row.Height.Value).ToArray();
@@ -1297,12 +1337,30 @@ namespace KDSWPFClient
             if (_isMultipleStatusTabs)
             {
                 // увеличить зону вкладок (4-й элемент)
-                newRowHeights = new double[] { 1d, 1d, 0.3d, 4d, 0.5d };
+                /*
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="4*"/>
+                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.6*"/>
+                    <RowDefinition Height="0.3*"/>
+                 */
+                newRowHeights = new double[] { 1d, 1d, 0.3d, 4d, 0.3d, 0.6d, 0.3d };
             }
             else
             {
                 // уменьшить зону вкладок
-                newRowHeights = new double[] { 2d, 1d, 0.5d, 1d, 2d };
+                /*
+                    <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="1.2*"/>
+                    <RowDefinition Height="0.5*"/>
+                    <RowDefinition Height="1.2*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="0.5*"/>
+                 */
+                newRowHeights = new double[] { 1.5d, 1.2d, 0.5d, 1.2d, 1d, 0.7d, 0.5d };
             }
 
             // изменилась ли высота хоть какой-нибудь строки
@@ -1321,10 +1379,24 @@ namespace KDSWPFClient
                         grdUserConfig.RowDefinitions[i].Height = new GridLength(newRowHeights[i], GridUnitType.Star);
                     }
                 }
-                grdUserConfig.UpdateLayout();
 
-                // обновить высоту вкладки группировки заказов
-                _tabOrderGroup.SetHeight(WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1));
+                // обновить высоту вкладок, у которых установлен флаг принудительной установки высоты
+                foreach (UIElement item in grdUserConfig.Children)
+                {
+                    if (item is AppLeftTabControl)
+                    {
+                        tab = (item as AppLeftTabControl);
+                        if (tab.Visibility == Visibility.Visible)
+                        {
+                            if (tab.IsForceCallSetHeight)
+                            {
+                                int gridRow = (int)tab.GetValue(Grid.RowProperty);
+                                double newHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, gridRow);
+                                tab.SetHeight(newHeight);
+                            }
+                        }
+                    }
+                }
             }
             #endregion
 
@@ -1332,8 +1404,28 @@ namespace KDSWPFClient
             List<KDSUserStatesSet> curStatuses = KDSModeHelper.CurrentKDSStates.StateSets;
             if (curStatuses.Count == 0) return;
 
+            // расширение панели вкладок состояний в зависимости от видимости вкладки группировки блюд
+            if (!_isMultipleStatusTabs || (_tabDishGroup.Visibility == Visibility.Visible))
+            {
+                // снять расширение панели вкладок состояний
+                int rowSpan = System.Convert.ToInt32(pnlLeftTabs.GetValue(Grid.RowSpanProperty));
+                if (rowSpan > 1)
+                {
+                    pnlLeftTabs.SetValue(Grid.RowSpanProperty, 1);
+                }
+            }
+            else
+            {
+                // расширить панель вкладок состояний на несколько строк
+                int rowSpan = System.Convert.ToInt32(pnlLeftTabs.GetValue(Grid.RowSpanProperty));
+                if (rowSpan == 1)
+                {
+                    pnlLeftTabs.SetValue(Grid.RowSpanProperty, 3);
+                }
+            }
+
+            grdUserConfig.UpdateLayout();
             double tabsZoneHeight = pnlLeftTabs.ActualHeight;
-            AppLeftTabControl tab;
             // для каждого набора статусов отдельная вкладка
             if (_isMultipleStatusTabs)
             {
@@ -1385,11 +1477,30 @@ namespace KDSWPFClient
                 pnlLeftTabs.Children.Add(tab);
             }
 
-            // обновить пользовательские фильтры для первой кнопки
-            AppLeftTabControl firstTab = (AppLeftTabControl)pnlLeftTabs.Children[0];
-            firstTab.IsEnabled = true;
-            updateOrderStateFilter(firstTab.StatesSet);
-        }
+            // активизировать вкладку состояния
+            if ((_isInit) || (grdUserConfig == null))
+            {
+                // обновить пользовательские фильтры для первой кнопки
+                AppLeftTabControl firstTab = (AppLeftTabControl)pnlLeftTabs.Children[0];
+                firstTab.IsEnabled = true;
+                updateOrderStateFilter(firstTab.StatesSet);
+            }
+            else if (curStatesSetName != null)
+            {
+                foreach (AppLeftTabControl item in pnlLeftTabs.Children.OfType<AppLeftTabControl>())
+                {
+                    if (item.StatesSet.Name == curStatesSetName) {  item.IsEnabled = true; break; }
+                }
+            }
+
+            // проверка высоты вкладки группировки блюд
+            if (_tabDishGroup.Visibility == Visibility.Visible)
+            {
+                double dRow5Height = Math.Round(WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5), 2);
+                if (Math.Round(_tabDishGroup.ActualHeight, 2) != dRow5Height) _tabDishGroup.SetHeight(dRow5Height);
+            }
+
+        }  // method
 
 
         // перебор фильтров состояний по клику на вкладке
@@ -1456,6 +1567,94 @@ namespace KDSWPFClient
 
         #endregion
 
+        #region вкладка группировки блюд
+        private void _tabDishGroup_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            AppLeftTabControl tab = (AppLeftTabControl)sender;
+            if (tab.Tag != null)
+            {
+                string mode = System.Convert.ToString(tab.Tag);
+                if (mode == "group") mode = "ungroup"; else mode = "group";
+                tab.Tag = mode;
+
+                setDishGroupTabProperties();
+                dishGroupAction(mode);
+            }
+        }
+
+        private void setDishGroupTabProperties()
+        {
+            if (_tabDishGroup.Tag != null)
+            {
+                string mode = System.Convert.ToString(_tabDishGroup.Tag);
+                // текст на вкладке - для следующего состояния!
+                _tabDishGroup.Text = string.Format("{0}" + Environment.NewLine + "блюд",
+                    (mode == "group") ? "Разгруп." : "Групп.");
+            }
+        }
+
+        private void dishGroupAction(string mode)
+        {
+            if (mode == "group")
+            {
+                _clientFilter.IsDishGroupAndSumQuatity = true;
+                AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+            }
+            else
+            {
+                _clientFilter.IsDishGroupAndSumQuatity = false;
+                AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+            }
+
+            _forceFromFirstOrder = true;
+            _isNeedSound = false;  // без проигрывания мелодии
+            getOrdersFromService(LeafDirectionEnum.NoLeaf);
+        }
+
+        private void dishGroupTabVisibility(bool visible)
+        {
+            if (_tabDishGroup == null) return;
+
+            // отобразить вкладку
+            if ((_tabDishGroup.Visibility == Visibility.Hidden) && (visible == true))
+            {
+                _tabDishGroup.Visibility = Visibility.Visible;
+            }
+            // скрыть вкладку
+            else if ((_tabDishGroup.Visibility == Visibility.Visible) && (visible == false))
+            {
+                // отключить группировку блюд
+                if (_clientFilter.IsDishGroupAndSumQuatity == true)
+                {
+                    _clientFilter.IsDishGroupAndSumQuatity = false;
+                    AppLib.WriteLogClientAction("Запрос к службе: отключить группировку блюд, т.к. выключили соотв. вкладку");
+                    _forceFromFirstOrder = true;
+                    _isNeedSound = false;  // без проигрывания мелодии
+                    getOrdersFromService(LeafDirectionEnum.NoLeaf);
+                }
+
+                _tabDishGroup.Visibility = Visibility.Hidden;
+            }
+        }
+        private void cbxDishesGroup_Changed(object sender, RoutedEventArgs e)
+        {
+            //if (cbxDishesGroup.IsChecked ?? false)
+            //{
+            //    _clientFilter.IsDishGroupAndSumQuatity = true;
+            //    AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+            //}
+            //else
+            //{
+            //    _clientFilter.IsDishGroupAndSumQuatity = false;
+            //    AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+            //}
+
+            //_forceFromFirstOrder = true;
+            //_isNeedSound = false;  // без проигрывания мелодии
+            //getOrdersFromService(LeafDirectionEnum.NoLeaf);
+        }
+
+        #endregion
 
         #region Event Handlers
 
@@ -1534,25 +1733,6 @@ namespace KDSWPFClient
             _adminDate = DateTime.MaxValue;
             e.Handled = true;
         }
-
-        private void cbxDishesGroup_Changed(object sender, RoutedEventArgs e)
-        {
-            if (cbxDishesGroup.IsChecked ?? false)
-            {
-                _clientFilter.IsDishGroupAndSumQuatity = true;
-                AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
-            }
-            else
-            {
-                _clientFilter.IsDishGroupAndSumQuatity = false;
-                AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
-            }
-
-            _forceFromFirstOrder = true;
-            _isNeedSound = false;  // без проигрывания мелодии
-            getOrdersFromService(LeafDirectionEnum.NoLeaf);
-        }
-
 
         // переписывание панелей из bufferOrderPanels в vbxOrders.Child
         private void movePanelsToView()

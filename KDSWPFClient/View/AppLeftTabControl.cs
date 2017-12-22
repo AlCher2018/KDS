@@ -36,6 +36,9 @@ namespace KDSWPFClient.View
             set { setEnabled(value); }
         }
 
+        // флаг необходимости принудительного вызова метода SetHeight при изменении высоты внешнего контейнера
+        public bool IsForceCallSetHeight { get; set; }
+
 
         // CTOR
         public AppLeftTabControl(double controlPanelWidth, double height, string text, double topKoef)
@@ -73,6 +76,7 @@ namespace KDSWPFClient.View
                 Text = text,
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeights.Bold,
+                TextAlignment = TextAlignment.Center,
                 Margin = new Thickness(0.15 * dWidthBase, 0, 0.15 * dWidthBase, 0.07 * dWidthBase)
             };
             viewBox.Child = tBlock;

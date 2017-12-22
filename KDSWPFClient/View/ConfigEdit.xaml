@@ -164,8 +164,11 @@
                 <CheckBox x:Name="cbxMultipleStatusTabs" Content="- использовать отдельные вкладки для отображаемых состояний" IsThreeState="False" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Right"/>
             </Grid>
 
-            <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (блюда на допнаправлении) НЕЗАВИСИМО от родительского блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12" Checked="cbxIngrClickable_Checked" Unchecked="cbxIngrClickable_Unchecked" />
-            <CheckBox x:Name="cbxIngrShowTimer" Content="- отображать таймер для подчиненной позиции" Margin="40,5,0,0" VerticalAlignment="Center" TextBlock.FontSize="10"/>
+            <Grid Margin="10,0,0,0">
+                <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (блюда на допнаправлении) НЕЗАВИСИМО от родительского блюда" VerticalAlignment="Center" TextBlock.FontSize="12" Checked="cbxIngrClickable_Checked" Unchecked="cbxIngrClickable_Unchecked" HorizontalAlignment="Left" />
+                <CheckBox x:Name="cbxTabDishGroup" Content="- вкладка группировки блюд" IsThreeState="False" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Right"/>
+            </Grid>
+            <CheckBox x:Name="cbxIngrShowTimer" Content="- отображать таймер для подчиненной позиции" Margin="40,0,0,0" VerticalAlignment="Center" TextBlock.FontSize="10"/>
 
             <CheckBox x:Name="cbxShowOrderStatusByAllShownDishes" Content="отображать ли заголовок ЗАКАЗА тем же статусом, что и все, ОТОБРАЖАЕМЫЕ на данном КДС-е, блюда/ингредиенты" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 

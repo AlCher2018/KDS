@@ -130,6 +130,7 @@ namespace KDSWPFClient.View
             if (_shiftForward) { curColIndex = 1; curTopValue = 0; }
             else { curColIndex = _pageColsCount; curTopValue = _colHeight; }
             double freeHeight = getFreeHeight();
+            if (orderStartIndex < 0) orderStartIndex = 0;
 
             // цикл по заказам
             for (int iOrd = orderStartIndex;
@@ -389,8 +390,9 @@ namespace KDSWPFClient.View
                                 DishDelimeterPanel contPanel = createContinuePanel(false);
                                 double delimPanelsHeight = _continuePanelHeight;
 
+                                // поиск номера подачи в блоке тек.панели (та, что остается на тек.странице)
                                 DishDelimeterPanel filingPanel = null;
-                                curBlock = getNextItemsBlock(curPanel, true, true);
+                                curBlock = getNextItemsBlock(curPanel, false, true); // блок НЕ удаляем!!
                                 if (curBlock != null)
                                 {
                                     int filingNumber = getFilingNumber(curBlock);
@@ -398,32 +400,33 @@ namespace KDSWPFClient.View
                                     {
                                         filingPanel = createFilingPanel(filingNumber);
                                         // измерить высоту панели номера подачи
-                                        measurePanel(filingPanel);
-                                        double pnlHeight = getBlockHeight(new FrameworkElement[] { filingPanel });
-                                        delimPanelsHeight += pnlHeight;
+                                        //measurePanel(filingPanel);
+                                        //double pnlHeight = getBlockHeight(new FrameworkElement[] { filingPanel });
+                                        //delimPanelsHeight += pnlHeight;
                                     }
                                 }
 
-                                bool keepPanel = false;
-                                // если разделитель не помещается, то удалить следующий блок из текущей панели
-                                if (curPanelHeight + delimPanelsHeight > freeHeight)
-                                {
-                                    curBlock = getNextItemsBlock(curPanel, true, true);
-                                    // после удаления первого блока из текущ.панели остались блюда - добавляем разделитель
-                                    if ((curBlock != null) && (curPanel.ItemsCount > 0))
-                                    {
-                                        keepPanel = true;
-                                    }
-                                    // иначе удаляем весь заказ со страницы - будет отрисован на предыду.странице
-                                    else
-                                    {
-                                        _canvas.Children.Remove(curPanel);
-                                    }
-                                }
-                                else
-                                {
-                                    keepPanel = true;
-                                }
+                                bool keepPanel = true;
+                                //bool keepPanel = false;
+                                //// если разделитель не помещается, то удалить следующий блок из текущей панели
+                                //if (curPanelHeight + delimPanelsHeight > freeHeight)
+                                //{
+                                //    curBlock = getNextItemsBlock(curPanel, true, true);
+                                //    // после удаления первого блока из текущ.панели остались блюда - добавляем разделитель
+                                //    if ((curBlock != null) && (curPanel.ItemsCount > 0))
+                                //    {
+                                //        keepPanel = true;
+                                //    }
+                                //    // иначе удаляем весь заказ со страницы - будет отрисован на предыду.странице
+                                //    else
+                                //    {
+                                //        _canvas.Children.Remove(curPanel);
+                                //    }
+                                //}
+                                //else
+                                //{
+                                //    keepPanel = true;
+                                //}
 
                                 // вставить разделители
                                 if (keepPanel)
@@ -660,7 +663,8 @@ namespace KDSWPFClient.View
             bool retVal = false;
             // несколько панелей - цикл по панелям на странице
             // признак переразмещения: 
-            // 1. свободное место по вертикали между соседними панелями в одной колонке больше _hdrTopMargin
+            // 1. свободное место по вертикали между соседними панелями в одной колонке 
+            //    больше (или в два раза меньше, 2017-12-21) _hdrTopMargin
             // 2. если панели одного заказа и следующая панель начинается со следующей колонки (или Top==0) и блок из следующей панели можно разместить в свободном месте в конце предыдущей колонки
             OrderPanel prePanel, nextPanel = (OrderPanel)_canvas.Children[0];
             double prePanelTop, prePanelHeight, nextPanelTop, freeSpace, h1;
@@ -676,7 +680,8 @@ namespace KDSWPFClient.View
                 {
                     nextPanelTop = (double)nextPanel.GetValue(Canvas.TopProperty);
                     freeSpace = nextPanelTop - (prePanelTop + prePanelHeight);
-                    if (freeSpace > _hdrTopMargin) { retVal = true; break;}
+                    if (freeSpace > _hdrTopMargin) { retVal = true; break; }
+                    if (freeSpace < (_hdrTopMargin / 2.0d)) { retVal = true; break; }
                 }
                 // проверка на пустую колонку
                 else if ((nextPanel.CanvasColumnIndex - prePanel.CanvasColumnIndex) > 1)

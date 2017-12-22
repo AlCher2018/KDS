@@ -89,6 +89,7 @@
     <Compile Include="AppModel\AppActionEnum.cs" />
     <Compile Include="AppModel\ClientDataFilter.cs" />
     <Compile Include="AppModel\ClientInfo.cs" />
+    <Compile Include="AppModel\DishWithQty.cs" />
     <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="AppModel\ModelDicts.cs" />
     <Compile Include="AppModel\OrderDishModel.cs" />

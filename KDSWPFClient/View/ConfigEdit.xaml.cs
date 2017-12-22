@@ -122,6 +122,7 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValue("ShowTimerOnDependIngr", true, cbxIngrShowTimer);
             _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
             _cfgValKeeper.AddPreValue("IsMultipleStatusTabs", true, cbxMultipleStatusTabs);
+            _cfgValKeeper.AddPreValue("IsDishGroupAndSumQuatity", true, cbxTabDishGroup);
             
 
             // получить от службы

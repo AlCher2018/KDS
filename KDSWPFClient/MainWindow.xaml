@@ -35,16 +35,18 @@
             </Border.Background>
             <Grid x:Name="grdUserConfig">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="1.2*"/>
                     <RowDefinition Height="0.5*"/>
+                    <RowDefinition Height="1.2*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="0.5*"/>
                 </Grid.RowDefinitions>
 
                 <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,20,0,0" VerticalAlignment="Top" Click="button_Click" Visibility="Visible"/>
                 
-                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Center" Margin="0,30" Background="Transparent" Height="100"   PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
+                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Center" Margin="0,0,0,10" Background="Transparent" Height="100"   PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
                     <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Foreground="Gray" FontSize="18" RenderTransformOrigin="0.5,0.5" Margin="-28,37" Width="87">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
@@ -57,12 +59,12 @@
                 <!-- зона вкладок -->
                 <StackPanel x:Name="pnlLeftTabs" Grid.Row="3" Background="Transparent"/>
 
-                <CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom"  HorizontalAlignment="Center" Margin="0,0,0,10" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" Visibility="Visible" Width="50">
+                <!--<CheckBox x:Name="cbxDishesGroup" Grid.Row="4" VerticalAlignment="Bottom"  HorizontalAlignment="Center" Margin="0,0,0,10" IsThreeState="False" Checked="cbxDishesGroup_Changed" Unchecked="cbxDishesGroup_Changed" Visibility="Visible" Width="50">
                     <TextBlock TextWrapping="Wrap" Text="групп блюда" FontSize="10"/>
                     <CheckBox.LayoutTransform>
                         <RotateTransform Angle="-90"/>
                     </CheckBox.LayoutTransform>
-                </CheckBox>
+                </CheckBox>-->
                 <!--<Border x:Name="btnGroupDish" Grid.Row="4" BorderBrush="DarkGray" BorderThickness="2" Margin="3" Height="20" CornerRadius="3" VerticalAlignment="Bottom" Visibility="Hidden">
                     <Image Source="Images\dishGroup.bmp"/>
                 </Border>-->

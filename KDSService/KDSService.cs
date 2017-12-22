@@ -567,44 +567,136 @@ Contract: IMetadataExchange
                 if (clientFilter.IsDishGroupAndSumQuatity)
                 {
                     #region IsDishGroupAndSumQuatity
-                    OrderDishModel tmpDish, curDish;
-                    List<int> delDishKeys = new List<int>();
+                    List<OrderDishModel> dmIngrs;
+                    // набор уникальных блюд вместе с набором уникальных ингредиентов для текущего заказа
+                    List<Tuple<DishWithQty, List<DishWithQty>>> uniqDishList = new List<Tuple<DishWithQty, List<DishWithQty>>>();
+                    // набор уникальных ингредиетов (c кол-вом порций) для текущего блюда
+                    List<DishWithQty> uniqIngrList = new List<DishWithQty>();
+                    // буфера для удаления повторяющихся блюд/ингредиентов
+                    List<int> delDishIds = new List<int>();
+                    List<int> delIngrIds = new List<int>();
+                    int i = 0;
+
                     foreach (OrderModel ord in retValList)
                     {
                         if (ord.Dishes.Count <= 1) continue;
 
-                        // найти одинаковые блюда, сложить их количество порций в первое блюдо с таким же набором параметров и удалить их из набора блюд заказа
-                        try
+                        uniqDishList.Clear();
+                        delDishIds.Clear();
+                        // цикл по блюдам
+                        List<OrderDishModel> dishes = ord.Dishes.Values.Where(d => d.ParentUid.IsNull()).ToList();
+                        foreach (OrderDishModel dm in dishes)
                         {
-                            delDishKeys.Clear();
-                            for (int i = 1; i < ord.Dishes.Count; i++)
+                            // ингредиенты текущего блюда
+                            dmIngrs = ord.Dishes.Values.Where(d => (d.ParentUid != null) && (d.ParentUid == dm.Uid)).ToList();  // набор создается, даже если элементы не найдены, Count = 0
+
+                            // сложить одинаковые ингредиенты
+                            if (dmIngrs.Count > 0)
                             {
-                                tmpDish = ord.Dishes.ElementAt(i).Value;
-                                // цикл по предыдущим блюдам для поиска первого такого же
-                                for (int j = 0; j < i; j++)
+                                #region сложить одинаковые ингредиенты
+                                uniqIngrList.Clear();  // набор, содержащий уникальные ингредиенты данного блюда
+                                delIngrIds.Clear();
+                                // цикл по ингр.текущего блюда
+                                foreach (OrderDishModel dmIngr in dmIngrs)
                                 {
-                                    curDish = ord.Dishes.ElementAt(j).Value;
-                                    if (
-                                        (tmpDish.DepartmentId == curDish.DepartmentId)
-                                        && (tmpDish.DishStatusId == curDish.DishStatusId)
-                                        && (tmpDish.FilingNumber == curDish.FilingNumber)
-                                        && (tmpDish.ParentUid == curDish.ParentUid)
-                                        && (tmpDish.Comment == curDish.Comment)
-                                        && (tmpDish.CreateDate == curDish.CreateDate)
-                                        && (tmpDish.UID1C == curDish.UID1C)
-                                        )
+                                    i = 0;
+                                    for (; i < uniqIngrList.Count; i++)
                                     {
-                                        curDish.Quantity += tmpDish.Quantity;
-                                        delDishKeys.Add(tmpDish.Id);
-                                        break;
+                                        if (compareIngredientsForGroup(uniqIngrList[i].DishModel, dmIngr)) break;
+                                    }
+                                    // ингр.не найден - добавить в набор уникальных ингредиентов
+                                    if (i == uniqIngrList.Count)
+                                    {
+                                        uniqIngrList.Add(new DishWithQty(dmIngr));
+                                    }
+                                    // ингр.найден - складываем кол-во порций
+                                    else
+                                    {
+                                        uniqIngrList[i].Quantity += dmIngr.Quantity;
+                                        delIngrIds.Add(dmIngr.Id);
                                     }
                                 }
+
+                                // если есть одинаковые ингредиенты, то удалить их из набора блюд заказа и dmIngrs
+                                if (delIngrIds.Count > 0)
+                                {
+                                    delIngrIds.ForEach(id =>
+                                        {
+                                            ord.Dishes.Remove(id);
+                                            dmIngrs.RemoveAll(dmI => dmI.Id == id);
+                                        });
+                                    delIngrIds.Clear();
+                                }
+
+                                // перенести количество в retValList
+                                if (uniqIngrList.Count > 0)
+                                {
+                                    uniqIngrList.ForEach(uniqDish =>
+                                        {
+                                            if (ord.Dishes[uniqDish.DishModel.Id].Quantity != uniqDish.Quantity)
+                                                ord.Dishes[uniqDish.DishModel.Id].Quantity = uniqDish.Quantity;
+                                        });
+                                    uniqIngrList.Clear();
+                                }
+
+                                // получить заново набор уникальных ингредиентов
+                                dmIngrs = ord.Dishes.Values.Where(d => (d.ParentUid != null) && (d.ParentUid == dm.Uid)).ToList();
+                                #endregion
                             }
-                            if (delDishKeys.Count != 0) delDishKeys.ForEach(dd => ord.Dishes.Remove(dd));
+
+                            // поиск dm в uniqDishList
+                            for (i = 0; i < uniqDishList.Count; i++)
+                            {
+                                if (compareDishesWithIngredients(uniqDishList[i].Item1, uniqDishList[i].Item2, dm, dmIngrs)) break;
+                            }
+                            // блюдо не найдено - добавить
+                            if (i == uniqDishList.Count)
+                            {
+                                uniqDishList.Add(new Tuple<DishWithQty, List<DishWithQty>>(
+                                    new DishWithQty(dm),
+                                    dmIngrs.Select(ingr => new DishWithQty(ingr)).ToList()));
+                            }
+                            // блюдо найдено - сложить количество (в retValList) и удалить блюдо dm с его ингредиентами dmIngrs из ord.Dishes
+                            else
+                            {
+                                // порции блюда
+                                uniqDishList[i].Item1.Quantity += dm.Quantity;
+                                delIngrIds.Add(dm.Id);
+
+                                // порции ингредиентов
+                                for (int j = 0; j < uniqDishList[i].Item2.Count; j++)
+                                {
+                                    uniqDishList[i].Item2[j].Quantity += dmIngrs[j].Quantity;
+                                    delDishIds.Add(dmIngrs[j].Id);
+                                }
+                                delDishIds.Add(dm.Id);
+                                break;
+                            }
                         }
-                        catch (Exception ex)
+
+                        // если есть одинаковые блюда, то удалить их из набора блюд заказа
+                        if (delDishIds.Count > 0)
                         {
-                            string sErr = ex.ToString();
+                            delDishIds.ForEach(id => ord.Dishes.Remove(id));
+                            delDishIds.Clear();
+                        }
+
+                        // перенести количество в retValList
+                        if (uniqDishList.Count > 0)
+                        {
+                            uniqDishList.ForEach(uniqDish =>
+                            {
+                                // блюдо
+                                if (ord.Dishes[uniqDish.Item1.DishModel.Id].Quantity != uniqDish.Item1.Quantity)
+                                    ord.Dishes[uniqDish.Item1.DishModel.Id].Quantity = uniqDish.Item1.Quantity;
+                                // ингредиенты
+                                uniqDish.Item2.ForEach(uniqIngr => 
+                                {
+                                    if (ord.Dishes[uniqIngr.DishModel.Id].Quantity != uniqIngr.Quantity)
+                                        ord.Dishes[uniqIngr.DishModel.Id].Quantity = uniqIngr.Quantity;
+                                });
+                            });
+                            uniqDishList.Clear();
                         }
                     }
                     #endregion
@@ -648,6 +740,52 @@ Contract: IMetadataExchange
             AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
             return retVal;
         }
+
+        // сравнение только блюд, НЕ ингредиентов, т.е. ParentUid = null
+        private bool compareDishesForGroup(OrderDishModel dm1, OrderDishModel dm2)
+        {
+            return (dm1.DepartmentId == dm2.DepartmentId)
+                && (dm1.DishStatusId == dm2.DishStatusId)
+                && (dm1.FilingNumber == dm2.FilingNumber)
+                && (dm1.Comment == dm2.Comment)
+                && (dm1.CreateDate == dm2.CreateDate)
+                && (dm1.UID1C == dm2.UID1C);
+        }
+        // сравнение ингредиентов (ParentUid != null)
+        private bool compareIngredientsForGroup(OrderDishModel ingr1, OrderDishModel ingr2)
+        {
+            return (ingr1.DepartmentId == ingr2.DepartmentId)
+                && (ingr1.DishStatusId == ingr2.DishStatusId)
+                && (ingr1.FilingNumber == ingr2.FilingNumber)
+                && (ingr1.Comment == ingr2.Comment)
+                && (ingr1.CreateDate == ingr2.CreateDate)
+                && (ingr1.UID1C == ingr2.UID1C);
+        }
+        private bool compareDishesWithIngredients(
+            DishWithQty dish1, List<DishWithQty> dish1Ingrs, 
+            OrderDishModel dish2, List<OrderDishModel> dish2Ingrs)
+        {
+            bool retVal = false;
+            if (compareDishesForGroup(dish1.DishModel, dish2))
+            {
+                if ((dish1Ingrs.Count == 0) && (dish2Ingrs.Count == 0))
+                    retVal = true;
+                else if (dish1Ingrs.Count == dish2Ingrs.Count)
+                {
+                    retVal = true;
+                    for (int i = 0; i < dish1Ingrs.Count; i++)
+                    {
+                        if (compareIngredientsForGroup(dish1Ingrs[i].DishModel, dish2Ingrs[i]) == false)
+                        {
+                            retVal = false; break;
+                        }
+                    }
+                }
+            }
+
+            return retVal;
+        }
+
 
         private int getTotalItemsCount(List<OrderModel> ordersList)
         {
