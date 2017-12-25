@@ -744,6 +744,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private int FilingNumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string GroupedDishIdsField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -864,6 +867,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((this.FilingNumberField.Equals(value) != true)) {
                     this.FilingNumberField = value;
                     this.RaisePropertyChanged("FilingNumber");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string GroupedDishIds {
+            get {
+                return this.GroupedDishIdsField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.GroupedDishIdsField, value) != true)) {
+                    this.GroupedDishIdsField = value;
+                    this.RaisePropertyChanged("GroupedDishIds");
                 }
             }
         }

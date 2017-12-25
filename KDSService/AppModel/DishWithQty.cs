@@ -11,6 +11,9 @@ namespace KDSService.AppModel
     {
         public OrderDishModel DishModel { get; set; }
 
+        private List<int> _groupedIds;
+
+
         public decimal Quantity { get; set; }
 
         public DishWithQty()
@@ -21,6 +24,20 @@ namespace KDSService.AppModel
         {
             this.DishModel = dishModel;
             this.Quantity = dishModel.Quantity;
+        }
+
+        public void AddGroupedId(int id)
+        {
+            if (_groupedIds == null) _groupedIds = new List<int>();
+            _groupedIds.Add(id);
+        }
+
+        public string GetGroupedIds()
+        {
+            if (_groupedIds == null)
+                return null;
+            else
+                return string.Join(";", _groupedIds);
         }
 
     }  // class

@@ -102,6 +102,7 @@
       <xs:element minOccurs="0" name="DishStatusId" type="xs:int" />
       <xs:element minOccurs="0" name="EstimatedTime" type="xs:int" />
       <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />
+      <xs:element minOccurs="0" name="GroupedDishIds" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="ParentUid" nillable="true" type="xs:string" />

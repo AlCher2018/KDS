@@ -566,7 +566,7 @@ Contract: IMetadataExchange
                 // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
                 if (clientFilter.IsDishGroupAndSumQuatity)
                 {
-                    #region IsDishGroupAndSumQuatity
+                    #region IsDishGroupAndSumQuatity == true
                     List<OrderDishModel> dmIngrs;
                     // набор уникальных блюд вместе с набором уникальных ингредиентов для текущего заказа
                     List<Tuple<DishWithQty, List<DishWithQty>>> uniqDishList = new List<Tuple<DishWithQty, List<DishWithQty>>>();
@@ -613,6 +613,7 @@ Contract: IMetadataExchange
                                     else
                                     {
                                         uniqIngrList[i].Quantity += dmIngr.Quantity;
+                                        uniqIngrList[i].AddGroupedId(dmIngr.Id);
                                         delIngrIds.Add(dmIngr.Id);
                                     }
                                 }
@@ -633,8 +634,10 @@ Contract: IMetadataExchange
                                 {
                                     uniqIngrList.ForEach(uniqDish =>
                                         {
-                                            if (ord.Dishes[uniqDish.DishModel.Id].Quantity != uniqDish.Quantity)
-                                                ord.Dishes[uniqDish.DishModel.Id].Quantity = uniqDish.Quantity;
+                                            i = uniqDish.DishModel.Id;
+                                            if (ord.Dishes[i].Quantity != uniqDish.Quantity)
+                                                ord.Dishes[i].Quantity = uniqDish.Quantity;
+                                            ord.Dishes[i].GroupedDishIds = uniqDish.GetGroupedIds();
                                         });
                                     uniqIngrList.Clear();
                                 }
@@ -661,16 +664,16 @@ Contract: IMetadataExchange
                             {
                                 // порции блюда
                                 uniqDishList[i].Item1.Quantity += dm.Quantity;
-                                delIngrIds.Add(dm.Id);
+                                uniqDishList[i].Item1.AddGroupedId(dm.Id);
 
                                 // порции ингредиентов
                                 for (int j = 0; j < uniqDishList[i].Item2.Count; j++)
                                 {
                                     uniqDishList[i].Item2[j].Quantity += dmIngrs[j].Quantity;
+                                    uniqDishList[i].Item2[j].AddGroupedId(dmIngrs[j].Id);
                                     delDishIds.Add(dmIngrs[j].Id);
                                 }
                                 delDishIds.Add(dm.Id);
-                                break;
                             }
                         }
 
@@ -687,16 +690,34 @@ Contract: IMetadataExchange
                             uniqDishList.ForEach(uniqDish =>
                             {
                                 // блюдо
-                                if (ord.Dishes[uniqDish.Item1.DishModel.Id].Quantity != uniqDish.Item1.Quantity)
-                                    ord.Dishes[uniqDish.Item1.DishModel.Id].Quantity = uniqDish.Item1.Quantity;
+                                i = uniqDish.Item1.DishModel.Id;
+                                if (ord.Dishes[i].Quantity != uniqDish.Item1.Quantity)
+                                    ord.Dishes[i].Quantity = uniqDish.Item1.Quantity;
+                                ord.Dishes[i].GroupedDishIds = uniqDish.Item1.GetGroupedIds();
+
                                 // ингредиенты
-                                uniqDish.Item2.ForEach(uniqIngr => 
+                                uniqDish.Item2.ForEach(uniqIngr =>
                                 {
-                                    if (ord.Dishes[uniqIngr.DishModel.Id].Quantity != uniqIngr.Quantity)
-                                        ord.Dishes[uniqIngr.DishModel.Id].Quantity = uniqIngr.Quantity;
+                                    i = uniqIngr.DishModel.Id;
+                                    if (ord.Dishes[i].Quantity != uniqIngr.Quantity)
+                                        ord.Dishes[i].Quantity = uniqIngr.Quantity;
+                                    ord.Dishes[i].GroupedDishIds = uniqIngr.GetGroupedIds();
                                 });
                             });
                             uniqDishList.Clear();
+                        }
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region IsDishGroupAndSumQuatity == false
+                    foreach (OrderModel ord in retValList)
+                    {
+                        if (ord.Dishes.Count <= 1) continue;
+                        foreach (OrderDishModel dm in ord.Dishes.Values)
+                        {
+                            if (dm.GroupedDishIds != null) dm.GroupedDishIds = null;
                         }
                     }
                     #endregion

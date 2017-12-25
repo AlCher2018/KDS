@@ -420,6 +420,15 @@ namespace KDSWPFClient
 
             // изменить статус блюда
             dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+            // есть ли сгруппированные блюда
+            if (dishModel.GroupedDishIds.IsNull() == false)
+            {
+                int[] ids = dishModel.GroupedDishIds.Split(';').Select(sId => sId.ToInt()).ToArray();
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                }
+            }
 
             // если блюдо, то изменить статус ингредиентов
             if (dishModel.ParentUID.IsNull())
@@ -437,7 +446,19 @@ namespace KDSWPFClient
                             || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
                             || (newState == OrderStatusEnum.Took)
                             || (newState == OrderStatusEnum.CancelConfirmed))
+                        {
                             dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+
+                            // если есть сгруппированные ингредиенты
+                            if (ingr.GroupedDishIds.IsNull() == false)
+                            {
+                                int[] ids = ingr.GroupedDishIds.Split(';').Select(sId => sId.ToInt()).ToArray();
+                                for (int i = 0; i < ids.Length; i++)
+                                {
+                                    dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                                }
+                            }
+                        }
                     }
                 }
             }

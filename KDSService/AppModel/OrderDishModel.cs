@@ -76,6 +76,9 @@ namespace KDSService.AppModel
         [DataMember]
         public string ServiceErrorMessage { get { return _serviceErrorMessage; } set { } }
 
+        [DataMember]
+        public string GroupedDishIds { get; set; }
+
         // форматированное представление временного промежутка для внешних клиентов
         // изменение значения таймера в зависимости от различных периодов ожидания и задержек, 
         // осуществляется на КЛИЕНТЕ!
@@ -660,7 +663,14 @@ namespace KDSService.AppModel
                     break;
 
                 case OrderStatusEnum.Took:
-                    if (dateEntered.IsZero() == false) _dbRunTimeRecord.TakeDate = dateEntered;
+                    if (dateEntered.IsZero() == false)
+                    {
+                        _dbRunTimeRecord.TakeDate = dateEntered;
+                        // если предыдущие DTS пустые, то заполнить начальными значениями
+                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                        if (_dbRunTimeRecord.ReadyDate == null) setStatusRunTimeDTS(OrderStatusEnum.Ready, dateEntered, 0);
+                    }
                     if (timeStanding >= 0) _dbRunTimeRecord.WaitingCommitTS = timeStanding;
                     break;
 
@@ -830,6 +840,7 @@ namespace KDSService.AppModel
         }
 
         #endregion
+
 
         public void Dispose()
         {

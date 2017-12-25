@@ -54,6 +54,9 @@ namespace KDSWPFClient.ViewModel
 
         public string ServiceErrorMessage { get; set; }
 
+        public string GroupedDishIds { get; set; }
+
+
         public string WaitingTimerString { get; set; }
 
         public string ViewTimerString { get; set; }
@@ -73,6 +76,7 @@ namespace KDSWPFClient.ViewModel
         TimeSpan _expTakeTS;
         // период времени (в секундах), по истечении которого происходит автоматический переход из состояния Готово в ПодтвГотово
         TimeSpan _autoGotoReadyConfirmTS, _savedReadyTS;
+
 
 
         // CONSTRUCTORS
@@ -104,6 +108,7 @@ namespace KDSWPFClient.ViewModel
             DelayedStartTime = svcOrderDish.DelayedStartTime;
             EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
+            GroupedDishIds = svcOrderDish.GroupedDishIds;
 
             WaitingTimerString = svcOrderDish.WaitingTimerString;
 
