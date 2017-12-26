@@ -26,7 +26,7 @@ namespace KDSService.AppModel
         public int ApproxMaxDishesCountOnPage { get; set; }
 
         // группировка по блюдам и суммирование количества
-        public bool IsDishGroupAndSumQuatity { get; set; }
+        public bool IsDishGroupAndSumQuantity { get; set; }
 
         public override string ToString()
         {

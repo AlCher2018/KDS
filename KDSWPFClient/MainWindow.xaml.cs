@@ -199,7 +199,7 @@ namespace KDSWPFClient
 
             // контрол группировки блюд
             _isMultipleStatusTabs = (bool)WpfHelper.GetAppGlobalValue("IsMultipleStatusTabs");
-            bool isVisibleDishGroupControl = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuatity", false);
+            bool isVisibleDishGroupControl = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuantity", false);
             //isVisibleDishGroupControl  = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
             //cbxDishesGroup.Visibility = (isVisibleDishGroupControl ) ? Visibility.Visible : Visibility.Hidden;
             dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5);
@@ -1102,9 +1102,9 @@ namespace KDSWPFClient
                     _wavPlayer.LoadAsync();
                 }
 
-                if (cfgEdit.AppNewSettings.ContainsKey("IsDishGroupAndSumQuatity"))
+                if (cfgEdit.AppNewSettings.ContainsKey("IsDishGroupAndSumQuantity"))
                 {
-                    bool isDishGroupTabVisible = cfgEdit.AppNewSettings["IsDishGroupAndSumQuatity"].ToBool();
+                    bool isDishGroupTabVisible = cfgEdit.AppNewSettings["IsDishGroupAndSumQuantity"].ToBool();
                     dishGroupTabVisibility(isDishGroupTabVisible);
                     setStatusTabs(_isMultipleStatusTabs);
                 }
@@ -1597,12 +1597,12 @@ namespace KDSWPFClient
         {
             if (mode == "group")
             {
-                _clientFilter.IsDishGroupAndSumQuatity = true;
+                _clientFilter.IsDishGroupAndSumQuantity = true;
                 AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
             }
             else
             {
-                _clientFilter.IsDishGroupAndSumQuatity = false;
+                _clientFilter.IsDishGroupAndSumQuantity = false;
                 AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
             }
 
@@ -1624,9 +1624,9 @@ namespace KDSWPFClient
             else if ((_tabDishGroup.Visibility == Visibility.Visible) && (visible == false))
             {
                 // отключить группировку блюд
-                if (_clientFilter.IsDishGroupAndSumQuatity == true)
+                if (_clientFilter.IsDishGroupAndSumQuantity == true)
                 {
-                    _clientFilter.IsDishGroupAndSumQuatity = false;
+                    _clientFilter.IsDishGroupAndSumQuantity = false;
                     AppLib.WriteLogClientAction("Запрос к службе: отключить группировку блюд, т.к. выключили соотв. вкладку");
                     _forceFromFirstOrder = true;
                     _isNeedSound = false;  // без проигрывания мелодии
@@ -1640,12 +1640,12 @@ namespace KDSWPFClient
         {
             //if (cbxDishesGroup.IsChecked ?? false)
             //{
-            //    _clientFilter.IsDishGroupAndSumQuatity = true;
+            //    _clientFilter.IsDishGroupAndSumQuantity = true;
             //    AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
             //}
             //else
             //{
-            //    _clientFilter.IsDishGroupAndSumQuatity = false;
+            //    _clientFilter.IsDishGroupAndSumQuantity = false;
             //    AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
             //}
 

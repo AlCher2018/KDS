@@ -240,7 +240,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private KDSWPFClient.ServiceReference1.OrderGroupEnum GroupByField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private bool IsDishGroupAndSumQuatityField;
+        private bool IsDishGroupAndSumQuantityField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirectionField;
@@ -324,14 +324,14 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public bool IsDishGroupAndSumQuatity {
+        public bool IsDishGroupAndSumQuantity {
             get {
-                return this.IsDishGroupAndSumQuatityField;
+                return this.IsDishGroupAndSumQuantityField;
             }
             set {
-                if ((this.IsDishGroupAndSumQuatityField.Equals(value) != true)) {
-                    this.IsDishGroupAndSumQuatityField = value;
-                    this.RaisePropertyChanged("IsDishGroupAndSumQuatity");
+                if ((this.IsDishGroupAndSumQuantityField.Equals(value) != true)) {
+                    this.IsDishGroupAndSumQuantityField = value;
+                    this.RaisePropertyChanged("IsDishGroupAndSumQuantity");
                 }
             }
         }

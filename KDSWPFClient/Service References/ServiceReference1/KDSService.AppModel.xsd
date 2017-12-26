@@ -40,7 +40,7 @@
       <xs:element minOccurs="0" name="EndpointOrderID" type="xs:int" />
       <xs:element minOccurs="0" name="EndpointOrderItemID" type="xs:int" />
       <xs:element minOccurs="0" name="GroupBy" type="tns:OrderGroupEnum" />
-      <xs:element minOccurs="0" name="IsDishGroupAndSumQuatity" type="xs:boolean" />
+      <xs:element minOccurs="0" name="IsDishGroupAndSumQuantity" type="xs:boolean" />
       <xs:element minOccurs="0" name="LeafDirection" type="tns:LeafDirectionEnum" />
       <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="StatusesList" nillable="true" type="q2:ArrayOfint" />
     </xs:sequence>

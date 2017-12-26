@@ -286,6 +286,7 @@
                                     <CheckBox x:Name="cbx82" Tag="8,2" Content="Вернуть подтв.шеф-поваром в Готово"/>
                                     <CheckBox x:Name="cbx81" Tag="8,1" Content="Вернуть подтв.шеф-поваром в Готовится"/>
                                     <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
+                                    <CheckBox x:Name="cbx13" Tag="1,3" Content="Выдать блюдо в состоянии Готовится"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>

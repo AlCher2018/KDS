@@ -328,7 +328,7 @@ Contract: IMetadataExchange
                             AppEnv.WriteLogTraceMessage("mssql| - sql server status - {0} - restart service...", MSSQLService.Status.ToString());
                             startSQLService();
                         }
-                        // иначе пытаемся 5 раз через 1 секунду прочитать данные из БД и обновить внутр.наборы
+                        // иначе пытаемся 5 раз через 2 секунды прочитать данные из БД и обновить внутр.наборы
                         else
                         {
                             int waitCircles = 5, waitSvcActionInterval = 2000;
@@ -564,9 +564,9 @@ Contract: IMetadataExchange
                 }
 
                 // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
-                if (clientFilter.IsDishGroupAndSumQuatity)
+                if (clientFilter.IsDishGroupAndSumQuantity)
                 {
-                    #region IsDishGroupAndSumQuatity == true
+                    #region IsDishGroupAndSumQuantity == true
                     List<OrderDishModel> dmIngrs;
                     // набор уникальных блюд вместе с набором уникальных ингредиентов для текущего заказа
                     List<Tuple<DishWithQty, List<DishWithQty>>> uniqDishList = new List<Tuple<DishWithQty, List<DishWithQty>>>();
@@ -711,7 +711,7 @@ Contract: IMetadataExchange
                 }
                 else
                 {
-                    #region IsDishGroupAndSumQuatity == false
+                    #region IsDishGroupAndSumQuantity == false
                     foreach (OrderModel ord in retValList)
                     {
                         if (ord.Dishes.Count <= 1) continue;
