@@ -98,10 +98,15 @@ namespace KDSConsoleSvcHost
                 AppProperties.SetProperty("TraceOrdersDetails", value.ToBool());
             if ((value = cfg["IsLogClientAction"]) != null)
                 AppProperties.SetProperty("IsLogClientAction", value.ToBool());
+            if ((value = cfg["TraceQueryToMSSQL"]) != null)
+                AppProperties.SetProperty("TraceQueryToMSSQL", value.ToBool());
+            
 
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
             AppProperties.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
 
+            // читать ли из БД выданные блюда
+            AppProperties.SetProperty("IsReadTakenDishes", cfg["IsReadTakenDishes"].ToBool());
             // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
             AppProperties.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
             // Время, в СЕКУНДАХ, автоматического перехода из Готово в ПодтвГотово, при включенном ПодтвГотово (UseReadyConfirmedState = true). Если отсутствует или равно 0, то автоматического перехода не будет.
@@ -280,6 +285,20 @@ namespace KDSConsoleSvcHost
             _logger.Error(format, paramArray);
         }
 
+        // информация о запросах к MS SQL Server
+        public static void WriteLogMSSQL(string msg)
+        {
+            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
+                _logger.Trace("mssql|" + msg);
+        }
+        public static void WriteLogMSSQL(string format, params object[] paramArray)
+        {
+            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
+            {
+                string msg = string.Format(format, paramArray);
+                _logger.Trace("mssql|" + msg);
+            }
+        }
         #endregion
 
         #region для конкретного приложения

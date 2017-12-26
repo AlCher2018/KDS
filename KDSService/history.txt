@@ -6,6 +6,12 @@
 --------------
 2017-12-25 Для каждого заказа служба может возвращать клиенту сгруппированные блюда и просуммированное количество порций. 
 Блюда группируются по: отделу (DepartmentId), статусу (DishStatusId), номеру подачи (FilingNumber), комментарию (Comment), дате создания (CreateDate) и UID1C. На клиенте данная функция вкл/откл соответствующей вкладкой.
+2017-12-26 В файл KDSServiceAppSettings.config добавлен элемент IsReadTakenDishes (логический), который вкл/откл чтение из БД выданных блюд/заказов (StatusId = 3):
+	<!-- читать ли из базы данных выданные блюда -->
+	<add key="IsReadTakenDishes" value="false"/>
+2017-12-26 В файл KDSServiceAppSettings.config добавлен элемент TraceQueryToMSSQL (логический), который вкл/откл запись в журнал запросов к базе данных MS SQL Server:
+	<!-- запросы к MS SQL Server -->
+	<add key="TraceQueryToMSSQL" value="true"/>
 
 
 Версия 1.0.2.4

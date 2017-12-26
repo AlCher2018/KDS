@@ -11,6 +11,7 @@ namespace KDSService.DataSource
 {
     internal class DBOrderHelper
     {
+        private static bool _isBusy;
         private static List<Order> _dbOrders;
         internal static List<Order> DBOrders { get { return _dbOrders; } }
 
@@ -61,6 +62,9 @@ namespace KDSService.DataSource
 
         internal static void LoadDBOrders()
         {
+            if (_isBusy) throw new Exception("DbContext/KDSEntities is busy!");
+
+            _isBusy = true;
             _dbOrders.Clear();
             tmpDishes.Clear();
 
@@ -70,10 +74,15 @@ namespace KDSService.DataSource
 
             using (KDSEntities db = new KDSEntities())
             {
+                db.Configuration.AutoDetectChangesEnabled = false;
+                
                 // блюда заказа
                 DateTime dt1 = DateTime.Now;
+                AppEnv.WriteLogMSSQL(sqlText);
                 tmpDishes.AddRange(db.Database.SqlQuery<OrderDish>(sqlText));
                 TimeSpan ts1 = DateTime.Now-dt1;
+                AppEnv.WriteLogMSSQL(" - rows {0} - {1}", tmpDishes.Count, ts1.ToString());
+
                 if (tmpDishes.Count == 0) return;
 
                 // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
@@ -114,7 +123,10 @@ namespace KDSService.DataSource
                 {
                     // получить из БД заказы
                     sqlText = string.Format("SELECT * FROM [Order] WHERE (Id In ({0}))", string.Join(",", _ids));
+                    AppEnv.WriteLogMSSQL(sqlText);
+                    dt1 = DateTime.Now;
                     _dbOrders.AddRange(db.Database.SqlQuery<Order>(sqlText));
+                    AppEnv.WriteLogMSSQL(" - rows {0} - {1}", _dbOrders.Count, (DateTime.Now - dt1).ToString());
 
                     // добавить к заказам блюда
                     foreach (Order order in _dbOrders)
@@ -149,13 +161,17 @@ namespace KDSService.DataSource
                         {
                             AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
 
-                            db.Database.ExecuteSqlCommand(sqlText);
+                            AppEnv.WriteLogMSSQL(sqlText);
+                            dt1 = DateTime.Now;
+                            int iAffected = db.Database.ExecuteSqlCommand(sqlText);
+                            AppEnv.WriteLogMSSQL(" - affected {0} - {1}", iAffected.ToString(), (DateTime.Now - dt1).ToString());
                         }
                     }
                 }
 
             }  // using
 
+            _isBusy = false;
         }  // method
 
 

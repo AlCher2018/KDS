@@ -57,7 +57,9 @@ namespace KDSWPFClient.View
 
 
             // дополнтельные действия в зависимости от подтверджения готовности
-            _useReadyConfirmedState =  (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            cbxState3.IsEnabled = KDSModeHelper.IsReadTakenDishes;
+            // (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false)
+            _useReadyConfirmedState = KDSModeHelper.UseReadyConfirmedState;
             if (_useReadyConfirmedState)
             {
                 cbxState8.Visibility = Visibility.Visible;

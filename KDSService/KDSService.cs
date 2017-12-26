@@ -963,6 +963,7 @@ Contract: IMetadataExchange
                 string s2 = ((v1 == null) ? "" : string.Join(",", (HashSet<int>)v1));
 
                 retval.Add("ExpectedTake", AppProperties.GetIntProperty("ExpectedTake"));
+                retval.Add("IsReadTakenDishes", AppProperties.GetBoolProperty("IsReadTakenDishes"));
                 retval.Add("UseReadyConfirmedState", AppProperties.GetBoolProperty("UseReadyConfirmedState"));
                 retval.Add("AutoGotoReadyConfirmPeriod", AppProperties.GetIntProperty("AutoGotoReadyConfirmPeriod"));
                 retval.Add("TakeCancelledInAutostartCooking", AppProperties.GetBoolProperty("TakeCancelledInAutostartCooking"));

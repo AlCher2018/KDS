@@ -43,12 +43,12 @@ namespace KDSService.AppModel
         // CONSTRUCTOR
         public OrdersModel()
         {
-            // статусы заказов, которые выбираются из БД для отображения на КДС (все НЕтерминальные)
+            // статусы заказов, которые выбираются из БД для отображения на КДС
             _allowedKDSStatuses = new HashSet<int>();
             _allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
-            _allowedKDSStatuses.Add((int)OrderStatusEnum.Took);
+            if (AppProperties.GetBoolProperty("IsReadTakenDishes")) _allowedKDSStatuses.Add((int)OrderStatusEnum.Took);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);
@@ -113,7 +113,6 @@ namespace KDSService.AppModel
             // получить заказы из БД
             try
             {
-                // this._dbOrders = DBOrderHelper._dbOrders
                 DBOrderHelper.LoadDBOrders();
             }
             catch (Exception ex)

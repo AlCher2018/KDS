@@ -36,6 +36,9 @@ namespace KDSWPFClient.Model
         private static bool _useReadyConfirmedState;
         public static bool UseReadyConfirmedState { get { return _useReadyConfirmedState; } }
 
+        private static bool _isReadTakenDishes;
+        public static bool IsReadTakenDishes { get { return _isReadTakenDishes; } }
+
 
         // конструктор
         static KDSModeHelper()
@@ -44,6 +47,7 @@ namespace KDSWPFClient.Model
         public static void Init()
         {
             _useReadyConfirmedState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            _isReadTakenDishes = (bool)WpfHelper.GetAppGlobalValue("IsReadTakenDishes", false);
 
             initDefinedKDSModes();
             initFromCfgFile();
@@ -74,6 +78,8 @@ namespace KDSWPFClient.Model
             { OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
               OrderStatusEnum.Ready, OrderStatusEnum.Cancelled});
             if (_useReadyConfirmedState) modeChef.AllowedStates.Add(OrderStatusEnum.ReadyConfirmed);
+            if (_isReadTakenDishes) modeChef.AllowedStates.Add(OrderStatusEnum.Took);
+
             // действия
             if (_useReadyConfirmedState)
             {
@@ -368,9 +374,13 @@ namespace KDSWPFClient.Model
             {
                 if (Enum.TryParse<OrderStatusEnum>(item, out eStatus))
                 {
-                    if (eStatus == OrderStatusEnum.ReadyConfirmed)
+                    if (eStatus == OrderStatusEnum.ReadyConfirmed) 
                     {
-                        if (KDSModeHelper.UseReadyConfirmedState == true) _allowedStates.Add(eStatus);
+                         if (KDSModeHelper.UseReadyConfirmedState == true) _allowedStates.Add(eStatus);
+                    }
+                    else if (eStatus == OrderStatusEnum.Took) 
+                    {
+                         if (KDSModeHelper.IsReadTakenDishes == true) _allowedStates.Add(eStatus);
                     }
                     else
                         _allowedStates.Add(eStatus);
