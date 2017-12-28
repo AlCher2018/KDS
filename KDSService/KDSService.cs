@@ -11,7 +11,9 @@ using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.Timers;
 using System.ServiceProcess;
-
+using System.Data.SqlClient;
+using System.Data.Entity.Infrastructure;
+using System.Data.Entity;
 
 namespace KDSService
 {
@@ -26,7 +28,8 @@ namespace KDSService
     {
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
-        
+        private double _observeInterval = 750;   // интервал в мсек опроса БД
+
         // сервис WCF
         private ServiceHost _host;
         public ServiceHost ServiceHost { get { return _host; } }
@@ -109,6 +112,32 @@ namespace KDSService
             if (!isResultOk)
                 throw new Exception("Ошибка проверки доступа к базе данных: " + msg);
 
+            // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
+            using (KDSEntities db = new KDSEntities())
+            {
+                byte dbCompatibleLevel = 0;
+                SqlConnection dbConn = (SqlConnection)db.Database.Connection;
+                string dbName = dbConn.Database;
+                byte[] sqlResult = db.Database.SqlQuery<byte>(string.Format("SELECT compatibility_level FROM sys.databases where Name = '{0}'", dbName)).ToArray();
+                if (sqlResult.Length > 0) dbCompatibleLevel = sqlResult[0];
+                AppEnv.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2})", dbName, dbCompatibleLevel, getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
+                if (sqlResult[0] != 120)
+                {
+                    dbCompatibleLevel = 120;
+                    string sqlCommText = string.Format("ALTER DATABASE {0} SET COMPATIBILITY_LEVEL = {1}", dbName, dbCompatibleLevel);
+                    SqlCommand cmd = dbConn.CreateCommand();
+                    cmd.CommandType = System.Data.CommandType.Text;
+                    cmd.CommandText = sqlCommText;
+                    dbConn.Open();
+                    if (dbConn.State == System.Data.ConnectionState.Open)
+                    {
+                        AppEnv.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, dbCompatibleLevel, getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
+                        int iResult = cmd.ExecuteNonQuery();
+                        dbConn.Close();
+                    }
+                }
+            }
+
             // проверка справочных таблиц (в классе ModelDicts)
             AppEnv.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
             isResultOk = AppEnv.CheckAppDBTable(out msg);
@@ -121,8 +150,8 @@ namespace KDSService
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
 
-            // периодичность опроса БД - 500 в мсек
-            _observeTimer = new Timer(500) { AutoReset = false };
+            // периодичность опроса БД - 750 в мсек
+            _observeTimer = new Timer(_observeInterval) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
 
             AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
@@ -136,6 +165,25 @@ namespace KDSService
             }
 
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+        }
+
+        private string getSQLServerNameByCompatibleLevel(byte dbCompatibleLevel)
+        {
+            string retVal = "unknown MS SQL Server name";
+            switch (dbCompatibleLevel)
+            {
+                case 80: retVal = "SQL Server 2000"; break;
+                case 90: retVal = "SQL Server 2005"; break;
+                case 100: retVal = "SQL Server 2008"; break;
+                case 110: retVal = "SQL Server 2012"; break;
+                case 120: retVal = "SQL Server 2014"; break;
+                case 130: retVal = "SQL Server 2016"; break;
+                case 140: retVal = "SQL Server 2017"; break;
+                default:
+                    break;
+            }
+
+            return retVal;
         }
 
         private static void startSQLService()
@@ -363,13 +411,13 @@ Contract: IMetadataExchange
                 #endregion
 
                 // установить стандартный интервал опроса БД
-                if (_observeTimer.Interval != 500) _observeTimer.Interval = 500; // msec
+                if (_observeTimer.Interval != _observeInterval) _observeTimer.Interval = _observeInterval; // msec
             }
             // иначе установить минимальный интервал для наискорейшего чтения данных из БД
-            else
-            {
-                if (_observeTimer.Interval != 50) _observeTimer.Interval = 50; // msec
-            }
+            //else
+            //{
+            //    if (_observeTimer.Interval != 50) _observeTimer.Interval = 50; // msec
+            //}
 
             StartTimer();
             AppEnv.WriteLogOrderDetails("** Start DB read timer.");
@@ -542,8 +590,8 @@ Contract: IMetadataExchange
                         }
                     }
                     
-                    // сортировка заказов по убыванию времени заказа
                     string sortMode = Convert.ToString(AppProperties.GetProperty("SortOrdersByCreateDate"));
+                    // сортировка заказов по убыванию времени заказа
                     if (sortMode == "Desc")
                     {
                         retValList.Sort((om1, om2) => 
@@ -554,10 +602,21 @@ Contract: IMetadataExchange
                         }
                         );
                     }
+                    // или по возрастанию времени заказа
+                    else
+                    {
+                        retValList.Sort((om1, om2) =>
+                        {
+                            if (om1.CreateDate < om2.CreateDate) return -1;
+                            else if (om1.CreateDate > om2.CreateDate) return 1;
+                            else return 0;
+                        }
+                        );
+                    }
                 }
                 #endregion
-                
-                // группировка по номеру заказа
+
+                // сортировка по возрастанию номера заказа
                 else if (clientFilter.GroupBy == OrderGroupEnum.ByOrderNumber)
                 {
                     retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));

@@ -12,6 +12,7 @@
 2017-12-26 В файл KDSServiceAppSettings.config добавлен элемент TraceQueryToMSSQL (логический), который вкл/откл запись в журнал запросов к базе данных MS SQL Server:
 	<!-- запросы к MS SQL Server -->
 	<add key="TraceQueryToMSSQL" value="true"/>
+2017-12-27 Период опроса БД изменен с 500 мс на 750 мс.
 
 
 Версия 1.0.2.4

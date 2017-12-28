@@ -70,106 +70,114 @@ namespace KDSService.DataSource
 
             // отобрать сразу все БЛЮДА с максимальными условиями (кол-во порций, допустимые статусы, неотображаемые цеха)
             // разницей в днях между текущей датой и CreateDate блюда
-            string sqlText = string.Format("SELECT * FROM OrderDish WHERE ({0} AND (CreateDate >= {1})) ORDER BY Id", _sDishWhere, getDateFrom());
+            string sqlText = string.Format("SELECT * FROM OrderDish WHERE ({0} AND (CreateDate >= {1}))", _sDishWhere, getDateFrom());
 
-            using (KDSEntities db = new KDSEntities())
+            try
             {
-                db.Configuration.AutoDetectChangesEnabled = false;
-                
-                // блюда заказа
-                DateTime dt1 = DateTime.Now;
-                AppEnv.WriteLogMSSQL(sqlText);
-                tmpDishes.AddRange(db.Database.SqlQuery<OrderDish>(sqlText));
-                TimeSpan ts1 = DateTime.Now-dt1;
-                AppEnv.WriteLogMSSQL(" - rows {0} - {1}", tmpDishes.Count, ts1.ToString());
-
-                if (tmpDishes.Count == 0) return;
-
-                // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
-                // собрать Id заказов в набор
-                _ids.Clear();
-                _ids.AddRange(tmpDishes.Select(d => d.OrderId).Distinct());
-                bool isDelLostIngr = false;
-                foreach (int id in _ids)
+                using (KDSEntities db = new KDSEntities())
                 {
-                    // блюда заказа
-                    IEnumerable<OrderDish> ordDishes = (from d in tmpDishes where d.OrderId == id select d);
-                    if (ordDishes.Count() > 0)
-                    {
-                        // UID-ы блюд данного заказа
-                        _dishUIDs.Clear();
-                        _dishUIDs.AddRange(ordDishes.Where(d => d.ParentUid.IsNull()).Select(d => d.UID));
+                    db.Configuration.AutoDetectChangesEnabled = false;
 
-                        if (_dishUIDs.Count > 0)
+                    // блюда заказа
+                    DateTime dt1 = DateTime.Now;
+                    AppEnv.WriteLogMSSQL(sqlText);
+                    tmpDishes.AddRange(db.Database.SqlQuery<OrderDish>(sqlText));
+                    TimeSpan ts1 = DateTime.Now - dt1;
+                    AppEnv.WriteLogMSSQL(" - rows {0} - {1}", tmpDishes.Count, ts1.ToString());
+
+                    if (tmpDishes.Count != 0)
+                    {
+                        // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
+                        // собрать Id заказов в набор
+                        _ids.Clear();
+                        _ids.AddRange(tmpDishes.Select(d => d.OrderId).Distinct());
+                        bool isDelLostIngr = false;
+                        foreach (int id in _ids)
                         {
-                            foreach (OrderDish dish in
-                                (from d in ordDishes where !d.ParentUid.IsNull() && !_dishUIDs.Contains(d.ParentUid) select d).ToList())
+                            // блюда заказа
+                            IEnumerable<OrderDish> ordDishes = (from d in tmpDishes where d.OrderId == id select d);
+                            if (ordDishes.Count() > 0)
                             {
-                                tmpDishes.Remove(dish);
-                                isDelLostIngr = true;
+                                // UID-ы блюд данного заказа
+                                _dishUIDs.Clear();
+                                _dishUIDs.AddRange(ordDishes.Where(d => d.ParentUid.IsNull()).Select(d => d.UID));
+
+                                if (_dishUIDs.Count > 0)
+                                {
+                                    foreach (OrderDish dish in
+                                        (from d in ordDishes where !d.ParentUid.IsNull() && !_dishUIDs.Contains(d.ParentUid) select d).ToList())
+                                    {
+                                        tmpDishes.Remove(dish);
+                                        isDelLostIngr = true;
+                                    }
+                                }
                             }
                         }
-                    }
-                }
 
-                // после возможного удаления "висячих" ингредиентов, собрать Id заказов в набор
-                if (isDelLostIngr == true)
-                {
-                    _ids.Clear();
-                    _ids.AddRange(tmpDishes.Select(d => d.OrderId).Distinct());
-                }
-
-                if (_ids.Count > 0)
-                {
-                    // получить из БД заказы
-                    sqlText = string.Format("SELECT * FROM [Order] WHERE (Id In ({0}))", string.Join(",", _ids));
-                    AppEnv.WriteLogMSSQL(sqlText);
-                    dt1 = DateTime.Now;
-                    _dbOrders.AddRange(db.Database.SqlQuery<Order>(sqlText));
-                    AppEnv.WriteLogMSSQL(" - rows {0} - {1}", _dbOrders.Count, (DateTime.Now - dt1).ToString());
-
-                    // добавить к заказам блюда
-                    foreach (Order order in _dbOrders)
-                    {
-                        foreach (OrderDish dish in (from d in tmpDishes where d.OrderId == order.Id select d))
+                        // после возможного удаления "висячих" ингредиентов, собрать Id заказов в набор
+                        if (isDelLostIngr == true)
                         {
-                            order.Dishes.Add(dish);
+                            _ids.Clear();
+                            _ids.AddRange(tmpDishes.Select(d => d.OrderId).Distinct());
                         }
-                    }
-                }
 
-                // узнать общий статус всех (оставшихся) блюд
-                int idStatus;
-                foreach (Order order in _dbOrders)
-                {
-                    idStatus = getStatusAllDishesInt(order.Dishes);
-
-                    if ((idStatus != -1) && (order.OrderStatusId != idStatus))
-                    {
-                        sqlText = null;
-                        if (idStatus == 0)  // все блюда в ожидании, а заказ не в готовке
+                        if (_ids.Count > 0)
                         {
-                            if (order.OrderStatusId != 1)
-                                sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 1 WHERE (Id={0})", order.Id);
-                        }
-                        else if (idStatus == 3)  // если Выдан, то менять и QueueStatusId
-                            sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 3, QueueStatusId = 2 WHERE (Id={0})", order.Id);
-                        else
-                            sqlText = string.Format("UPDATE [Order] SET OrderStatusId = {0} WHERE (Id={1})", idStatus, order.Id);
-
-                        if (sqlText != null)
-                        {
-                            AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
-
+                            // получить из БД заказы
+                            sqlText = string.Format("SELECT * FROM [Order] WHERE (Id In ({0}))", string.Join(",", _ids));
                             AppEnv.WriteLogMSSQL(sqlText);
                             dt1 = DateTime.Now;
-                            int iAffected = db.Database.ExecuteSqlCommand(sqlText);
-                            AppEnv.WriteLogMSSQL(" - affected {0} - {1}", iAffected.ToString(), (DateTime.Now - dt1).ToString());
-                        }
-                    }
-                }
+                            _dbOrders.AddRange(db.Database.SqlQuery<Order>(sqlText));
+                            AppEnv.WriteLogMSSQL(" - rows {0} - {1}", _dbOrders.Count, (DateTime.Now - dt1).ToString());
 
-            }  // using
+                            // добавить к заказам блюда
+                            foreach (Order order in _dbOrders)
+                            {
+                                foreach (OrderDish dish in (from d in tmpDishes where d.OrderId == order.Id select d))
+                                {
+                                    order.Dishes.Add(dish);
+                                }
+                            }
+                        }
+
+                        // узнать общий статус всех (оставшихся) блюд
+                        int idStatus;
+                        foreach (Order order in _dbOrders)
+                        {
+                            idStatus = getStatusAllDishesInt(order.Dishes);
+
+                            if ((idStatus != -1) && (order.OrderStatusId != idStatus))
+                            {
+                                sqlText = null;
+                                if (idStatus == 0)  // все блюда в ожидании, а заказ не в готовке
+                                {
+                                    if (order.OrderStatusId != 1)
+                                        sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 1 WHERE (Id={0})", order.Id);
+                                }
+                                else if (idStatus == 3)  // если Выдан, то менять и QueueStatusId
+                                    sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 3, QueueStatusId = 2 WHERE (Id={0})", order.Id);
+                                else
+                                    sqlText = string.Format("UPDATE [Order] SET OrderStatusId = {0} WHERE (Id={1})", idStatus, order.Id);
+
+                                if (sqlText != null)
+                                {
+                                    AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
+
+                                    AppEnv.WriteLogMSSQL(sqlText);
+                                    dt1 = DateTime.Now;
+                                    int iAffected = db.Database.ExecuteSqlCommand(sqlText);
+                                    AppEnv.WriteLogMSSQL(" - affected {0} - {1}", iAffected.ToString(), (DateTime.Now - dt1).ToString());
+                                }
+                            }
+                        }  // foreach (Order order in _dbOrders)
+                    }  // if (tmpDishes.Count != 0)
+                }  // using
+            }  // try
+            catch (Exception ex)
+            {
+                string s = ex.ToString();
+                throw;
+            }
 
             _isBusy = false;
         }  // method
