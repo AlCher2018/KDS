@@ -523,28 +523,23 @@ namespace KDSService.AppModel
         #endregion
 
         #region DB FUNCS
-        private OrderDishRunTime getDBRunTimeRecord(int id)
+        private OrderDishRunTime getDBRunTimeRecord(int dishId)
         {
             OrderDishRunTime runtimeRecord = null;
-            using (KDSEntities db = new KDSEntities())
+            runtimeRecord = DBOrderHelper.getOrderDishRunTimeByOrderDishId(dishId);
+
+            // если еще нет записи в БД, то добавить ее
+            if (runtimeRecord == null)
             {
-                runtimeRecord = db.OrderDishRunTime.FirstOrDefault(rec => rec.OrderDishId == id);
+                runtimeRecord = DBOrderHelper.newOrderDishRunTime(dishId);
                 if (runtimeRecord == null)
                 {
-                    runtimeRecord = new OrderDishRunTime() { OrderDishId = id };
-                    db.OrderDishRunTime.Add(runtimeRecord);
-                    try
-                    {
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", id);
-                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}: {1}", id, ex.ToString());
-                        runtimeRecord = null;
-                    }
+                    _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", dishId);
+                    AppEnv.WriteLogErrorMessage(_serviceErrorMessage);
+                    runtimeRecord = null;
                 }
             }
+
             return runtimeRecord;
         }  // method
 

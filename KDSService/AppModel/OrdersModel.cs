@@ -269,7 +269,7 @@ namespace KDSService.AppModel
 
                 string sqlText = string.Format("SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < {0})", dtUpdate.ToSQLExpr());
                 int cntDishes = 0, cntOrders, iCnt;
-                List<int> idList = db.Database.SqlQuery<int>(sqlText).ToList();
+                List<int> idList = DBOrderHelper.getOrderIdsForAutoStateChange(sqlText);
                 cntOrders = idList.Count;  // кол-во заказов
                 // обновить статус в БД
                 bool retVal = false;

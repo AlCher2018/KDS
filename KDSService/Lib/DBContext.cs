@@ -12,10 +12,11 @@ namespace IntegraLib
 
     public static class DBContext
     {
+        private static int _commandTimeout = 2;   // execute command timeout - 2 seconds
         private static string _configConnString;
         private static string _errMsg;
 
-        public static string ErrorMessage;
+        public static string ErrorMessage { get { return _errMsg; } }
 
         #region private methods
 
@@ -113,12 +114,15 @@ namespace IntegraLib
             DataTable retVal = null;
             if (openDB(conn))
             {
+                SqlTransaction st = conn.BeginTransaction(IsolationLevel.ReadUncommitted);
                 try
                 {
                     SqlDataAdapter da = new SqlDataAdapter(queryString, conn);
-                    da.SelectCommand.CommandTimeout = 2;  // таймаут выполнения запросов к БД - 2 сек.
+                    da.SelectCommand.CommandTimeout = _commandTimeout;
+                    da.SelectCommand.Transaction = st;
                     retVal = new DataTable();
                     da.Fill(retVal);
+                    st.Commit();
                 }
                 catch (Exception ex)
                 {
@@ -128,6 +132,7 @@ namespace IntegraLib
                 }
                 finally
                 {
+                    st.Dispose();
                     closeDB(conn);
                 }
             }
@@ -146,9 +151,13 @@ namespace IntegraLib
             {
                 SqlCommand sc = conn.CreateCommand();
                 sc.CommandText = sqlText;
+                sc.CommandTimeout = _commandTimeout;
+
+                SqlTransaction st = conn.BeginTransaction(IsolationLevel.ReadCommitted);
                 try
                 {
                     retVal = sc.ExecuteNonQuery();
+                    st.Commit();
                 }
                 catch (Exception ex)
                 {
@@ -156,6 +165,7 @@ namespace IntegraLib
                 }
                 finally
                 {
+                    st.Dispose();
                     closeDB(conn);
                 }
             }
@@ -171,17 +181,6 @@ namespace IntegraLib
             return (retVal == null) ? 0 : (int)retVal;
         }
 
-        // статические методы для получения данных 
-        public static DataTable GetSchInclude()
-        {
-            return GetQueryTable("SELECT * From vwSchInclude");
-        }
-
-        // получить телефонную книгу
-        public static DataTable GetPhonebook()
-        {
-            return GetQueryTable("SELECT * FROM vwPhoneBook");
-        }
 
         #region User
         // получить всех пользователей
