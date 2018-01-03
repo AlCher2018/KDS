@@ -149,6 +149,8 @@ namespace KDSService
             isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
+            // инициализация статического класса DBContext для получения данных из БД
+            DBContext.ReadConnectionString("KDSEntities");
 
             // периодичность опроса БД - 750 в мсек
             _observeTimer = new Timer(_observeInterval) { AutoReset = false };

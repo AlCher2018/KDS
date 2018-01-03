@@ -12,14 +12,16 @@ namespace IntegraLib
 
     public static class DBContext
     {
-        private static string _configConnStringName;
+        private static string _configConnString;
         private static string _errMsg;
+
+        public static string ErrorMessage;
 
         #region private methods
 
         private static string getConnString()
         {
-            return _configConnStringName;
+            return _configConnString;
         }
         private static SqlConnection getConnection()
         {
@@ -79,20 +81,26 @@ namespace IntegraLib
         #endregion
 
         #region Public methods
-        public static string ReadConnectionString(string configConnStringName)
+        public static void ReadConnectionString(string configConnStringName)
         {
-            string retVal = null;
-            _configConnStringName = configConnStringName;
             try
             {
-                retVal = ConfigurationManager.ConnectionStrings[_configConnStringName].ConnectionString;
+                _configConnString = ConfigurationManager.ConnectionStrings[configConnStringName].ConnectionString;
+                _configConnString = _configConnString.Replace(Environment.NewLine, "");
+
+                // get provider connection string if connection string contains EF metadata
+                if (_configConnString.StartsWith("metadata", StringComparison.OrdinalIgnoreCase))
+                {
+                    _configConnString = _configConnString.Split('"')[1];
+                }
+
+                // таймаут подключения к серверу MS SQL - 10 сек. По умолчанию - 15 секунд.
+                if (!_configConnString.Contains("Connection Timeout")) _configConnString += "; Connection Timeout=10";
             }
             catch (Exception e)
             {
                 showMsg("Ошибка получения строки подключения к БД из config-файла: " + e.Message);
             }
-
-            return retVal;
         }
 
 
@@ -108,6 +116,7 @@ namespace IntegraLib
                 try
                 {
                     SqlDataAdapter da = new SqlDataAdapter(queryString, conn);
+                    da.SelectCommand.CommandTimeout = 2;  // таймаут выполнения запросов к БД - 2 сек.
                     retVal = new DataTable();
                     da.Fill(retVal);
                 }
@@ -127,24 +136,23 @@ namespace IntegraLib
         }
 
         // метод, который выполняет SQL-запрос, не возвращающий данные, напр. вставка или удаление строк
-        public static bool Execute(string sqlText)
+        public static int Execute(string sqlText)
         {
+            int retVal = -1;
             SqlConnection conn = getConnection();
-            if (conn == null) return false;
+            if (conn == null) return retVal;
 
-            bool retVal = true;
             if (openDB(conn))
             {
                 SqlCommand sc = conn.CreateCommand();
                 sc.CommandText = sqlText;
                 try
                 {
-                    sc.ExecuteNonQuery();
+                    retVal = sc.ExecuteNonQuery();
                 }
                 catch (Exception ex)
                 {
                     showMsg("Ошибка выполнения команды в MS SQL Server: " + ex.Message);
-                    retVal = false;
                 }
                 finally
                 {
