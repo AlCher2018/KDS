@@ -1,5 +1,5 @@
 ﻿using IntegraLib;
-using KDSConsoleSvcHost;
+using KDSService.Lib;
 using KDSService.AppModel;
 using KDSService.DataSource;
 using System;
@@ -391,13 +391,13 @@ Contract: IMetadataExchange
                             // sql-служба не ответила - перезапуск
                             if (i >= waitCircles)
                             {
-                                KDSWPFClient.Lib.DebugTimer.Init();
+                                KDSService.Lib.DebugTimer.Init();
                                 errDBMsg = null;
                                 AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
                                 // попытка перезапуска службы MS SQL Server
                                 startSQLService();
                                 AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
-                                    KDSWPFClient.Lib.DebugTimer.GetInterval(),
+                                    KDSService.Lib.DebugTimer.GetInterval(),
                                     ((errDBMsg == null) ? "" : " - " + errDBMsg)
                                 );
                             }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KDSWPFClient.Lib
+namespace KDSService.Lib
 {
     public static class DebugTimer
     {

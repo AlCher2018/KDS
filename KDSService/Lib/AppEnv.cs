@@ -16,7 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace KDSConsoleSvcHost
+namespace KDSService.Lib
 {
     // служебный статический класс для работы со словарем свойств и журналом сообщений
     public static class AppEnv

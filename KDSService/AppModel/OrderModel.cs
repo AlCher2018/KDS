@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using KDSConsoleSvcHost;
 using System.ServiceModel;
 using KDSService.DataSource;
 using IntegraLib;
+using KDSService.Lib;
+
 
 namespace KDSService.AppModel
 {

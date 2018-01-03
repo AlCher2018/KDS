@@ -5,12 +5,12 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using KDSConsoleSvcHost;
 using System.Diagnostics;
 using System.Threading;
 using KDSService.DataSource;
-using KDSWPFClient.Lib;
+using KDSService.Lib;
 using IntegraLib;
+
 
 namespace KDSService.AppModel
 {
