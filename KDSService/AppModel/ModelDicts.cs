@@ -21,8 +21,12 @@ namespace KDSService.AppModel
         {
             errMsg = "";
             // список статусов -> в словарь
-            List<OrderStatusModel> list1 = ModelDicts.GetOrderStatusesList(out errMsg);
-            if (list1 == null) return false;
+            List<OrderStatusModel> list1 = DBOrderHelper.GetOrderStatusesList();
+            if (list1 == null)
+            {
+                errMsg = DBOrderHelper.ErrorMessage;
+                return false;
+            }
             _statuses = new Dictionary<int, OrderStatusModel>();
             list1.ForEach(item => _statuses.Add(item.Id, item));
 
@@ -31,8 +35,12 @@ namespace KDSService.AppModel
             Dictionary<int, decimal> depQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
             depQty.Clear();
             _departments = new Dictionary<int, DepartmentModel>();
-            List<DepartmentModel> list2 = ModelDicts.GetDepartmentsList(out errMsg);
-            if (list2 == null) return false;
+            List<DepartmentModel> list2 = DBOrderHelper.GetDepartmentsList();
+            if (list2 == null)
+            {
+                errMsg = DBOrderHelper.ErrorMessage;
+                return false;
+            }
             list2.ForEach(item =>
             {
                 _departments.Add(item.Id, item);
@@ -41,53 +49,6 @@ namespace KDSService.AppModel
 
             return true;
         }
-
-        // СПРАВОЧНИК СТАТУСОВ ЗАКАЗА/БЛЮДА
-        public static List<OrderStatusModel> GetOrderStatusesList(out string errMsg)
-        {
-            List<OrderStatusModel> retVal = null;
-            errMsg = null;
-            try
-            {
-                using (KDSEntities db = new KDSEntities())
-                {
-                    retVal = db.OrderStatus
-                        .Select(os => new OrderStatusModel() {
-                            Id = os.Id, Name = os.Name, AppName = os.AppName, Description = os.Description })
-                        .ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                errMsg = ErrorHelper.GetShortErrMessage(ex);
-            }
-            return retVal;
-        }  // method
-
-
-        // СПРАВОЧНИК ОТДЕЛОВ
-        public static List<DepartmentModel> GetDepartmentsList(out string errMsg)
-        {
-            List<DepartmentModel> retVal = null;
-            errMsg = null;
-            try
-            {
-                using (KDSEntities db = new KDSEntities())
-                {
-                    retVal = new List<DepartmentModel>();
-                    foreach (Department item in db.Department)
-                    {
-                        retVal.Add(new DepartmentModel(item));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                errMsg = string.Format("{0}{1}", ex.Message, (ex.InnerException == null) ? "" : " (" + ex.InnerException.Message + ")");
-            }
-
-            return retVal;
-        }  // method
 
         #region get app dict item
         public static OrderStatusModel GetOrderStatusModelById(int statusId)
@@ -161,16 +122,6 @@ namespace KDSService.AppModel
 
         public DepartmentModel()
         {
-        }
-
-        public DepartmentModel(Department dbDep): this()
-        {
-            Id = dbDep.Id;
-            IsAutoStart = dbDep.IsAutoStart ?? false;
-            Name = dbDep.Name;
-            if (IsAutoStart) Name += " (автостарт)";
-            UID = dbDep.UID;
-            DishQuantity = dbDep.DishQuantity ?? 0;
         }
 
     }  // class Department

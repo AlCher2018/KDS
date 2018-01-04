@@ -252,49 +252,49 @@ namespace KDSService.AppModel
         }
 
 
-        // обновить статус вчерашних заказов
+        // ОБНОВИТЬ СТАТУС "ВЧЕРАШНИХ" ЗАКАЗОВ
+        // "вчерашние" заказы - это заказы, у которых CreateDate меньше начала текущего дня (полночь)
+        // минус смещение от полуночи назад (MidnightShiftShowYesterdayOrders)
+        // "Вчерашним" заказам статус устанавливается в 9 и они НЕ будут отображаться на КДСе. 
         private bool updateYesterdayOrdersStatus()
         {
-            // дата/время, когда необходимо обновить статус вчерашних заказов
+            // дата/время, КОГДА необходимо обновить статус вчерашних заказов
             DateTime dtUpdate = _currentDate.Add(AppEnv.TimeOfAutoCloseYesterdayOrders);
             if (DateTime.Now < dtUpdate) return false;
 
             AppEnv.WriteLogOrderDetails(" - обновить статус вчерашних заказов... - START");
-            using (KDSEntities db = new KDSEntities())
+
+            // дата/время, С КОТОРОГО заказы считаются "сегодяшними"
+            double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
+            dtUpdate = DateTime.Today.AddHours(-d1);
+
+            string sqlText = null;
+            int cntDishes = 0, cntOrders = 0, iAffected;
+            bool retVal = false;
+            try
             {
-                // вчерашние заказы, точнее заказы, у которых CreateDate меньше начала текущего дня (полночь)
-                // с учетом смещения от полуночи назад, созданные в течение которого вчерашние заказы будут отображаться на КДСе
-                double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
-                dtUpdate = DateTime.Today.AddHours(-d1);
-
-                string sqlText = string.Format("SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < {0})", dtUpdate.ToSQLExpr());
-                int cntDishes = 0, cntOrders, iCnt;
-                List<int> idList = DBOrderHelper.getOrderIdsForAutoStateChange(sqlText);
-                cntOrders = idList.Count;  // кол-во заказов
-                // обновить статус в БД
-                bool retVal = false;
-                try
+                sqlText = string.Format("declare @dt datetime = {0}; SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < @dt)", dtUpdate.ToSQLExpr());
+                List<int> idList = DBOrderHelper.getOrderIdsList(sqlText);
+                foreach (int orderId in idList)
                 {
-                    foreach (int orderId in idList)
-                    {
-                        // обновить статус блюд
-                        sqlText = string.Format("UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={0})", orderId.ToString());
-                        iCnt = db.Database.ExecuteSqlCommand(sqlText);
-                        cntDishes += iCnt;
-                        // обновить статус заказа
-                        sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={0})", orderId.ToString());
-                        db.Database.ExecuteSqlCommand(sqlText);
-                    }
-                    AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH", cntOrders, cntDishes);
-                    retVal = true;
+                    // обновить статус блюд
+                    sqlText = string.Format("UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={0})", orderId.ToString());
+                    iAffected = DBContext.Execute(sqlText);
+                    cntDishes += iAffected;
+                    // обновить статус заказа
+                    sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={0})", orderId.ToString());
+                    iAffected = DBContext.Execute(sqlText);
+                    cntOrders += iAffected;
                 }
-                catch (Exception ex)
-                {
-                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} ({1}) - FINISH", ErrorHelper.GetShortErrMessage(ex), sqlText);
-                }
-
-                return retVal;
+                AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH", cntOrders, cntDishes);
+                retVal = true;
             }
+            catch (Exception ex)
+            {
+                AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0} ({1}) - FINISH", ErrorHelper.GetShortErrMessage(ex), sqlText);
+            }
+
+            return retVal;
         }
 
 

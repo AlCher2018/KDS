@@ -11,9 +11,7 @@ using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.Timers;
 using System.ServiceProcess;
-using System.Data.SqlClient;
-using System.Data.Entity.Infrastructure;
-using System.Data.Entity;
+
 
 namespace KDSService
 {
@@ -106,51 +104,48 @@ namespace KDSService
             }
             #endregion
 
+            // инициализация статического класса DBContext для получения данных из БД
+            DBContext.ReadConnectionString("KDSEntities");
             // проверить доступность БД
             AppEnv.WriteLogInfoMessage("  Проверка доступа к базе данных...");
-            isResultOk = AppEnv.CheckDBConnection(typeof(KDSEntities), out msg);
+            AppEnv.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
+            isResultOk = DBContext.CheckDBConnect();
             if (!isResultOk)
-                throw new Exception("Ошибка проверки доступа к базе данных: " + msg);
-
-            // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
-            using (KDSEntities db = new KDSEntities())
             {
-                byte dbCompatibleLevel = 0;
-                SqlConnection dbConn = (SqlConnection)db.Database.Connection;
-                string dbName = dbConn.Database;
-                byte[] sqlResult = db.Database.SqlQuery<byte>(string.Format("SELECT compatibility_level FROM sys.databases where Name = '{0}'", dbName)).ToArray();
-                if (sqlResult.Length > 0) dbCompatibleLevel = sqlResult[0];
-                AppEnv.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2})", dbName, dbCompatibleLevel, getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
-                if (sqlResult[0] != 120)
-                {
-                    dbCompatibleLevel = 120;
-                    string sqlCommText = string.Format("ALTER DATABASE {0} SET COMPATIBILITY_LEVEL = {1}", dbName, dbCompatibleLevel);
-                    SqlCommand cmd = dbConn.CreateCommand();
-                    cmd.CommandType = System.Data.CommandType.Text;
-                    cmd.CommandText = sqlCommText;
-                    dbConn.Open();
-                    if (dbConn.State == System.Data.ConnectionState.Open)
-                    {
-                        AppEnv.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, dbCompatibleLevel, getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
-                        int iResult = cmd.ExecuteNonQuery();
-                        dbConn.Close();
-                    }
-                }
+                AppEnv.WriteLogErrorMessage(DBContext.ConnectionString);
+                throw new Exception("Ошибка проверки доступа к базе данных: " + DBContext.ErrorMessage);
             }
 
+            // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
+            byte dbCompatibleLevel = DBContext.GetDBCompatibleLevel();
+            string dbName = DBContext.GetDBName();
+            AppEnv.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2})", dbName, dbCompatibleLevel, DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
+            if (dbCompatibleLevel == 0)
+            {
+                AppEnv.WriteLogErrorMessage(DBContext.ErrorMessage);
+            }
+            else if (dbCompatibleLevel != 120)
+            {
+                AppEnv.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, dbCompatibleLevel, DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel));
+                if (DBContext.SetDBCompatibleLevel(120) == false)
+                {
+                    AppEnv.WriteLogErrorMessage(DBContext.ErrorMessage);
+                    AppEnv.WriteLogErrorMessage("Произошла ошибка при изменении уровня совместимости БД. Приложение может работать нестабильно.");
+                }
+            }
             // проверка справочных таблиц (в классе ModelDicts)
             AppEnv.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
-            isResultOk = AppEnv.CheckAppDBTable(out msg);
+            isResultOk = DBOrderHelper.CheckAppDBTable();
             if (!isResultOk)
-                throw new Exception("Ошибка проверки справочных таблиц: " + msg);
+            {
+                throw new Exception("Ошибка проверки справочных таблиц: " + DBOrderHelper.ErrorMessage);
+            }
 
             // получение словарей приложения из БД
             AppEnv.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
             isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
-            // инициализация статического класса DBContext для получения данных из БД
-            DBContext.ReadConnectionString("KDSEntities");
 
             // периодичность опроса БД - 750 в мсек
             _observeTimer = new Timer(_observeInterval) { AutoReset = false };
@@ -169,24 +164,6 @@ namespace KDSService
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
         }
 
-        private string getSQLServerNameByCompatibleLevel(byte dbCompatibleLevel)
-        {
-            string retVal = "unknown MS SQL Server name";
-            switch (dbCompatibleLevel)
-            {
-                case 80: retVal = "SQL Server 2000"; break;
-                case 90: retVal = "SQL Server 2005"; break;
-                case 100: retVal = "SQL Server 2008"; break;
-                case 110: retVal = "SQL Server 2012"; break;
-                case 120: retVal = "SQL Server 2014"; break;
-                case 130: retVal = "SQL Server 2016"; break;
-                case 140: retVal = "SQL Server 2017"; break;
-                default:
-                    break;
-            }
-
-            return retVal;
-        }
 
         private static void startSQLService()
         {
@@ -431,19 +408,14 @@ Contract: IMetadataExchange
 
         public List<OrderStatusModel> GetOrderStatuses(string machineName)
         {
-            string errMsg = null;
             string logMsg = "GetOrderStatuses(): ";
 
-            List<OrderStatusModel> retVal = ModelDicts.GetOrderStatusesList(out errMsg);
+            List<OrderStatusModel> retVal = DBOrderHelper.GetOrderStatusesList();
 
-            if (errMsg.IsNull())
-                logMsg += string.Format("Ok ({0} records)",retVal.Count);
+            if (retVal != null)
+                logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
-            {
-                AppEnv.WriteLogClientAction(machineName, errMsg);
-                logMsg += errMsg;
-            }
-
+                logMsg += DBOrderHelper.ErrorMessage;
             AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
@@ -451,22 +423,19 @@ Contract: IMetadataExchange
 
         public List<DepartmentModel> GetDepartments(string machineName)
         {
-            string errMsg = null;
             string logMsg = "GetDepartments(): ";
 
-            List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
+            List<DepartmentModel> retVal = DBOrderHelper.GetDepartmentsList();
 
-            if (errMsg.IsNull())
+            if (retVal != null)
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
-            {
-                AppEnv.WriteLogErrorMessage(errMsg);
-                logMsg += errMsg;
-            }
+                logMsg += DBOrderHelper.ErrorMessage;
             AppEnv.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
+
 
         // *** ЗАПРОС ЗАКАЗОВ ОТ КЛИЕНТОВ ***
         // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа

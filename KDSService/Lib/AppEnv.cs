@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
-using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
@@ -154,79 +153,6 @@ namespace KDSService.Lib
             AppProperties.SetProperty("lockedDishes", new Dictionary<int, bool>());
         }
 
-
-        // проверка базы данных
-        internal static bool CheckDBConnection(Type dbType, out string errMsg)
-        {
-            string s;
-            errMsg = null;
-
-            // контекст БД
-            DbContext dbContext = (DbContext)Activator.CreateInstance(dbType);
-            
-            SqlConnection dbConn = (SqlConnection)dbContext.Database.Connection;
-            s = " - строка подключения: " + dbConn.ConnectionString;
-            WriteLogInfoMessage(s);
-
-            // создать такое же подключение, но с TimeOut = 2 сек
-            SqlConnectionStringBuilder confBld = new SqlConnectionStringBuilder(dbConn.ConnectionString);
-            SqlConnectionStringBuilder testBld = new SqlConnectionStringBuilder()
-            {
-                DataSource = confBld.DataSource,
-                InitialCatalog = confBld.InitialCatalog,
-                PersistSecurityInfo = confBld.PersistSecurityInfo,
-                IntegratedSecurity = confBld.IntegratedSecurity,
-                UserID = confBld.UserID,
-                Password = confBld.Password,
-                ConnectTimeout = 2
-            };
-            SqlConnection testConn = new SqlConnection(testBld.ConnectionString);
-            bool retVal = false;
-            try
-            {
-                testConn.Open();
-                retVal = true;
-            }
-            catch (Exception ex)
-            {
-                errMsg = ex.Message;
-            }
-            finally
-            {
-                testConn.Close();
-                testConn = null;
-            }
-
-            return retVal;
-        }
-
-        internal static bool CheckAppDBTable(out string errMsg)
-        {
-            bool retVal = false; errMsg = null;
-            try
-            {
-                using (KDSEntities db = new KDSEntities())
-                {
-                    if (db.Department== null)
-                        AppEnv.WriteLogInfoMessage(" - таблица Department ОТСУТСТВУЕТ!!");
-                    else
-                        AppEnv.WriteLogInfoMessage(" - таблица Department содержит {0} записей.", db.Department.Count());
-
-                    if (db.OrderStatus == null)
-                        AppEnv.WriteLogInfoMessage(" - таблица OrderStatus ОТСУТСТВУЕТ!!");
-                    else
-                        AppEnv.WriteLogInfoMessage(" - таблица OrderStatus содержит {0} записей.", db.OrderStatus.Count());
-                }
-                retVal = true;
-            }
-            catch (Exception ex)
-            {
-                errMsg = ErrorHelper.GetShortErrMessage(ex);
-            }
-
-            return retVal;
-        }
-
         #region App logger
 
         // отладочные сообщения
@@ -330,7 +256,7 @@ namespace KDSService.Lib
                 }
                 else
                 {
-                    iStatus = (dish.DishStatusId ?? 0);
+                    iStatus = dish.DishStatusId;
                     statArray[iStatus]++;
                 }
             }
@@ -357,7 +283,7 @@ namespace KDSService.Lib
                 }
                 else
                 {
-                    curStat = dish.DishStatusId ?? -1;
+                    curStat = dish.DishStatusId;
                     if (statId == -1) statId = curStat;
                     else if (statId != dish.DishStatusId) return OrderStatusEnum.None;
                 }

@@ -25,9 +25,6 @@ namespace KDSService.AppModel
     [Serializable]
     public class OrderDishModel: IDisposable
     {
-        // MS SQL data type Datetime: January 1, 1753, through December 31, 9999
-        private DateTime sqlMinDate = new DateTime(1753, 1, 1);
-
         #region Service contract Properties
         [DataMember]
         public int Id { get; set; }
@@ -176,11 +173,11 @@ namespace KDSService.AppModel
             EstimatedTime = dbDish.EstimatedTime;
             _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
-            DishStatusId = dbDish.DishStatusId??0;
+            DishStatusId = dbDish.DishStatusId;
             Status = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
             // получить запись из таблицы состояний
-            _dbRunTimeRecord = getDBRunTimeRecord(dbDish.Id);
+            _dbRunTimeRecord = DBOrderHelper.getOrderDishRunTimeRecord(dbDish.Id);
 
             _isDish = ParentUid.IsNull();
             _isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
@@ -523,27 +520,6 @@ namespace KDSService.AppModel
         #endregion
 
         #region DB FUNCS
-        private OrderDishRunTime getDBRunTimeRecord(int dishId)
-        {
-            OrderDishRunTime runtimeRecord = null;
-            runtimeRecord = DBOrderHelper.getOrderDishRunTimeByOrderDishId(dishId);
-
-            // если еще нет записи в БД, то добавить ее
-            if (runtimeRecord == null)
-            {
-                runtimeRecord = DBOrderHelper.newOrderDishRunTime(dishId);
-                if (runtimeRecord == null)
-                {
-                    _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", dishId);
-                    AppEnv.WriteLogErrorMessage(_serviceErrorMessage);
-                    runtimeRecord = null;
-                }
-            }
-
-            return runtimeRecord;
-        }  // method
-
-
         // метод, который возвращает значения полей даты/времени состояния
         private StatusDTS getStatusRunTimeDTS(OrderStatusEnum status)
         {
@@ -623,7 +599,7 @@ namespace KDSService.AppModel
                     // для данного состояния накапливаем время нахождения в нем
                     if (timeStanding >= 0)
                     {
-                        _dbRunTimeRecord.CookingTS = (_dbRunTimeRecord.CookingTS ?? 0) + timeStanding;
+                        _dbRunTimeRecord.CookingTS = _dbRunTimeRecord.CookingTS + timeStanding;
                     }
 
                     break;
@@ -687,77 +663,23 @@ namespace KDSService.AppModel
         }
 
 
+        // сохранить в БД запись из _dbRunTimeRecord
         private void saveRunTimeRecord()
         {
-            // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
-            using (KDSEntities db = new KDSEntities())
+            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime..");
+            if (DBOrderHelper.updateOrderDishRunTime(_dbRunTimeRecord) == false)
             {
-                try
-                {
-                    // в _dbRunTimeRecord могут быть даты 01.01.0001, которые не поддерживаются типом MS SQL DateTime, 
-                    // который используется в БД !!!
-                    checkDateFields(_dbRunTimeRecord);
-
-                    db.OrderDishRunTime.Attach(_dbRunTimeRecord);
-                    // указать, что запись изменилась
-                    db.Entry<OrderDishRunTime>(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "обновления");
-                }
+                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
             }
-        }
-
-        private void checkDateFields(OrderDishRunTime dbRec)
-        {
-            if ((dbRec.InitDate != null) 
-                && ((dbRec.InitDate.Value.Ticks == 0) || (dbRec.InitDate.Value < sqlMinDate))) dbRec.InitDate = null;
-
-            if ((dbRec.CookingStartDate != null)
-                && ((dbRec.CookingStartDate.Value.Ticks == 0) || (dbRec.CookingStartDate.Value < sqlMinDate))) dbRec.CookingStartDate = null;
-
-            if ((dbRec.ReadyDate != null)
-                && ((dbRec.ReadyDate.Value.Ticks == 0) || (dbRec.ReadyDate.Value < sqlMinDate))) dbRec.ReadyDate = null;
-
-            if ((dbRec.TakeDate != null)
-                && ((dbRec.TakeDate.Value.Ticks == 0) || (dbRec.TakeDate.Value < sqlMinDate))) dbRec.TakeDate = null;
-
-            if ((dbRec.CommitDate != null)
-                && ((dbRec.CommitDate.Value.Ticks == 0) || (dbRec.CommitDate.Value < sqlMinDate))) dbRec.CommitDate = null;
-
-            if ((dbRec.CancelDate != null)
-                && ((dbRec.CancelDate.Value.Ticks == 0) || (dbRec.CancelDate.Value < sqlMinDate))) dbRec.CancelDate = null;
-
-            if ((dbRec.CancelConfirmedDate != null)
-                && ((dbRec.CancelConfirmedDate.Value.Ticks == 0) || (dbRec.CancelConfirmedDate.Value < sqlMinDate))) dbRec.CancelConfirmedDate = null;
-
-            if ((dbRec.ReadyConfirmedDate != null)
-                && ((dbRec.ReadyConfirmedDate.Value.Ticks == 0) || (dbRec.ReadyConfirmedDate.Value < sqlMinDate))) dbRec.ReadyConfirmedDate = null;
         }
 
 
         private void saveReturnTimeRecord(OrderStatusEnum statusFrom, OrderStatusEnum statusTo, DateTime dtEnterToNewStatus, int secondsInPrevState)
         {
-            using (KDSEntities db = new KDSEntities())
+            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime..");
+            if (DBOrderHelper.updateOrderDishReturnTime(this.Id, dtEnterToNewStatus, (int)statusFrom, secondsInPrevState, (int)statusTo) == false)
             {
-                db.OrderDishReturnTime.Add(new OrderDishReturnTime()
-                {
-                    OrderDishId = this.Id,
-                    ReturnDate = dtEnterToNewStatus,
-                    StatusFrom = (int)statusFrom,
-                    StatusFromTimeSpan = secondsInPrevState,
-                    StatusTo = (int)statusTo
-                });
-                try
-                {
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "добавления");
-                }
+                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
             }
         }
 
@@ -766,72 +688,25 @@ namespace KDSService.AppModel
             bool retVal = false;
             int iStatus = (int)status;
 
-            using (KDSEntities db = new KDSEntities())
+            string sLogMsg = string.Format("   - save DISH {0}/{1}, status = {2}", this.Id, this.Name, status.ToString());
+            DateTime dtTmr = DateTime.Now;
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+
+            if (DBOrderHelper.updateOrderDishStatus(this.Id, status))
             {
-                try
-                {
-                    OrderDish dbDish = db.OrderDish.Find(this.Id);
-                    if (dbDish != null)
-                    {
-                        if (dbDish.DishStatusId != iStatus)
-                        {
-                            dbDish.DishStatusId = iStatus;
-
-                            string sLogMsg = string.Format("   - save DISH {0}/{1}, status = {2}", this.Id, this.Name, status.ToString());
-                            DateTime dtTmr = DateTime.Now;
-                            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
-                            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
-
-                            db.SaveChanges();
-
-                            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-                            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
-                            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
-                        }
-                        retVal = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "сохранения");
-                }
+                retVal = true;
+            }
+            else
+            {
+                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", DBOrderHelper.ErrorMessage);
             }
 
-            //if (retVal)
-            //{
-            //    // убедиться, что в БД записан нужный статус
-            //    DateTime dt = DateTime.Now;
-            //    bool chkStat = false;
-            //    while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
-            //    {
-            //        System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
-            //        using (KDSEntities db = new KDSEntities())
-            //        {
-            //            try
-            //            {
-            //                OrderDish dbDish = db.OrderDish.Find(this.Id);
-            //                chkStat = ((dbDish != null) && (dbDish.DishStatusId == iStatus));
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
-            //            }
-            //        }
-            //    }
-            //    // истекло время ожидания записи в БД
-            //    if (!chkStat)
-            //    {
-            //        AppEnv.WriteLogErrorMessage("Истекло время ожидания проверочного чтения после записи нового состояния.");
-            //    }
-            //}
+            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
 
             return retVal;
-        }
-
-        private void writeDBException(Exception ex, string subMsg1)
-        {
-            _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("   - DB Error DISH id {0}: {1}", this.Id, ex.ToString());
         }
 
         #endregion

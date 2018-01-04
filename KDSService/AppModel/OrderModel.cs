@@ -119,7 +119,7 @@ namespace KDSService.AppModel
 
             _dishesDict = new Dictionary<int, OrderDishModel>();
             // получить отсоединенную RunTime запись из таблицы состояний
-            _dbRunTimeRecord = getDBRunTimeRecord(dbOrder.Id);
+            _dbRunTimeRecord = DBOrderHelper.getOrderRunTimeRecord(dbOrder.Id);
 
             // создать словарь накопительных счетчиков
             _tsTimersDict = new Dictionary<OrderStatusEnum, TimeCounter>();
@@ -430,34 +430,7 @@ namespace KDSService.AppModel
             return retVal;
         }
 
-        #region DB funcs
-        //   DB FUNCS
-        private OrderRunTime getDBRunTimeRecord(int id)
-        {
-            OrderRunTime runtimeRecord = null;
-            using (KDSEntities db = new KDSEntities())
-            {
-                runtimeRecord = db.OrderRunTime.FirstOrDefault(rec => rec.OrderId == id);
-                if (runtimeRecord == null)
-                {
-                    runtimeRecord = new OrderRunTime() { OrderId = id };
-                    db.OrderRunTime.Add(runtimeRecord);
-                    try
-                    {
-                        db.SaveChanges();
-                    }
-                    catch (Exception ex)
-                    {
-                        _serviceErrorMessage = string.Format("Ошибка создания записи в таблице OrderRunTime для блюда id {0}", id);
-                        AppEnv.WriteLogErrorMessage("Ошибка создания записи в таблице OrderRunTime для блюда id {0}: {1}", id, ex.ToString());
-                        runtimeRecord = null;
-                    }
-                }
-            }
-            return runtimeRecord;
-        }
-
-
+        #region run time funcs
         // метод, который возвращает значения полей даты/времени состояния
         private StatusDTS getStatusRunTimeDTS(OrderStatusEnum status)
         {
@@ -590,99 +563,39 @@ namespace KDSService.AppModel
 
         private bool saveRunTimeRecord()
         {
-            bool retVal = false;
-            // приаттачить и сохранить в DB-контексте два поля из RunTimeRecord
-            using (KDSEntities db = new KDSEntities())
+            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderRunTime..");
+            bool retVal = true;
+            if (DBOrderHelper.updateOrderRunTime(_dbRunTimeRecord) == false)
             {
-                try
-                {   
-                    // в _dbRunTimeRecord могут быть даты 01.01.0001, которые не поддерживаются типом MS SQL DateTime, 
-                    // который используется в БД !!!
-                    checkDateFields(_dbRunTimeRecord);
-
-                    db.OrderRunTime.Attach(_dbRunTimeRecord);
-                    // указать, что запись изменилась
-                    db.Entry<OrderRunTime>(_dbRunTimeRecord).State = System.Data.Entity.EntityState.Modified;
-                    db.SaveChanges();
-                    retVal = true;
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "обновления");
-                }
+                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
+                retVal = false;
             }
+
             return retVal;
-        }
-
-        private void checkDateFields(OrderRunTime dbRec)
-        {
-            if ((dbRec.InitDate != null)
-                && ((dbRec.InitDate.Value.Ticks == 0) || (dbRec.InitDate.Value < sqlMinDate))) dbRec.InitDate = null;
-
-            if ((dbRec.CookingStartDate != null)
-                && ((dbRec.CookingStartDate.Value.Ticks == 0) || (dbRec.CookingStartDate.Value < sqlMinDate))) dbRec.CookingStartDate = null;
-
-            if ((dbRec.ReadyDate != null)
-                && ((dbRec.ReadyDate.Value.Ticks == 0) || (dbRec.ReadyDate.Value < sqlMinDate))) dbRec.ReadyDate = null;
-
-            if ((dbRec.TakeDate != null)
-                && ((dbRec.TakeDate.Value.Ticks == 0) || (dbRec.TakeDate.Value < sqlMinDate))) dbRec.TakeDate = null;
-
-            if ((dbRec.CommitDate != null)
-                && ((dbRec.CommitDate.Value.Ticks == 0) || (dbRec.CommitDate.Value < sqlMinDate))) dbRec.CommitDate = null;
-
-            if ((dbRec.CancelDate != null)
-                && ((dbRec.CancelDate.Value.Ticks == 0) || (dbRec.CancelDate.Value < sqlMinDate))) dbRec.CancelDate = null;
-
-            if ((dbRec.CancelConfirmedDate != null)
-                && ((dbRec.CancelConfirmedDate.Value.Ticks == 0) || (dbRec.CancelConfirmedDate.Value < sqlMinDate))) dbRec.CancelConfirmedDate = null;
-
-            if ((dbRec.ReadyConfirmedDate != null)
-                && ((dbRec.ReadyConfirmedDate.Value.Ticks == 0) || (dbRec.ReadyConfirmedDate.Value < sqlMinDate))) dbRec.ReadyConfirmedDate = null;
         }
 
         private bool saveStatusToDB(OrderStatusEnum status, string machineName = null)
         {
             bool retVal = false;
-            using (KDSEntities db = new KDSEntities())
+
+            string sLogMsg = string.Format("   - save ORDER {0}/{1}, status = {2}", this.Id, this.Number.ToString(), status.ToString());
+            DateTime dtTmr = DateTime.Now;
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+
+            if (DBOrderHelper.updateOrderStatus(this.Id, status, _isUseReadyConfirmed))
             {
-                try
-                {
-                    Order dbOrder = db.Order.Find(this.Id);
-                    if (dbOrder != null)
-                    {
-                        dbOrder.OrderStatusId = (int)status;
-
-                        // записать в поле QueueStatusId значение для очереди заказов
-                        if (status == OrderStatusEnum.Cooking)
-                        {
-                            if (dbOrder.QueueStatusId != 0) dbOrder.QueueStatusId = 0;
-                        }
-                        else if ((!_isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
-                            || (_isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
-                            dbOrder.QueueStatusId = 1;
-                        else if (status == OrderStatusEnum.Took)
-                            dbOrder.QueueStatusId = 2;
-
-                        string sMsg = string.Format("   - save order {0}/{1}, status = {2}", this.Id, this.Number, status.ToString());
-                        DateTime dtTmr = DateTime.Now;
-                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg + " - START");
-                        else AppEnv.WriteLogClientAction(machineName, sMsg + " - START");
-
-                        db.SaveChanges();
-
-                        sMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-                        if (machineName == null) AppEnv.WriteLogOrderDetails(sMsg);
-                        else AppEnv.WriteLogClientAction(machineName, sMsg);
-
-                        retVal = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    writeDBException(ex, "сохранения");
-                }
+                retVal = true;
             }
+            else
+            {
+                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", DBOrderHelper.ErrorMessage);
+            }
+
+            sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
+            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+
             return retVal;
         }
 

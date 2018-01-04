@@ -18,6 +18,8 @@ namespace IntegraLib
 
         public static string ErrorMessage { get { return _errMsg; } }
 
+        public static string ConnectionString { get { return getConnString(); } }
+
         #region private methods
 
         private static string getConnString()
@@ -95,6 +97,9 @@ namespace IntegraLib
                     _configConnString = _configConnString.Split('"')[1];
                 }
 
+                // удалить лишние пробелы
+                _configConnString = System.Text.RegularExpressions.Regex.Replace(_configConnString, @"\s{2,}", " ");
+
                 // таймаут подключения к серверу MS SQL - 10 сек. По умолчанию - 15 секунд.
                 if (!_configConnString.Contains("Connection Timeout")) _configConnString += "; Connection Timeout=10";
             }
@@ -106,7 +111,7 @@ namespace IntegraLib
 
 
         // получить DataTable из SELECT-запроса
-        public static DataTable GetQueryTable(string queryString)
+        public static DataTable GetQueryTable(string queryString, IsolationLevel isolationLevel = IsolationLevel.ReadUncommitted)
         {
             SqlConnection conn = getConnection();
             if (conn == null) return null;
@@ -114,7 +119,7 @@ namespace IntegraLib
             DataTable retVal = null;
             if (openDB(conn))
             {
-                SqlTransaction st = conn.BeginTransaction(IsolationLevel.ReadUncommitted);
+                SqlTransaction st = conn.BeginTransaction(isolationLevel);
                 try
                 {
                     SqlDataAdapter da = new SqlDataAdapter(queryString, conn);
@@ -141,7 +146,7 @@ namespace IntegraLib
         }
 
         // метод, который выполняет SQL-запрос, не возвращающий данные, напр. вставка или удаление строк
-        public static int Execute(string sqlText)
+        public static int Execute(string sqlText, bool inTransaction = true)
         {
             int retVal = -1;
             SqlConnection conn = getConnection();
@@ -149,15 +154,17 @@ namespace IntegraLib
 
             if (openDB(conn))
             {
+                SqlTransaction st = null;
+                if (inTransaction) st = conn.BeginTransaction(IsolationLevel.ReadCommitted);
                 SqlCommand sc = conn.CreateCommand();
                 sc.CommandText = sqlText;
+                if (inTransaction) sc.Transaction = st;
                 sc.CommandTimeout = _commandTimeout;
 
-                SqlTransaction st = conn.BeginTransaction(IsolationLevel.ReadCommitted);
                 try
                 {
                     retVal = sc.ExecuteNonQuery();
-                    st.Commit();
+                    if (inTransaction) st.Commit();
                 }
                 catch (Exception ex)
                 {
@@ -165,12 +172,73 @@ namespace IntegraLib
                 }
                 finally
                 {
-                    st.Dispose();
+                    if (inTransaction) st.Dispose();
                     closeDB(conn);
                 }
             }
 
             return retVal;
+        }
+
+        internal static bool SetDBCompatibleLevel(byte dbCompatibleLevel)
+        {
+            _errMsg = null;
+            string dbName = getDBName();
+            if (dbName == null) return false;
+
+            string sqlText = string.Format("ALTER DATABASE {0} SET COMPATIBILITY_LEVEL = {1}", dbName, dbCompatibleLevel.ToString());
+            int result = Execute(sqlText, false);
+            bool retVal = (_errMsg == null);
+
+            return retVal;
+        }
+
+        internal static string GetDBName()
+        {
+            return getDBName();
+        }
+
+        internal static byte GetDBCompatibleLevel()
+        {
+            string dbName = getDBName();
+            string sqlText = string.Format("SELECT compatibility_level FROM sys.databases where Name = '{0}'", dbName);
+            DataTable dt = GetQueryTable(sqlText);
+            byte retVal = 0;
+            if (dt != null)
+            {
+                retVal = Convert.ToByte(dt.Rows[0][0]);
+                dt.Dispose();
+            }
+            dt = null;
+
+            return retVal;
+        }
+
+        public static string getSQLServerNameByCompatibleLevel(byte dbCompatibleLevel)
+        {
+            string retVal = "unknown MS SQL Server name";
+            switch (dbCompatibleLevel)
+            {
+                case 80: retVal = "SQL Server 2000"; break;
+                case 90: retVal = "SQL Server 2005"; break;
+                case 100: retVal = "SQL Server 2008"; break;
+                case 110: retVal = "SQL Server 2012"; break;
+                case 120: retVal = "SQL Server 2014"; break;
+                case 130: retVal = "SQL Server 2016"; break;
+                case 140: retVal = "SQL Server 2017"; break;
+                default:
+                    break;
+            }
+
+            return retVal;
+        }
+
+        private static string getDBName()
+        {
+            string connString = getConnString();
+            if (connString == null) return null;
+
+            return (new SqlConnectionStringBuilder(connString)).InitialCatalog;
         }
         #endregion
 
@@ -179,6 +247,35 @@ namespace IntegraLib
             DataTable dt = GetQueryTable("SELECT @@IDENTITY");
             var retVal = dt.Rows[0][0];
             return (retVal == null) ? 0 : (int)retVal;
+        }
+
+        // попытаться открыть подключение к БД и закрыть его
+        internal static bool CheckDBConnect()
+        {
+            bool retVal = false;
+            SqlConnection conn = getConnection();
+            if (conn == null) return retVal;
+
+            // установить ConnectTimeout в 2 сек
+            SqlConnectionStringBuilder confBld = new SqlConnectionStringBuilder(conn.ConnectionString);
+            SqlConnectionStringBuilder testBld = new SqlConnectionStringBuilder()
+            {
+                DataSource = confBld.DataSource,
+                InitialCatalog = confBld.InitialCatalog,
+                PersistSecurityInfo = confBld.PersistSecurityInfo,
+                IntegratedSecurity = confBld.IntegratedSecurity,
+                UserID = confBld.UserID,
+                Password = confBld.Password,
+                ConnectTimeout = 2
+            };
+            SqlConnection testConn = new SqlConnection(testBld.ConnectionString);
+
+            _errMsg = null;
+            if (openDB(testConn)) closeDB(testConn);
+            if (_errMsg == null) retVal = true;
+            testConn = null;
+
+            return retVal;
         }
 
 

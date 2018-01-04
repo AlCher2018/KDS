@@ -51,14 +51,6 @@
     </StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
-    </Reference>
     <Reference Include="IntegraLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
@@ -102,42 +94,13 @@
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
     <Compile Include="DataSource\DBOrderHelper.cs" />
-    <Compile Include="DataSource\Department.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\Order.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDish.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDishReturnTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDishRunTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderRunTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderStatus.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
+    <Compile Include="DataSource\Department.cs" />
+    <Compile Include="DataSource\Order.cs" />
+    <Compile Include="DataSource\OrderDish.cs" />
+    <Compile Include="DataSource\OrderDishReturnTime.cs" />
+    <Compile Include="DataSource\OrderDishRunTime.cs" />
+    <Compile Include="DataSource\OrderRunTime.cs" />
+    <Compile Include="DataSource\OrderStatus.cs" />
     <Compile Include="IKDSCommandService.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
@@ -148,26 +111,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DataSource\KDSEntities.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-      <LastGenOutput>KDSEntities.Context.cs</LastGenOutput>
-    </Content>
-    <Content Include="DataSource\KDSEntities.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-      <LastGenOutput>KDSEntities.cs</LastGenOutput>
-    </Content>
     <Content Include="history.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EntityDeploy Include="DataSource\KDSEntities.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <None Include="DataSource\KDSEntities.edmx.diagram">
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
