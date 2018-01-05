@@ -488,7 +488,7 @@ namespace KDSWPFClient
                 // не проигрывать мелодию, если только изменились условия выборки/группировки заказов
                 // - в элементах управления: кнопки листания страниц, группировка заказов, группировка блюд, фильтр статусов, 
                 // - или в окне настроек: отображаемые цеха, отображаемые статусы, 
-                AppLib.WriteLogTraceMessage("** before sound play: _isNeedSound={0}, _isInit={1}",_isNeedSound.ToString(), _isInit.ToString());
+                AppLib.WriteLogTraceMessage("** sound play condition: _isNeedSound({0}) || _isInit({1})",_isNeedSound.ToString(), _isInit.ToString());
                 if (_isNeedSound || _isInit)
                 {
                     _wavPlayer.Play();

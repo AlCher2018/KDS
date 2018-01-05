@@ -16,9 +16,25 @@ namespace IntegraLib
         private static string _configConnString;
         private static string _errMsg;
 
-        public static string ErrorMessage { get { return _errMsg; } }
+        private static Dictionary<int, string> _mssqlCompatibleLevels;
 
+        public static string ErrorMessage { get { return _errMsg; } }
+        
         public static string ConnectionString { get { return getConnString(); } }
+
+        static DBContext()
+        {
+            _mssqlCompatibleLevels = new Dictionary<int, string>()
+            {
+                {80, "SQL Server 2000"},
+                {90, "SQL Server 2005"},
+                {100, "SQL Server 2008"},
+                {110, "SQL Server 2012"},
+                {120, "SQL Server 2014"},
+                {130, "SQL Server 2016"},
+                {140, "SQL Server 2017"},
+            };
+        }
 
         #region private methods
 
@@ -180,7 +196,31 @@ namespace IntegraLib
             return retVal;
         }
 
-        internal static bool SetDBCompatibleLevel(byte dbCompatibleLevel)
+        internal static string GetDBName()
+        {
+            return getDBName();
+        }
+
+        #endregion
+
+        #region ms sql server compatible level
+        internal static int GetDBCompatibleLevel()
+        {
+            string dbName = getDBName();
+            string sqlText = string.Format("SELECT compatibility_level FROM sys.databases where Name = '{0}'", dbName);
+            DataTable dt = GetQueryTable(sqlText);
+            int retVal = 0;
+            if (dt != null)
+            {
+                retVal = Convert.ToInt32(dt.Rows[0][0]);
+                dt.Dispose();
+            }
+            dt = null;
+
+            return retVal;
+        }
+
+        internal static bool SetDBCompatibleLevel(int dbCompatibleLevel)
         {
             _errMsg = null;
             string dbName = getDBName();
@@ -193,53 +233,22 @@ namespace IntegraLib
             return retVal;
         }
 
-        internal static string GetDBName()
+        internal static bool IsValidCompatibleLevel(int compatibleLevel)
         {
-            return getDBName();
+            return _mssqlCompatibleLevels.ContainsKey(compatibleLevel);
         }
 
-        internal static byte GetDBCompatibleLevel()
+        public static string getSQLServerNameByCompatibleLevel(int dbCompatibleLevel)
         {
-            string dbName = getDBName();
-            string sqlText = string.Format("SELECT compatibility_level FROM sys.databases where Name = '{0}'", dbName);
-            DataTable dt = GetQueryTable(sqlText);
-            byte retVal = 0;
-            if (dt != null)
-            {
-                retVal = Convert.ToByte(dt.Rows[0][0]);
-                dt.Dispose();
-            }
-            dt = null;
+            string retVal;
+            if (_mssqlCompatibleLevels.ContainsKey(dbCompatibleLevel))
+                retVal = _mssqlCompatibleLevels[dbCompatibleLevel];
+            else
+                retVal = "unknown MS SQL Server compatible level: " + dbCompatibleLevel.ToString();
 
             return retVal;
         }
 
-        public static string getSQLServerNameByCompatibleLevel(byte dbCompatibleLevel)
-        {
-            string retVal = "unknown MS SQL Server name";
-            switch (dbCompatibleLevel)
-            {
-                case 80: retVal = "SQL Server 2000"; break;
-                case 90: retVal = "SQL Server 2005"; break;
-                case 100: retVal = "SQL Server 2008"; break;
-                case 110: retVal = "SQL Server 2012"; break;
-                case 120: retVal = "SQL Server 2014"; break;
-                case 130: retVal = "SQL Server 2016"; break;
-                case 140: retVal = "SQL Server 2017"; break;
-                default:
-                    break;
-            }
-
-            return retVal;
-        }
-
-        private static string getDBName()
-        {
-            string connString = getConnString();
-            if (connString == null) return null;
-
-            return (new SqlConnectionStringBuilder(connString)).InitialCatalog;
-        }
         #endregion
 
         public static int GetLastInsertedId()
@@ -276,6 +285,14 @@ namespace IntegraLib
             testConn = null;
 
             return retVal;
+        }
+
+        private static string getDBName()
+        {
+            string connString = getConnString();
+            if (connString == null) return null;
+
+            return (new SqlConnectionStringBuilder(connString)).InitialCatalog;
         }
 
 

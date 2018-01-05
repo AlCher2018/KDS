@@ -25,7 +25,9 @@ namespace KDSWinSvcHost
             _svcInstallLog = AppEnvironment.GetFullSpecialFileNameInAppDir("InstallLog", null, true);
 
 #if (DEBUG)
-            OnStart(null);
+            string[] args = null;
+            args = new string[] { "-autoGenLicence" };
+            OnStart(args);
 #endif
         }
 
@@ -33,9 +35,16 @@ namespace KDSWinSvcHost
         {
             putToSvcLog("*** Запуск Windows-службы КДС ***");
 
+#if DEBUG == true
+            if (args != null)
+            {
+                putToSvcLog("аргументы запуска службы: " + string.Join(" ", args));
+            }
+#endif
             // ЗАЩИТА PSW-файлом
+            bool isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("KDSService", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSService", out checkProtectedResult, null, isLoyalClient) == false)
             {
                 putToSvcLog(checkProtectedResult.LogMessage);
                 putToSvcLog(checkProtectedResult.CustomMessage);

@@ -189,6 +189,7 @@ namespace KDSService.DataSource
             List<Order> retVal = new List<Order>();
 
             DataTable dt = DBContext.GetQueryTable(sqlText);
+
             foreach (DataRow dtRow in dt.Rows)
             {
                 Order ord = new Order();

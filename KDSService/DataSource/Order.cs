@@ -21,5 +21,15 @@ namespace KDSService.DataSource
         public int QueueStatusId { get; set; }
         public int LanguageTypeId { get; set; }
         public string DivisionColorRGB { get; set; }
-    }
+
+        private List<OrderDish> _dishes;
+        public List<OrderDish> Dishes { get { return _dishes; } }
+
+        // CTOR
+        public Order()
+        {
+            _dishes = new List<OrderDish>();
+        }
+
+    }  // class
 }

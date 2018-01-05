@@ -37,7 +37,9 @@ namespace KDSService.AppModel
         private bool _changeStatusYesterdayOrdersCfg, _changeStatusYesterdayOrdersCurrent;
         private DateTime _currentDate;
 
-        List<Order> _delOrders;
+        private List<Order> _delOrders;
+
+        private DateTime _tmpDT;
 
        
         // CONSTRUCTOR
@@ -175,6 +177,7 @@ namespace KDSService.AppModel
                         {
                             //sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
                             //AppEnv.WriteLogOrderDetails(sLog + " - START");
+                            //_tmpDT = DateTime.Now;
 
                             try
                             {
@@ -185,13 +188,13 @@ namespace KDSService.AppModel
                                 AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
                             }
 
-                            //AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
+                            //AppEnv.WriteLogOrderDetails(sLog + " - FINISH - " + _tmpPeriod());
                         }
                         // добавление заказа в словарь
                         else
                         {
                             sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
-                            AppEnv.WriteLogOrderDetails(sLog + " - START");
+                            AppEnv.WriteLogOrderDetails(sLog + " - START"); _tmpDT = DateTime.Now;
                             try
                             {
                                 OrderModel newOrder = new OrderModel(dbOrder);
@@ -199,9 +202,9 @@ namespace KDSService.AppModel
                             }
                             catch (Exception ex)
                             {
-                                AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                                AppEnv.WriteLogErrorMessage("Ошибка добавления заказа в служебный словарь: {0}", ex.ToString());
                             }
-                            AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
+                            AppEnv.WriteLogOrderDetails(sLog + " - FINISH - " + _tmpPeriod());
                         }  //curOrder
                     }  // foreach
                 }  // lock _orders
@@ -263,6 +266,7 @@ namespace KDSService.AppModel
             if (DateTime.Now < dtUpdate) return false;
 
             AppEnv.WriteLogOrderDetails(" - обновить статус вчерашних заказов... - START");
+            _tmpDT = DateTime.Now;
 
             // дата/время, С КОТОРОГО заказы считаются "сегодяшними"
             double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
@@ -286,15 +290,23 @@ namespace KDSService.AppModel
                     iAffected = DBContext.Execute(sqlText);
                     cntOrders += iAffected;
                 }
-                AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH", cntOrders, cntDishes);
                 retVal = true;
             }
             catch (Exception ex)
             {
-                AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0} ({1}) - FINISH", ErrorHelper.GetShortErrMessage(ex), sqlText);
+                AppEnv.WriteLogErrorMessage(" - ошибка обновления заказов: {0} ({1})", ErrorHelper.GetShortErrMessage(ex), sqlText);
             }
+            AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH - {2}", cntOrders, cntDishes, _tmpPeriod());
 
             return retVal;
+        }
+
+        private string _tmpPeriod()
+        {
+            if (_tmpDT.IsZero())
+                return "";
+            else
+                return (DateTime.Now - _tmpDT).ToString();
         }
 
 

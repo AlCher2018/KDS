@@ -74,16 +74,15 @@ namespace KDSService.Lib
             NameValueCollection cfg = ConfigurationManager.AppSettings;
             string value;
 
-            // имя службы MS SQL Service, флаг перезапуска sql-службы
-            /*  <!-- наименование службы MS SQL Server, как в services.msc -->
-                <add key = "MSSQLServiceName" value = "MSSQLSERVER" />
-                <!-- флаг перезапуска sql-службы -->
-                <add key = "MSSQLServiceRestartEnable" value = "false" />
-            */
-            value = cfg["MSSQLServiceRestartEnable"];
-            AppProperties.SetProperty("MSSQLServiceRestartEnable", (value == null) ? false : value.ToBool());
+            // наименование службы MS SQL Server, как в services.msc
             value = cfg["MSSQLServiceName"];
             AppProperties.SetProperty("MSSQLServiceName", (value == null) ? MSSQLService.Controller.ServiceName : value);
+            // флаг перезапуска sql-службы, по умолчанию - false
+            value = cfg["MSSQLServiceRestartEnable"];
+            AppProperties.SetProperty("MSSQLServiceRestartEnable", (value == null) ? false : value.ToBool());
+            // уровень совместимости БД (120 - это MS SQL Server 2014)
+            value = cfg["MSSQLServerCompatibleLevel"];
+            AppProperties.SetProperty("MSSQLServerCompatibleLevel", (value == null) ? 0 : value.ToInt());
 
             // режим сортировки заказов
             string ordersSortMode = "Desc";
