@@ -94,6 +94,10 @@ namespace KDSWPFClient
         public bool ClickPageButton { get; set; }
 
         private AppLeftTabControl _tabDishGroup;
+        // максимальное количество архивных файлов
+        private int _maxLogFilesCount = 0;
+        // дата последней проверки максимального количества архивных файлов
+        private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
 
 
         // CONSTRUCTOR
@@ -168,6 +172,8 @@ namespace KDSWPFClient
                 _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
+
+            _maxLogFilesCount = (int)WpfHelper.GetAppGlobalValue("MaxLogFiles", 0);
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -241,7 +247,22 @@ namespace KDSWPFClient
         // основной таймер отображения панелей заказов
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            //DateTime dt = DateTime.Now;
+            DateTime dt = DateTime.Now;
+            // проверка количества архивных файлов
+            if ((_maxLogFilesCount > 0) 
+                && ((dt.Minute == 1) && (dt.Second <= 10) && ((dt - _lastCheckDateMaxLogFiles).TotalSeconds > 10)
+                    || (_lastCheckDateMaxLogFiles.Equals(DateTime.MinValue)))
+                )
+            {
+                AppLib.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
+                List<string> delFileNames = AppEnvironment.CheckLogFilesCount(_maxLogFilesCount);
+                if ((delFileNames == null) || (delFileNames.Count() == 0))
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: 0");
+                else
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
+                _lastCheckDateMaxLogFiles = DateTime.Now;
+            }
+
             //if (dt.Millisecond <= 200)
             //{
             // обновление по месту

@@ -62,8 +62,10 @@ namespace KDSWPFClient
             }
 
             // защита PSW-файлом
+            //args = new string[] { "-autoGenLicence" };
+            bool isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult, null, isLoyalClient) == false)
             {
                 string errMsg = string.Format("{0}{1}{1}{2}", checkProtectedResult.LogMessage, Environment.NewLine, checkProtectedResult.CustomMessage);
                 appExit(2, errMsg);
@@ -245,6 +247,9 @@ namespace KDSWPFClient
             setGlobStringValueFromCfg("DishesSupplyName", "Подача");
             setGlobStringValueFromCfg("ContinueOrderNextPage", "Продолж. см.на СЛЕДУЮЩЕЙ стр.");
             setGlobStringValueFromCfg("ContinueOrderPrevPage", "Начало см.на ПРЕДЫДУЩЕЙ стр.");
+
+            // Максимальное количество архивных файлов журнала. По умолчанию, равно 0 (нет ограничения).
+            setGlobIntValueFromCfg("MaxLogFiles", 0);
 
             // флаги типов записей журнала приложения
             setGlobBoolValueFromCfg("IsWriteTraceMessages", true);

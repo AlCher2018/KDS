@@ -75,14 +75,11 @@ namespace KDSService.Lib
             string value;
 
             // наименование службы MS SQL Server, как в services.msc
-            value = cfg["MSSQLServiceName"];
-            AppProperties.SetProperty("MSSQLServiceName", (value == null) ? MSSQLService.Controller.ServiceName : value);
+            setGlobalValueFromCfg("MSSQLServiceName", MSSQLService.Controller.ServiceName);
             // флаг перезапуска sql-службы, по умолчанию - false
-            value = cfg["MSSQLServiceRestartEnable"];
-            AppProperties.SetProperty("MSSQLServiceRestartEnable", (value == null) ? false : value.ToBool());
+            setGlobalValueFromCfg("MSSQLServiceRestartEnable", false);
             // уровень совместимости БД (120 - это MS SQL Server 2014)
-            value = cfg["MSSQLServerCompatibleLevel"];
-            AppProperties.SetProperty("MSSQLServerCompatibleLevel", (value == null) ? 0 : value.ToInt());
+            setGlobalValueFromCfg("MSSQLServerCompatibleLevel", 0);
 
             // режим сортировки заказов
             string ordersSortMode = "Desc";
@@ -90,28 +87,18 @@ namespace KDSService.Lib
             if ((value != null) && (value.Equals("Asc", StringComparison.OrdinalIgnoreCase))) ordersSortMode = "Asc";
             AppProperties.SetProperty("SortOrdersByCreateDate", ordersSortMode);
 
-            if ((value = cfg["IsWriteTraceMessages"]) != null)
-                AppProperties.SetProperty("IsWriteTraceMessages", value.ToBool());
-            if ((value = cfg["TraceOrdersDetails"]) != null)
-                AppProperties.SetProperty("TraceOrdersDetails", value.ToBool());
-            if ((value = cfg["IsLogClientAction"]) != null)
-                AppProperties.SetProperty("IsLogClientAction", value.ToBool());
-            if ((value = cfg["TraceQueryToMSSQL"]) != null)
-                AppProperties.SetProperty("TraceQueryToMSSQL", value.ToBool());
-            
-
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
-            AppProperties.SetProperty("ExpectedTake", cfg["ExpectedTake"].ToInt());
+            setGlobalValueFromCfg("ExpectedTake", 0);
 
             // читать ли из БД выданные блюда
-            AppProperties.SetProperty("IsReadTakenDishes", cfg["IsReadTakenDishes"].ToBool());
+            setGlobalValueFromCfg("IsReadTakenDishes", false);
             // использовать ли двухэтапный переход в состояние ГОТОВ/ подтверждение состояния ГОТОВ (повар переводит, шеф-повар подтверждает)
-            AppProperties.SetProperty("UseReadyConfirmedState", cfg["UseReadyConfirmedState"].ToBool());
+            setGlobalValueFromCfg("UseReadyConfirmedState", false);
             // Время, в СЕКУНДАХ, автоматического перехода из Готово в ПодтвГотово, при включенном ПодтвГотово (UseReadyConfirmedState = true). Если отсутствует или равно 0, то автоматического перехода не будет.
-            AppProperties.SetProperty("AutoGotoReadyConfirmPeriod", cfg["AutoGotoReadyConfirmPeriod"].ToInt());
+            setGlobalValueFromCfg("AutoGotoReadyConfirmPeriod", 0);
 
             // учитывать ли отмененные блюда при подсчете одновременно готовящихся блюд для автостарта готовки
-            AppProperties.SetProperty("TakeCancelledInAutostartCooking", cfg["TakeCancelledInAutostartCooking"].ToBool());
+            setGlobalValueFromCfg("TakeCancelledInAutostartCooking", false);
 
             value = cfg["TimeOfAutoCloseYesterdayOrders"];
             TimeSpan ts = TimeSpan.Zero;
@@ -121,8 +108,7 @@ namespace KDSService.Lib
             }
             AppProperties.SetProperty("TimeOfAutoCloseYesterdayOrders", ts);
 
-            value = cfg["MidnightShiftShowYesterdayOrders"];
-            AppProperties.SetProperty("MidnightShiftShowYesterdayOrders", ((value.IsNull()) ? 0d : value.ToDouble()));
+            setGlobalValueFromCfg("MidnightShiftShowYesterdayOrders", 0d);
 
             // неиспользуемые цеха
             value = cfg["UnusedDepartments"];
@@ -141,6 +127,17 @@ namespace KDSService.Lib
             }
             else
                 AppProperties.SetProperty("UnusedDepartments", null);
+
+            // Максимальное количество архивных файлов журнала. По умолчанию, равно 0 (нет ограничения).
+            value = cfg["MaxLogFiles"];
+            AppProperties.SetProperty("MaxLogFiles", ((value==null) ? 0 : value.ToInt()));
+
+            // отладочные сообщения
+            setGlobalValueFromCfg("IsWriteTraceMessages", false);
+            setGlobalValueFromCfg("TraceOrdersDetails", false);
+            setGlobalValueFromCfg("IsLogClientAction", false);
+            setGlobalValueFromCfg("TraceQueryToMSSQL", false);
+
 
             // ВНУТРЕННИЕ КОЛЛЕКЦИИ
 
@@ -225,6 +222,21 @@ namespace KDSService.Lib
             }
         }
         #endregion
+
+        private static void setGlobalValueFromCfg<T>(string cfgElementName, T defaultValue, string globVarName = null)
+        {
+            string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
+
+            AppProperties.SetProperty(((globVarName == null) ? cfgElementName : globVarName),
+               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : getValueFromString(ref sCfgValue, typeof(T))));
+        }
+        private static object getValueFromString(ref string strValue, Type valueType)
+        {
+            if (valueType == typeof(bool))          return strValue.ToBool();
+            else if (valueType == typeof(int))      return strValue.ToInt();
+            else if (valueType == typeof(double))   return strValue.ToDouble();
+            else                                    return strValue;
+        }
 
         #region для конкретного приложения
 

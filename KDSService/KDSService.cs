@@ -40,6 +40,12 @@ namespace KDSService
 
         private string _sqlServerErrorString;
 
+        // максимальное количество архивных файлов
+        private int _maxLogFilesCount = 0;
+        // дата последней проверки максимального количества архивных файлов
+        private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
+
+
 
         // CTOR
         public KDSServiceClass()
@@ -70,9 +76,13 @@ namespace KDSService
             AppEnv.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
 
             AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
+
+            // чтение настроек из config-файла
             isResultOk = AppEnv.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
+
+            _maxLogFilesCount = AppProperties.GetIntProperty("MaxLogFiles");
 
             #region проверка наличия службы MSSQLServer
             // проверка наличия службы MSSQLServer
@@ -344,6 +354,22 @@ Contract: IMetadataExchange
         {
             StopTimer();
             AppEnv.WriteLogOrderDetails("** Stop DB read timer.");
+
+            // проверка количества архивных файлов
+            DateTime dt = DateTime.Now;
+            if ((_maxLogFilesCount > 0)
+                && ((dt.Minute == 1) && (dt.Second <= 10) && ((dt - _lastCheckDateMaxLogFiles).TotalSeconds > 10)
+                    || (_lastCheckDateMaxLogFiles.Equals(DateTime.MinValue)))
+                )
+            {
+                AppEnv.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
+                List<string> delFileNames = AppEnvironment.CheckLogFilesCount(_maxLogFilesCount);
+                if ((delFileNames == null) || (delFileNames.Count() == 0))
+                    AppEnv.WriteLogTraceMessage(" - удалено файлов: 0");
+                else
+                    AppEnv.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
+                _lastCheckDateMaxLogFiles = DateTime.Now;
+            }
 
             // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
             if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))

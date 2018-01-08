@@ -29,12 +29,20 @@ namespace nlog_add_maxArchiveFiles
             string maxArchiveFiles = "120";
             if (args != null)
             {
+                bool b1 = false;
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i].Equals("-set", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (i < (args.Length - 1)) { i++; maxArchiveFiles = args[i]; }
+                        if (i < (args.Length - 1)) { i++; maxArchiveFiles = args[i]; b1 = true; }
                     }
+                }
+
+                // если именованного аргумента нет и первый аргумент - это число, то берем это число, как maxArchiveFiles
+                if (b1 == false)
+                {
+                    int arg1;
+                    if (int.TryParse(args[0], out arg1) == true) maxArchiveFiles = args[0];
                 }
             }
             Console.Write("\nУстановить maxArchiveFiles=\"{0}\"", maxArchiveFiles);

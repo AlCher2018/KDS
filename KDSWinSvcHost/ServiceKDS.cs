@@ -24,11 +24,7 @@ namespace KDSWinSvcHost
             this.AutoLog = true;
             _svcInstallLog = AppEnvironment.GetFullSpecialFileNameInAppDir("InstallLog", null, true);
 
-#if (DEBUG)
-            string[] args = null;
-            args = new string[] { "-autoGenLicence" };
-            OnStart(args);
-#endif
+//            args = new string[] { "-autoGenLicence" };
         }
 
         protected override void OnStart(string[] args)
