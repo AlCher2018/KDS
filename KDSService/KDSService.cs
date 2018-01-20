@@ -804,6 +804,9 @@ Contract: IMetadataExchange
                     order.Dishes = sortedDishes;
                 }
 
+                OrderModel ord17 = retValList.FirstOrDefault(o => o.Number == 17);
+                Debug.Print(string.Format(" - to client {0}, order Num17 dishes - {1}", retValList.Count, ord17.Dishes.Count));
+
                 // если появились новые заказы, то передать клиенту заказы с самого первого
                 List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);
                 if ((newOrdersList != null) && (newOrdersList.Count > 0))

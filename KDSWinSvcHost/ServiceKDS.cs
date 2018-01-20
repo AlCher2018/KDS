@@ -38,7 +38,10 @@ namespace KDSWinSvcHost
             }
 #endif
             // ЗАЩИТА PSW-файлом
+            // аргумент запуска args = new string[] { "-autoGenLicence" };
             bool isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
+            // ключ реестра HKLM\Software\Integra\autoGenLicence = 01 (binary)
+            if (isLoyalClient == false) isLoyalClient = RegistryHelper.IsExistsAutoGenLicenceKey();
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSService", out checkProtectedResult, null, isLoyalClient) == false)
             {

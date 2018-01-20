@@ -101,23 +101,7 @@ namespace KDSService.AppModel
 
         private bool findKVPair(KeyValuePair<int, List<int>> itemCheck, List<KeyValuePair<int, List<int>>> whereList)
         {
-            KeyValuePair<int, List<int>>[] foundOrderId = whereList.Where(i => itemCheck.Key == i.Key).ToArray();
-
-            return (foundOrderId.Length > 0);
-
-            // цикл по элементам с равенством ключей
-            //foreach (KeyValuePair<int, List<int>> findKeyList in whereList.Where(i => itemCheck.Key == i.Key))
-            //{
-            //    // сравнение внутренних массивов
-            //    List<int> l1 = itemCheck.Value, l2 = findKeyList.Value;
-            //    if (((l1 == null) && (l2 != null)) || ((l1 != null) && (l2 == null))) continue;
-            //    if (l1.Count != l2.Count) continue;
-            //    for (int i = 0; i < l1.Count; i++) if (l1[i] != l2[i]) continue;
-
-            //    // внутренние массивы одинаковые
-            //    return true;
-            //}
-            //return false;
+            return whereList.Any(i => (itemCheck.Key == i.Key) && (itemCheck.Value.SequenceEqual(i.Value)));
         }
 
         private List<KeyValuePair<int, List<int>>> getOrderIdsList(List<OrderModel> orders)

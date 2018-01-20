@@ -62,8 +62,10 @@ namespace KDSWPFClient
             }
 
             // защита PSW-файлом
-            //args = new string[] { "-autoGenLicence" };
-            bool isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
+            bool isLoyalClient = false;
+            //isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
+            // ключ реестра HKLM\Software\Integra\autoGenLicence = 01 (binary)
+            if (isLoyalClient == false) isLoyalClient = RegistryHelper.IsExistsAutoGenLicenceKey();
             pswLib.CheckProtectedResult checkProtectedResult;
             if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult, null, isLoyalClient) == false)
             {

@@ -343,7 +343,7 @@ namespace KDSWPFClient
                 {
 
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
-                    
+
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
                     if ((_svcResp.OrdersList.Count == 0) && (!_svcResp.ServiceErrorMessage.IsNull()))

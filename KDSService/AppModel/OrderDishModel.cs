@@ -270,9 +270,12 @@ namespace KDSService.AppModel
                 // автоматическая установка состояний
                 OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 // отмененное блюдо/ингредиент
-                if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled)) newStatus = OrderStatusEnum.Cancelled;
-                // TODO автоматический переход из Готово в ПодтвГотово
-                if ((_isUseReadyConfirmed == true) && (_autoGotoReadyConfirmPeriod > 0)
+                if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled))
+                {
+                    newStatus = OrderStatusEnum.Cancelled;
+                }
+                // автоматический переход из Готово в ПодтвГотово
+                else if ((_isUseReadyConfirmed == true) && (_autoGotoReadyConfirmPeriod > 0)
                     && (newStatus == OrderStatusEnum.Ready) && (_dtReadyStatusInput.IsZero() == false)
                     && ((DateTime.Now - _dtReadyStatusInput).TotalSeconds >= _autoGotoReadyConfirmPeriod)
                     )

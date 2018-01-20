@@ -268,9 +268,10 @@ namespace KDSWPFClient.ViewModel
                         }
                     }
                     // есть ПодтвГотово, находимся в состоянии Готово и _autoGotoReadyConfirmPeriod не равен 0 - счетчик по убыванию от _autoGotoReadyConfirmPeriod (период, по истечении которого происходит автоматический переход в состояние ПодтвГотово)
+                    //  && (_savedReadyTS.IsZero() == false)  -- зачем?
                     else if (_isUseReadyConfirmed 
                         && (!_autoGotoReadyConfirmTS.IsZero()) 
-                        && (this.Status == OrderStatusEnum.Ready) && (_savedReadyTS.IsZero() == false))
+                        && (this.Status == OrderStatusEnum.Ready))
                     {
                         tsTimerValue = _autoGotoReadyConfirmTS - (tsTimerValue - _savedReadyTS);
                         _enableTimerToAutoReadyConfirm = (tsTimerValue.TotalSeconds > 0);
