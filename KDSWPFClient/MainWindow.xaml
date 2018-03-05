@@ -73,7 +73,7 @@
         </Border>
 
         <!-- панель заказов - канва отображения -->
-        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public"/>
+        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public" />
         <!-- канва фонового размещения -->
         <Border x:Name="bufPanelsContainer" Grid.Column="1" Visibility="Hidden">
             <Canvas x:Name="bufferOrderPanels" x:FieldModifier="public"/>

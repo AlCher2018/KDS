@@ -54,6 +54,7 @@ namespace KDSWPFClient.View
             this.SnapsToDevicePixels = true;
             this.BorderBrush = Brushes.DarkBlue;
             this.BorderThickness = new System.Windows.Thickness(1,0,1,1);
+            this.MouseDown += root_MouseDown;
             this.MouseUp += root_MouseUp;
 
             double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
@@ -232,18 +233,24 @@ namespace KDSWPFClient.View
             }
         }
 
+        private void root_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // проверка попадания на кнопку перелистывания страниц
+            if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
+            {
+                MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
+                if (mainWin.ClickPageButton) mainWin.ClickPageButton = false;
+            }
+        }
 
         // клик по строке блюда/ингредиента
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // проверка попадания на кнопку перелистывания страниц
             if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
             {
                 MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
-                if (mainWin.ClickPageButton)
-                {
-                    mainWin.ClickPageButton = false;
-                    return;
-                }
+                if (mainWin.ClickPageButton) { mainWin.ClickPageButton = false; return; }
             }
 
             string sLogMsg = "click on order ITEM";

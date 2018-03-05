@@ -85,12 +85,11 @@ namespace KDSService.DataSource
 
             // блюда заказа
             DateTime dt1 = DateTime.Now;
-            AppEnv.WriteLogMSSQL(sqlText);
 
             List<OrderDish> dbOrderDish = getDbOrderDish(sqlText);
             if (dbOrderDish != null) tmpDishes.AddRange(dbOrderDish);
             TimeSpan ts1 = DateTime.Now - dt1;
-            AppEnv.WriteLogMSSQL(" - rows {0} - {1}", tmpDishes.Count, ts1.ToString());
+            AppLib.WriteLogTraceMessage(" - rows {0} - {1}", tmpDishes.Count, ts1.ToString());
 
             if (tmpDishes.Count != 0)
             {
@@ -132,10 +131,9 @@ namespace KDSService.DataSource
                 {
                     // получить из БД заказы
                     sqlText = string.Format("SELECT * FROM [Order] WHERE (Id In ({0}))", string.Join(",", _ids));
-                    AppEnv.WriteLogMSSQL(sqlText);
                     dt1 = DateTime.Now;
                     _dbOrders.AddRange(getDbOrdersList(sqlText));
-                    AppEnv.WriteLogMSSQL(" - rows {0} - {1}", _dbOrders.Count, (DateTime.Now - dt1).ToString());
+                    AppLib.WriteLogTraceMessage(" - rows {0} - {1}", _dbOrders.Count, (DateTime.Now - dt1).ToString());
 
                     // добавить к заказам блюда
                     foreach (Order order in _dbOrders)
@@ -168,12 +166,11 @@ namespace KDSService.DataSource
 
                         if (sqlText != null)
                         {
-                            AppEnv.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
+                            AppLib.WriteLogTraceMessage("   заказ {0}/{1} из статуса {2} переведен в {3}, т.к. все его блюда находятся в этом состоянии.", order.Id, order.Number, order.OrderStatusId, idStatus);
 
-                            AppEnv.WriteLogMSSQL(sqlText);
                             dt1 = DateTime.Now;
-                            int iAffected = DBContext.Execute(sqlText);
-                            AppEnv.WriteLogMSSQL(" - affected {0} - {1}", iAffected.ToString(), (DateTime.Now - dt1).ToString());
+                            int iAffected = DBContext.ExecuteCommandAsync(sqlText);
+                            AppLib.WriteLogTraceMessage(" - affected {0} - {1}", iAffected.ToString(), (DateTime.Now - dt1).ToString());
                         }
                     }
                 }  // foreach (Order order in _dbOrders)
@@ -188,7 +185,13 @@ namespace KDSService.DataSource
         {
             List<Order> retVal = new List<Order>();
 
-            DataTable dt = DBContext.GetQueryTable(sqlText);
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+                _errMsg = db.ErrMsg;
+            }
+            if (dt == null) return null;
 
             foreach (DataRow dtRow in dt.Rows)
             {
@@ -209,6 +212,7 @@ namespace KDSService.DataSource
 
                 retVal.Add(ord);
             }
+            dt.Dispose();
 
             return retVal;
         }
@@ -218,8 +222,13 @@ namespace KDSService.DataSource
         {
             List<int> retVal = new List<int>();
 
-            DataTable dt = DBContext.GetQueryTable(sqlText);
-            if (dt == null) { _errMsg = DBContext.ErrorMessage; return retVal; }
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+                _errMsg = db.ErrMsg;
+            }
+            if (dt == null) return retVal;
 
             int id;
             foreach (DataRow dtRow in dt.Rows)
@@ -227,6 +236,7 @@ namespace KDSService.DataSource
                 id = System.Convert.ToInt32(dtRow[0]);
                 if (id > 0) retVal.Add(id);
             }
+            dt.Dispose();
 
             return retVal;
         }
@@ -243,7 +253,7 @@ namespace KDSService.DataSource
                 if (runtimeRecord == null)
                 {
                     _errMsg = string.Format("Ошибка создания записи в таблице OrderRunTime для заказа id {0}", orderId);
-                    AppEnv.WriteLogErrorMessage(_errMsg);
+                    AppLib.WriteLogErrorMessage(_errMsg);
                     runtimeRecord = null;
                 }
             }
@@ -263,12 +273,13 @@ namespace KDSService.DataSource
         }
         private static OrderRunTime getOrderRunTime(string sqlText)
         {
-            DataTable dt = DBContext.GetQueryTable(sqlText, IsolationLevel.ReadUncommitted);
-            if ((dt == null) || (dt.Rows.Count == 0))
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
             {
-                _errMsg = DBContext.ErrorMessage;
-                return null;
+                dt = db.GetQueryTable(sqlText);
+                _errMsg = db.ErrMsg;
             }
+            if ((dt == null) || (dt.Rows.Count == 0)) return null;
 
             OrderRunTime retVal = new OrderRunTime();
             DataRow dtRow = dt.Rows[0];
@@ -295,23 +306,21 @@ namespace KDSService.DataSource
             retVal.ReadyTS = dtRow.ToInt("ReadyTS");
             retVal.ReadyConfirmedDate = dtRow.ToDateTime("ReadyConfirmedDate");
 
+            dt.Dispose();
+
             return retVal;
         }
 
         private static OrderRunTime newOrderRunTime(int orderId)
         {
-            string sqlText = string.Format("INSERT INTO [OrderRunTime] (OrderId) VALUES ({0}); SELECT @@IDENTITY"
-                , orderId.ToString());
+            string sqlText = $"INSERT INTO [OrderRunTime] (OrderId) VALUES ({orderId})";
 
-            DataTable dt = DBContext.GetQueryTable(sqlText, IsolationLevel.ReadCommitted);
-            if (dt == null)
+            int newId = DBContext.InsertRecordAndReturnNewId(sqlText);
+            if (DBContext.LastErrorText.IsNull() == false)
             {
-                AppEnv.WriteLogMSSQL("Error: " + DBContext.ErrorMessage);
                 return null;
             }
 
-            // запись создана и получен ее Id
-            int newId = Convert.ToInt32(dt.Rows[0][0]);
             // вернуть запись с данным Id
             OrderRunTime retVal = getOrderRunTimeById(newId);
             return retVal;
@@ -339,12 +348,12 @@ namespace KDSService.DataSource
             string sqlText = sb.ToString();
             sb = null;
 
-            int result = DBContext.Execute(sqlText);
+            int result = DBContext.ExecuteDMLAndGetAffectedRowCount(sqlText);
 
             bool retVal = false;
             if (result < 1)
             {
-                _errMsg = DBContext.ErrorMessage;
+                _errMsg = DBContext.LastErrorText;
             }
             else
                 retVal = true;
@@ -378,12 +387,11 @@ namespace KDSService.DataSource
             sb.AppendFormat(" WHERE ([Id] = {0})", orderId.ToString());
             string sqlText = sb.ToString();
 
-            int result = DBContext.Execute(sqlText);
+            int result = DBContext.ExecuteDMLAndGetAffectedRowCount(sqlText);
             bool retVal = false;
             if (result < 1)
             {
-                _errMsg = DBContext.ErrorMessage;
-                AppEnv.WriteLogMSSQL("Error: {0}", _errMsg);
+                _errMsg = DBContext.LastErrorText;
             }
             else
                 retVal = true;
@@ -398,10 +406,13 @@ namespace KDSService.DataSource
 
         private static List<OrderDish> getDbOrderDish(string sqlText)
         {
-            DataTable dt = DBContext.GetQueryTable(sqlText);
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+            }
             if (dt == null)
             {
-                AppEnv.WriteLogMSSQL(DBContext.ErrorMessage);
                 return null;
             }
 
@@ -427,6 +438,8 @@ namespace KDSService.DataSource
 
                 retVal.Add(od);
             }
+            dt.Dispose();
+
             return retVal;
         }
 
@@ -459,7 +472,7 @@ namespace KDSService.DataSource
                 if (runtimeRecord == null)
                 {
                     _errMsg = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", dishId);
-                    AppEnv.WriteLogErrorMessage(_errMsg);
+                    AppLib.WriteLogErrorMessage(_errMsg);
                     runtimeRecord = null;
                 }
             }
@@ -480,10 +493,14 @@ namespace KDSService.DataSource
 
         private static OrderDishRunTime getOrderDishRunTime(string sqlText)
         {
-            DataTable dt = DBContext.GetQueryTable(sqlText, IsolationLevel.ReadUncommitted);
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+            }
             if ((dt == null) || (dt.Rows.Count == 0))
             {
-                _errMsg = DBContext.ErrorMessage;
+                _errMsg = DBContext.LastErrorText;
                 return null;
             }
 
@@ -512,22 +529,20 @@ namespace KDSService.DataSource
             retVal.ReadyTS = dtRow.ToInt("ReadyTS");
             retVal.ReadyConfirmedDate = dtRow.ToDateTime("ReadyConfirmedDate");
 
+            dt.Dispose();
             return retVal;
         }
 
         private static OrderDishRunTime newOrderDishRunTime(int dishId)
         {
-            string sqlText = string.Format("INSERT INTO [OrderDishRunTime] (OrderDishId) VALUES ({0}); SELECT @@IDENTITY", dishId.ToString());
+            string sqlText = $"INSERT INTO [OrderDishRunTime] (OrderDishId) VALUES ({dishId})";
 
-            DataTable dt = DBContext.GetQueryTable(sqlText, IsolationLevel.ReadCommitted);
-            if (dt == null)
+            int newId = DBContext.InsertRecordAndReturnNewId(sqlText);
+            if (DBContext.LastErrorText.IsNull() == false)
             {
-                AppEnv.WriteLogMSSQL("Error: " + DBContext.ErrorMessage);
                 return null;
             }
 
-            // запись создана и получен ее Id
-            int newId = Convert.ToInt32(dt.Rows[0][0]);
             // вернуть запись с данным Id
             OrderDishRunTime retVal = getOrderDishRunTimeById(newId);
             return retVal;
@@ -535,14 +550,13 @@ namespace KDSService.DataSource
 
         internal static bool updateOrderDishStatus(int dishId, OrderStatusEnum status)
         {
-            string sqlText = string.Format("UPDATE [OrderDish] SET [DishStatusId] = {1} WHERE ([Id] = {0})", dishId.ToString(), ((int)status).ToString());
+            string sqlText = $"UPDATE [OrderDish] SET [DishStatusId] = {((int)status).ToString()} WHERE ([Id] = {dishId})";
 
-            int result = DBContext.Execute(sqlText);
+            int result = DBContext.ExecuteDMLAndGetAffectedRowCount(sqlText);
             bool retVal = false;
             if (result < 1)
             {
-                _errMsg = DBContext.ErrorMessage;
-                AppEnv.WriteLogMSSQL("Error: {0}", _errMsg);
+                _errMsg = DBContext.LastErrorText;
             }
             else
                 retVal = true;
@@ -572,12 +586,12 @@ namespace KDSService.DataSource
             string sqlText = sb.ToString();
             sb = null;
 
-            int result = DBContext.Execute(sqlText);
+            int result = DBContext.ExecuteDMLAndGetAffectedRowCount(sqlText);
 
             bool retVal = false;
             if (result < 1)
             {
-                _errMsg = DBContext.ErrorMessage;
+                _errMsg = DBContext.LastErrorText;
             }
             else
                 retVal = true;
@@ -589,12 +603,13 @@ namespace KDSService.DataSource
         {
             string sqlText = string.Format("INSERT INTO [OrderDishReturnTime] ([OrderDishId], [ReturnDate], [StatusFrom], [StatusFromTimeSpan], [StatusTo]) VALUES ({0}, {1}, {2}, {3}, {4})",
                 dishId.ToString(), returnDate.ToSQLExpr(), statusFrom.ToString(), statusFromTimeSpan.ToString(), statusTo.ToString());
-            int result = DBContext.Execute(sqlText);
+
+            int result = DBContext.ExecuteDMLAndGetAffectedRowCount(sqlText);
 
             bool retVal = false;
             if (result < 1)
             {
-                _errMsg = DBContext.ErrorMessage;
+                _errMsg = DBContext.LastErrorText;
             }
             else
                 retVal = true;
@@ -628,17 +643,16 @@ namespace KDSService.DataSource
         {
             bool retVal = false;
             string sqlText = string.Format("SELECT Count(*) FROM [{0}]", tableName);
-            DataTable dt = DBContext.GetQueryTable(sqlText);
 
-            if ((dt == null) || (dt.Rows.Count == 0))
+            int iResult = Convert.ToInt32(DBContext.ExecuteScalarAsync(sqlText));
+            if (DBContext.LastErrorText.IsNull() == false)
             {
                 _errMsg = string.Format("В БД [{0}] отсутствует или пустая таблица [{1}].", DBContext.GetDBName(), tableName);
-                AppEnv.WriteLogErrorMessage(" - таблица [{0}] ОТСУТСТВУЕТ!!", tableName);
+                AppLib.WriteLogErrorMessage(" - таблица [{0}] ОТСУТСТВУЕТ!!", tableName);
             }
             else
             {
-                AppEnv.WriteLogInfoMessage(" - таблица [{0}] содержит {1} записей.", tableName, System.Convert.ToInt32(dt.Rows[0][0]));
-                dt.Dispose();
+                AppLib.WriteLogInfoMessage(" - таблица [{0}] содержит {1} записей.", tableName, iResult.ToString());
                 retVal = true;
             }
 
@@ -687,15 +701,18 @@ namespace KDSService.DataSource
             return dm;
         }
 
+        // создание набора сущностей из БД, заполнение полей объекта производится в делегате delegateNewInstance
         private static List<T> dbTableToList<T>(string dbTableName, Func<DataRow, T> delegateNewInstance)
         {
             string sqlText = string.Format("SELECT * FROM [{0}]", dbTableName);
-            DataTable dt = DBContext.GetQueryTable(sqlText);
-            if (dt == null)
+
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
             {
-                _errMsg = DBContext.ErrorMessage;
-                return null;
+                dt = db.GetQueryTable(sqlText);
+                _errMsg = db.ErrMsg;
             }
+            if (dt == null) return null;
 
             List<T> retVal = new List<T>();
             try
@@ -712,8 +729,9 @@ namespace KDSService.DataSource
                 retVal = null;
             }
 
+            dt.Dispose();
             return retVal;
-        }  // method
+        }
 
         #endregion
 

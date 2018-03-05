@@ -85,7 +85,7 @@ namespace KDSWPFClient
                 // для отладки службы из-под клиента увеличить время операции
                 _getClient.InnerChannel.OperationTimeout = new TimeSpan(0,20,0);
 
-                _getClient.Open();
+                //_getClient.Open();
                 logClientInfo(_getClient);
                 if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
 
@@ -138,7 +138,7 @@ namespace KDSWPFClient
 
                 _setClient = new KDSCommandServiceClient(setBinding, setEndpointAddress);
 
-                _setClient.Open();
+                //_setClient.Open();
                 logClientInfo(_setClient);
 
                 retVal = true;

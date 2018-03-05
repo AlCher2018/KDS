@@ -18,10 +18,8 @@ using System.Xml.Linq;
 namespace KDSService.Lib
 {
     // служебный статический класс для работы со словарем свойств и журналом сообщений
-    public static class AppEnv
+    public static class AppLib
     {
-        // логгер
-        private static Logger _logger;
 
         public static TimeSpan TimeOfAutoCloseYesterdayOrders
         {
@@ -32,10 +30,6 @@ namespace KDSService.Lib
             }
         }
 
-        public static string LoggerInit()
-        {
-            return initLogger("fileLogger");
-        }
 
         public static bool AppInit(out string errMsg)
         {
@@ -51,20 +45,6 @@ namespace KDSService.Lib
             WriteLogInfoMessage("Доступная память: {0} Mb", AppEnvironment.getAvailableRAM());
 
             return true;
-        }
-
-        private static string initLogger(string logName)
-        {
-            try
-            {
-                _logger = LogManager.GetLogger(logName);
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-            if (_logger.IsInfoEnabled == false) return "Ошибка инициализации журнала сообщений " + logName;
-            else return null;
         }
 
 
@@ -150,6 +130,29 @@ namespace KDSService.Lib
         }
 
         #region App logger
+        // логгер
+        private static Logger _logger;
+
+        public static string LoggerInit()
+        {
+            return initLogger("fileLogger");
+        }
+
+        private static string initLogger(string logName)
+        {
+            try
+            {
+                _logger = LogManager.GetLogger(logName);
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+            if (_logger.IsInfoEnabled == false) return "Ошибка инициализации журнала сообщений " + logName;
+            else return null;
+        }
+
+        public static bool LogEnable { get { return _logger != null; } }
 
         // отладочные сообщения
         // стандартные действия службы
@@ -207,20 +210,6 @@ namespace KDSService.Lib
             _logger.Error(format, paramArray);
         }
 
-        // информация о запросах к MS SQL Server
-        public static void WriteLogMSSQL(string msg)
-        {
-            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
-                _logger.Trace("mssql|" + msg);
-        }
-        public static void WriteLogMSSQL(string format, params object[] paramArray)
-        {
-            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
-            {
-                string msg = string.Format(format, paramArray);
-                _logger.Trace("mssql|" + msg);
-            }
-        }
         #endregion
 
         private static void setGlobalValueFromCfg<T>(string cfgElementName, T defaultValue, string globVarName = null)

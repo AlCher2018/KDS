@@ -143,7 +143,7 @@ namespace KDSService.AppModel
             else
             {
                 // обновить статус заказа по статусам всех блюд
-                OrderStatusEnum eStatusAllDishes = AppEnv.GetStatusAllDishes(dbOrder.Dishes);
+                OrderStatusEnum eStatusAllDishes = AppLib.GetStatusAllDishes(dbOrder.Dishes);
                 if ((eStatusAllDishes != OrderStatusEnum.None) 
                     && (this.Status != eStatusAllDishes) 
                     && ((int)this.Status < (int)eStatusAllDishes))
@@ -218,7 +218,7 @@ namespace KDSService.AppModel
                 if (Waiter != dbOrder.Waiter) Waiter = dbOrder.Waiter;
                 if (DivisionColorRGB != dbOrder.DivisionColorRGB) DivisionColorRGB = dbOrder.DivisionColorRGB;
 
-                OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
+                OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbOrder.OrderStatusId);
 
                 if (dbOrder.OrderStatusId < 1)
                 {
@@ -272,8 +272,8 @@ namespace KDSService.AppModel
 
             string sLogMsg = string.Format(" - ORDER.UpdateStatus() Id/Num {0}/{1}, from {2} to {3}", this.Id, this.Number, this.Status.ToString(), newStatus.ToString());
             DateTime dtTmr = DateTime.Now;
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - START");
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppLib.WriteLogClientAction(machineName, sLogMsg + " - START");
 
             // время нахождения в ПРЕДЫДУЩЕМ состоянии, в секундах
             int secondsInPrevState = 0;
@@ -327,15 +327,15 @@ namespace KDSService.AppModel
                     }
                     catch (Exception ex)
                     {
-                        AppEnv.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0}/{1} с {2} на {3}: {4}", this.Id, this.Number, this.Status, newStatus, ex.ToString());
+                        AppLib.WriteLogErrorMessage("Ошибка обновления статуса блюд при обновлении статуса заказа {0}/{1} с {2} на {3}: {4}", this.Id, this.Number, this.Status, newStatus, ex.ToString());
                         dishUpdSuccess = false;
                     }
                 }
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
         }  // method
 
@@ -386,9 +386,9 @@ namespace KDSService.AppModel
             if ((iStat != -1) && (this.OrderStatusId != iStat))
             {
                 string sLog = string.Format("   изменение статуса заказа {0}/{1} на {2} согласно общему статусу всех блюд ПРИ ОБНОВЛЕНИИ БЛЮДА...", this.Id, this.Number, iStat);
-                AppEnv.WriteLogOrderDetails(sLog);
+                AppLib.WriteLogOrderDetails(sLog);
 
-                OrderStatusEnum statDishes = AppEnv.GetStatusEnumFromNullableInt(iStat);
+                OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(iStat);
                 UpdateStatus(statDishes, false);
                 _isUpdStatusFromDishes = true;
             }
@@ -563,12 +563,11 @@ namespace KDSService.AppModel
 
         private bool saveRunTimeRecord()
         {
-            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderRunTime..");
-            bool retVal = true;
-            if (DBOrderHelper.updateOrderRunTime(_dbRunTimeRecord) == false)
+            AppLib.WriteLogTraceMessage(" - updating sql-table OrderRunTime..");
+            bool retVal = DBOrderHelper.updateOrderRunTime(_dbRunTimeRecord);
+            if (retVal)
             {
-                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
-                retVal = false;
+                AppLib.WriteLogTraceMessage(" - updating sql-table OrderRunTime.. - Ok");
             }
 
             return retVal;
@@ -576,25 +575,20 @@ namespace KDSService.AppModel
 
         private bool saveStatusToDB(OrderStatusEnum status, string machineName = null)
         {
-            bool retVal = false;
-
             string sLogMsg = string.Format("   - save ORDER {0}/{1}, status = {2}", this.Id, this.Number.ToString(), status.ToString());
             DateTime dtTmr = DateTime.Now;
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
-            if (DBOrderHelper.updateOrderStatus(this.Id, status, _isUseReadyConfirmed))
-            {
-                retVal = true;
-            }
-            else
+            bool retVal = DBOrderHelper.updateOrderStatus(this.Id, status, _isUseReadyConfirmed);
+            if (retVal == false)
             {
                 _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", DBOrderHelper.ErrorMessage);
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
             return retVal;
         }
@@ -603,14 +597,14 @@ namespace KDSService.AppModel
         private void writeDBException(Exception ex, string subMsg1)
         {
             _serviceErrorMessage = string.Format("Ошибка {0} записи в БД", subMsg1);
-            AppEnv.WriteLogErrorMessage("   - DB Error ORDER id {0}: {1}", this.Id, ex.ToString());
+            AppLib.WriteLogErrorMessage("   - DB Error ORDER id {0}: {1}", this.Id, ex.ToString());
         }
 
         #endregion
 
         public void Dispose()
         {
-            AppEnv.WriteLogTraceMessage("   dispose class OrderModel id {0}", this.Id);
+            AppLib.WriteLogTraceMessage("   dispose class OrderModel id {0}", this.Id);
 
             // сохраняем в записи RunTimeRecord время нахождения в текущем состоянии
             if ((_curTimer != null) && (_curTimer.Enabled))

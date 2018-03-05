@@ -174,7 +174,7 @@ namespace KDSService.AppModel
             _tsCookingEstimated = TimeSpan.FromSeconds(this.EstimatedTime);
 
             DishStatusId = dbDish.DishStatusId;
-            Status = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+            Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
             // получить запись из таблицы состояний
             _dbRunTimeRecord = DBOrderHelper.getOrderDishRunTimeRecord(dbDish.Id);
@@ -268,7 +268,7 @@ namespace KDSService.AppModel
                 }
 
                 // автоматическая установка состояний
-                OrderStatusEnum newStatus = AppEnv.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
+                OrderStatusEnum newStatus = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
                 // отмененное блюдо/ингредиент
                 if ((Quantity < 0) && (newStatus != OrderStatusEnum.Cancelled))
                 {
@@ -316,8 +316,8 @@ namespace KDSService.AppModel
 
             string sLogMsg = string.Format(" - DISH.UpdateStatus() Id {0}/{1}, from {2} to {3}", this.Id, this.Name, this.Status.ToString(), newStatus.ToString());
             DateTime dtTmr = DateTime.Now; 
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg + " - START");
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppLib.WriteLogClientAction(machineName, sLogMsg + " - START");
 
             bool isUpdSuccess = false;
             // здесь тоже лочить, т.к. вызовы могут быть как циклческие (ингр.для блюд), так и из заказа / КДС-а
@@ -387,8 +387,8 @@ namespace KDSService.AppModel
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
             return isUpdSuccess;
         }  // method UpdateStatus
@@ -454,7 +454,7 @@ namespace KDSService.AppModel
                 {
                     if (statArray[i] == iDishesCount)
                     {
-                        OrderStatusEnum statDishes = AppEnv.GetStatusEnumFromNullableInt(i);
+                        OrderStatusEnum statDishes = AppLib.GetStatusEnumFromNullableInt(i);
                         if (parentDish.Status != statDishes)
                         {
                             parentDish.UpdateStatus(statDishes);
@@ -669,20 +669,20 @@ namespace KDSService.AppModel
         // сохранить в БД запись из _dbRunTimeRecord
         private void saveRunTimeRecord()
         {
-            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime..");
-            if (DBOrderHelper.updateOrderDishRunTime(_dbRunTimeRecord) == false)
+            AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime..");
+            if (DBOrderHelper.updateOrderDishRunTime(_dbRunTimeRecord))
             {
-                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
+                AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime.. - Ok");
             }
         }
 
 
         private void saveReturnTimeRecord(OrderStatusEnum statusFrom, OrderStatusEnum statusTo, DateTime dtEnterToNewStatus, int secondsInPrevState)
         {
-            AppEnv.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime..");
-            if (DBOrderHelper.updateOrderDishReturnTime(this.Id, dtEnterToNewStatus, (int)statusFrom, secondsInPrevState, (int)statusTo) == false)
+            AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime..");
+            if (DBOrderHelper.updateOrderDishReturnTime(this.Id, dtEnterToNewStatus, (int)statusFrom, secondsInPrevState, (int)statusTo))
             {
-                AppEnv.WriteLogMSSQL("Error: " + DBOrderHelper.ErrorMessage);
+                AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime.. - Ok");
             }
         }
 
@@ -693,8 +693,8 @@ namespace KDSService.AppModel
 
             string sLogMsg = string.Format("   - save DISH {0}/{1}, status = {2}", this.Id, this.Name, status.ToString());
             DateTime dtTmr = DateTime.Now;
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg + " - START");
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
             if (DBOrderHelper.updateOrderDishStatus(this.Id, status))
             {
@@ -706,8 +706,8 @@ namespace KDSService.AppModel
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
-            if (machineName == null) AppEnv.WriteLogOrderDetails(sLogMsg);
-            else AppEnv.WriteLogClientAction(machineName, sLogMsg);
+            if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
+            else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
             return retVal;
         }
@@ -717,7 +717,7 @@ namespace KDSService.AppModel
 
         public void Dispose()
         {
-            AppEnv.WriteLogTraceMessage("     dispose class OrderDishModel id {0}", this.Id);
+            AppLib.WriteLogTraceMessage("     dispose class OrderDishModel id {0}", this.Id);
 
             // сохраняем в записи RunTimeRecord время нахождения в текущем состоянии
             if ((_curTimer != null) && (_curTimer.Enabled))

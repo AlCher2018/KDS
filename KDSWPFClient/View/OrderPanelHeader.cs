@@ -39,6 +39,7 @@ namespace KDSWPFClient.View
             _order = order;
             this.Width = width;
             this.SnapsToDevicePixels = true;
+            this.MouseDown += root_MouseDown;
             this.MouseUp += root_MouseUp;
 
             Binding binding;
@@ -216,16 +217,22 @@ namespace KDSWPFClient.View
             return retVal;
         }
 
+        private void root_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // проверка попадания на кнопку перелистывания страниц
+            if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
+            {
+                MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
+                if (mainWin.ClickPageButton) mainWin.ClickPageButton = false;
+            }
+        }
+
         private void root_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if ((Application.Current.MainWindow != null) && (Application.Current.MainWindow is MainWindow))
             {
                 MainWindow mainWin = (MainWindow)Application.Current.MainWindow;
-                if (mainWin.ClickPageButton)
-                {
-                    mainWin.ClickPageButton = false;
-                    return;
-                }
+                if (mainWin.ClickPageButton) { mainWin.ClickPageButton = false; return; }
             }
 
             string sLogMsg = "click on order HEADER";

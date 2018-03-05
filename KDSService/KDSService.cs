@@ -61,24 +61,24 @@ namespace KDSService
             bool isResultOk;
             string msg = null;
 
-            msg = AppEnv.LoggerInit();
+            msg = AppLib.LoggerInit();
             if (msg != null)
                 throw new Exception("Error: " + msg);
 
             // инициализация приложения
-            AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
+            AppLib.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
 
             // информация о файлах и сборках
-            AppEnv.WriteLogInfoMessage(" - host-файл: '{0}', ver. {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            AppLib.WriteLogInfoMessage(" - host-файл: '{0}', ver. {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
             ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("KDSService");
-            AppEnv.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+            AppLib.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
             asmInfo.LoadInfo("IntegraLib");
-            AppEnv.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+            AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
 
-            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
+            AppLib.WriteLogInfoMessage("Инициализация КДС-сервиса...");
 
             // чтение настроек из config-файла
-            isResultOk = AppEnv.AppInit(out msg);
+            isResultOk = AppLib.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
 
@@ -89,7 +89,7 @@ namespace KDSService
             if (!MSSQLService.IsExists)
             {
                 msg = string.Format("На компьютере ({0}) не установлен MS SQL Server!", Environment.MachineName);
-                AppEnv.WriteLogErrorMessage(msg);
+                AppLib.WriteLogErrorMessage(msg);
                 throw new Exception(msg);
             }
             //ServiceController sqlService = MSSQLService.Controller;
@@ -97,15 +97,15 @@ namespace KDSService
             // если имя найденного сервиса MS SQL не совпадает с тем, что задано в config-файле, то переопределяем
             if ((sqlSvcNameFromConfig != null) && (MSSQLService.Controller.ServiceName != sqlSvcNameFromConfig))
             {
-                AppEnv.WriteLogTraceMessage("Имя службы MS SQL Server по умолчанию {0} не совпадает с именем службы, заданной в config-файле ({1}) - используем имя {1}.", MSSQLService.Controller.ServiceName, sqlSvcNameFromConfig);
+                AppLib.WriteLogTraceMessage("Имя службы MS SQL Server по умолчанию {0} не совпадает с именем службы, заданной в config-файле ({1}) - используем имя {1}.", MSSQLService.Controller.ServiceName, sqlSvcNameFromConfig);
                 if (MSSQLService.FindService(sqlSvcNameFromConfig) == false)
                 {
                     msg = string.Format("Имя службы MS SQL Server, заданное в config-файле {0}, не найдено в системе!", sqlSvcNameFromConfig);
-                    AppEnv.WriteLogErrorMessage(msg);
+                    AppLib.WriteLogErrorMessage(msg);
                     throw new Exception(msg);
                 }
             }
-            AppEnv.WriteLogTraceMessage("Служба {0} находится в состоянии {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+            AppLib.WriteLogTraceMessage("Служба {0} находится в состоянии {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
             // попытка перезапуска службы MS SQL Server
             if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable") 
                 && (MSSQLService.Status != ServiceControllerStatus.Running))
@@ -114,16 +114,21 @@ namespace KDSService
             }
             #endregion
 
+            // глобальные обработчики DBContext
+            DBContext.OnBeforeExecute += new Action<string>(dbBeforeCommandAction);
+            DBContext.OnDBErrorAction += new Action<string>(dbErrorAction);
+
             // инициализация статического класса DBContext для получения данных из БД
-            DBContext.ReadConnectionString("KDSEntities");
+            DBContext.ConfigConnectionStringName = "KDSEntities";
             // проверить доступность БД
-            AppEnv.WriteLogInfoMessage("  Проверка доступа к базе данных...");
-            AppEnv.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
-            isResultOk = DBContext.CheckDBConnect();
+            AppLib.WriteLogInfoMessage("  Проверка доступа к базе данных...");
+            AppLib.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
+
+            isResultOk = DBContext.CheckDBConnectionAlt();
             if (!isResultOk)
             {
-                AppEnv.WriteLogErrorMessage(DBContext.ConnectionString);
-                throw new Exception("Ошибка проверки доступа к базе данных: " + DBContext.ErrorMessage);
+                AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+                throw new Exception("Ошибка проверки доступа к базе данных: " + DBContext.LastErrorText);
             }
 
             // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
@@ -132,7 +137,7 @@ namespace KDSService
                 resetMSSQLServerCompatibleLevel(cfgCompLevel);
 
             // проверка справочных таблиц (в классе ModelDicts)
-            AppEnv.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
+            AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
             isResultOk = DBOrderHelper.CheckAppDBTable();
             if (!isResultOk)
             {
@@ -140,7 +145,7 @@ namespace KDSService
             }
 
             // получение словарей приложения из БД
-            AppEnv.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
+            AppLib.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
             isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
@@ -149,7 +154,7 @@ namespace KDSService
             _observeTimer = new Timer(_observeInterval) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
 
-            AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
+            AppLib.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
             {
                 _ordersModel = new OrdersModel();
@@ -159,36 +164,36 @@ namespace KDSService
                 throw;
             }
 
-            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+            AppLib.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
         }
 
         private void resetMSSQLServerCompatibleLevel(int cfgCompLevel)
         {
             int dbCompatibleLevel = DBContext.GetDBCompatibleLevel();
             string dbName = DBContext.GetDBName();
-            AppEnv.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2}). Попытка установить уровень {3} ({4})", 
+            AppLib.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2}). Попытка установить уровень {3} ({4})", 
                 dbName, 
                 dbCompatibleLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel),
                 cfgCompLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
 
             if (dbCompatibleLevel == 0)
             {
-                AppEnv.WriteLogErrorMessage(DBContext.ErrorMessage);
+                AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
             }
             // только ПОНИЖАЕМ уровень совместимости
             else if (dbCompatibleLevel > cfgCompLevel)  
             {
-                AppEnv.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, cfgCompLevel, DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
+                AppLib.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, cfgCompLevel, DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
                 if (DBContext.SetDBCompatibleLevel(cfgCompLevel) == false)
                 {
-                    AppEnv.WriteLogErrorMessage(DBContext.ErrorMessage);
-                    AppEnv.WriteLogErrorMessage("Произошла ошибка при изменении уровня совместимости БД. Приложение может работать нестабильно.");
+                    AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+                    AppLib.WriteLogErrorMessage("Произошла ошибка при изменении уровня совместимости БД. Приложение может работать нестабильно.");
                 }
             }
             // повышить нельзя
             else
             {
-                AppEnv.WriteLogInfoMessage("  - запрещено повышать уровень совместимости");
+                AppLib.WriteLogInfoMessage("  - запрещено повышать уровень совместимости");
             }
         }
 
@@ -210,7 +215,7 @@ namespace KDSService
                 // цикл ожидания останова службы
                 while (sqlService.Status != ServiceControllerStatus.Stopped)
                 {
-                    AppEnv.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    AppLib.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
                     System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
                     sqlService.Refresh();
                     if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
@@ -218,20 +223,20 @@ namespace KDSService
                         throw new Exception(string.Format("Истек период в {0} секунд для останова службы MS SQL Server ({1})", waitCircles.ToString(), sqlService.ServiceName));
                     }
                 }
-                AppEnv.WriteLogTraceMessage(" - служба {0} остановлена успешно.", sqlService.ServiceName);
+                AppLib.WriteLogTraceMessage(" - служба {0} остановлена успешно.", sqlService.ServiceName);
             }
 
             // запуск службы
             if (MSSQLService.Status != ServiceControllerStatus.Running)
             {
-                AppEnv.WriteLogTraceMessage(" - запуск службы...");
+                AppLib.WriteLogTraceMessage(" - запуск службы...");
                 sqlService.Start();
                 sqlService.Refresh();
                 dtTmr = DateTime.Now;
                 // цикл ожидания запуска службы
                 while (sqlService.Status != ServiceControllerStatus.Running)
                 {
-                    AppEnv.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    AppLib.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
                     System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
                     sqlService.Refresh();
                     if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
@@ -241,7 +246,7 @@ namespace KDSService
                 }
             }
 
-            AppEnv.WriteLogTraceMessage(" - статус службы {0}", sqlService.Status.ToString());
+            AppLib.WriteLogTraceMessage(" - статус службы {0}", sqlService.Status.ToString());
         }
 
         // создает сервис WCF, параметры канала считываются из app.config
@@ -297,7 +302,7 @@ Contract: IMetadataExchange
         {
             try
             {
-                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений...");
+                AppLib.WriteLogInfoMessage("Создание канала для приема сообщений...");
                 //_host = new ServiceHost(typeof(KDSService.KDSServiceClass));
                 _host = new ServiceHost(this);
                 if (_host.Description.Behaviors.Contains(typeof(ServiceMetadataBehavior)) == false)
@@ -320,12 +325,12 @@ Contract: IMetadataExchange
 
                 _host.Open();
                 writeHostInfoToLog();
-                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений... Ok");
+                AppLib.WriteLogInfoMessage("Создание канала для приема сообщений... Ok");
             }
             catch (Exception ex)
             {
                 // исключение записать в лог
-                AppEnv.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}", ex.Message, Environment.NewLine, ex.StackTrace);
+                AppLib.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}", ex.Message, Environment.NewLine, ex.StackTrace);
                 // и передать выше
                 throw;
             }
@@ -345,7 +350,7 @@ Contract: IMetadataExchange
         {
             foreach (System.ServiceModel.Description.ServiceEndpoint se in _host.Description.Endpoints)
             {
-                AppEnv.WriteLogInfoMessage(" - host info: address {0}; binding {1}; contract {2}", se.Address, se.Binding.Name, se.Contract.Name);
+                AppLib.WriteLogInfoMessage(" - host info: address {0}; binding {1}; contract {2}", se.Address, se.Binding.Name, se.Contract.Name);
             }
         }
 
@@ -353,7 +358,7 @@ Contract: IMetadataExchange
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
-            AppEnv.WriteLogOrderDetails("** Stop DB read timer.");
+            AppLib.WriteLogOrderDetails("** Stop DB read timer.");
 
             // проверка количества архивных файлов
             DateTime dt = DateTime.Now;
@@ -362,12 +367,12 @@ Contract: IMetadataExchange
                     || (_lastCheckDateMaxLogFiles.Equals(DateTime.MinValue)))
                 )
             {
-                AppEnv.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
+                AppLib.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
                 List<string> delFileNames = AppEnvironment.CheckLogFilesCount(_maxLogFilesCount);
                 if ((delFileNames == null) || (delFileNames.Count() == 0))
-                    AppEnv.WriteLogTraceMessage(" - удалено файлов: 0");
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: 0");
                 else
-                    AppEnv.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
                 _lastCheckDateMaxLogFiles = DateTime.Now;
             }
 
@@ -382,20 +387,20 @@ Contract: IMetadataExchange
                 {
                     if ((_sqlServerErrorString == null) || (_sqlServerErrorString != errDBMsg))
                         _sqlServerErrorString = errDBMsg;
-                    AppEnv.WriteLogTraceMessage("mssql|{0}", _sqlServerErrorString);
+                    AppLib.WriteLogTraceMessage("mssql|{0}", _sqlServerErrorString);
                     
                     // очистить внутр.набор заказов службы
                     //_ordersModel.Orders.Clear();
 
                     MSSQLService.Refresh();
-                    AppEnv.WriteLogTraceMessage("mssql| - статус службы {0} - {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+                    AppLib.WriteLogTraceMessage("mssql| - статус службы {0} - {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
 
                     if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable"))
                     {
                         // если сервис остановлен - пытаемся запустить его
                         if (MSSQLService.Status != ServiceControllerStatus.Running)
                         {
-                            AppEnv.WriteLogTraceMessage("mssql| - sql server status - {0} - restart service...", MSSQLService.Status.ToString());
+                            AppLib.WriteLogTraceMessage("mssql| - sql server status - {0} - restart service...", MSSQLService.Status.ToString());
                             startSQLService();
                         }
                         // иначе пытаемся 5 раз через 2 секунды прочитать данные из БД и обновить внутр.наборы
@@ -406,7 +411,7 @@ Contract: IMetadataExchange
                             for (; i < waitCircles; i++)
                             {
                                 System.Threading.Thread.Sleep(waitSvcActionInterval);
-                                AppEnv.WriteLogTraceMessage("mssql|Попытка {0} повторного чтения заказов из БД.", (i + 1).ToString());
+                                AppLib.WriteLogTraceMessage("mssql|Попытка {0} повторного чтения заказов из БД.", (i + 1).ToString());
                                 errDBMsg = _ordersModel.UpdateOrders();
                                 if (errDBMsg == null) break;
                             }
@@ -415,10 +420,10 @@ Contract: IMetadataExchange
                             {
                                 KDSService.Lib.DebugTimer.Init();
                                 errDBMsg = null;
-                                AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
+                                AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
                                 // попытка перезапуска службы MS SQL Server
                                 startSQLService();
-                                AppEnv.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
+                                AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
                                     KDSService.Lib.DebugTimer.GetInterval(),
                                     ((errDBMsg == null) ? "" : " - " + errDBMsg)
                                 );
@@ -442,7 +447,7 @@ Contract: IMetadataExchange
             //}
 
             StartTimer();
-            AppEnv.WriteLogOrderDetails("** Start DB read timer.");
+            AppLib.WriteLogOrderDetails("** Start DB read timer.");
         }
 
 
@@ -459,7 +464,7 @@ Contract: IMetadataExchange
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
                 logMsg += DBOrderHelper.ErrorMessage;
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
@@ -474,7 +479,7 @@ Contract: IMetadataExchange
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
                 logMsg += DBOrderHelper.ErrorMessage;
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
@@ -487,14 +492,14 @@ Contract: IMetadataExchange
             ClientInfo curClient = getClientInfo(machineName);
             ServiceResponce retVal = new ServiceResponce();
 
-            AppEnv.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
+            AppLib.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
 
             // таймер чтения из БД выключен - ждем, пока не закончится чтение данных из БД
             if (_observeTimer.Enabled == false)
             {
-                AppEnv.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
+                AppLib.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
                 retVal.ServiceErrorMessage = (_sqlServerErrorString.IsNull()) ? "KDS service is reading data..." : _sqlServerErrorString;
-                // вернуть клиенту null - признак того, что надо уменьшить интервал таймера запроса данных к службе
+                // возвращается пустой ServiceResponce - признак того, что надо уменьшить интервал таймера запроса данных к службе
                 return retVal;
             }
 
@@ -569,7 +574,7 @@ Contract: IMetadataExchange
                 #region группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
                 {
-                    // разбить заказы по датам (CreateDate)
+                    // разбить заказы по датам (CreateDate) БЛЮД !!!!
                     SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
                     List<DateTime> dtList;
                     foreach (OrderModel order in retValList)
@@ -583,6 +588,14 @@ Contract: IMetadataExchange
                     // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
                     if (retValList.Count == sortedOrders.Count)
                     {
+                        // установить дату заказов равной дате блюд !!!
+                        foreach (KeyValuePair<DateTime, OrderModel> item in sortedOrders)
+                        {
+                            if (item.Value.CreateDate != item.Key)
+                            {
+                                item.Value.CreateDate = item.Key;
+                            }
+                        }
                         retValList = sortedOrders.Values.ToList();
                         retVal.OrdersList = retValList;
                     }
@@ -804,8 +817,6 @@ Contract: IMetadataExchange
                     order.Dishes = sortedDishes;
                 }
 
-                OrderModel ord17 = retValList.FirstOrDefault(o => o.Number == 17);
-                Debug.Print(string.Format(" - to client {0}, order Num17 dishes - {1}", retValList.Count, ord17.Dishes.Count));
 
                 // если появились новые заказы, то передать клиенту заказы с самого первого
                 List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);
@@ -818,7 +829,7 @@ Contract: IMetadataExchange
                 }
 
                 string ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
-                AppEnv.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
+                AppLib.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
                 // ограничение количества отдаваемых клиенту объектов
                 if (
                     (clientFilter.EndpointOrderID > 0) 
@@ -829,12 +840,12 @@ Contract: IMetadataExchange
                     limitOrderItems(retVal, clientFilter);
 
                     ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
-                    AppEnv.WriteLogTraceMessage(" - limit orders for client({0}): {1}", retValList.Count, ids);
+                    AppLib.WriteLogTraceMessage(" - limit orders for client({0}): {1}", retValList.Count, ids);
                 }
 
             }  // if (retVal.Count > 0)
 
-            AppEnv.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
             return retVal;
         }
 
@@ -919,7 +930,7 @@ Contract: IMetadataExchange
             {
                 idxOrder = orderList.FindIndex(om =>
                 (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
-                AppEnv.WriteLogTraceMessage("   - limit from OrderId={0} & OrderDishId={1}, order {2}", clientFilter.EndpointOrderID, clientFilter.EndpointOrderItemID, ((idxOrder==-1)?"NOT found":"FOUND"));
+                AppLib.WriteLogTraceMessage("   - limit from OrderId={0} & OrderDishId={1}, order {2}", clientFilter.EndpointOrderID, clientFilter.EndpointOrderItemID, ((idxOrder==-1)?"NOT found":"FOUND"));
             }
             // если не найден такой OrderModel, то начинаем с первого элемента
             if (idxOrder == -1) idxOrder = 0;
@@ -1052,7 +1063,7 @@ Contract: IMetadataExchange
             {
                 logMsg += ex.Message;
             }
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retval;
         }
@@ -1068,7 +1079,7 @@ Contract: IMetadataExchange
                 logMsg += "Ok";
             else
                 logMsg += errMsg;
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
 
         #endregion
@@ -1084,7 +1095,7 @@ Contract: IMetadataExchange
             else hs[orderId] = false;
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
         // разблокировать заказ от изменения по таймеру
         public void DelockOrder(string machineName, int orderId)
@@ -1095,7 +1106,7 @@ Contract: IMetadataExchange
             if (hs.ContainsKey(orderId)) hs[orderId] = true;
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
 
         // заблокировать блюдо от изменения по таймеру
@@ -1108,7 +1119,7 @@ Contract: IMetadataExchange
             AppProperties.SetProperty("lockedDishes", hs);
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
         // разблокировать блюдо от изменения по таймеру
         public void DelockDish(string machineName, int dishId)
@@ -1120,7 +1131,7 @@ Contract: IMetadataExchange
             AppProperties.SetProperty("lockedDishes", hs);
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
 
         // обновление статуса заказа с КДСа
@@ -1128,7 +1139,7 @@ Contract: IMetadataExchange
         {
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
             DateTime dtTmr = DateTime.Now;
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
+            AppLib.WriteLogClientAction(machineName, logMsg + " - START");
 
             getClientInfo(machineName).SetDataFlag = true;
 
@@ -1144,7 +1155,7 @@ Contract: IMetadataExchange
 
             getClientInfo(machineName).SetDataFlag = false;
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
         }
 
         // обновление статуса блюда с КДСа
@@ -1152,7 +1163,7 @@ Contract: IMetadataExchange
         {
             string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
             DateTime dtTmr = DateTime.Now;
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
+            AppLib.WriteLogClientAction(machineName, logMsg + " - START");
 
             getClientInfo(machineName).SetDataFlag = true;
 
@@ -1168,7 +1179,7 @@ Contract: IMetadataExchange
                 }
             }
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
 
             getClientInfo(machineName).SetDataFlag = false;
         }
@@ -1181,16 +1192,29 @@ Contract: IMetadataExchange
             return _clients[machineName];
         }
 
+        private static void dbBeforeCommandAction(string sqlText)
+        {
+            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
+            {
+                AppLib.WriteLogTraceMessage("DBContext| " + sqlText);
+            }
+        }
+
+        private static void dbErrorAction(string errMsg)
+        {
+            AppLib.WriteLogErrorMessage("DBContext error: " + errMsg);
+        }
+
 
         public void Dispose()
         {
-            AppEnv.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
+            AppLib.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
             // таймер остановить, отписаться от события и уничтожить
             StopTimer();
             _observeTimer.Dispose();
             MSSQLService.Dispose();
 
-            AppEnv.WriteLogTraceMessage("   close ServiceHost...");
+            AppLib.WriteLogTraceMessage("   close ServiceHost...");
             if (_host != null)
             {
                 try
@@ -1199,11 +1223,11 @@ Contract: IMetadataExchange
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    AppLib.WriteLogErrorMessage("   Error: " + ex.ToString());
                 }
             }
 
-            AppEnv.WriteLogTraceMessage("   clear inner Orders collection...");
+            AppLib.WriteLogTraceMessage("   clear inner Orders collection...");
             if (_ordersModel != null)
             {
                 try
@@ -1212,11 +1236,11 @@ Contract: IMetadataExchange
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    AppLib.WriteLogErrorMessage("   Error: " + ex.ToString());
                 }
             }
 
-            AppEnv.WriteLogInfoMessage("**** ЗАВЕРШЕНИЕ работы КДС-сервиса ****");
+            AppLib.WriteLogInfoMessage("**** ЗАВЕРШЕНИЕ работы КДС-сервиса ****");
         }
 
 

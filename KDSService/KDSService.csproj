@@ -93,6 +93,7 @@
     <Compile Include="AppModel\ServiceResponce.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
+    <Compile Include="DataSource\DBContext.cs" />
     <Compile Include="DataSource\DBOrderHelper.cs" />
     <Compile Include="DataSource\Department.cs" />
     <Compile Include="DataSource\Order.cs" />
@@ -106,7 +107,6 @@
     <Compile Include="KDSService.cs" />
     <Compile Include="Lib\AppEnv.cs" />
     <Compile Include="Lib\CalcObjectSizeHelper.cs" />
-    <Compile Include="Lib\DBContext.cs" />
     <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -343,6 +343,10 @@ namespace KDSWPFClient
                 {
 
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
+                    if (_svcResp == null)
+                    {
+                        throw new Exception("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
+                    }
 
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
                     // уменьшить интервал таймера до 100 мсек
@@ -512,6 +516,7 @@ namespace KDSWPFClient
                 AppLib.WriteLogTraceMessage("** sound play condition: _isNeedSound({0}) || _isInit({1})",_isNeedSound.ToString(), _isInit.ToString());
                 if (_isNeedSound || _isInit)
                 {
+                    Debug.Print("ta-da-a-a");
                     _wavPlayer.Play();
                     // принудительно перерисовать с первого полученного заказа
                     _forceFromFirstOrder = true;
@@ -932,7 +937,7 @@ namespace KDSWPFClient
             if (_pages.SetPreviousPage())
                 setCurrentPage();
             _leafing = false;
-
+            
             this.ClickPageButton = true;
         }
 
