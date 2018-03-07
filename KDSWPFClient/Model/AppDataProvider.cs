@@ -87,9 +87,12 @@ namespace KDSWPFClient
 
                 //_getClient.Open();
                 logClientInfo(_getClient);
-                if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
-
-                retVal = true;
+                if ((_ordStatuses.Count==0) || (_deps.Count == 0))
+                {
+                    retVal = this.SetDictDataFromService();
+                }
+                else
+                    retVal = true;
             }
             catch (Exception ex)
             {
@@ -273,7 +276,16 @@ namespace KDSWPFClient
 
         public ServiceResponce GetOrders(ClientDataFilter clientFilter)
         {
-            return _getClient.GetOrders(_machineName, clientFilter);
+            ServiceResponce retVal = null;
+            try
+            {
+                retVal = _getClient.GetOrders(_machineName, clientFilter);
+            }
+            catch (Exception)
+            {
+            }
+
+            return retVal;
         }
 
         /// <summary>

@@ -33,7 +33,7 @@ namespace KDSService.AppModel
             string s1 = (this.StatusesList == null) ? "" : string.Join(",", this.StatusesList);
             string s2 = (this.DepIDsList == null) ? "" : string.Join(",", this.DepIDsList);
 
-            string retVal = string.Format("StatusesList={0}; DepIDsList={1}; GroupBy={2}; EndpointOrderID={3}; EndpointOrderItemID={4}; LeafDirection={5}", s1, s2, this.GroupBy.ToString(), this.EndpointOrderID, this.EndpointOrderItemID, this.LeafDirection.ToString());
+            string retVal = $"StatusesList={s1}; DepIDsList={s2}; GroupBy={this.GroupBy.ToString()}; EndpointOrderID={this.EndpointOrderID}; EndpointOrderItemID={this.EndpointOrderItemID}; LeafDirection={this.LeafDirection.ToString()}, dishGroup={IsDishGroupAndSumQuantity.ToString()}";
 
             return retVal;
         }

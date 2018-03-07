@@ -105,7 +105,7 @@
     <Compile Include="IKDSCommandService.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
-    <Compile Include="Lib\AppEnv.cs" />
+    <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\CalcObjectSizeHelper.cs" />
     <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

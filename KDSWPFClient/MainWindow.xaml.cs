@@ -182,6 +182,16 @@ namespace KDSWPFClient
             var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
+            // ширина адм.панели
+            double admPanelPercentWidth = Convert.ToDouble(WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth"));
+            ColumnDefinition admColDef = grdMain.ColumnDefinitions[0];
+            // TODO изменить ширину адм.панели
+            if (admColDef.Width.Value != admPanelPercentWidth)
+            {
+                admColDef.Width = new GridLength(admPanelPercentWidth, GridUnitType.Star);
+                grdUserConfig.UpdateLayout();
+            }
+
             // размер канвы для панелей заказов
             recalcOrderPanelsLayot();
             _pages = new OrdersPages(vbxOrders);
@@ -196,6 +206,8 @@ namespace KDSWPFClient
             // кнопка переключения группировки заказов
             double dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1);
             _tabOrderGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, "По времени", 0d);
+            //tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabsZoneHeight, null, 0d);
+
             _tabOrderGroup.IsEnabled = true;
             _tabOrderGroup.IsForceCallSetHeight = true;
             _tabOrderGroup.PreviewMouseDown += tbOrderGroup_MouseDown;
@@ -341,11 +353,14 @@ namespace KDSWPFClient
 
                 try
                 {
-
                     _svcResp = _dataProvider.GetOrders(_clientFilter);
+
                     if (_svcResp == null)
                     {
-                        throw new Exception("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
+                        AppLib.WriteLogErrorMessage("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
+                        showErrorScreen();
+                        _timer.Start();
+                        return;
                     }
 
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
@@ -415,7 +430,7 @@ namespace KDSWPFClient
                 }
                 catch (Exception ex)
                 {
-                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.ToString()); // ErrorHelper.GetShortErrMessage(ex)
+                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.Message); // ErrorHelper.GetShortErrMessage(ex)
                     _dataProvider.IsGetServiceData = false;
                 }
 
@@ -424,13 +439,18 @@ namespace KDSWPFClient
             // очистить канву от заказов и отобразить сообщение об ошибке связи
             else
             {
-                if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
-                _pages.ClearPages();
-                if (_viewOrders.Count > 0) _viewOrders.Clear();
-                AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
+                showErrorScreen();
             }
 
             _timer.Start();
+        }
+
+        private void showErrorScreen()
+        {
+            if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
+            _pages.ClearPages();
+            if (_viewOrders.Count > 0) _viewOrders.Clear();
+            AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
         }
 
         private string clientDataFilterToString(ClientDataFilter source)

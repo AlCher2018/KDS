@@ -114,12 +114,13 @@ namespace KDSService
             }
             #endregion
 
+            // инициализация класса DBContext через статические поля
+            DBContext.ConfigConnectionStringName = "KDSEntities";
             // глобальные обработчики DBContext
             DBContext.OnBeforeExecute += new Action<string>(dbBeforeCommandAction);
             DBContext.OnDBErrorAction += new Action<string>(dbErrorAction);
+            DBContext.CommandTimeout = (int)AppProperties.GetProperty("MSSQLCommandTimeout");
 
-            // инициализация статического класса DBContext для получения данных из БД
-            DBContext.ConfigConnectionStringName = "KDSEntities";
             // проверить доступность БД
             AppLib.WriteLogInfoMessage("  Проверка доступа к базе данных...");
             AppLib.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
@@ -490,6 +491,8 @@ Contract: IMetadataExchange
         public ServiceResponce GetOrders(string machineName, ClientDataFilter clientFilter)
         {
             ClientInfo curClient = getClientInfo(machineName);
+            curClient.IsDishGroupAndSumQuantity = clientFilter.IsDishGroupAndSumQuantity;
+
             ServiceResponce retVal = new ServiceResponce();
 
             AppLib.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
@@ -555,7 +558,7 @@ Contract: IMetadataExchange
                     foreach (OrderDishModel dish in validDishes)
                     {
                         if (validOrder.Dishes.ContainsKey(dish.Id) == false)
-                            validOrder.Dishes.Add(dish.Id, dish);
+                            validOrder.Dishes.Add(dish.Id, dish.Copy());
                     }
 
                     // и добавить к результату правильный заказ
@@ -566,7 +569,7 @@ Contract: IMetadataExchange
 
             // сбросить флаг чтения заказов из внутренней коллекции клиентом machineName
             curClient.GetOrdersFlag = false;
-            
+
             // группировка и сортировка retVal
             if (retValList.Count > 0)
             {
@@ -611,7 +614,7 @@ Contract: IMetadataExchange
                             tmpOrder.CreateDate = ord.Key;
                             // скопировать блюда на данную дату
                             foreach (var tmpDish in ord.Value.Dishes.Values.Where(d => d.CreateDate == ord.Key))
-                                tmpOrder.Dishes.Add(tmpDish.Id, tmpDish);
+                                tmpOrder.Dishes.Add(tmpDish.Id, tmpDish.Copy());
                             // добавить заказ в выходную коллекцию
                             retValList.Add(tmpOrder);
                         }
@@ -650,7 +653,7 @@ Contract: IMetadataExchange
                 }
 
                 // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
-                if (clientFilter.IsDishGroupAndSumQuantity)
+                if (curClient.IsDishGroupAndSumQuantity)
                 {
                     #region IsDishGroupAndSumQuantity == true
                     List<OrderDishModel> dmIngrs;
@@ -816,7 +819,6 @@ Contract: IMetadataExchange
                     sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
                     order.Dishes = sortedDishes;
                 }
-
 
                 // если появились новые заказы, то передать клиенту заказы с самого первого
                 List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);

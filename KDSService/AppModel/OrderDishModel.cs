@@ -714,6 +714,16 @@ namespace KDSService.AppModel
 
         #endregion
 
+        public OrderDishModel Copy()
+        {
+            OrderDishModel retVal = (OrderDishModel)this.MemberwiseClone();
+
+            retVal._tsTimersDict = null;
+            retVal._curTimer = this._curTimer;
+            retVal._dbRunTimeRecord = null;
+
+            return retVal;
+        }
 
         public void Dispose()
         {

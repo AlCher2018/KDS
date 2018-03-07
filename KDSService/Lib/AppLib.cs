@@ -60,6 +60,8 @@ namespace KDSService.Lib
             setGlobalValueFromCfg("MSSQLServiceRestartEnable", false);
             // уровень совместимости БД (120 - это MS SQL Server 2014)
             setGlobalValueFromCfg("MSSQLServerCompatibleLevel", 0);
+            // таймаут выполнения команд в MS SQL, в СЕКУНДАХ
+            setGlobalValueFromCfg("MSSQLCommandTimeout", 2);
 
             // режим сортировки заказов
             string ordersSortMode = "Desc";

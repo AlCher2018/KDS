@@ -107,7 +107,9 @@ namespace KDSWPFClient
 
             // настройка приложения
             MessageListener.Instance.ReceiveMessage("Получение параметров приложения...");
+#if !DEBUG
             System.Threading.Thread.Sleep(500);
+#endif
             app.InitializeComponent();  // определенные в app.xaml
 
             setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
@@ -119,11 +121,15 @@ namespace KDSWPFClient
             try
             {
                 MessageListener.Instance.ReceiveMessage("Создание канала получения данных...");
+#if !DEBUG
                 System.Threading.Thread.Sleep(1000);
+#endif
                 dataProvider.CreateGetChannel();
 
                 MessageListener.Instance.ReceiveMessage("Создание канала установки данных...");
+#if !DEBUG
                 System.Threading.Thread.Sleep(1000);
+#endif
                 dataProvider.CreateSetChannel();
 
                 AppLib.WriteLogInfoMessage("Создаю клиента для работы со службой KDSService - FINISH");
@@ -135,7 +141,9 @@ namespace KDSWPFClient
 
             // и получить словари и настройки от службы
             MessageListener.Instance.ReceiveMessage("Получаю словари и настройки от службы KDSService...");
+#if !DEBUG
             System.Threading.Thread.Sleep(500);
+#endif
             AppLib.WriteLogInfoMessage("Получаю словари и настройки от службы KDSService - START");
             if (dataProvider.SetDictDataFromService() == false)
             {
@@ -152,19 +160,25 @@ namespace KDSWPFClient
 
             // прочитать из config-а и сохранить в свойствах приложения режим КДС
             MessageListener.Instance.ReceiveMessage("Получаю из config-файла режим работы КДС...");
+#if !DEBUG
             System.Threading.Thread.Sleep(500);
+#endif
             KDSModeHelper.Init();
 
             // создать и сохранить в свойствах приложения служебные окна (ColorLegend, StateChange)
             MessageListener.Instance.ReceiveMessage("Создаю служебные окна...");
+#if !DEBUG
             System.Threading.Thread.Sleep(500);
+#endif
             WpfHelper.SetAppGlobalValue("ColorLegendWindow", new ColorLegend());  // окно легенды
             // окно изменения статуса
             WpfHelper.SetAppGlobalValue("StateChangeWindow", new StateChange());
 
             // основное окно приложения
             MessageListener.Instance.ReceiveMessage("Инициализация окна приложения...");
+#if !DEBUG
             System.Threading.Thread.Sleep(1000);
+#endif
             MainWindow mainWindow = new MainWindow(args);
             app.MainWindow = mainWindow;
             app.Run(mainWindow);
@@ -206,10 +220,13 @@ namespace KDSWPFClient
             // отображать ли заголовок ЗАКАЗА тем же статусом, что и ВСЕ, ОТОБРАЖАЕМЫЕ НА ДАННОМ КДС-е, блюда/ингредиенты
             setGlobBoolValueFromCfg("IsShowOrderStatusByAllShownDishes");
 
-            // флажок группировки блюд по наименованию и суммирования количество порций
-            setGlobBoolValueFromCfg("IsDishGroupAndSumQuantity", false);
+            // боковая панель
+            // Ширина кнопочной панели в процентах от ширины экрана.
+            setGlobIntValueFromCfg("ControlPanelPercentWidth", 5);
             // флажок отрисовки вкладок фильтра статусов по-отдельности
             setGlobBoolValueFromCfg("IsMultipleStatusTabs", false);
+            // флажок группировки блюд по наименованию и суммирования количество порций
+            setGlobBoolValueFromCfg("IsDishGroupAndSumQuantity", false);
            
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
@@ -266,7 +283,7 @@ namespace KDSWPFClient
         }
 
 
-        #region get value from config and put it to global vars set
+#region get value from config and put it to global vars set
         private static void setGlobStringValueFromCfg(string cfgElementName, string defaultValue = null, string globVarName = null)
         {
             string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
@@ -298,7 +315,7 @@ namespace KDSWPFClient
             WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
                (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToDouble()));
         }
-        #endregion
+#endregion
 
 
         // открыть/закрыть легенду цветов таймеров

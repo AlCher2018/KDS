@@ -196,8 +196,8 @@ namespace KDSService.AppModel
         {
             OrderModel retVal = (OrderModel)this.MemberwiseClone();
 
-            // удалить все ссылки
             retVal._dishesDict = new Dictionary<int, OrderDishModel>();
+
             retVal._tsTimersDict = null;
             retVal._curTimer = this._curTimer;
             retVal._dbRunTimeRecord = null;
@@ -435,6 +435,8 @@ namespace KDSService.AppModel
         private StatusDTS getStatusRunTimeDTS(OrderStatusEnum status)
         {
             StatusDTS retVal = new StatusDTS();
+            if (_dbRunTimeRecord == null) return retVal;
+
             switch (status)
             {
                 case OrderStatusEnum.None:

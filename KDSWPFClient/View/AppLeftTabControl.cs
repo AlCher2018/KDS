@@ -11,9 +11,13 @@ using KDSWPFClient.Model;
 
 namespace KDSWPFClient.View
 {
+    /// <summary>
+    /// AppLeftTabControl - класс, представляющий кнопку на боковой, админской панели
+    /// </summary>
+
     public class AppLeftTabControl: Border
     {
-        private const double leftMarginKoef = 0.25d;
+        private const double leftMarginKoef = 0.15d;
 
         private double dWidthBase;
 
@@ -45,7 +49,9 @@ namespace KDSWPFClient.View
         {
             dWidthBase = controlPanelWidth;
             double tabHeight = dWidthBase * (1.0d - leftMarginKoef);
-            CornerRadius corners = new CornerRadius(0.2 * dWidthBase, 0, 0, 0.2 * dWidthBase);
+
+            double dRad = 0.2d * Math.Min(dWidthBase, height);
+            CornerRadius corners = new CornerRadius(dRad, 0, 0, dRad);
 
             Height = height;
             Width = tabHeight;

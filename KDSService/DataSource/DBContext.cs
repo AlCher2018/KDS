@@ -39,8 +39,8 @@ namespace KDSService.DataSource
         public static Action<string> OnDBErrorAction;
         public static bool IsThrowExceptionOnError { get; set; }
 
-        // execute command timeout - 2 seconds
-        private static int _commandTimeout = 2;
+        // execute command timeout
+        private static int _commandTimeout;
         public static int CommandTimeout
         {
             get { return _commandTimeout; }
@@ -54,8 +54,10 @@ namespace KDSService.DataSource
         static DBContext()
         {
             Enable = true;
-            _numericFormatter = FormatProviderHelper.DotFormatter();
             IsThrowExceptionOnError = false;
+            _commandTimeout = 2;   // execute command timeout - 2 seconds
+
+            _numericFormatter = FormatProviderHelper.DotFormatter();
 
             _mssqlCompatibleLevels = new Dictionary<int, string>()
             {
