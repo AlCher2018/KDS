@@ -17,17 +17,17 @@ namespace KDSWPFClient.View
 
     public class AppLeftTabControl: Border
     {
-        private const double leftMarginKoef = 0.15d;
+        private const double _leftMarginKoef = 0.15d;
 
-        private double dWidthBase;
-
-        private TextBlock tBlock;
-        private Border shadowBorder;
-        private Viewbox viewBox;
+        private double _dWidthBase;
+        private TextBlock _tBlock;
+        private Border _shadowBorder;
+        private Grid _grid;
+        private Viewbox _viewBox;
 
         public string Text {
-            get { return (tBlock==null) ? null : tBlock.Text; }
-            set { if (tBlock != null) tBlock.Text = value; }
+            get { return (_tBlock==null) ? null : _tBlock.Text; }
+            set { if (_tBlock != null) _tBlock.Text = value; }
         }
 
         private KDSUserStatesSet _statesSet;
@@ -40,136 +40,143 @@ namespace KDSWPFClient.View
             set { setEnabled(value); }
         }
 
-        // флаг необходимости принудительного вызова метода SetHeight при изменении высоты внешнего контейнера
-        public bool IsForceCallSetHeight { get; set; }
-
 
         // CTOR
-        public AppLeftTabControl(double controlPanelWidth, double height, string text, double topKoef)
+        public AppLeftTabControl(double width, double height, string text, double topKoef)
         {
-            dWidthBase = controlPanelWidth;
-            double tabHeight = dWidthBase * (1.0d - leftMarginKoef);
+            this.Height = height;
+            _dWidthBase = width;
+            this.Width = width * (1.0d - _leftMarginKoef);
 
-            double dRad = 0.2d * Math.Min(dWidthBase, height);
+            double dRad = 0.15d * Math.Min(this.Width, this.Height);
             CornerRadius corners = new CornerRadius(dRad, 0, 0, dRad);
 
-            Height = height;
-            Width = tabHeight;
             BorderBrush = Brushes.DarkGray;
-            BorderThickness = new Thickness(2.0d);
+            BorderThickness = new Thickness(2, 2, 0, 2);
             CornerRadius = corners;
             Background = Brushes.Transparent;
-            Margin = new Thickness(leftMarginKoef * dWidthBase, topKoef * height, 0, 0);
+            HorizontalAlignment = HorizontalAlignment.Right;
+            Margin = new Thickness(0, topKoef * height, 0, 0);
             base.IsEnabled = true;
 
-            Grid grid = new Grid();
+            _grid = new Grid();
+            _grid.SetBinding(Grid.WidthProperty, new System.Windows.Data.Binding() { Source = this, Path = new PropertyPath("Width") });
+            _grid.SetBinding(Grid.HeightProperty, new System.Windows.Data.Binding() { Source = this, Path = new PropertyPath("Height") });
 
-            // канва с вертикальным текстом
-            Canvas canvas = new Canvas()
-            {
-                VerticalAlignment = VerticalAlignment.Bottom
-            };
-            viewBox = new Viewbox()
-            {
-                Width = height,
-                Height = tabHeight,
-                Stretch = Stretch.Uniform
-            };
-            canvas.Children.Add(viewBox);
-
-            tBlock = new TextBlock()
+            _viewBox = new Viewbox();
+            _tBlock = new TextBlock()
             {
                 Text = text,
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeights.Bold,
                 TextAlignment = TextAlignment.Center,
-                Margin = new Thickness(0.15 * dWidthBase, 0, 0.15 * dWidthBase, 0.07 * dWidthBase)
             };
-            viewBox.Child = tBlock;
+            _viewBox.Child = _tBlock;
 
-            canvas.RenderTransformOrigin = new Point(0, 0);
-            canvas.RenderTransform = new RotateTransform(-90.0d);
-
-            grid.Children.Add(canvas);
+            _grid.Children.Add(_viewBox);
+            this.Child = _grid;
 
             // рамка для создания эффекта затемнения
-            shadowBorder = new Border() { Background = Brushes.LightGray, CornerRadius = corners };
-            grid.Children.Add(shadowBorder);
-
-            this.Child = grid;
+            _shadowBorder = new Border() { Background = Brushes.LightGray, CornerRadius = corners };
+            _grid.Children.Add(_shadowBorder);
 
             setEnabled(false);
         }
 
 
-        public void SetHeight(double newHeight)
+        public void SetSizeAndTextOrientation(double width, double height, bool isRenderMargin)
         {
-            viewBox.Width = newHeight;
-            this.Height = newHeight;
+            this.Height = height;
+            _dWidthBase = width;
+            this.Width = width * (1.0d - _leftMarginKoef);
+            bool isVert = (this.Width <= this.Height);
+            this.UpdateLayout();
+
+            // вертикальный текст
+            if (isVert)
+            {
+                _viewBox.Width = this.Height; _viewBox.Height = this.Width;
+
+                _viewBox.VerticalAlignment = VerticalAlignment.Bottom;
+                _viewBox.HorizontalAlignment = HorizontalAlignment.Left;
+                _viewBox.RenderTransformOrigin = new Point(0, 1);
+                _viewBox.RenderTransform = new RotateTransform(-90);
+            }
+
+            // горизонтальный текст
+            else
+            {
+                _viewBox.Width = this.Width; _viewBox.Height = this.Height;
+
+                _viewBox.RenderTransform = null;
+                _viewBox.VerticalAlignment = VerticalAlignment.Center;
+                _viewBox.HorizontalAlignment = HorizontalAlignment.Center;
+            }
+
+            if (isRenderMargin) RenderMargin();
         }
 
+        public void RenderMargin()
+        {
+            this.UpdateLayout();
+            
+            // вертикальный текст
+            if (this.Width <= this.Height)
+            {
+                // L-смещение по горизонтали, чем больше d3, тем правее, d3 лежит между 0 и 1.
+                // (если L=0, то текст будет у левой границы админ.панели, если L=1, то текст будет у правой границы)
+                // R-для устанения эффекта обрезания при отрисовке горизонтального текста в узком вертикальном контейнере
+                // R = ширине viewBox
+                double d1 = (_viewBox.Height - _tBlock.ActualHeight) / 2d;
+                if (_tBlock.Text.Contains(Environment.NewLine)) d1 /= 1.5d;
+                _viewBox.Margin = new Thickness(_viewBox.Height - d1, 0, -_viewBox.Width, 0);
+
+                // отступ самого текста внутри viewBox, чтобы текст не касался краев границы
+                d1 = 0.06 * this.Height;
+                if (_tBlock.Text.Contains(Environment.NewLine)) d1 *= 1.75d;
+                _tBlock.Margin = new Thickness(d1, 0, d1, 0);
+            }
+            // горизонтальный текст
+            else
+            {
+                _viewBox.Margin = new Thickness(0);
+                _tBlock.Margin = new Thickness(0.06 * this.Width, 0, 0.06 * this.Width, 0);
+            }
+        }
 
         public void SetStatesSet(KDSUserStatesSet statesSet)
         {
             _statesSet = statesSet;
 
-            tBlock.Text = statesSet.Name;
+            _tBlock.Text = statesSet.Name;
 
             this.Background = _statesSet.BackBrush;
-            tBlock.Foreground = _statesSet.FontBrush;
+            _tBlock.Foreground = _statesSet.FontBrush;
         }
 
 
         private void setEnabled(bool value)
         {
-            if (shadowBorder == null) return;
+            if (_shadowBorder == null) return;
 
             _isEnabled = value;
 
             if (_isEnabled)
             {
-                shadowBorder.Opacity = 0d;
-                setWidth(leftMarginKoef);
-                tBlock.Margin = new Thickness(0.15 * dWidthBase, 0, 0.15 * dWidthBase, 0.07 * dWidthBase);
+                _shadowBorder.Opacity = 0d;
+                setWidth(_leftMarginKoef);
             }
             else
             {
-                shadowBorder.Opacity = 0.8d;
-                setWidth(1.5d * leftMarginKoef);
-                tBlock.Margin = new Thickness(0.3 * dWidthBase, 0, 0.3 * dWidthBase, 0.07 * dWidthBase);
+                _shadowBorder.Opacity = 0.8d;
+                setWidth(1.5d * _leftMarginKoef);
             }
         }
 
         private void setWidth(double newWidthKoef)
         {
-            double tabHeight = dWidthBase * (1.0d - newWidthKoef);
-
-            viewBox.Height = tabHeight;
-            this.Width = tabHeight;
-            this.Margin = new Thickness(newWidthKoef * dWidthBase, this.Margin.Top, 0, 0);
+            this.Width = _dWidthBase * (1.0d - newWidthKoef);
         }
 
-        /*
-                         <Border BorderBrush="DarkGray" BorderThickness="2" Height="50" VerticalAlignment="Top" Margin="3" Background="Green" IsEnabled="False">
-                    <Grid>
-                        <TextBlock Text="QWERTY" TextWrapping="Wrap" Foreground="Yellow" FontWeight="Bold"/>
-                        <Border Background="LightGray" Style="{StaticResource leftTabBorderStyle}"/>
-                    </Grid>
-                </Border>
-
-         
-                <Style x:Key="leftTabBorderStyle" TargetType="Border">
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="True">
-                    <Setter Property="Opacity" Value="0"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.7"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-
-         */
     }  // class
 }

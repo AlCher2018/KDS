@@ -318,14 +318,6 @@ namespace KDSWPFClient
 #endregion
 
 
-        // открыть/закрыть легенду цветов таймеров
-        internal static void OpenColorLegendWindow()
-        {
-            ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
-            if ((colorLegendWin != null) && !WpfHelper.IsOpenWindow("ColorLegend")) colorLegendWin.Show();
-        }
-
-
         // из обработчика MouseUp объектов DishPanel и OrderPanelHeader
         internal static void OpenStateChangeWindow(OrderViewModel orderModel, OrderDishViewModel dishModel)
         {

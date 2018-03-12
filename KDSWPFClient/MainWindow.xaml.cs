@@ -185,7 +185,6 @@ namespace KDSWPFClient
             // ширина адм.панели
             double admPanelPercentWidth = Convert.ToDouble(WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth"));
             ColumnDefinition admColDef = grdMain.ColumnDefinitions[0];
-            // TODO изменить ширину адм.панели
             if (admColDef.Width.Value != admPanelPercentWidth)
             {
                 admColDef.Width = new GridLength(admPanelPercentWidth, GridUnitType.Star);
@@ -203,27 +202,27 @@ namespace KDSWPFClient
                 _pageHelper.ResetMaxDishesCountOnPage();
             }
 
-            // кнопка переключения группировки заказов
-            double dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1);
-            _tabOrderGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, "По времени", 0d);
-            //tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabsZoneHeight, null, 0d);
+            double dTabHeight = 0;  // высота строки грида
+            setPropsLegendButton();
 
+            // кнопка переключения группировки заказов
+            dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1);
+            _tabOrderGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, "По времени", 0d);
             _tabOrderGroup.IsEnabled = true;
-            _tabOrderGroup.IsForceCallSetHeight = true;
             _tabOrderGroup.PreviewMouseDown += tbOrderGroup_MouseDown;
             _tabOrderGroup.SetValue(Grid.RowProperty, 1);
             grdUserConfig.Children.Add(_tabOrderGroup);
             setOrderGroupTab(false);
+            _tabOrderGroup.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, dTabHeight, true);
+//            _tabOrderGroup.RenderMargin();
 
             // контрол группировки блюд
             _isMultipleStatusTabs = (bool)WpfHelper.GetAppGlobalValue("IsMultipleStatusTabs");
             bool isVisibleDishGroupControl = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuantity", false);
             //isVisibleDishGroupControl  = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
-            //cbxDishesGroup.Visibility = (isVisibleDishGroupControl ) ? Visibility.Visible : Visibility.Hidden;
             dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5);
             _tabDishGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, null, 0d);
             _tabDishGroup.IsEnabled = true;
-            _tabDishGroup.IsForceCallSetHeight = true;
             _tabDishGroup.PreviewMouseDown += _tabDishGroup_PreviewMouseDown;
             _tabDishGroup.SetValue(Grid.RowProperty, 5);
             grdUserConfig.Children.Add(_tabDishGroup);
@@ -238,7 +237,10 @@ namespace KDSWPFClient
                 _tabDishGroup.Visibility = Visibility.Hidden;
                 if (_isMultipleStatusTabs) pnlLeftTabs.SetValue(Grid.RowSpanProperty, 3);
             }
+            _tabDishGroup.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, dTabHeight, true);
+            //_tabDishGroup.RenderMargin();
 
+            // вкладки статусов
             setStatusTabs(_isMultipleStatusTabs);
 
             SplashScreen.Splasher.CloseSplash();
@@ -255,6 +257,41 @@ namespace KDSWPFClient
             WpfHelper.CloseChildWindows();
             base.OnClosing(e);
         }
+
+        private void setPropsLegendButton()
+        {
+            double dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 0);
+            // вертикальное размещение текста
+            if (grdUserConfig.ActualWidth <= dTabHeight)
+            {
+                tbColorsLegend.FontSize = grdUserConfig.ActualWidth / 3d;
+                tbColorsLegend.UpdateLayout();
+                if (1.4 * tbColorsLegend.ActualWidth > 0.9*dTabHeight)
+                {
+                    tbColorsLegend.FontSize = 0.6 * tbColorsLegend.FontSize;
+                    tbColorsLegend.UpdateLayout();
+                }
+                tbColorsLegend.RenderTransformOrigin = new Point(0.5, 0.5);
+                tbColorsLegend.RenderTransform = new RotateTransform(-90);
+                double d2 = (tbColorsLegend.ActualWidth - grdUserConfig.ActualWidth) / 2d;
+                if (d2 < 0d) d2 = 0d;
+                tbColorsLegend.Margin = new Thickness(-d2, 0, -d2, 0);
+                btnColorsLegend.Height = 1.4 * tbColorsLegend.ActualWidth;
+            }
+            else
+            {
+                tbColorsLegend.FontSize = dTabHeight / 3d;
+                tbColorsLegend.UpdateLayout();
+                if (1.4 * tbColorsLegend.ActualWidth > 0.9 * grdUserConfig.ActualWidth)
+                {
+                    tbColorsLegend.FontSize = 0.6 * tbColorsLegend.FontSize;
+                    tbColorsLegend.UpdateLayout();
+                }
+                tbColorsLegend.RenderTransform = null;
+                btnColorsLegend.Height = 2.0 * tbColorsLegend.ActualHeight;
+            }
+        }
+
 
         // основной таймер отображения панелей заказов
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -954,7 +991,7 @@ namespace KDSWPFClient
                 getOrdersFromService(LeafDirectionEnum.Backward);
                 setCurrentPage();
             }
-            if (_pages.SetPreviousPage())
+            else if (_pages.SetPreviousPage())
                 setCurrentPage();
             _leafing = false;
             
@@ -1022,13 +1059,13 @@ namespace KDSWPFClient
             // таймер возврата в группировку по времени
             if ((_timerBackToOrderGroupByTime != null) && (_autoBackTimersInterval > 0d))
             {
-                if (_timerBackToOrderGroupByTime.Enabled) _timerBackToOrderGroupByTime.Stop();
+                _timerBackToOrderGroupByTime.Stop();
                 if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _timerBackToOrderGroupByTime.Start();
             }
             // таймер возврата на первую страницу
             if ((_timerBackToFirstPage != null) && (_autoBackTimersInterval > 0d))
             {
-                if (_timerBackToFirstPage.Enabled) _timerBackToFirstPage.Stop();
+                _timerBackToFirstPage.Stop();
                 if (_viewPrevPageButton) _timerBackToFirstPage.Start();
             }
         }
@@ -1426,7 +1463,7 @@ namespace KDSWPFClient
                     }
                 }
 
-                // обновить высоту вкладок, у которых установлен флаг принудительной установки высоты
+                // обновить высоту вкладок
                 foreach (UIElement item in grdUserConfig.Children)
                 {
                     if (item is AppLeftTabControl)
@@ -1434,15 +1471,14 @@ namespace KDSWPFClient
                         tab = (item as AppLeftTabControl);
                         if (tab.Visibility == Visibility.Visible)
                         {
-                            if (tab.IsForceCallSetHeight)
-                            {
-                                int gridRow = (int)tab.GetValue(Grid.RowProperty);
-                                double newHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, gridRow);
-                                tab.SetHeight(newHeight);
-                            }
+                            int gridRow = (int)tab.GetValue(Grid.RowProperty);
+                            double newHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, gridRow);
+                            tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, newHeight, true);
                         }
                     }
                 }
+
+                setPropsLegendButton();
             }
             #endregion
 
@@ -1482,7 +1518,7 @@ namespace KDSWPFClient
                 if (tabsCount == 1)
                 {
                     tabHeight = tabsZoneHeight;
-                    tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, null, 0d);
+                    tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, curStatuses[0].Name, 0d);
                     tab.SetStatesSet(curStatuses[0]);
                     tab.IsEnabled = true;
                     pnlLeftTabs.Children.Add(tab);
@@ -1493,12 +1529,14 @@ namespace KDSWPFClient
                     bool isFirstItem = true;
                     foreach (KDSUserStatesSet item in curStatuses)
                     {
-                        tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, null, 
+                        tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, item.Name, 
                             (isFirstItem) ? 0d: dBetweenKoef);
-                        if (isFirstItem) isFirstItem = false;
                         tab.SetStatesSet(item);
+                        if (isFirstItem) isFirstItem = false;
                         tab.PreviewMouseDown += tbDishStatusFilter_MouseDown;
                         pnlLeftTabs.Children.Add(tab);
+                        tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, tabHeight, true);
+                        tab.IsEnabled = false;
                     }
                 }
             }
@@ -1516,11 +1554,12 @@ namespace KDSWPFClient
                 _orderStatesLooper.Current = currentStatesSet;
 
                 // создать вкладку
-                tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabsZoneHeight, null, 0d);
+                tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabsZoneHeight, currentStatesSet.Name, 0d);
                 tab.SetStatesSet(currentStatesSet);
                 // перебор по клику мыши, если наборов больше 1
                 if (curStatuses.Count > 1) tab.PreviewMouseDown += tbDishStatusFilter_MouseDown;
                 pnlLeftTabs.Children.Add(tab);
+                tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, tabsZoneHeight, true);
             }
 
             // активизировать вкладку состояния
@@ -1537,13 +1576,6 @@ namespace KDSWPFClient
                 {
                     if (item.StatesSet.Name == curStatesSetName) {  item.IsEnabled = true; break; }
                 }
-            }
-
-            // проверка высоты вкладки группировки блюд
-            if (_tabDishGroup.Visibility == Visibility.Visible)
-            {
-                double dRow5Height = Math.Round(WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5), 2);
-                if (Math.Round(_tabDishGroup.ActualHeight, 2) != dRow5Height) _tabDishGroup.SetHeight(dRow5Height);
             }
 
         }  // method
@@ -1634,8 +1666,9 @@ namespace KDSWPFClient
             {
                 string mode = System.Convert.ToString(_tabDishGroup.Tag);
                 // текст на вкладке - для следующего состояния!
-                _tabDishGroup.Text = string.Format("{0}" + Environment.NewLine + "блюд",
-                    (mode == "group") ? "Разгруп." : "Групп.");
+                _tabDishGroup.Text = (mode == "group" ? "Разгруп." : "Групп.")
+                    + (_tabDishGroup.Width < 1.5 * _tabDishGroup.Height ? Environment.NewLine : " ")
+                    + "блюд";
             }
         }
 
@@ -1752,15 +1785,12 @@ namespace KDSWPFClient
         {
             _adminDate = DateTime.Now;
             e.Handled = true;
-        }
 
-        private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (WpfHelper.IsOpenWindow("ColorLegend"))
-            {
-                ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
-                if (colorLegendWin != null) colorLegendWin.Hide();
-            }
+            ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
+            if (colorLegendWin.IsVisible == false)
+                colorLegendWin.Visibility = Visibility.Visible;
+            else
+                colorLegendWin.Visibility = Visibility.Hidden;
         }
 
         private void btnColorsLegend_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -1768,12 +1798,11 @@ namespace KDSWPFClient
             double admSecs = (DateTime.Now - _adminDate).TotalSeconds;
             if ((admSecs > 3d) && (admSecs < 10d))
             {
+                // закрыть легенду цветов таймеров
+                ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
+                if (colorLegendWin.IsVisible) colorLegendWin.Visibility = Visibility.Hidden;
+
                 openConfigPanel();
-            }
-            // открыть/закрыть легенду цветов таймеров
-            else
-            {
-                App.OpenColorLegendWindow();
             }
 
             _adminDate = DateTime.MaxValue;
