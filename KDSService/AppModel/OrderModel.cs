@@ -507,7 +507,7 @@ namespace KDSService.AppModel
                     {
                         _dbRunTimeRecord.CookingStartDate = dateEntered;
                         // если предыдущие DTS пустые, то заполнить начальными значениями
-                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.InitDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
                     }
                     if (timeStanding >= 0) _dbRunTimeRecord.CookingTS = timeStanding;
                     break;
@@ -517,8 +517,8 @@ namespace KDSService.AppModel
                     {
                         _dbRunTimeRecord.ReadyDate = dateEntered;
                         // если предыдущие DTS пустые, то заполнить начальными значениями
-                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
-                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                        if (_dbRunTimeRecord.InitDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
                     }
                     if (timeStanding >= 0)
                     {
@@ -534,9 +534,9 @@ namespace KDSService.AppModel
                     {
                         _dbRunTimeRecord.ReadyConfirmedDate = dateEntered;
                         // если предыдущие DTS пустые, то заполнить начальными значениями
-                        if (_dbRunTimeRecord.InitDate == null) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
-                        if (_dbRunTimeRecord.CookingStartDate == null) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
-                        if (_dbRunTimeRecord.ReadyDate == null) setStatusRunTimeDTS(OrderStatusEnum.Ready, dateEntered, 0);
+                        if (_dbRunTimeRecord.InitDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.WaitingCook, dateEntered, 0);
+                        if (_dbRunTimeRecord.CookingStartDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.Cooking, dateEntered, 0);
+                        if (_dbRunTimeRecord.ReadyDate.IsZero()) setStatusRunTimeDTS(OrderStatusEnum.Ready, dateEntered, 0);
                     }
                     if (timeStanding >= 0) _dbRunTimeRecord.WaitingTakeTS = timeStanding;
                     break;
