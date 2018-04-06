@@ -46,6 +46,19 @@ namespace KDSWPFClient
             //SplashScreen splashScreen = new SplashScreen(fileName);
             //splashScreen.Show(true);
 
+            // таймаут запуска приложения
+            string cfgValue = CfgFileHelper.GetAppSetting("StartTimeout");
+            int startTimeout = 0;
+            if (cfgValue != null) startTimeout = cfgValue.ToInt();
+            if (startTimeout != 0)
+            {
+                for (int i = startTimeout; i > 0; i--)
+                {
+                    MessageListener.Instance.ReceiveMessage($"Таймаут запуска приложения - {i} секунд.");
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+
             // текст в MessageListener.Instance прибинден к текстовому полю на сплэше
             MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
             AppLib.InitAppLogger();
@@ -77,7 +90,7 @@ namespace KDSWPFClient
             AppLib.WriteLogInfoMessage("Инициализация KDS-клиента...");
 
             // проверка наличия уникального имени клиента в конфиг-файле
-            string cfgValue = CfgFileHelper.GetAppSetting("KDSClientName");
+            cfgValue = CfgFileHelper.GetAppSetting("KDSClientName");
             if (cfgValue.IsNull() == true)
             {
                 cfgValue = "Не указано имя КДС-клиента в файле AppSettings.config.";
@@ -207,7 +220,8 @@ namespace KDSWPFClient
         {
             // Имя или ip-адрес компьютера, на котором запущена КДС-служба
             setGlobStringValueFromCfg("KDSServiceHostName", "localhost");
-            setGlobStringValueFromCfg("KDSClientName", "uniqClientName");  // УНИКАЛЬНОЕ ИМЯ КДС-КЛИЕНТА
+            // УНИКАЛЬНОЕ ИМЯ КДС-КЛИЕНТА
+            setGlobStringValueFromCfg("KDSClientName", "uniqClientName");
 
             // звуковой файл, проигрываемый при появлении нового заказа
             setGlobStringValueFromCfg("NewOrderAudioAttention");
