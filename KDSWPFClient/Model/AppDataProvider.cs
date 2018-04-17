@@ -1,6 +1,8 @@
 ﻿using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.Lib;
 using KDSWPFClient.ViewModel;
+using IntegraLib;
+using IntegraWPFLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +15,6 @@ using System.Diagnostics;
 using System.Windows;
 using System.Configuration;
 using System.Threading;
-using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -369,31 +370,35 @@ namespace KDSWPFClient
         #endregion
 
         #region изменение статуса ЗАКАЗА
-        public void LockOrder(int orderId)
+        public bool LockOrder(int orderId)
         {
-            if (_setClient == null) return;
-            checkSvcState();
+            if (_setClient == null) return false;
+
+            bool retVal = false;
             try
             {
-                _setClient.LockOrder(_machineName, orderId);
+                checkSvcState();
+                retVal = _setClient.LockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
-                throw;
             }
+            return retVal;
         }
-        public void DelockOrder(int orderId)
+        public bool DelockOrder(int orderId)
         {
-            if (_setClient == null) return;
-            checkSvcState();
+            if (_setClient == null) return false;
+
+            bool retVal = false;
             try
             {
-                _setClient.DelockOrder(_machineName, orderId);
+                checkSvcState();
+                retVal = _setClient.DelockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
-                throw;
             }
+            return retVal;
         }
 
         public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)
@@ -447,27 +452,65 @@ namespace KDSWPFClient
             }
         }
 
-        public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
+        public bool SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
-            if (_setClient == null) return;
+            if (_setClient == null) return false;
 
             AppLib.WriteLogClientAction("Установить статус БЛЮДА, состояние службы: {0}", _getClient.State);
-            checkSvcState();
-
+            bool retVal = false;
             try
             {
+                checkSvcState();
                 DateTime dtTmr = DateTime.Now;
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
-                _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
+                retVal = _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - FINISH - {3}", orderId, dishId, newStatus, (DateTime.Now - dtTmr).ToString());
+                retVal = true;
             }
             catch (Exception)
             {
                 throw;
             }
+
+            return retVal;
         }
+        #endregion
+
+        #region создание файлов-уведомлений
+        public bool CreateNoticeFileForOrder(int orderId)
+        {
+            if (_setClient == null) return false;
+
+            bool retVal = false;
+            try
+            {
+                checkSvcState();
+                retVal = _setClient.CreateNoticeFileForOrder(_machineName, orderId);
+            }
+            catch (Exception)
+            {
+            }
+            return retVal;
+        }
+
+        public bool CreateNoticeFileForDish(int orderId, int orderDishId)
+        {
+            if (_setClient == null) return false;
+
+            bool retVal = false;
+            try
+            {
+                checkSvcState();
+                retVal = _setClient.CreateNoticeFileForDish(_machineName, orderId, orderDishId);
+            }
+            catch (Exception)
+            {
+            }
+            return retVal;
+        }
+
         #endregion
 
         private void checkSvcState()

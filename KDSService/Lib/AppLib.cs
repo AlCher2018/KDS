@@ -63,6 +63,24 @@ namespace KDSService.Lib
             // таймаут выполнения команд в MS SQL, в СЕКУНДАХ
             setGlobalValueFromCfg("MSSQLCommandTimeout", 2);
 
+            // уведомление Одерманов о готовом заказе
+            setGlobalValueFromCfg("NoticeOrdermanFeature", false);
+            setGlobalValueFromCfg<string>("NoticeOrdermanFolder", null);
+            setGlobalValueFromCfg("NoticeOrdermanDishNotice", false);
+            // проверка настроек ф-и уведомления
+            if (AppProperties.GetBoolProperty("NoticeOrdermanFeature"))
+            {
+                string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder");
+                if (folder == null)
+                    AppLib.WriteLogInfoMessage("Функция NoticeOrdermanFeature включена, но не указана папка для сохранения файлов-уведомлений NoticeOrdermanFolder");
+                else
+                {
+                    if (!folder.EndsWith(@"\")) AppProperties.SetProperty("NoticeOrdermanFolder", folder + @"\");
+                    if (!System.IO.Directory.Exists(folder))
+                        AppLib.WriteLogInfoMessage("Функция NoticeOrdermanFeature включена, указана папка для сохранения файлов-уведомлений NoticeOrdermanFolder, но в системе эта папка не существует!");
+                }
+            }
+
             // режим сортировки заказов
             string ordersSortMode = "Desc";
             value = cfg["SortOrdersByCreateDate"];

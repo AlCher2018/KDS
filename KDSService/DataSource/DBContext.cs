@@ -175,6 +175,7 @@ namespace KDSService.DataSource
         }
 
         // метод, который выполняет SQL-запрос, не возвращающий данные, напр. вставка или удаление строк
+        // возвращает кол-во измененных записей
         public int ExecuteCommand(string sqlText, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, bool inTransaction = true)
         {
             OnBeforeExecute?.Invoke(sqlText);

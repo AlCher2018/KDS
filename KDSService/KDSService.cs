@@ -419,13 +419,13 @@ Contract: IMetadataExchange
                             // sql-служба не ответила - перезапуск
                             if (i >= waitCircles)
                             {
-                                KDSService.Lib.DebugTimer.Init();
+                                DebugTimer.Init();
                                 errDBMsg = null;
                                 AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
                                 // попытка перезапуска службы MS SQL Server
                                 startSQLService();
                                 AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
-                                    KDSService.Lib.DebugTimer.GetInterval(),
+                                    DebugTimer.GetInterval(),
                                     ((errDBMsg == null) ? "" : " - " + errDBMsg)
                                 );
                             }
@@ -535,19 +535,22 @@ Contract: IMetadataExchange
 
                 // собрать в validDishes блюда и ингр., которые проходят проверку
                 validDishes.Clear();
-                foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
+                if ((clientFilter.StatusesList != null ) && (clientFilter.DepIDsList != null))
                 {
-                    // блюдо проходит - берем и все его ингредиенты
-                    if (checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, diPair.Key))
+                    foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
                     {
-                        validDishes.Add(diPair.Key);
-                        validDishes.AddRange(diPair.Value);
-                    }
-                    // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
-                    else if (diPair.Value.Any(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)))
-                    {
-                        validDishes.Add(diPair.Key);
-                        validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)));
+                        // блюдо проходит - берем и все его ингредиенты
+                        if (checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, diPair.Key))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value);
+                        }
+                        // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
+                        else if (diPair.Value.Any(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)));
+                        }
                     }
                 }
 
@@ -1027,7 +1030,10 @@ Contract: IMetadataExchange
 
         private bool checkOrderItem(List<int> clientStatusIDs, List<int> clientDepIDs, OrderDishModel orderItem)
         {
-            return (clientStatusIDs.Contains(orderItem.DishStatusId) && clientDepIDs.Contains(orderItem.DepartmentId));
+            if ((clientStatusIDs == null) || (clientDepIDs == null))
+                return false;
+            else
+                return (clientStatusIDs.Contains(orderItem.DishStatusId) && clientDepIDs.Contains(orderItem.DepartmentId));
         }
 
         private class DateTimeComparer : IComparer<DateTime>
@@ -1088,57 +1094,94 @@ Contract: IMetadataExchange
 
         #region IKDSCommandService implementation
         // заблокировать заказ от изменения по таймеру
-        public void LockOrder(string machineName, int orderId)
+        public bool LockOrder(string machineName, int orderId)
         {
+            bool retVal = false;
             string logMsg = string.Format("LockOrder({0}): ", orderId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
-            if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
-            else hs[orderId] = false;
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
+                if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
+                else hs[orderId] = false;
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
             AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
         // разблокировать заказ от изменения по таймеру
-        public void DelockOrder(string machineName, int orderId)
+        public bool DelockOrder(string machineName, int orderId)
         {
+            bool retVal = false;
             string logMsg = string.Format("DelockOrder({0}): ", orderId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-            if (hs.ContainsKey(orderId)) hs[orderId] = true;
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
+                if (hs.ContainsKey(orderId)) hs[orderId] = true;
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
             AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
 
         // заблокировать блюдо от изменения по таймеру
-        public void LockDish(string machineName, int dishId)
+        public bool LockDish(string machineName, int dishId)
         {
+            bool retVal = false;
             string logMsg = string.Format("LockDish({0}): ", dishId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
-            AppProperties.SetProperty("lockedDishes", hs);
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
+                if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
+                AppProperties.SetProperty("lockedDishes", hs);
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
             AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
         // разблокировать блюдо от изменения по таймеру
-        public void DelockDish(string machineName, int dishId)
+        public bool DelockDish(string machineName, int dishId)
         {
+            bool retVal = false;
             string logMsg = string.Format("DelockDish({0}): ", dishId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if (hs.ContainsKey(dishId)) hs[dishId] = true;
-            AppProperties.SetProperty("lockedDishes", hs);
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
+                if (hs.ContainsKey(dishId)) hs[dishId] = true;
+                AppProperties.SetProperty("lockedDishes", hs);
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
             AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
 
         // обновление статуса заказа с КДСа
-        public void ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
+        public bool ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
         {
+            bool retVal = false;
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
             DateTime dtTmr = DateTime.Now;
             AppLib.WriteLogClientAction(machineName, logMsg + " - START");
@@ -1147,44 +1190,198 @@ Contract: IMetadataExchange
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true, machineName);
-                logMsg += "Ok";
+                OrderModel order = _ordersModel.Orders[orderId];
+                try
+                {
+                    retVal = order.UpdateStatus(orderStatus, true, machineName);
+                    logMsg += (retVal ? "Ok" : "Not changed");
+                }
+                catch (Exception ex)
+                {
+                    logMsg += "Error - " + ex.Message;
+                }
             }
             else
             {
-                logMsg += "order not found in the Model";
+                logMsg += $"order id {orderId} not found in the Model";
             }
 
             getClientInfo(machineName).SetDataFlag = false;
-
             AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
+
+            return retVal;
         }
 
         // обновление статуса блюда с КДСа
-        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
+            bool retVal = false;
             string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
             DateTime dtTmr = DateTime.Now;
             AppLib.WriteLogClientAction(machineName, logMsg + " - START");
 
             getClientInfo(machineName).SetDataFlag = true;
 
-            bool result = false;
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 OrderModel modelOrder = _ordersModel.Orders[orderId];
                 if (modelOrder.Dishes.ContainsKey(orderDishId))
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
-
-                    result = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
+                    try
+                    {
+                        retVal = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
+                        logMsg += (retVal ? "Ok" : "Not changed");
+                    }
+                    catch (Exception ex)
+                    {
+                        logMsg += "Error - " + ex.Message;
+                    }
                 }
+                else
+                {
+                    logMsg += $"dish id {orderDishId} not found in the Order id {orderId}";
+                }
+            }
+            else
+            {
+                logMsg += $"order id {orderId} not found in the Model";
             }
 
             AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
-
             getClientInfo(machineName).SetDataFlag = false;
+
+            return retVal;
         }
+
+        // создание файла уведомления о состоянии ЗАКАЗА
+        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
+        // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
+        public bool CreateNoticeFileForOrder(string machineName, int orderId)
+        {
+            string logMsg = $"Создание файла состояния Заказа id {orderId}";
+            AppLib.WriteLogClientAction(machineName, logMsg);
+
+            string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
+            if (folder == null)
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                return false;
+            }
+            if (!_ordersModel.Orders.ContainsKey(orderId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - id не найден во внутреннем наборе заказов");
+                return false;
+            }
+
+            bool retVal = false;
+            bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
+            OrderModel modelOrder = _ordersModel.Orders[orderId];
+            OrderStatusEnum status = (OrderStatusEnum)modelOrder.OrderStatusId;
+            logMsg += $", № '{modelOrder.Number}' ... ";
+
+            #region для состояния Готов
+            if (
+                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
+                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
+                && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
+                )
+            {
+                {
+                    string file = $"{folder}ordNumber_{modelOrder.Number}" + ".txt";
+                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nState: {modelOrder.OrderStatusId}\nState name: {((OrderStatusEnum)modelOrder.OrderStatusId).ToString()}";
+                    try
+                    {
+                        System.IO.File.WriteAllText(file, fileText);
+
+                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        retVal = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+            }
+            #endregion
+
+            return retVal;
+        }
+
+        // создание файла уведомления о состоянии БЛЮДА
+        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
+        // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
+        // для блюда, не ингредиента, только, если сам заказ еще не готов и NoticeOrdermanDishNotice = 1 (создавать файл-уведомления для блюда)
+        public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId)
+        {
+            string logMsg = $"Создание файла состояния Заказа id {orderId}, Блюдо id {orderDishId}";
+            AppLib.WriteLogClientAction(machineName, logMsg);
+
+            string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
+            if (folder == null)
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                return false;
+            }
+            if (!_ordersModel.Orders.ContainsKey(orderId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - OrderId не найден во внутреннем наборе заказов");
+                return false;
+            }
+
+            bool retVal = false;
+            bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
+            OrderModel modelOrder = _ordersModel.Orders[orderId];
+            logMsg += $", № заказа '{modelOrder.Number}' ... ";
+            if (!modelOrder.Dishes.ContainsKey(orderDishId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - DishId не найден во внутреннем наборе блюд");
+                return false;
+            }
+
+            OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
+            OrderStatusEnum status = (OrderStatusEnum)modelDish.DishStatusId;
+            bool isDish = modelDish.ParentUid.IsNull();
+
+            #region для состояния Готов
+            if (
+                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.Ready))
+                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.ReadyConfirmed)))
+                && (isDish == true)
+                && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
+                && (AppProperties.GetBoolProperty("NoticeOrdermanDishNotice") == true)
+                )
+            {
+                {
+                    string file = $"{folder}ordNumber_{modelOrder.Number}(dishId_{modelDish.Id}).txt";
+                    logMsg = $"Сохранение уведомления о готовности блюда '{modelDish.Name}' в файл '{file}': ";
+                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nDish Id: {modelDish.Id}\nDish Name: {modelDish.Name}\nState: {modelDish.DishStatusId}\nState name: {((OrderStatusEnum)modelDish.DishStatusId).ToString()}";
+                    try
+                    {
+                        System.IO.File.WriteAllText(file, fileText);
+
+                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        retVal = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+            }
+            #endregion
+
+            return retVal;
+        }
+
         #endregion
 
         private ClientInfo getClientInfo(string machineName)

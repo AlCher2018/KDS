@@ -2,6 +2,10 @@
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using KDSWPFClient.ViewModel;
+using KDSWPFClient.Model;
+using IntegraLib;
+using IntegraWPFLib;
+
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -10,10 +14,8 @@ using System.Diagnostics;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using KDSWPFClient.Model;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using IntegraLib;
 using System.Windows.Media;
 
 namespace KDSWPFClient
@@ -243,7 +245,7 @@ namespace KDSWPFClient
             // вкладки статусов
             setStatusTabs(_isMultipleStatusTabs);
 
-            SplashScreen.Splasher.CloseSplash();
+            SplashScreenLib.Splasher.CloseSplash();
             _isInit = false;
         }
 

@@ -6,6 +6,7 @@ using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using KDSWPFClient.View;
 using IntegraLib;
+using IntegraWPFLib;
 
 namespace KDSWPFClient.Lib
 {
@@ -85,55 +86,6 @@ namespace KDSWPFClient.Lib
         }
 
         #endregion
-
-        //public static bool CheckDBConnection(Type dbType)
-        //{
-        //    string s;
-        //    WriteLogInfoMessage("Проверка доступа к базе данных...");
-
-        //    // контекст БД
-        //    DbContext dbContext = (DbContext)Activator.CreateInstance(dbType);
-
-        //    SqlConnection dbConn = (SqlConnection)dbContext.Database.Connection;
-        //    s = " - строка подключения: " + dbConn.ConnectionString;
-        //    Console.WriteLine("\n**** SQL Connection String ****\n{0}\n****", dbConn.ConnectionString);
-        //    WriteLogInfoMessage(s);
-
-        //    // создать такое же подключение, но с TimeOut = 1 сек
-        //    SqlConnectionStringBuilder confBld = new SqlConnectionStringBuilder(dbConn.ConnectionString);
-        //    SqlConnectionStringBuilder testBld = new SqlConnectionStringBuilder()
-        //    {
-        //        DataSource = confBld.DataSource,
-        //        InitialCatalog = confBld.InitialCatalog,
-        //        PersistSecurityInfo = confBld.PersistSecurityInfo,
-        //        IntegratedSecurity = confBld.IntegratedSecurity,
-        //        UserID = confBld.UserID,
-        //        Password = confBld.Password,
-        //        ConnectRetryCount = 1,
-        //        ConnectTimeout = 1
-        //    };
-        //    SqlConnection testConn = new SqlConnection(testBld.ConnectionString);
-        //    bool retVal = false;
-        //    try
-        //    {
-        //        testConn.Open();
-        //        retVal = true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        AppLib.WriteLogErrorMessage("--- ошибка доступа к БД: " + ex.Message);
-        //    }
-        //    finally
-        //    {
-        //        testConn.Close();
-        //        testConn = null;
-        //    }
-
-        //    WriteLogInfoMessage("Проверка доступа к базе данных... " + ((retVal) ? "READY" : "ERROR!!!"));
-        //    return retVal;
-        //}
-
-
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ
 

@@ -6,7 +6,7 @@ using System.ServiceModel;
 using KDSService.DataSource;
 using IntegraLib;
 using KDSService.Lib;
-
+using System.Data;
 
 namespace KDSService.AppModel
 {
@@ -93,7 +93,7 @@ namespace KDSService.AppModel
         private OrderRunTime _dbRunTimeRecord = null;   // запись дат/времени прямого пути 
         private string _serviceErrorMessage;
 
-        private bool _isUpdStatusFromDishes;
+        private bool _isUpdStatusFromDishes = false;
         private bool _isUseReadyConfirmed;
         #endregion
 
@@ -119,7 +119,7 @@ namespace KDSService.AppModel
 
             _dishesDict = new Dictionary<int, OrderDishModel>();
             // получить отсоединенную RunTime запись из таблицы состояний
-            _dbRunTimeRecord = DBOrderHelper.getOrderRunTimeRecord(dbOrder.Id);
+            _dbRunTimeRecord = getOrderRunTimeRecord(dbOrder.Id);
 
             // создать словарь накопительных счетчиков
             _tsTimersDict = new Dictionary<OrderStatusEnum, TimeCounter>();
@@ -265,11 +265,12 @@ namespace KDSService.AppModel
         // внешнее обновление СОСТОЯНИЯ заказа
         // параметр isUpdateDishStatus = true, если заказ БЫЛ обновлен ИЗВНЕ (из БД/КДС), то в этом случае дату входа в новое состояние для блюд берем из заказа
         //          isUpdateDishStatus = false, если заказ БУДЕТ обновлен по общему состоянию всех блюд
-        public void UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus, string machineName = null)
+        public bool UpdateStatus(OrderStatusEnum newStatus, bool isUpdateDishStatus, string machineName = null)
         {
             // если статус не поменялся, то попытаться обновить только статус блюд
-            if (this.Status == newStatus) return;
+            if (this.Status == newStatus) return false;
 
+            bool retVal = false;
             string sLogMsg = string.Format(" - ORDER.UpdateStatus() Id/Num {0}/{1}, from {2} to {3}", this.Id, this.Number, this.Status.ToString(), newStatus.ToString());
             DateTime dtTmr = DateTime.Now;
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
@@ -288,7 +289,6 @@ namespace KDSService.AppModel
             // обновление заказа по ПОСЛЕДНЕМУ состоянию блюд, если они есть
             if ((isUpdateDishStatus == false) && (_dishesDict.Values.Count > 0))
                 dtEnterToNewStatus = getMaxDishEnterStateDate(newStatus);
-
 
             // сохранить новый статус ОБЪЕКТА в БД
             if (saveStatusToDB(newStatus, machineName))
@@ -331,12 +331,14 @@ namespace KDSService.AppModel
                         dishUpdSuccess = false;
                     }
                 }
+                retVal = true;
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
+            return retVal;
         }  // method
 
         private void startStatusTimer(StatusDTS statusDTS)
@@ -562,17 +564,158 @@ namespace KDSService.AppModel
                     break;
             }
         }
+        #endregion
+
+        #region db funcs
+        private OrderRunTime getOrderRunTimeRecord(int orderId)
+        {
+            OrderRunTime runtimeRecord = null;
+            runtimeRecord = getOrderRunTimeByOrderId(orderId);
+
+            // если еще нет записи в БД, то добавить ее
+            if (runtimeRecord == null)
+            {
+                runtimeRecord = newOrderRunTime(orderId);
+                if (runtimeRecord == null)
+                {
+                    string _errMsg = string.Format("Ошибка создания записи в таблице OrderRunTime для заказа id {0}", orderId);
+                    _serviceErrorMessage = _errMsg;
+                    AppLib.WriteLogErrorMessage(_errMsg);
+                    runtimeRecord = null;
+                }
+            }
+
+            return runtimeRecord;
+        }
+
+        private OrderRunTime getOrderRunTimeById(int id)
+        {
+            string sqlText = string.Format("SELECT * FROM [OrderRunTime] WHERE ([Id] = {0})", id.ToString());
+            return getOrderRunTime(sqlText);
+        }
+
+        private OrderRunTime getOrderRunTimeByOrderId(int orderId)
+        {
+            string sqlText = string.Format("SELECT * FROM [OrderRunTime] WHERE ([OrderId] = {0})", orderId.ToString());
+            return getOrderRunTime(sqlText);
+        }
+
+        private OrderRunTime newOrderRunTime(int orderId)
+        {
+            string sqlText = $"INSERT INTO [OrderRunTime] (OrderId) VALUES ({orderId}); SELECT @@IDENTITY";
+
+            int newId = 0; string dbError = null;
+            using (DBContext db = new DBContext())
+            {
+                var result = db.ExecuteScalar(sqlText);
+                if (result != null) newId = Convert.ToInt32(result);
+                dbError = db.ErrMsg;
+            }
+
+            if ((newId == 0) || (dbError != null))
+            {
+                _serviceErrorMessage = dbError;
+                return null;
+            }
+
+            // вернуть запись с данным Id
+            OrderRunTime retVal = getOrderRunTimeById(newId);
+            return retVal;
+        }
+
+        private OrderRunTime getOrderRunTime(string sqlText)
+        {
+            DataTable dt = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+            }
+            if ((dt == null) || (dt.Rows.Count == 0)) return null;
+
+            OrderRunTime retVal = new OrderRunTime();
+            DataRow dtRow = dt.Rows[0];
+
+            retVal.Id = dtRow.ToInt("Id");
+            retVal.OrderId = dtRow.ToInt("OrderId");
+
+            retVal.InitDate = dtRow.ToDateTime("InitDate");
+            retVal.WaitingCookTS = dtRow.ToInt("WaitingCookTS");
+
+            retVal.CookingStartDate = dtRow.ToDateTime("CookingStartDate");
+            retVal.CookingTS = dtRow.ToInt("CookingTS");
+
+            retVal.ReadyDate = dtRow.ToDateTime("ReadyDate");
+            retVal.WaitingTakeTS = dtRow.ToInt("WaitingTakeTS");
+
+            retVal.TakeDate = dtRow.ToDateTime("TakeDate");
+            retVal.WaitingCommitTS = dtRow.ToInt("WaitingCommitTS");
+
+            retVal.CommitDate = dtRow.ToDateTime("CommitDate");
+            retVal.CancelDate = dtRow.ToDateTime("CancelDate");
+            retVal.CancelConfirmedDate = dtRow.ToDateTime("CancelConfirmedDate");
+
+            retVal.ReadyTS = dtRow.ToInt("ReadyTS");
+            retVal.ReadyConfirmedDate = dtRow.ToDateTime("ReadyConfirmedDate");
+
+            dt.Dispose();
+
+            return retVal;
+        }
+
 
         private bool saveRunTimeRecord()
         {
-            AppLib.WriteLogTraceMessage(" - updating sql-table OrderRunTime..");
-            bool retVal = DBOrderHelper.updateOrderRunTime(_dbRunTimeRecord);
-            if (retVal)
+            string sLogMsg = " - updating sql-table OrderRunTime..";
+            AppLib.WriteLogTraceMessage(sLogMsg);
+
+            string sqlText = getSQLUpdStringRunTimeRecord(_dbRunTimeRecord);
+
+            int result = 0; string dbError = null;
+            using (DBContext db = new DBContext())
             {
-                AppLib.WriteLogTraceMessage(" - updating sql-table OrderRunTime.. - Ok");
+                result = db.ExecuteCommand(sqlText);
+                dbError = db.ErrMsg;
             }
 
+            bool retVal = false;
+            if (result == 1)
+            {
+                retVal = true;
+                sLogMsg += " - Ok";
+            }
+            else
+            {
+                sLogMsg += " - error: " + dbError;
+                _serviceErrorMessage = dbError;
+            }
+            AppLib.WriteLogTraceMessage(sLogMsg);
+
             return retVal;
+        }
+
+        private string getSQLUpdStringRunTimeRecord(OrderRunTime runTimeRecord)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append("UPDATE [OrderRunTime] SET ");
+            sb.AppendFormat("[OrderId] = {0}", runTimeRecord.OrderId.ToString());
+            sb.AppendFormat(", [InitDate] = {0}", runTimeRecord.InitDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingCookTS] = {0}", runTimeRecord.WaitingCookTS.ToString());
+            sb.AppendFormat(", [CookingStartDate] = {0}", runTimeRecord.CookingStartDate.ToSQLExpr());
+            sb.AppendFormat(", [CookingTS] = {0}", runTimeRecord.CookingTS.ToString());
+            sb.AppendFormat(", [ReadyDate] = {0}", runTimeRecord.ReadyDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingTakeTS] = {0}", runTimeRecord.WaitingTakeTS.ToString());
+            sb.AppendFormat(", [TakeDate] = {0}", runTimeRecord.TakeDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingCommitTS] = {0}", runTimeRecord.WaitingCommitTS.ToString());
+            sb.AppendFormat(", [CommitDate] = {0}", runTimeRecord.CommitDate.ToSQLExpr());
+            sb.AppendFormat(", [CancelDate] = {0}", runTimeRecord.CancelDate.ToSQLExpr());
+            sb.AppendFormat(", [CancelConfirmedDate] = {0}", runTimeRecord.CancelConfirmedDate.ToSQLExpr());
+            sb.AppendFormat(", [ReadyTS] = {0}", runTimeRecord.ReadyTS.ToString());
+            sb.AppendFormat(", [ReadyConfirmedDate] = {0}", runTimeRecord.ReadyConfirmedDate.ToSQLExpr());
+            sb.AppendFormat(" WHERE ([Id]={0})", runTimeRecord.Id.ToString());
+            string sqlText = sb.ToString();
+            sb = null;
+
+            return sqlText;
         }
 
         private bool saveStatusToDB(OrderStatusEnum status, string machineName = null)
@@ -582,19 +725,55 @@ namespace KDSService.AppModel
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
-            bool retVal = DBOrderHelper.updateOrderStatus(this.Id, status, _isUseReadyConfirmed);
-            if (retVal == false)
+            // записать в поле QueueStatusId значение для очереди заказов
+            string sqlSetQueueValueText = null;
+            if (status == OrderStatusEnum.Cooking)
             {
-                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", DBOrderHelper.ErrorMessage);
+                sqlSetQueueValueText = "[QueueStatusId] = 0";
+            }
+            else if ((!_isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
+                || (_isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
+            {
+                sqlSetQueueValueText = "[QueueStatusId] = 1";
+            }
+            else if (status == OrderStatusEnum.Took)
+            {
+                sqlSetQueueValueText = "[QueueStatusId] = 2";
             }
 
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendFormat("UPDATE [Order] SET [OrderStatusId] = {0}", ((int)status).ToString());
+            if ((sqlSetQueueValueText.IsNull() == false) && (sqlSetQueueValueText.Length > 0))
+                sb.Append(", " + sqlSetQueueValueText);
+            sb.AppendFormat(" WHERE ([Id] = {0})", this.Id.ToString());
+            string sqlText = sb.ToString();
+            sb = null;
+
+            int result = 0; string dbError = null;
+            using (DBContext db = new DBContext())
+            {
+                result = db.ExecuteCommand(sqlText);
+                dbError = db.ErrMsg;
+            }
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+
+            bool retVal = false;
+            if (result == 1)
+            {
+                retVal = true;
+                sLogMsg += " - Ok";
+            }
+            else
+            {
+                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", dbError);
+                sLogMsg += " - error: " + dbError;
+            }
+
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
             return retVal;
         }
-
 
         private void writeDBException(Exception ex, string subMsg1)
         {

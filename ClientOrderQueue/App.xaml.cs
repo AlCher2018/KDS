@@ -1,6 +1,8 @@
 ﻿using ClientOrderQueue.Lib;
 using ClientOrderQueue.Model;
 using IntegraLib;
+using IntegraWPFLib;
+using SplashScreenLib;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -19,62 +21,83 @@ namespace ClientOrderQueue
         [STAThread]
         public static void Main()
         {
+            App app = new App();
+
+            // splash
+            Splasher.Splash = new View.SplashScreen();
+            Splasher.ShowSplash();
+            //for (int i = 0; i < 5000; i += 1)
+            //{
+            //    MessageListener.Instance.ReceiveMessage(string.Format("Load module {0}", i));
+            //    Thread.Sleep(1);
+            //}
+
+            // таймаут запуска приложения
+            string cfgValue = CfgFileHelper.GetAppSetting("StartTimeout");
+            int startTimeout = 0;
+            if (cfgValue != null) startTimeout = cfgValue.ToInt();
+            if (startTimeout != 0)
+            {
+                for (int i = startTimeout; i > 0; i--)
+                {
+                    MessageListener.Instance.ReceiveMessage($"Таймаут запуска приложения - {i} секунд.");
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+
+            MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
+            AppLib.InitAppLogger();
+            System.Threading.Thread.Sleep(500);
+
             AppLib.WriteLogInfoMessage("****  Start application  ****");
 
             // защита PSW-файлом
+            // текст в MessageListener.Instance прибинден к текстовому полю на сплэше
+            MessageListener.Instance.ReceiveMessage("Проверка лицензии...");
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue.psw", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue", out checkProtectedResult) == false)
             {
                 AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
                 appExit(2, checkProtectedResult.CustomMessage);
                 return;
             }
+            System.Threading.Thread.Sleep(500);
 
-            App app = new App();
-
-            // splash
-            getAppLayout();
-            string fileName = (WpfHelper.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            SplashScreen splashScreen = new SplashScreen(fileName);
-            splashScreen.Show(true);
-
-            // информация о файлах и сборках
+            // информация о файлах, сборках и настройках из конфиг-файлов
+            MessageListener.Instance.ReceiveMessage("Получаю информацию о сборках и настройках...");
+            // для хранения в свойствах приложения (из config-файла или др.)
+            setAppGlobalValues();  
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
             ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
+            asmInfo = new ITSAssemmblyInfo("IntegraWPFLib");
+            AppLib.WriteLogInfoMessage(" - Integra WPF lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
 
             AppLib.WriteLogInfoMessage("Системное окружение: " + AppEnvironment.GetEnvironmentString());
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // флажки для логов
-            string cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
+            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
             WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
+            System.Threading.Thread.Sleep(300);
 
             // проверить доступность БД
+            MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");
             if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
             {
                 bool result = false;
-                AppStartWait winWait = new AppStartWait();
-                winWait.Show();
-
+                int tryCount = 20;
                 // сделать цикл проверки подключения: 20 раз через 2 сек
-                for (int i = 1; i <= 20; i++)
+                for (int i = tryCount; i >= 1; i--)
                 {
-                    winWait.Dispatcher.Invoke(() =>
-                    {
-                        int iVal = winWait.txtNumAttempt.Text.ToInt();
-                        iVal++;
-                        winWait.txtNumAttempt.Text = iVal.ToString();
-                        winWait.InvalidateProperty(TextBlock.TextProperty);
-                        winWait.InvalidateVisual();
-                        winWait.Refresh();
-                    });
-                    Thread.Sleep(2000);
+                    cfgValue = $"Попытка подключения к БД: {i} из {tryCount}";
+                    MessageListener.Instance.ReceiveMessage(cfgValue);
+                    AppLib.WriteLogInfoMessage(cfgValue);
 
+                    Thread.Sleep(2000);
                     result = AppLib.CheckDBConnection(typeof(KDSContext));
                     if (result) break;
                 }
-                winWait.Close();
 
                 if (!result)
                 {
@@ -91,9 +114,8 @@ namespace ClientOrderQueue
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
 
-            setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
-
-            MainWindow mWindow = new MainWindow();
+            MessageListener.Instance.ReceiveMessage("Работаю...");
+            View.MainWindow mWindow = new View.MainWindow();
             app.Run(mWindow);
 
             AppLib.WriteLogInfoMessage("****  End application  ****");
@@ -108,16 +130,14 @@ namespace ClientOrderQueue
             Environment.Exit(exitCode);
         }
 
-        private static void getAppLayout()
-        {
-            WpfHelper.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
-            WpfHelper.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
-        }
 
         // сохранить в свойствах приложения часто используемые значения, чтобы не дергать config-файл
         private static void setAppGlobalValues()
         {
             string cfgValue;
+
+            cfgValue = CfgFileHelper.GetAppSetting("MidnightShiftShowYesterdayOrders");
+            WpfHelper.SetAppGlobalValue("MidnightShiftShowYesterdayOrders", (cfgValue==null ? 0 : cfgValue.ToDouble()));
 
             // файл изображения состояния
             string sPath = CfgFileHelper.GetAppSetting("ImagesPath");

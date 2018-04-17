@@ -10,7 +10,7 @@ using System.Threading;
 using KDSService.DataSource;
 using KDSService.Lib;
 using IntegraLib;
-
+using System.Data;
 
 namespace KDSService.AppModel
 {
@@ -277,23 +277,33 @@ namespace KDSService.AppModel
             bool retVal = false;
             try
             {
-                sqlText = string.Format("declare @dt datetime = {0}; SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < @dt)", dtUpdate.ToSQLExpr());
-                List<int> idList = DBOrderHelper.getOrderIdsList(sqlText);
-
                 using (DBContext db = new DBContext())
                 {
-                    foreach (int orderId in idList)
-                    {
-                        // обновить статус блюд
-                        sqlText = $"UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={orderId.ToString()})";
-                        iAffected = db.ExecuteCommand(sqlText);
-                        cntDishes += iAffected;
+                    sqlText = string.Format("declare @dt datetime = {0}; SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < @dt)", dtUpdate.ToSQLExpr());
+                    DataTable dt = db.GetQueryTable(sqlText);
 
-                        // обновить статус заказа
-                        sqlText = $"UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={orderId.ToString()})";
-                        iAffected = db.ExecuteCommand(sqlText);
-                        cntOrders += iAffected;
+                    if (dt != null)
+                    {
+                        int orderId;
+                        foreach (DataRow dtRow in dt.Rows)
+                        {
+                            orderId = System.Convert.ToInt32(dtRow[0]);
+                            if (orderId > 0)
+                            {
+                                // обновить статус блюд
+                                sqlText = $"UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={orderId.ToString()})";
+                                iAffected = db.ExecuteCommand(sqlText);
+                                cntDishes += iAffected;
+
+                                // обновить статус заказа
+                                sqlText = $"UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={orderId.ToString()})";
+                                iAffected = db.ExecuteCommand(sqlText);
+                                cntOrders += iAffected;
+                            }
+                        }
                     }
+
+                    dt.Dispose();
                 }
 
                 retVal = true;
@@ -306,6 +316,7 @@ namespace KDSService.AppModel
 
             return retVal;
         }
+
 
         private string _tmpPeriod()
         {

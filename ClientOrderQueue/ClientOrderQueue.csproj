@@ -56,7 +56,7 @@
     </StartupObject>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>ClientOrderQueue.ico</ApplicationIcon>
+    <ApplicationIcon>View\ClientOrderQueue.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>A364F2AC4ACB4E28CA062EA4156636011ABF8170</ManifestCertificateThumbprint>
@@ -88,6 +88,9 @@
     <Reference Include="IntegraLib">
       <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
     </Reference>
+    <Reference Include="IntegraWPFLib">
+      <HintPath>..\..\Integra libs\IntegraWPFLib\bin\Release\IntegraWPFLib.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.5\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
@@ -118,14 +121,14 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppStartWait.xaml.cs">
-      <DependentUpon>AppStartWait.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Lib\WpfHelper.cs" />
     <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
     <Compile Include="Lib\Converters.cs" />
+    <Compile Include="Model\OrderStatusEnum.cs" />
+    <Compile Include="View\SplashScreen.xaml.cs">
+      <DependentUpon>SplashScreen.xaml</DependentUpon>
+    </Compile>
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -137,11 +140,7 @@
     </Compile>
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\ImageHelper.cs" />
-    <Page Include="AppStartWait.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="MainWindow.xaml">
+    <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -159,13 +158,17 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>DataModel.edmx</DependentUpon>
     </Compile>
-    <Compile Include="MainWindow.xaml.cs">
+    <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Page Include="Model\OrderPanel1.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\SplashScreen.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
@@ -257,7 +260,7 @@
     </Content>
     <Resource Include="Images\bg 3hor 1920x1080 splash.png" />
     <Resource Include="Images\bg 3ver 1080x1920 splash.png" />
-    <Resource Include="ClientOrderQueue.ico" />
+    <Resource Include="View\ClientOrderQueue.ico" />
     <Content Include="DataModel.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <DependentUpon>DataModel.edmx</DependentUpon>

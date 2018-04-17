@@ -1144,40 +1144,52 @@ namespace KDSWPFClient.ServiceReference1 {
     public interface IKDSCommandService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        void LockOrder(string machineName, int orderId);
+        bool LockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId);
+        System.Threading.Tasks.Task<bool> LockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        void DelockOrder(string machineName, int orderId);
+        bool DelockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId);
+        System.Threading.Tasks.Task<bool> DelockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        void LockDish(string machineName, int dishId);
+        bool LockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId);
+        System.Threading.Tasks.Task<bool> LockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        void DelockDish(string machineName, int dishId);
+        bool DelockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId);
+        System.Threading.Tasks.Task<bool> DelockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        bool ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        System.Threading.Tasks.Task<bool> ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        System.Threading.Tasks.Task<bool> ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrderResponse")]
+        bool CreateNoticeFileForOrder(string machineName, int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrderResponse")]
+        System.Threading.Tasks.Task<bool> CreateNoticeFileForOrderAsync(string machineName, int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDishResponse")]
+        bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDishResponse")]
+        System.Threading.Tasks.Task<bool> CreateNoticeFileForDishAsync(string machineName, int orderId, int orderDishId);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -1207,52 +1219,68 @@ namespace KDSWPFClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public void LockOrder(string machineName, int orderId) {
-            base.Channel.LockOrder(machineName, orderId);
+        public bool LockOrder(string machineName, int orderId) {
+            return base.Channel.LockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId) {
+        public System.Threading.Tasks.Task<bool> LockOrderAsync(string machineName, int orderId) {
             return base.Channel.LockOrderAsync(machineName, orderId);
         }
         
-        public void DelockOrder(string machineName, int orderId) {
-            base.Channel.DelockOrder(machineName, orderId);
+        public bool DelockOrder(string machineName, int orderId) {
+            return base.Channel.DelockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId) {
+        public System.Threading.Tasks.Task<bool> DelockOrderAsync(string machineName, int orderId) {
             return base.Channel.DelockOrderAsync(machineName, orderId);
         }
         
-        public void LockDish(string machineName, int dishId) {
-            base.Channel.LockDish(machineName, dishId);
+        public bool LockDish(string machineName, int dishId) {
+            return base.Channel.LockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId) {
+        public System.Threading.Tasks.Task<bool> LockDishAsync(string machineName, int dishId) {
             return base.Channel.LockDishAsync(machineName, dishId);
         }
         
-        public void DelockDish(string machineName, int dishId) {
-            base.Channel.DelockDish(machineName, dishId);
+        public bool DelockDish(string machineName, int dishId) {
+            return base.Channel.DelockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId) {
+        public System.Threading.Tasks.Task<bool> DelockDishAsync(string machineName, int dishId) {
             return base.Channel.DelockDishAsync(machineName, dishId);
         }
         
-        public void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
-            base.Channel.ChangeOrderStatus(machineName, orderId, orderStatus);
+        public bool ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            return base.Channel.ChangeOrderStatus(machineName, orderId, orderStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+        public System.Threading.Tasks.Task<bool> ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
             return base.Channel.ChangeOrderStatusAsync(machineName, orderId, orderStatus);
         }
         
-        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
-            base.Channel.ChangeOrderDishStatus(machineName, orderId, orderDishId, orderDishStatus);
+        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            return base.Channel.ChangeOrderDishStatus(machineName, orderId, orderDishId, orderDishStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+        public System.Threading.Tasks.Task<bool> ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
             return base.Channel.ChangeOrderDishStatusAsync(machineName, orderId, orderDishId, orderDishStatus);
+        }
+        
+        public bool CreateNoticeFileForOrder(string machineName, int orderId) {
+            return base.Channel.CreateNoticeFileForOrder(machineName, orderId);
+        }
+        
+        public System.Threading.Tasks.Task<bool> CreateNoticeFileForOrderAsync(string machineName, int orderId) {
+            return base.Channel.CreateNoticeFileForOrderAsync(machineName, orderId);
+        }
+        
+        public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId) {
+            return base.Channel.CreateNoticeFileForDish(machineName, orderId, orderDishId);
+        }
+        
+        public System.Threading.Tasks.Task<bool> CreateNoticeFileForDishAsync(string machineName, int orderId, int orderDishId) {
+            return base.Channel.CreateNoticeFileForDishAsync(machineName, orderId, orderDishId);
         }
     }
 }

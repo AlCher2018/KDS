@@ -10,6 +10,7 @@ using System.ServiceModel;
 using KDSService.DataSource;
 using IntegraLib;
 using KDSService.Lib;
+using System.Data;
 
 namespace KDSService.AppModel
 {
@@ -177,7 +178,7 @@ namespace KDSService.AppModel
             Status = AppLib.GetStatusEnumFromNullableInt(dbDish.DishStatusId);
 
             // получить запись из таблицы состояний
-            _dbRunTimeRecord = DBOrderHelper.getOrderDishRunTimeRecord(dbDish.Id);
+            _dbRunTimeRecord = getOrderDishRunTimeRecord(dbDish.Id);
 
             _isDish = ParentUid.IsNull();
             _isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
@@ -670,25 +671,82 @@ namespace KDSService.AppModel
         private void saveRunTimeRecord()
         {
             AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime..");
-            if (DBOrderHelper.updateOrderDishRunTime(_dbRunTimeRecord))
+
+            string sqlText = getSQLUpdStringRunTimeRecord(_dbRunTimeRecord);
+
+            int result = 0; string dbError = null;
+            using (DBContext db = new DBContext())
+            {
+                result = db.ExecuteCommand(sqlText);
+                dbError = db.ErrMsg;
+            }
+
+            if (result == 1)
             {
                 AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime.. - Ok");
             }
+            else if (dbError != null)
+            {
+                AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishRunTime.. - Error: " + dbError);
+            }
+        }
+
+        private string getSQLUpdStringRunTimeRecord(OrderDishRunTime runTimeRecord)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("UPDATE [OrderDishRunTime] SET ");
+            sb.AppendFormat("[OrderDishId] = {0}", _dbRunTimeRecord.OrderDishId.ToString());
+            sb.AppendFormat(", [InitDate] = {0}", _dbRunTimeRecord.InitDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingCookTS] = {0}", _dbRunTimeRecord.WaitingCookTS.ToString());
+            sb.AppendFormat(", [CookingStartDate] = {0}", _dbRunTimeRecord.CookingStartDate.ToSQLExpr());
+            sb.AppendFormat(", [CookingTS] = {0}", _dbRunTimeRecord.CookingTS.ToString());
+            sb.AppendFormat(", [ReadyDate] = {0}", _dbRunTimeRecord.ReadyDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingTakeTS] = {0}", _dbRunTimeRecord.WaitingTakeTS.ToString());
+            sb.AppendFormat(", [TakeDate] = {0}", _dbRunTimeRecord.TakeDate.ToSQLExpr());
+            sb.AppendFormat(", [WaitingCommitTS] = {0}", _dbRunTimeRecord.WaitingCommitTS.ToString());
+            sb.AppendFormat(", [CommitDate] = {0}", _dbRunTimeRecord.CommitDate.ToSQLExpr());
+            sb.AppendFormat(", [CancelDate] = {0}", _dbRunTimeRecord.CancelDate.ToSQLExpr());
+            sb.AppendFormat(", [CancelConfirmedDate] = {0}", _dbRunTimeRecord.CancelConfirmedDate.ToSQLExpr());
+            sb.AppendFormat(", [ReadyTS] = {0}", _dbRunTimeRecord.ReadyTS.ToString());
+            sb.AppendFormat(", [ReadyConfirmedDate] = {0}", _dbRunTimeRecord.ReadyConfirmedDate.ToSQLExpr());
+            sb.AppendFormat(" WHERE ([Id]={0})", _dbRunTimeRecord.Id.ToString());
+            string sqlText = sb.ToString();
+            sb = null;
+
+            return sqlText;
         }
 
 
         private void saveReturnTimeRecord(OrderStatusEnum statusFrom, OrderStatusEnum statusTo, DateTime dtEnterToNewStatus, int secondsInPrevState)
         {
-            AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime..");
-            if (DBOrderHelper.updateOrderDishReturnTime(this.Id, dtEnterToNewStatus, (int)statusFrom, secondsInPrevState, (int)statusTo))
+            string sLogMsg = " - updating sql-table OrderDishReturnTime..";
+            AppLib.WriteLogTraceMessage(sLogMsg);
+
+            string sqlText = string.Format("INSERT INTO [OrderDishReturnTime] ([OrderDishId], [ReturnDate], [StatusFrom], [StatusFromTimeSpan], [StatusTo]) VALUES ({0}, {1}, {2}, {3}, {4})",
+                this.Id.ToString(), dtEnterToNewStatus.ToSQLExpr(), ((int)statusFrom).ToString(), secondsInPrevState.ToString(), ((int)statusTo).ToString());
+
+            int result = 0; string dbError = null;
+            using (DBContext db = new DBContext())
             {
-                AppLib.WriteLogTraceMessage(" - updating sql-table OrderDishReturnTime.. - Ok");
+                result = db.ExecuteCommand(sqlText);
+                dbError = db.ErrMsg;
             }
+
+            if (result == 1)
+            {
+                sLogMsg += " - Ok";
+            }
+            else if (dbError != null)
+            {
+                sLogMsg += " - error: " + dbError;
+                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", dbError);
+            }
+            AppLib.WriteLogTraceMessage(sLogMsg);
         }
+
 
         private bool saveStatusToDB(OrderStatusEnum status, string machineName = null)
         {
-            bool retVal = false;
             int iStatus = (int)status;
 
             string sLogMsg = string.Format("   - save DISH {0}/{1}, status = {2}", this.Id, this.Name, status.ToString());
@@ -696,19 +754,127 @@ namespace KDSService.AppModel
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg + " - START");
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
-            if (DBOrderHelper.updateOrderDishStatus(this.Id, status))
+            string sqlText = $"UPDATE [OrderDish] SET [DishStatusId] = {((int)status).ToString()} WHERE ([Id] = {this.Id})";
+
+            int result = 0; string dbError = null;
+            using (DBContext db = new DBContext())
             {
-                retVal = true;
-            }
-            else
-            {
-                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", DBOrderHelper.ErrorMessage);
+                result = db.ExecuteCommand(sqlText);
+                dbError = db.ErrMsg;
             }
 
             sLogMsg += " - FINISH - " + (DateTime.Now - dtTmr).ToString();
+            bool retVal = false;
+            if (result == 1)
+            {
+                retVal = true;
+            }
+            else if (dbError != null)
+            {
+                sLogMsg += ". Error: " + dbError;
+                _serviceErrorMessage = string.Format("Ошибка записи в БД: {0}", dbError);
+            }
+
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
+            return retVal;
+        }
+
+        private OrderDishRunTime getOrderDishRunTimeRecord(int dishId)
+        {
+            OrderDishRunTime runtimeRecord = null;
+            runtimeRecord = getOrderDishRunTimeByOrderDishId(dishId);
+
+            // если еще нет записи в БД, то добавить ее
+            if (runtimeRecord == null)
+            {
+                runtimeRecord = newOrderDishRunTime(dishId);
+                if (runtimeRecord == null)
+                {
+                    string _errMsg = string.Format("Ошибка создания записи в таблице OrderDishRunTime для блюда id {0}", dishId);
+                    AppLib.WriteLogErrorMessage(_errMsg);
+                    runtimeRecord = null;
+                }
+            }
+
+            return runtimeRecord;
+        }
+
+        private OrderDishRunTime newOrderDishRunTime(int dishId)
+        {
+            string sqlText = $"INSERT INTO [OrderDishRunTime] (OrderDishId) VALUES ({dishId}); SELECT @@IDENTITY";
+
+            int newId = 0; string dbError = null;
+            using (DBContext db = new DBContext())
+            {
+                var result = db.ExecuteScalar(sqlText);
+                if (result != null) newId = Convert.ToInt32(result);
+                dbError = db.ErrMsg;
+            }
+            
+            if ((newId == 0) || (dbError != null))
+            {
+                _serviceErrorMessage = dbError;
+                return null;
+            }
+
+            // вернуть запись с данным Id
+            OrderDishRunTime retVal = getOrderDishRunTimeById(newId);
+            return retVal;
+        }
+
+        private OrderDishRunTime getOrderDishRunTimeByOrderDishId(int orderDishId)
+        {
+            string sqlText = string.Format("SELECT * FROM [OrderDishRunTime] WHERE ([OrderDishId] = {0})", orderDishId.ToString());
+            return getOrderDishRunTime(sqlText);
+        }
+        private OrderDishRunTime getOrderDishRunTimeById(int id)
+        {
+            string sqlText = string.Format("SELECT * FROM [OrderDishRunTime] WHERE ([Id] = {0})", id.ToString());
+            return getOrderDishRunTime(sqlText);
+        }
+
+        private OrderDishRunTime getOrderDishRunTime(string sqlText)
+        {
+            DataTable dt = null;
+            string dbError = null;
+            using (DBContext db = new DBContext())
+            {
+                dt = db.GetQueryTable(sqlText);
+                dbError = db.ErrMsg;
+            }
+            if ((dt == null) || (dt.Rows.Count == 0))
+            {
+                return null;
+            }
+
+            OrderDishRunTime retVal = new OrderDishRunTime();
+            DataRow dtRow = dt.Rows[0];
+
+            retVal.Id = dtRow.ToInt("Id");
+            retVal.OrderDishId = dtRow.ToInt("OrderDishId");
+
+            retVal.InitDate = dtRow.ToDateTime("InitDate");
+            retVal.WaitingCookTS = dtRow.ToInt("WaitingCookTS");
+
+            retVal.CookingStartDate = dtRow.ToDateTime("CookingStartDate");
+            retVal.CookingTS = dtRow.ToInt("CookingTS");
+
+            retVal.ReadyDate = dtRow.ToDateTime("ReadyDate");
+            retVal.WaitingTakeTS = dtRow.ToInt("WaitingTakeTS");
+
+            retVal.TakeDate = dtRow.ToDateTime("TakeDate");
+            retVal.WaitingCommitTS = dtRow.ToInt("WaitingCommitTS");
+
+            retVal.CommitDate = dtRow.ToDateTime("CommitDate");
+            retVal.CancelDate = dtRow.ToDateTime("CancelDate");
+            retVal.CancelConfirmedDate = dtRow.ToDateTime("CancelConfirmedDate");
+
+            retVal.ReadyTS = dtRow.ToInt("ReadyTS");
+            retVal.ReadyConfirmedDate = dtRow.ToDateTime("ReadyConfirmedDate");
+
+            dt.Dispose();
             return retVal;
         }
 

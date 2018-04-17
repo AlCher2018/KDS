@@ -12,6 +12,5 @@
         <locLib:GetCornerRadiusConverter x:Key="getCornerRadiusConverter"/>
         <locLib:GetDarkerColorConverter x:Key="getDarkerColorConverter"/>
         <locLib:CalculatedMarginConverter x:Key="calculatedMarginConverter" />
-        
     </Application.Resources>
 </Application>

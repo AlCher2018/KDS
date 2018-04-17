@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Windows.Threading;
 using KDSWPFClient.ServiceReference1;
 using IntegraLib;
+using IntegraWPFLib;
 
 namespace KDSWPFClient.View
 {

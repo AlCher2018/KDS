@@ -59,6 +59,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
     </Reference>
+    <Reference Include="IntegraWPFLib">
+      <HintPath>..\..\Integra libs\IntegraWPFLib\bin\Release\IntegraWPFLib.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.9\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
@@ -91,17 +94,13 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Lib\TypeExtensions.cs" />
-    <Compile Include="Lib\WpfHelper.cs" />
-    <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Model\DishesFilter.cs" />
     <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />
-    <Compile Include="SplashScreen\DispatcherHelper.cs" />
-    <Compile Include="SplashScreen\MessageListener.cs" />
-    <Compile Include="SplashScreen\Splasher.cs" />
-    <Compile Include="SplashScreen\SplashScreen.xaml.cs" />
+    <Compile Include="SplashScreen.xaml.cs">
+      <DependentUpon>SplashScreen.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\AppLeftTabControl.cs" />
     <Compile Include="View\BrushConverter.cs" />
     <Compile Include="View\BrushHelper.cs" />
@@ -154,9 +153,9 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="SplashScreen\SplashScreen.xaml">
-      <Generator>MSBuild:Compile</Generator>
+    <Page Include="SplashScreen.xaml">
       <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\ColorLegend.xaml">
       <SubType>Designer</SubType>
@@ -223,7 +222,6 @@
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Resource Include="SplashScreen\source.txt" />
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>

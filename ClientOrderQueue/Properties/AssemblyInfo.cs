@@ -8,7 +8,7 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("ClientOrderQueue")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Очередь Заказов")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Integra-IT Solutions")]
 [assembly: AssemblyProduct("ClientOrderQueue")]
@@ -51,5 +51,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.1.1.0")]
-[assembly: AssemblyFileVersion("3.1.1.0")]
+[assembly: AssemblyVersion("3.1.2.0")]
+[assembly: AssemblyFileVersion("3.1.2.0")]
+[assembly: Guid("6F154D5A-6B0E-4F10-8251-E13DCB3F5C65")]
+

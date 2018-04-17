@@ -1,6 +1,8 @@
 ﻿using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.Lib;
 using IntegraLib;
+using IntegraWPFLib;
+using SplashScreenLib;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -13,7 +15,6 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.IO.Compression;
-using SplashScreen;
 
 namespace KDSWPFClient
 {
@@ -34,17 +35,13 @@ namespace KDSWPFClient
         public static void Main(string[] args)
         {
             // splash
-            Splasher.Splash = new SplashScreen.SplashScreen();
+            Splasher.Splash = new SplashScreen();
             Splasher.ShowSplash();
             //for (int i = 0; i < 5000; i += 1)
             //{
             //    MessageListener.Instance.ReceiveMessage(string.Format("Load module {0}", i));
             //    Thread.Sleep(1);
             //}
-            //string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            //SplashScreen splashScreen = null;
-            //SplashScreen splashScreen = new SplashScreen(fileName);
-            //splashScreen.Show(true);
 
             // таймаут запуска приложения
             string cfgValue = CfgFileHelper.GetAppSetting("StartTimeout");
@@ -75,6 +72,7 @@ namespace KDSWPFClient
             }
 
             // защита PSW-файлом
+            MessageListener.Instance.ReceiveMessage("Проверка лицензии...");
             bool isLoyalClient = false;
             //isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
             // ключ реестра HKLM\Software\Integra\autoGenLicence = 01 (binary)
@@ -385,6 +383,8 @@ namespace KDSWPFClient
                     if ((newState != OrderStatusEnum.None) && (newState != currentState) && (dataProvider != null))
                     {
                         string sLogMsg;
+                        bool result = false;
+                        #region изменение статуса
                         try
                         {
                             // проверить set-канал
@@ -396,14 +396,35 @@ namespace KDSWPFClient
                             {
                                 sLogMsg = string.Format("orderId {0} (num {1}) for change status dishId {2} ({3}) to {4}", orderModel.Id, orderModel.Number, dishModel.Id, dishModel.DishName, newState.ToString());
                                 DateTime dtTmr = DateTime.Now;
-                                AppLib.WriteLogClientAction("lock " + sLogMsg);
-                                dataProvider.LockOrder(orderModel.Id);
+                                if (dataProvider.LockOrder(orderModel.Id))
+                                {
+                                    AppLib.WriteLogClientAction("lock " + sLogMsg + ": success");
 
-                                // изменить статус блюда с ингредиентами
-                                changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
+                                    OrderStatusEnum preState = dishModel.Status;
+                                    // изменить статус блюда с ингредиентами
+                                    result = changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
+                                    
+                                    // откат на предыдущий статус
+                                    if (result == false)
+                                    {
+                                        AppLib.WriteLogClientAction("Dish state has NOT changed: state rollback...");
+                                        result = changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, preState);
+                                    }
+                                    else
+                                    {
+                                        dataProvider.CreateNoticeFileForDish(orderModel.Id, dishModel.Id);
+                                    }
 
-                                AppLib.WriteLogClientAction("delock " + sLogMsg + " - " + (DateTime.Now-dtTmr).ToString());
-                                dataProvider.DelockOrder(orderModel.Id);
+                                    string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
+                                    if (dataProvider.DelockOrder(orderModel.Id))
+                                        AppLib.WriteLogClientAction(sBuf + ": success");
+                                    else
+                                        AppLib.WriteLogClientAction(sBuf + ": NOT success");
+                                }
+                                else
+                                {
+                                    AppLib.WriteLogClientAction("lock " + sLogMsg + ": NOT success");
+                                }
                             }
 
                             // изменение состояния ЗАКАЗА, то изменяем все равно поблюдно
@@ -411,22 +432,38 @@ namespace KDSWPFClient
                             {
                                 sLogMsg = string.Format("orderId {0} (num {1}) for change order status to {2}", orderModel.Id, orderModel.Number, newState.ToString());
                                 DateTime dtTmr = DateTime.Now;
-                                AppLib.WriteLogClientAction("lock " + sLogMsg);
-                                dataProvider.LockOrder(orderModel.Id);
 
-                                // меняем статус БЛЮД в заказе, если блюдо разрешено для данного КДСа
-                                foreach (OrderDishViewModel item in orderModel.Dishes.Where(d => d.ParentUID.IsNull()))
+                                if (dataProvider.LockOrder(orderModel.Id))
                                 {
-                                    if (DishesFilter.Instance.Checked(item))
+                                    AppLib.WriteLogClientAction("lock " + sLogMsg + ": success");
+
+                                    result = true;
+                                    // меняем статус БЛЮД в заказе, если блюдо разрешено для данного КДСа
+                                    foreach (OrderDishViewModel item in orderModel.Dishes.Where(d => d.ParentUID.IsNull()))
                                     {
-                                        // изменить статус блюда с ингредиентами
-                                        changeStatusDishWithIngrs(dataProvider, orderModel, item, newState);
+                                        if (DishesFilter.Instance.Checked(item))
+                                        {
+                                            // изменить статус блюда с ингредиентами
+                                            result = changeStatusDishWithIngrs(dataProvider, orderModel, item, newState);
+                                            if (result == false) break;
+                                        }
+                                    }  // foreach
+
+                                    if (result == true)
+                                    {
+                                        dataProvider.CreateNoticeFileForOrder(orderModel.Id);
                                     }
-                                }  // foreach
 
-                                AppLib.WriteLogClientAction("delock orderId {0} (num {1}) - {2}", orderModel.Id, orderModel.Number, (DateTime.Now - dtTmr).ToString());
-                                dataProvider.DelockOrder(orderModel.Id);
-
+                                    string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
+                                    if (dataProvider.DelockOrder(orderModel.Id))
+                                        AppLib.WriteLogClientAction(sBuf + ": success");
+                                    else
+                                        AppLib.WriteLogClientAction(sBuf + ": NOT success");
+                                }
+                                else
+                                {
+                                    AppLib.WriteLogClientAction("lock " + sLogMsg + ": NOT success");
+                                }
                             }  // order status
                         }
                         catch (Exception ex)
@@ -434,8 +471,8 @@ namespace KDSWPFClient
                             AppLib.WriteLogErrorMessage(ex.ToString());
                             MessageBox.Show("Ошибка изменения состояния. Попробуйте еще раз.", "Ошибка записи нового состояния",MessageBoxButton.OK);
                         }
-
-                    } // if
+                        #endregion
+                    }
                 }  // if (allowedStates.Count != 0)
 
             } // if (allowedActions != null)
@@ -443,20 +480,24 @@ namespace KDSWPFClient
         }  // method
 
         // изменение статуса блюда с ингредиентами
-        private static void changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
+        private static bool changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
             // эта настройка от КДС-сервиса
             bool isConfirmedReadyState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool result = false;
 
             // изменить статус блюда
-            dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+            result = dataProvider.SetNewDishStatus(orderModel.Id, dishModel.Id, newState);
+            if (result == false) return false;
+
             // есть ли сгруппированные блюда
             if (dishModel.GroupedDishIds.IsNull() == false)
             {
                 int[] ids = dishModel.GroupedDishIds.Split(';').Select(sId => sId.ToInt()).ToArray();
                 for (int i = 0; i < ids.Length; i++)
                 {
-                    dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                    result = dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                    if (result == false) return false;
                 }
             }
 
@@ -477,7 +518,8 @@ namespace KDSWPFClient
                             || (newState == OrderStatusEnum.Took)
                             || (newState == OrderStatusEnum.CancelConfirmed))
                         {
-                            dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                            result = dataProvider.SetNewDishStatus(orderModel.Id, ingr.Id, newState);
+                            if (result == false) return false;
 
                             // если есть сгруппированные ингредиенты
                             if (ingr.GroupedDishIds.IsNull() == false)
@@ -485,13 +527,16 @@ namespace KDSWPFClient
                                 int[] ids = ingr.GroupedDishIds.Split(';').Select(sId => sId.ToInt()).ToArray();
                                 for (int i = 0; i < ids.Length; i++)
                                 {
-                                    dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                                    result = dataProvider.SetNewDishStatus(orderModel.Id, ids[i], newState);
+                                    if (result == false) return false;
                                 }
                             }
                         }
                     }
                 }
             }
+
+            return true;
         } // method
 
 

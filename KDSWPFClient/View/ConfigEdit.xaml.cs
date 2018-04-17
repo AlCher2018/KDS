@@ -1,5 +1,6 @@
 ﻿using CAVControls;
 using IntegraLib;
+using IntegraWPFLib;
 using KDSWPFClient.Lib;
 using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;

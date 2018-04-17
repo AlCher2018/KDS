@@ -11,6 +11,7 @@ using System.Windows.Shapes;
 using System.Windows.Input;
 using KDSWPFClient.Lib;
 using IntegraLib;
+using IntegraWPFLib;
 
 namespace KDSWPFClient.View
 {
@@ -166,7 +167,7 @@ namespace KDSWPFClient.View
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,
-                Text = _order.CreateDate.ToPanelString()
+                Text = _order.CreateDate.ToKDSPanelString()
             };
             tbOrderDate.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderCreateDateFontSize");
             pnlOrderDate.Children.Add(tbOrderDate);

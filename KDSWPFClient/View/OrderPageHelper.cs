@@ -1,4 +1,5 @@
 ﻿using IntegraLib;
+using IntegraWPFLib;
 using KDSWPFClient.Lib;
 using KDSWPFClient.ViewModel;
 using System;

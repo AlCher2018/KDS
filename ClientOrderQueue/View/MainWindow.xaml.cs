@@ -1,6 +1,7 @@
 ﻿using ClientOrderQueue.Lib;
 using ClientOrderQueue.Model;
 using IntegraLib;
+using IntegraWPFLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,13 +9,17 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ClientOrderQueue
+namespace ClientOrderQueue.View
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        // текст запроса по умолчанию
+        // поля запроса должны соответствовать полям класса Order из EF
+        private const string _readOrdersSQLTextDefault = "SELECT Id, Number, QueueStatusId, LanguageTypeId, CreateDate, ClientName FROM dbo.[Order] WHERE(QueueStatusId IN (0, 1)) AND (OrderStatusId IN (1, 2, 8))";
+
         private List<AppOrder> _appOrders;
 
         private System.Media.SoundPlayer simpleSound = null;
@@ -24,6 +29,10 @@ namespace ClientOrderQueue
         private bool _isShowClientName, _isShowCookingTime;
         private double _cookingEstMinutes;
         private HashSet<int> _unUsedDeps;
+
+        private string _readOrdersSQLText;
+        private DateTime _currentDate;
+        private double _hoursBeforeMidnight = 0d;
 
         public MainWindow()
         {
@@ -56,10 +65,16 @@ namespace ClientOrderQueue
             _updateTimer.AutoReset = true;
             _updateTimer.Elapsed += updateTimer_Tick;
             _updateTimer.Start();
+
+            _currentDate = DateTime.Now.Date;
+            _hoursBeforeMidnight = Convert.ToDouble(WpfHelper.GetAppGlobalValue("MidnightShiftShowYesterdayOrders", 0d));
+            _readOrdersSQLText = getReadOrdersSQLText();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            SplashScreenLib.Splasher.CloseSplash();
+
             setLayoutAfterLoaded(); // Logo image
 
             createGridContainers(G15);
@@ -164,13 +179,20 @@ namespace ClientOrderQueue
             int[] dbIds = orders.Select(o => o.Id).ToArray();
             // удалить выданные заказы
             int[] delIds = _appOrders.Select(o => o.Id).Except(dbIds).ToArray();
-            _appOrders.RemoveAll(o => delIds.Contains(o.Id));
+            if (delIds.Length > 0)
+            {
+                foreach (int item in delIds) _appOrders.RemoveAll(o => o.Id == item);
+                AppLib.WriteLogTraceMessage("- app-orders remove(ids): " + string.Join(",", delIds));
+            }
+
             // добавить новые
             double estDT = (double)WpfHelper.GetAppGlobalValue("OrderEstimateTime", 0d);
+            string ordersAdded = null;
             AppOrder curAppOrd;
             foreach (Order dbOrd in orders)
             {
                 curAppOrd = _appOrders.FirstOrDefault(ao => (ao.Id == dbOrd.Id));
+                // add new
                 if (curAppOrd == null)
                 {
                     AppOrder newAppOrder = new AppOrder() { Id = dbOrd.Id, Order = dbOrd };
@@ -182,15 +204,29 @@ namespace ClientOrderQueue
                     if (dbOrd.QueueStatusId == 1) isCooked = true;
 
                     _appOrders.Add(newAppOrder);
+                    if (ordersAdded == null) ordersAdded = dbOrd.Id.ToString(); else ordersAdded += "," + dbOrd.Id.ToString();
                 }
+
+                // update exists
                 else
                 {
                     // заказ поменял статус
-                    if ((dbOrd.QueueStatusId == 1) && (curAppOrd.Order.QueueStatusId != dbOrd.QueueStatusId)) isCooked = true;
+                    if (curAppOrd.Order.QueueStatusId != dbOrd.QueueStatusId)
+                    {
+                        if (dbOrd.QueueStatusId == 1) isCooked = true; // ready
+                        // изменения в лог
+                        AppLib.WriteLogTraceMessage("- app-order id {0} changing its state: {1}({2}) to {3}({4})", 
+                            dbOrd.Id, curAppOrd.Order.QueueStatusId, (OrderStatusEnum)curAppOrd.Order.QueueStatusId,
+                            dbOrd.QueueStatusId, (OrderStatusEnum)dbOrd.QueueStatusId);
+                    }
+
                     curAppOrd.Order = dbOrd;
                 }
             }
 
+            // в лог новые заказы
+            if (ordersAdded != null) AppLib.WriteLogTraceMessage("- app-orders add(ids): " + ordersAdded);
+            // проиграть мелодию
             if ((isCooked) && (simpleSound != null)) simpleSound.Play();
 
             // сортировка orderby o.CreateDate ascending, o.Number ascending
@@ -257,16 +293,25 @@ namespace ClientOrderQueue
 
         private List<Order> getOrders()
         {
-            List<Order> retVal = null;
+            // сформировать sql-запрос к БД
+            if (DateTime.Now.Date != _currentDate)
+            {
+                _currentDate = DateTime.Now.Date;
+                _readOrdersSQLText = getReadOrdersSQLText();
+            }
+
+            List <Order> retVal = null;
+            string logMsg = null;
+
             try
             {
-                AppLib.WriteLogTraceMessage("Получаю заказы для очереди...");
                 using (KDSContext db = new KDSContext())
                 {
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
-                        List<Order> dbOrders = db.vwOrderQueue.ToList();
+                        List<Order> dbOrders = db.Database.SqlQuery<Order>(_readOrdersSQLText).ToList();
+                        //List<Order> dbOrders = db.vwOrderQueue.ToList();
 
                         // пройтись по всем заказам
                         int iCnt;
@@ -302,29 +347,36 @@ namespace ClientOrderQueue
                         retVal = dbOrders;
                     }
                 }
-
-                string msg = string.Format("  - получено {0} заказов", retVal.Count);
-                if (retVal.Count > 0)
-                {
-                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                    foreach (Order item in retVal)
-                    {
-                        if (sb.Length > 0) sb.Append(",");
-                        sb.Append(item.Id);
-                    }
-                    msg += " (ids " + sb.ToString() + ")";
-                }
-                AppLib.WriteLogTraceMessage(msg);
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorShortMessage(ex);
+                logMsg = ex.Message;
+                if (ex.InnerException != null) logMsg += "(inner message: " + ex.InnerException.Message + ")";
+            }
+
+            if (logMsg != null)
+            {
+                AppLib.WriteLogErrorMessage(logMsg);
+            }
+            else
+            {
+                logMsg = string.Format("get DB-orders ({0})", retVal.Count);
+                if (retVal.Count > 0) logMsg += ": " + string.Join(",", retVal.Select(o => o.Id.ToString()));
+                AppLib.WriteLogTraceMessage(logMsg);
             }
 
             return retVal;
         }
 
-#endregion
+        private string getReadOrdersSQLText()
+        {
+            DateTime dateFrom = _currentDate.AddHours(-_hoursBeforeMidnight);
+            string retVal = _readOrdersSQLTextDefault + string.Format(" AND (CreateDate >= {0})", dateFrom.ToSQLExpr());
+
+            return retVal;
+        }
+
+        #endregion
 
         #region set elements
 

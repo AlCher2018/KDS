@@ -11,6 +11,7 @@ using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using IntegraLib;
+using IntegraWPFLib;
 
 namespace ClientOrderQueue.Lib
 {
@@ -21,12 +22,15 @@ namespace ClientOrderQueue.Lib
 
         static AppLib()
         {
+        }
+
+        #region app logger
+        public static void InitAppLogger()
+        {
             // логгер приложения
             AppLogger = NLog.LogManager.GetLogger("fileLogger");
         }
 
-
-        #region app logger
         // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {
