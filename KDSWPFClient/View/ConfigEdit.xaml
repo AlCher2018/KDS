@@ -111,6 +111,14 @@
                     <ScaleTransform ScaleX="1.5" ScaleY="1.5" />
                 </Setter.Value>
             </Setter>
+            <Style.Triggers>
+                <Trigger Property="CheckBox.IsEnabled" Value="True">
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+                <Trigger Property="CheckBox.IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="DarkGray"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style TargetType="{x:Type TextBox}">
@@ -151,16 +159,23 @@
                 <cavCtl:NumericUpDown x:Name="tbxOrdersColumnsCount" Minimum="2" Maximum="10" Value="4" Width="90" IsVisibleRange="Visible" FontSize="24" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
             </StackPanel>
 
-            <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+            <Grid Margin="10,10,0,0">
+                <CheckBox x:Name="cbxOrderHeaderClickable" Content="- изменение статуса заказа кликом по его заголовку" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Left"/>
+                <CheckBox x:Name="cbxMultipleStatusTabs" Content="- использовать отдельные вкладки для отображаемых состояний" IsThreeState="False" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Right"/>
+            </Grid>
 
-            <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (независимо от блюда) или блюда на допнаправлении кликом по строке блюда" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
+            <Grid Margin="10,0,0,0">
+                <CheckBox x:Name="cbxIngrClickable" Content="- изменение статуса ингредиента (блюда на допнаправлении) НЕЗАВИСИМО от родительского блюда" VerticalAlignment="Center" TextBlock.FontSize="12" Checked="cbxIngrClickable_Checked" Unchecked="cbxIngrClickable_Unchecked" HorizontalAlignment="Left" />
+                <CheckBox x:Name="cbxTabDishGroup" Content="- вкладка группировки блюд" IsThreeState="False" VerticalAlignment="Center" TextBlock.FontSize="12" HorizontalAlignment="Right"/>
+            </Grid>
+            <CheckBox x:Name="cbxIngrShowTimer" Content="- отображать таймер для подчиненной позиции" Margin="40,0,0,0" VerticalAlignment="Center" TextBlock.FontSize="10"/>
 
             <CheckBox x:Name="cbxShowOrderStatusByAllShownDishes" Content="отображать ли заголовок ЗАКАЗА тем же статусом, что и все, ОТОБРАЖАЕМЫЕ на данном КДС-е, блюда/ингредиенты" Margin="10,10,0,0" VerticalAlignment="Center" TextBlock.FontSize="12"/>
 
             <!-- интервал таймера автоматического перехода группировки заказов из "По номерам" в "По времени" -->
             <StackPanel  Margin="0,15,0,5" Orientation="Horizontal">
                 <TextBlock Text="интервал таймера автоматического перехода группировки заказов из 'По номерам' в 'По времени':  "/>
-                <cavCtl:NumericUpDown x:Name="tbTimerIntervalToOrderGroupByTime" Minimum="2" Maximum="30" Value="10" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
+                <cavCtl:NumericUpDown x:Name="tbTimerIntervalToOrderGroupByTime" Minimum="0" Maximum="30" Value="10" Width="100" IsVisibleRange="Visible" FontSize="22" FontWeight="Bold" FontFamily="Arial" Background="{Binding Background, ElementName=appConfig}"/>
                 <TextBlock Text="сек"/>
             </StackPanel>
 
@@ -249,7 +264,7 @@
                                 <CheckBox x:Name="cbxState2" Tag="2" Content="Готово"/>
                                 <!--<CheckBox x:Name="cbxState5" Tag="5" Content="Зафиксировано"/>
                         <CheckBox x:Name="cbxState6" Tag="6" Content="Отмена подтверждена"/>-->
-                                <!--<CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>-->
+                                <CheckBox x:Name="cbxState3" Tag="3" Content="Выдано"/>
                                 <CheckBox x:Name="cbxState8" Tag="8" Content="Готовность подтверждена"/>
                                 <CheckBox x:Name="cbxState4" Tag="4" Content="Отменено"/>
                             </StackPanel>
@@ -268,7 +283,10 @@
                                     <CheckBox x:Name="cbx21" Tag="2,1" Content="Вернуть блюдо/заказ в готовку"/>
                                     <CheckBox x:Name="cbx23" Tag="2,3" Content="Выдать готовое блюдо/заказ"/>
                                     <CheckBox x:Name="cbx83" Tag="8,3" Content="Выдать подтвержденное шеф-поваром"/>
+                                    <CheckBox x:Name="cbx82" Tag="8,2" Content="Вернуть подтв.шеф-поваром в Готово"/>
+                                    <CheckBox x:Name="cbx81" Tag="8,1" Content="Вернуть подтв.шеф-поваром в Готовится"/>
                                     <CheckBox x:Name="cbx46" Tag="4,6" Content="Подтвердить отмену блюда/заказа"/>
+                                    <CheckBox x:Name="cbx13" Tag="1,3" Content="Выдать блюдо в состоянии Готовится"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<SavedWcfConfigurationInformation xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="9.1" CheckSum="+EhBZLVgSAgxpe/AISuCczi5rHw=">
+<SavedWcfConfigurationInformation xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="9.1" CheckSum="lXhtBThwkCB24gmWo45IJ7nHccw=">
   <bindingConfigurations>
-    <bindingConfiguration bindingType="netTcpBinding" name="getDataEndPoint">
+    <bindingConfiguration bindingType="netTcpBinding" name="NetTcpBinding_IKDSService">
       <properties>
         <property path="/name" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>getDataEndPoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSService</serializedValue>
         </property>
         <property path="/closeTimeout" isComplexType="false" isExplicitlyDefined="true" clrType="System.TimeSpan, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />
@@ -119,10 +119,10 @@
         </property>
       </properties>
     </bindingConfiguration>
-    <bindingConfiguration bindingType="netTcpBinding" name="setDataEndpoint">
+    <bindingConfiguration bindingType="netTcpBinding" name="NetTcpBinding_IKDSCommandService">
       <properties>
         <property path="/name" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>setDataEndpoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSCommandService</serializedValue>
         </property>
         <property path="/closeTimeout" isComplexType="false" isExplicitlyDefined="true" clrType="System.TimeSpan, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />
@@ -191,7 +191,7 @@
           <serializedValue>True</serializedValue>
         </property>
         <property path="/reliableSession/inactivityTimeout" isComplexType="false" isExplicitlyDefined="true" clrType="System.TimeSpan, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>00:20:00</serializedValue>
+          <serializedValue>05:00:00</serializedValue>
         </property>
         <property path="/reliableSession/enabled" isComplexType="false" isExplicitlyDefined="true" clrType="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue>True</serializedValue>
@@ -239,7 +239,7 @@
     </bindingConfiguration>
   </bindingConfigurations>
   <endpoints>
-    <endpoint name="getDataEndPoint" contract="ServiceReference1.IKDSService" bindingType="netTcpBinding" address="net.tcp://localhost:8733/KDSService" bindingConfiguration="getDataEndPoint">
+    <endpoint name="NetTcpBinding_IKDSService" contract="ServiceReference1.IKDSService" bindingType="netTcpBinding" address="net.tcp://localhost:8733/KDSService" bindingConfiguration="NetTcpBinding_IKDSService">
       <properties>
         <property path="/address" isComplexType="false" isExplicitlyDefined="true" clrType="System.Uri, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue>net.tcp://localhost:8733/KDSService</serializedValue>
@@ -251,7 +251,7 @@
           <serializedValue>netTcpBinding</serializedValue>
         </property>
         <property path="/bindingConfiguration" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>getDataEndPoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSService</serializedValue>
         </property>
         <property path="/contract" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue>ServiceReference1.IKDSService</serializedValue>
@@ -314,7 +314,7 @@
           <serializedValue>False</serializedValue>
         </property>
         <property path="/name" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>getDataEndPoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSService</serializedValue>
         </property>
         <property path="/kind" isComplexType="false" isExplicitlyDefined="false" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />
@@ -324,10 +324,10 @@
         </property>
       </properties>
     </endpoint>
-    <endpoint name="setDataEndpoint" contract="ServiceReference1.IKDSCommandService" bindingType="netTcpBinding" address="net.tcp://localhost:8734/KDSCommandService/" bindingConfiguration="setDataEndpoint">
+    <endpoint name="NetTcpBinding_IKDSCommandService" contract="ServiceReference1.IKDSCommandService" bindingType="netTcpBinding" address="net.tcp://localhost:8734/KDSCommandService" bindingConfiguration="NetTcpBinding_IKDSCommandService">
       <properties>
         <property path="/address" isComplexType="false" isExplicitlyDefined="true" clrType="System.Uri, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>net.tcp://localhost:8734/KDSCommandService/</serializedValue>
+          <serializedValue>net.tcp://localhost:8734/KDSCommandService</serializedValue>
         </property>
         <property path="/behaviorConfiguration" isComplexType="false" isExplicitlyDefined="false" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />
@@ -336,7 +336,7 @@
           <serializedValue>netTcpBinding</serializedValue>
         </property>
         <property path="/bindingConfiguration" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>setDataEndpoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSCommandService</serializedValue>
         </property>
         <property path="/contract" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue>ServiceReference1.IKDSCommandService</serializedValue>
@@ -399,7 +399,7 @@
           <serializedValue>False</serializedValue>
         </property>
         <property path="/name" isComplexType="false" isExplicitlyDefined="true" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-          <serializedValue>setDataEndpoint</serializedValue>
+          <serializedValue>NetTcpBinding_IKDSCommandService</serializedValue>
         </property>
         <property path="/kind" isComplexType="false" isExplicitlyDefined="false" clrType="System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
           <serializedValue />

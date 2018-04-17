@@ -1,5 +1,5 @@
 ﻿using IntegraLib;
-using KDSConsoleSvcHost;
+using KDSService.Lib;
 using KDSService.AppModel;
 using KDSService.DataSource;
 using System;
@@ -10,6 +10,7 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.Timers;
+using System.ServiceProcess;
 
 
 namespace KDSService
@@ -25,19 +26,31 @@ namespace KDSService
     {
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
-        private bool _timerEnable;
-        // периодичность опроса БД, в мсек
-        private const double _ObserveTimerInterval = 1000;
-        
+        private double _observeInterval = 750;   // интервал в мсек опроса БД
+
         // сервис WCF
         private ServiceHost _host;
         public ServiceHost ServiceHost { get { return _host; } }
 
+        // словарь клиентов
+        Dictionary<string, ClientInfo> _clients;
+
         // заказы на стороне службы (с таймерами)
         private OrdersModel _ordersModel;
 
+        private string _sqlServerErrorString;
+
+        // максимальное количество архивных файлов
+        private int _maxLogFilesCount = 0;
+        // дата последней проверки максимального количества архивных файлов
+        private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
+
+
+
+        // CTOR
         public KDSServiceClass()
         {
+            _clients = new Dictionary<string, ClientInfo>();
         }
 
         public void InitService(string configFile = null)
@@ -48,42 +61,101 @@ namespace KDSService
             bool isResultOk;
             string msg = null;
 
-            msg = AppEnv.LoggerInit();
+            msg = AppLib.LoggerInit();
             if (msg != null)
                 throw new Exception("Error: " + msg);
 
             // инициализация приложения
-            AppEnv.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
-            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса...");
-            AppEnv.WriteLogInfoMessage("   - версия файла {0}: {1}", AppEnv.GetAppFileName(),  AppEnv.GetAppVersion());
-            isResultOk = AppEnv.AppInit(out msg);
+            AppLib.WriteLogInfoMessage("**** НАЧАЛО работы КДС-сервиса ****");
+
+            // информация о файлах и сборках
+            AppLib.WriteLogInfoMessage(" - host-файл: '{0}', ver. {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("KDSService");
+            AppLib.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+            asmInfo.LoadInfo("IntegraLib");
+            AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+
+            AppLib.WriteLogInfoMessage("Инициализация КДС-сервиса...");
+
+            // чтение настроек из config-файла
+            isResultOk = AppLib.AppInit(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
 
+            _maxLogFilesCount = AppProperties.GetIntProperty("MaxLogFiles");
+
+            #region проверка наличия службы MSSQLServer
+            // проверка наличия службы MSSQLServer
+            if (!MSSQLService.IsExists)
+            {
+                msg = string.Format("На компьютере ({0}) не установлен MS SQL Server!", Environment.MachineName);
+                AppLib.WriteLogErrorMessage(msg);
+                throw new Exception(msg);
+            }
+            //ServiceController sqlService = MSSQLService.Controller;
+            string sqlSvcNameFromConfig = (string)AppProperties.GetProperty("MSSQLServiceName");
+            // если имя найденного сервиса MS SQL не совпадает с тем, что задано в config-файле, то переопределяем
+            if ((sqlSvcNameFromConfig != null) && (MSSQLService.Controller.ServiceName != sqlSvcNameFromConfig))
+            {
+                AppLib.WriteLogTraceMessage("Имя службы MS SQL Server по умолчанию {0} не совпадает с именем службы, заданной в config-файле ({1}) - используем имя {1}.", MSSQLService.Controller.ServiceName, sqlSvcNameFromConfig);
+                if (MSSQLService.FindService(sqlSvcNameFromConfig) == false)
+                {
+                    msg = string.Format("Имя службы MS SQL Server, заданное в config-файле {0}, не найдено в системе!", sqlSvcNameFromConfig);
+                    AppLib.WriteLogErrorMessage(msg);
+                    throw new Exception(msg);
+                }
+            }
+            AppLib.WriteLogTraceMessage("Служба {0} находится в состоянии {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+            // попытка перезапуска службы MS SQL Server
+            if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable") 
+                && (MSSQLService.Status != ServiceControllerStatus.Running))
+            {
+                startSQLService();
+            }
+            #endregion
+
+            // инициализация класса DBContext через статические поля
+            DBContext.ConfigConnectionStringName = "KDSEntities";
+            // глобальные обработчики DBContext
+            DBContext.OnBeforeExecute += new Action<string>(dbBeforeCommandAction);
+            DBContext.OnDBErrorAction += new Action<string>(dbErrorAction);
+            DBContext.CommandTimeout = (int)AppProperties.GetProperty("MSSQLCommandTimeout");
+
             // проверить доступность БД
-            AppEnv.WriteLogInfoMessage("  Проверка доступа к базе данных...");
-            isResultOk = AppEnv.CheckDBConnection(typeof(KDSEntities), out msg);
+            AppLib.WriteLogInfoMessage("  Проверка доступа к базе данных...");
+            AppLib.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
+
+            isResultOk = DBContext.CheckDBConnectionAlt();
             if (!isResultOk)
-                throw new Exception("Ошибка проверки доступа к базе данных: " + msg);
+            {
+                AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+                throw new Exception("Ошибка проверки доступа к базе данных: " + DBContext.LastErrorText);
+            }
+
+            // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
+            int cfgCompLevel = AppProperties.GetIntProperty("MSSQLServerCompatibleLevel");
+            if ((cfgCompLevel != 0) && DBContext.IsValidCompatibleLevel(cfgCompLevel))
+                resetMSSQLServerCompatibleLevel(cfgCompLevel);
 
             // проверка справочных таблиц (в классе ModelDicts)
-            AppEnv.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
-            isResultOk = AppEnv.CheckAppDBTable(out msg);
+            AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
+            isResultOk = DBOrderHelper.CheckAppDBTable();
             if (!isResultOk)
-                throw new Exception("Ошибка проверки справочных таблиц: " + msg);
+            {
+                throw new Exception("Ошибка проверки справочных таблиц: " + DBOrderHelper.ErrorMessage);
+            }
 
             // получение словарей приложения из БД
-            AppEnv.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
+            AppLib.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
             isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
             if (!isResultOk)
                 throw new Exception("Ошибка получения словарей из БД: " + msg);
 
-            _observeTimer = new Timer(_ObserveTimerInterval) { AutoReset = false };
+            // периодичность опроса БД - 750 в мсек
+            _observeTimer = new Timer(_observeInterval) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
-            StartTimer();
-            _timerEnable = true;
 
-            AppEnv.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
+            AppLib.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
             {
                 _ordersModel = new OrdersModel();
@@ -93,7 +165,89 @@ namespace KDSService
                 throw;
             }
 
-            AppEnv.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+            AppLib.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
+        }
+
+        private void resetMSSQLServerCompatibleLevel(int cfgCompLevel)
+        {
+            int dbCompatibleLevel = DBContext.GetDBCompatibleLevel();
+            string dbName = DBContext.GetDBName();
+            AppLib.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2}). Попытка установить уровень {3} ({4})", 
+                dbName, 
+                dbCompatibleLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel),
+                cfgCompLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
+
+            if (dbCompatibleLevel == 0)
+            {
+                AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+            }
+            // только ПОНИЖАЕМ уровень совместимости
+            else if (dbCompatibleLevel > cfgCompLevel)  
+            {
+                AppLib.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, cfgCompLevel, DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
+                if (DBContext.SetDBCompatibleLevel(cfgCompLevel) == false)
+                {
+                    AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+                    AppLib.WriteLogErrorMessage("Произошла ошибка при изменении уровня совместимости БД. Приложение может работать нестабильно.");
+                }
+            }
+            // повышить нельзя
+            else
+            {
+                AppLib.WriteLogInfoMessage("  - запрещено повышать уровень совместимости");
+            }
+        }
+
+        private static void startSQLService()
+        {
+            MSSQLService.Refresh();
+            if (MSSQLService.Status == ServiceControllerStatus.Running) return;
+
+            ServiceController sqlService = MSSQLService.Controller;
+
+            int waitCircles = 10, waitSvcActionInterval = 500;
+            DateTime dtTmr = DateTime.Now;
+
+            // сначала остановить
+            if (MSSQLService.Status != ServiceControllerStatus.Stopped)
+            {
+                sqlService.Stop();
+                sqlService.Refresh();
+                // цикл ожидания останова службы
+                while (sqlService.Status != ServiceControllerStatus.Stopped)
+                {
+                    AppLib.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
+                    sqlService.Refresh();
+                    if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
+                    {
+                        throw new Exception(string.Format("Истек период в {0} секунд для останова службы MS SQL Server ({1})", waitCircles.ToString(), sqlService.ServiceName));
+                    }
+                }
+                AppLib.WriteLogTraceMessage(" - служба {0} остановлена успешно.", sqlService.ServiceName);
+            }
+
+            // запуск службы
+            if (MSSQLService.Status != ServiceControllerStatus.Running)
+            {
+                AppLib.WriteLogTraceMessage(" - запуск службы...");
+                sqlService.Start();
+                sqlService.Refresh();
+                dtTmr = DateTime.Now;
+                // цикл ожидания запуска службы
+                while (sqlService.Status != ServiceControllerStatus.Running)
+                {
+                    AppLib.WriteLogTraceMessage("    - статус {0}, ждем 0.5 сек...", sqlService.Status.ToString());
+                    System.Threading.Thread.Sleep(waitSvcActionInterval);  // задержка в 500 мсек
+                    sqlService.Refresh();
+                    if ((DateTime.Now - dtTmr).TotalSeconds >= waitCircles)
+                    {
+                        throw new Exception(string.Format("Истек период в {0} секунд для запуска службы MS SQL Server ({1})", waitCircles.ToString(), sqlService.ServiceName));
+                    }
+                }
+            }
+
+            AppLib.WriteLogTraceMessage(" - статус службы {0}", sqlService.Status.ToString());
         }
 
         // создает сервис WCF, параметры канала считываются из app.config
@@ -149,7 +303,7 @@ Contract: IMetadataExchange
         {
             try
             {
-                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений...");
+                AppLib.WriteLogInfoMessage("Создание канала для приема сообщений...");
                 //_host = new ServiceHost(typeof(KDSService.KDSServiceClass));
                 _host = new ServiceHost(this);
                 if (_host.Description.Behaviors.Contains(typeof(ServiceMetadataBehavior)) == false)
@@ -172,12 +326,12 @@ Contract: IMetadataExchange
 
                 _host.Open();
                 writeHostInfoToLog();
-                AppEnv.WriteLogInfoMessage("Создание канала для приема сообщений... Ok");
+                AppLib.WriteLogInfoMessage("Создание канала для приема сообщений... Ok");
             }
             catch (Exception ex)
             {
                 // исключение записать в лог
-                AppEnv.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}", ex.Message, Environment.NewLine, ex.StackTrace);
+                AppLib.WriteLogErrorMessage("Ошибка открытия канала сообщений: {0}{1}\tTrace: {2}", ex.Message, Environment.NewLine, ex.StackTrace);
                 // и передать выше
                 throw;
             }
@@ -197,7 +351,7 @@ Contract: IMetadataExchange
         {
             foreach (System.ServiceModel.Description.ServiceEndpoint se in _host.Description.Endpoints)
             {
-                AppEnv.WriteLogInfoMessage(" - host info: address {0}; binding {1}; contract {2}", se.Address, se.Binding.Name, se.Contract.Name);
+                AppLib.WriteLogInfoMessage(" - host info: address {0}; binding {1}; contract {2}", se.Address, se.Binding.Name, se.Contract.Name);
             }
         }
 
@@ -205,13 +359,96 @@ Contract: IMetadataExchange
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
-            if (_timerEnable)
-            {
-                string errMsg = _ordersModel.UpdateOrders();
+            AppLib.WriteLogOrderDetails("** Stop DB read timer.");
 
-                if (errMsg != null) AppEnv.WriteLogErrorMessage(errMsg);
+            // проверка количества архивных файлов
+            DateTime dt = DateTime.Now;
+            if ((_maxLogFilesCount > 0)
+                && ((dt.Minute == 1) && (dt.Second <= 10) && ((dt - _lastCheckDateMaxLogFiles).TotalSeconds > 10)
+                    || (_lastCheckDateMaxLogFiles.Equals(DateTime.MinValue)))
+                )
+            {
+                AppLib.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
+                List<string> delFileNames = AppEnvironment.CheckLogFilesCount(_maxLogFilesCount);
+                if ((delFileNames == null) || (delFileNames.Count() == 0))
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: 0");
+                else
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
+                _lastCheckDateMaxLogFiles = DateTime.Now;
             }
+
+            // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
+            if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))
+            {
+                string errDBMsg = _ordersModel.UpdateOrders();
+
+                #region ошибка получения данных от MS SQL Server
+                // ошибка получения данных от MS SQL Server
+                if (errDBMsg != null)
+                {
+                    if ((_sqlServerErrorString == null) || (_sqlServerErrorString != errDBMsg))
+                        _sqlServerErrorString = errDBMsg;
+                    AppLib.WriteLogTraceMessage("mssql|{0}", _sqlServerErrorString);
+                    
+                    // очистить внутр.набор заказов службы
+                    //_ordersModel.Orders.Clear();
+
+                    MSSQLService.Refresh();
+                    AppLib.WriteLogTraceMessage("mssql| - статус службы {0} - {1}", MSSQLService.Controller.ServiceName, MSSQLService.Status.ToString());
+
+                    if (AppProperties.GetBoolProperty("MSSQLServiceRestartEnable"))
+                    {
+                        // если сервис остановлен - пытаемся запустить его
+                        if (MSSQLService.Status != ServiceControllerStatus.Running)
+                        {
+                            AppLib.WriteLogTraceMessage("mssql| - sql server status - {0} - restart service...", MSSQLService.Status.ToString());
+                            startSQLService();
+                        }
+                        // иначе пытаемся 5 раз через 2 секунды прочитать данные из БД и обновить внутр.наборы
+                        else
+                        {
+                            int waitCircles = 5, waitSvcActionInterval = 2000;
+                            int i = 0;
+                            for (; i < waitCircles; i++)
+                            {
+                                System.Threading.Thread.Sleep(waitSvcActionInterval);
+                                AppLib.WriteLogTraceMessage("mssql|Попытка {0} повторного чтения заказов из БД.", (i + 1).ToString());
+                                errDBMsg = _ordersModel.UpdateOrders();
+                                if (errDBMsg == null) break;
+                            }
+                            // sql-служба не ответила - перезапуск
+                            if (i >= waitCircles)
+                            {
+                                DebugTimer.Init();
+                                errDBMsg = null;
+                                AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - START");
+                                // попытка перезапуска службы MS SQL Server
+                                startSQLService();
+                                AppLib.WriteLogTraceMessage("mssql|Попытка перезапуска службы MS SQL Server... - FINISH - {0}{1}",
+                                    DebugTimer.GetInterval(),
+                                    ((errDBMsg == null) ? "" : " - " + errDBMsg)
+                                );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (_sqlServerErrorString != null) _sqlServerErrorString = null;
+                }
+                #endregion
+
+                // установить стандартный интервал опроса БД
+                if (_observeTimer.Interval != _observeInterval) _observeTimer.Interval = _observeInterval; // msec
+            }
+            // иначе установить минимальный интервал для наискорейшего чтения данных из БД
+            //else
+            //{
+            //    if (_observeTimer.Interval != 50) _observeTimer.Interval = 50; // msec
+            //}
+
             StartTimer();
+            AppLib.WriteLogOrderDetails("** Start DB read timer.");
         }
 
 
@@ -220,56 +457,594 @@ Contract: IMetadataExchange
 
         public List<OrderStatusModel> GetOrderStatuses(string machineName)
         {
-            string errMsg = null;
             string logMsg = "GetOrderStatuses(): ";
 
-            List<OrderStatusModel> retVal = ModelDicts.GetOrderStatusesList(out errMsg);
+            List<OrderStatusModel> retVal = DBOrderHelper.GetOrderStatusesList();
 
-            if (errMsg.IsNull())
-                logMsg += string.Format("Ok ({0} records)",retVal.Count);
+            if (retVal != null)
+                logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
-            {
-                AppEnv.WriteLogClientAction(machineName, errMsg);
-                logMsg += errMsg;
-            }
-
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+                logMsg += DBOrderHelper.ErrorMessage;
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
 
         public List<DepartmentModel> GetDepartments(string machineName)
         {
-            string errMsg = null;
             string logMsg = "GetDepartments(): ";
 
-            List<DepartmentModel> retVal = ModelDicts.GetDepartmentsList(out errMsg);
+            List<DepartmentModel> retVal = DBOrderHelper.GetDepartmentsList();
 
-            if (errMsg.IsNull())
+            if (retVal != null)
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
             else
-            {
-                AppEnv.WriteLogErrorMessage(errMsg);
-                logMsg += errMsg;
-            }
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+                logMsg += DBOrderHelper.ErrorMessage;
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retVal;
         }
 
-        // все заказы
-        public List<OrderModel> GetOrders(string machineName)
+
+        // *** ЗАПРОС ЗАКАЗОВ ОТ КЛИЕНТОВ ***
+        // сюда передаются условия отбора и группировки, также здесь происходить сортировка позиций заказа
+        public ServiceResponce GetOrders(string machineName, ClientDataFilter clientFilter)
         {
-            List<OrderModel> retVal = null;
-            retVal = _ordersModel.Orders.Values.ToList();
+            ClientInfo curClient = getClientInfo(machineName);
+            curClient.IsDishGroupAndSumQuantity = clientFilter.IsDishGroupAndSumQuantity;
 
-            string logMsg = string.Format("GetOrders(): {0} orders", retVal.Count);
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            ServiceResponce retVal = new ServiceResponce();
+
+            AppLib.WriteLogClientAction(machineName, "GetOrders('{0}', '{1}')", machineName, clientFilter.ToString());
+
+            // таймер чтения из БД выключен - ждем, пока не закончится чтение данных из БД
+            if (_observeTimer.Enabled == false)
+            {
+                AppLib.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
+                retVal.ServiceErrorMessage = (_sqlServerErrorString.IsNull()) ? "KDS service is reading data..." : _sqlServerErrorString;
+                // возвращается пустой ServiceResponce - признак того, что надо уменьшить интервал таймера запроса данных к службе
+                return retVal;
+            }
+
+            // "хвосты" по умолчанию - false, набор List<OrderModel> создается в конструкторе ServiceResponce
+            List<OrderModel> retValList = retVal.OrdersList;
+            DateTime dtTmr = DateTime.Now;
+
+            // временные буферы
+            OrderModel validOrder;
+            List<OrderDishModel> validDishes = new List<OrderDishModel>();
+            // key - блюдо, value - список ингредиентов
+            Dictionary<OrderDishModel, List<OrderDishModel>> dishIngr = new Dictionary<OrderDishModel, List<OrderDishModel>>();
+
+            // установить флаг чтения заказов из внутренней коллекции клиентом machineName
+            curClient.GetOrdersFlag = true;
+
+            // получить в retVal отфильтрованные заказы
+            foreach (OrderModel order in _ordersModel.Orders.Values)
+            {
+                //    iCnt++;
+                //Debug.Print(string.Format("- {0}. обработка Id - {1}", iCnt, order.Id.ToString()));
+
+                // разобрать плоский список блюд и ингр. в иерархический
+                dishIngr.Clear();
+                foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
+                {
+                    List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
+                    dishIngr.Add(dish, ingrList);
+                }
+
+                // собрать в validDishes блюда и ингр., которые проходят проверку
+                validDishes.Clear();
+                if ((clientFilter.StatusesList != null ) && (clientFilter.DepIDsList != null))
+                {
+                    foreach (KeyValuePair<OrderDishModel, List<OrderDishModel>> diPair in dishIngr)
+                    {
+                        // блюдо проходит - берем и все его ингредиенты
+                        if (checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, diPair.Key))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value);
+                        }
+                        // иначе, если есть ингредиент, проходящий проверку, то добавляем и блюдо и прошедшие проверку ингредиенты
+                        else if (diPair.Value.Any(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)))
+                        {
+                            validDishes.Add(diPair.Key);
+                            validDishes.AddRange(diPair.Value.Where(ingr => checkOrderItem(clientFilter.StatusesList, clientFilter.DepIDsList, ingr)));
+                        }
+                    }
+                }
+
+                if (validDishes.Count > 0)
+                {
+                    validOrder = order.Copy();
+                    // к заказу добавить правильные блюда
+                    foreach (OrderDishModel dish in validDishes)
+                    {
+                        if (validOrder.Dishes.ContainsKey(dish.Id) == false)
+                            validOrder.Dishes.Add(dish.Id, dish.Copy());
+                    }
+
+                    // и добавить к результату правильный заказ
+                    retValList.Add(validOrder);
+                }
+
+            }  // foreach OrderModel
+
+            // сбросить флаг чтения заказов из внутренней коллекции клиентом machineName
+            curClient.GetOrdersFlag = false;
+
+            // группировка и сортировка retVal
+            if (retValList.Count > 0)
+            {
+                // группировка по CreateDate блюд может увеличить кол-во заказов
+                #region группировка по CreateDate блюд может увеличить кол-во заказов
+                if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
+                {
+                    // разбить заказы по датам (CreateDate) БЛЮД !!!!
+                    SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
+                    List<DateTime> dtList;
+                    foreach (OrderModel order in retValList)
+                    {
+                        dtList = order.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
+                        foreach (DateTime dtCreate in dtList)
+                        {
+                            if (sortedOrders.ContainsKey(dtCreate) == false) sortedOrders.Add(dtCreate, order);
+                        }
+                    }
+                    // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
+                    if (retValList.Count == sortedOrders.Count)
+                    {
+                        // установить дату заказов равной дате блюд !!!
+                        foreach (KeyValuePair<DateTime, OrderModel> item in sortedOrders)
+                        {
+                            if (item.Value.CreateDate != item.Key)
+                            {
+                                item.Value.CreateDate = item.Key;
+                            }
+                        }
+                        retValList = sortedOrders.Values.ToList();
+                        retVal.OrdersList = retValList;
+                    }
+                    // иначе создать заново выходный список заказов с блюдами
+                    else
+                    {
+                        retValList.Clear();
+                        OrderModel tmpOrder;
+                        foreach (var ord in sortedOrders)
+                        {
+                            // скопировать заказ
+                            tmpOrder = ord.Value.Copy();
+                            tmpOrder.CreateDate = ord.Key;
+                            // скопировать блюда на данную дату
+                            foreach (var tmpDish in ord.Value.Dishes.Values.Where(d => d.CreateDate == ord.Key))
+                                tmpOrder.Dishes.Add(tmpDish.Id, tmpDish.Copy());
+                            // добавить заказ в выходную коллекцию
+                            retValList.Add(tmpOrder);
+                        }
+                    }
+                    
+                    string sortMode = Convert.ToString(AppProperties.GetProperty("SortOrdersByCreateDate"));
+                    // сортировка заказов по убыванию времени заказа
+                    if (sortMode == "Desc")
+                    {
+                        retValList.Sort((om1, om2) => 
+                        {
+                            if (om1.CreateDate < om2.CreateDate) return 1;
+                            else if (om1.CreateDate > om2.CreateDate) return -1;
+                            else return 0;
+                        }
+                        );
+                    }
+                    // или по возрастанию времени заказа
+                    else
+                    {
+                        retValList.Sort((om1, om2) =>
+                        {
+                            if (om1.CreateDate < om2.CreateDate) return -1;
+                            else if (om1.CreateDate > om2.CreateDate) return 1;
+                            else return 0;
+                        }
+                        );
+                    }
+                }
+                #endregion
+
+                // сортировка по возрастанию номера заказа
+                else if (clientFilter.GroupBy == OrderGroupEnum.ByOrderNumber)
+                {
+                    retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
+                }
+
+                // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
+                if (curClient.IsDishGroupAndSumQuantity)
+                {
+                    #region IsDishGroupAndSumQuantity == true
+                    List<OrderDishModel> dmIngrs;
+                    // набор уникальных блюд вместе с набором уникальных ингредиентов для текущего заказа
+                    List<Tuple<DishWithQty, List<DishWithQty>>> uniqDishList = new List<Tuple<DishWithQty, List<DishWithQty>>>();
+                    // набор уникальных ингредиетов (c кол-вом порций) для текущего блюда
+                    List<DishWithQty> uniqIngrList = new List<DishWithQty>();
+                    // буфера для удаления повторяющихся блюд/ингредиентов
+                    List<int> delDishIds = new List<int>();
+                    List<int> delIngrIds = new List<int>();
+                    int i = 0;
+
+                    foreach (OrderModel ord in retValList)
+                    {
+                        if (ord.Dishes.Count <= 1) continue;
+
+                        uniqDishList.Clear();
+                        delDishIds.Clear();
+                        // цикл по блюдам
+                        List<OrderDishModel> dishes = ord.Dishes.Values.Where(d => d.ParentUid.IsNull()).ToList();
+                        foreach (OrderDishModel dm in dishes)
+                        {
+                            // ингредиенты текущего блюда
+                            dmIngrs = ord.Dishes.Values.Where(d => (d.ParentUid != null) && (d.ParentUid == dm.Uid)).ToList();  // набор создается, даже если элементы не найдены, Count = 0
+
+                            // сложить одинаковые ингредиенты
+                            if (dmIngrs.Count > 0)
+                            {
+                                #region сложить одинаковые ингредиенты
+                                uniqIngrList.Clear();  // набор, содержащий уникальные ингредиенты данного блюда
+                                delIngrIds.Clear();
+                                // цикл по ингр.текущего блюда
+                                foreach (OrderDishModel dmIngr in dmIngrs)
+                                {
+                                    i = 0;
+                                    for (; i < uniqIngrList.Count; i++)
+                                    {
+                                        if (compareIngredientsForGroup(uniqIngrList[i].DishModel, dmIngr)) break;
+                                    }
+                                    // ингр.не найден - добавить в набор уникальных ингредиентов
+                                    if (i == uniqIngrList.Count)
+                                    {
+                                        uniqIngrList.Add(new DishWithQty(dmIngr));
+                                    }
+                                    // ингр.найден - складываем кол-во порций
+                                    else
+                                    {
+                                        uniqIngrList[i].Quantity += dmIngr.Quantity;
+                                        uniqIngrList[i].AddGroupedId(dmIngr.Id);
+                                        delIngrIds.Add(dmIngr.Id);
+                                    }
+                                }
+
+                                // если есть одинаковые ингредиенты, то удалить их из набора блюд заказа и dmIngrs
+                                if (delIngrIds.Count > 0)
+                                {
+                                    delIngrIds.ForEach(id =>
+                                        {
+                                            ord.Dishes.Remove(id);
+                                            dmIngrs.RemoveAll(dmI => dmI.Id == id);
+                                        });
+                                    delIngrIds.Clear();
+                                }
+
+                                // перенести количество в retValList
+                                if (uniqIngrList.Count > 0)
+                                {
+                                    uniqIngrList.ForEach(uniqDish =>
+                                        {
+                                            i = uniqDish.DishModel.Id;
+                                            if (ord.Dishes[i].Quantity != uniqDish.Quantity)
+                                                ord.Dishes[i].Quantity = uniqDish.Quantity;
+                                            ord.Dishes[i].GroupedDishIds = uniqDish.GetGroupedIds();
+                                        });
+                                    uniqIngrList.Clear();
+                                }
+
+                                // получить заново набор уникальных ингредиентов
+                                dmIngrs = ord.Dishes.Values.Where(d => (d.ParentUid != null) && (d.ParentUid == dm.Uid)).ToList();
+                                #endregion
+                            }
+
+                            // поиск dm в uniqDishList
+                            for (i = 0; i < uniqDishList.Count; i++)
+                            {
+                                if (compareDishesWithIngredients(uniqDishList[i].Item1, uniqDishList[i].Item2, dm, dmIngrs)) break;
+                            }
+                            // блюдо не найдено - добавить
+                            if (i == uniqDishList.Count)
+                            {
+                                uniqDishList.Add(new Tuple<DishWithQty, List<DishWithQty>>(
+                                    new DishWithQty(dm),
+                                    dmIngrs.Select(ingr => new DishWithQty(ingr)).ToList()));
+                            }
+                            // блюдо найдено - сложить количество (в retValList) и удалить блюдо dm с его ингредиентами dmIngrs из ord.Dishes
+                            else
+                            {
+                                // порции блюда
+                                uniqDishList[i].Item1.Quantity += dm.Quantity;
+                                uniqDishList[i].Item1.AddGroupedId(dm.Id);
+
+                                // порции ингредиентов
+                                for (int j = 0; j < uniqDishList[i].Item2.Count; j++)
+                                {
+                                    uniqDishList[i].Item2[j].Quantity += dmIngrs[j].Quantity;
+                                    uniqDishList[i].Item2[j].AddGroupedId(dmIngrs[j].Id);
+                                    delDishIds.Add(dmIngrs[j].Id);
+                                }
+                                delDishIds.Add(dm.Id);
+                            }
+                        }
+
+                        // если есть одинаковые блюда, то удалить их из набора блюд заказа
+                        if (delDishIds.Count > 0)
+                        {
+                            delDishIds.ForEach(id => ord.Dishes.Remove(id));
+                            delDishIds.Clear();
+                        }
+
+                        // перенести количество в retValList
+                        if (uniqDishList.Count > 0)
+                        {
+                            uniqDishList.ForEach(uniqDish =>
+                            {
+                                // блюдо
+                                i = uniqDish.Item1.DishModel.Id;
+                                if (ord.Dishes[i].Quantity != uniqDish.Item1.Quantity)
+                                    ord.Dishes[i].Quantity = uniqDish.Item1.Quantity;
+                                ord.Dishes[i].GroupedDishIds = uniqDish.Item1.GetGroupedIds();
+
+                                // ингредиенты
+                                uniqDish.Item2.ForEach(uniqIngr =>
+                                {
+                                    i = uniqIngr.DishModel.Id;
+                                    if (ord.Dishes[i].Quantity != uniqIngr.Quantity)
+                                        ord.Dishes[i].Quantity = uniqIngr.Quantity;
+                                    ord.Dishes[i].GroupedDishIds = uniqIngr.GetGroupedIds();
+                                });
+                            });
+                            uniqDishList.Clear();
+                        }
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region IsDishGroupAndSumQuantity == false
+                    foreach (OrderModel ord in retValList)
+                    {
+                        if (ord.Dishes.Count <= 1) continue;
+                        foreach (OrderDishModel dm in ord.Dishes.Values)
+                        {
+                            if (dm.GroupedDishIds != null) dm.GroupedDishIds = null;
+                        }
+                    }
+                    #endregion
+                }
+
+                // сортировка блюд в заказах по номеру подачи
+                Dictionary<int, OrderDishModel> sortedDishes;
+                foreach (OrderModel order in retValList)
+                {
+                    sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
+                    order.Dishes = sortedDishes;
+                }
+
+                // если появились новые заказы, то передать клиенту заказы с самого первого
+                List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);
+                if ((newOrdersList != null) && (newOrdersList.Count > 0))
+                {
+                    // передать клиенту перечень Id новых заказов через ;
+                    retVal.NewOrderIds = string.Join(";", newOrdersList.Select(o => o.Id.ToString()));
+                //    clientFilter.EndpointOrderID = retValList[0].Id;
+                //    clientFilter.EndpointOrderItemID = retValList[0].Dishes.First().Value.Id;
+                }
+
+                string ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
+                AppLib.WriteLogTraceMessage(" - orders for client ({0}): {1}", retValList.Count, ids);
+                // ограничение количества отдаваемых клиенту объектов
+                if (
+                    (clientFilter.EndpointOrderID > 0) 
+                    || (clientFilter.EndpointOrderItemID > 0)
+                    || (clientFilter.ApproxMaxDishesCountOnPage > 0)
+                    )
+                {
+                    limitOrderItems(retVal, clientFilter);
+
+                    ids = (retValList.Count > 50) ? "> 50" : getOrdersLogString(retValList);
+                    AppLib.WriteLogTraceMessage(" - limit orders for client({0}): {1}", retValList.Count, ids);
+                }
+
+            }  // if (retVal.Count > 0)
+
+            AppLib.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
+            return retVal;
+        }
+
+        // сравнение только блюд, НЕ ингредиентов, т.е. ParentUid = null
+        private bool compareDishesForGroup(OrderDishModel dm1, OrderDishModel dm2)
+        {
+            return (dm1.DepartmentId == dm2.DepartmentId)
+                && (dm1.DishStatusId == dm2.DishStatusId)
+                && (dm1.FilingNumber == dm2.FilingNumber)
+                && (dm1.Comment == dm2.Comment)
+                && (dm1.CreateDate == dm2.CreateDate)
+                && (dm1.UID1C == dm2.UID1C);
+        }
+        // сравнение ингредиентов (ParentUid != null)
+        private bool compareIngredientsForGroup(OrderDishModel ingr1, OrderDishModel ingr2)
+        {
+            return (ingr1.DepartmentId == ingr2.DepartmentId)
+                && (ingr1.DishStatusId == ingr2.DishStatusId)
+                && (ingr1.FilingNumber == ingr2.FilingNumber)
+                && (ingr1.Comment == ingr2.Comment)
+                && (ingr1.CreateDate == ingr2.CreateDate)
+                && (ingr1.UID1C == ingr2.UID1C);
+        }
+        private bool compareDishesWithIngredients(
+            DishWithQty dish1, List<DishWithQty> dish1Ingrs, 
+            OrderDishModel dish2, List<OrderDishModel> dish2Ingrs)
+        {
+            bool retVal = false;
+            if (compareDishesForGroup(dish1.DishModel, dish2))
+            {
+                if ((dish1Ingrs.Count == 0) && (dish2Ingrs.Count == 0))
+                    retVal = true;
+                else if (dish1Ingrs.Count == dish2Ingrs.Count)
+                {
+                    retVal = true;
+                    for (int i = 0; i < dish1Ingrs.Count; i++)
+                    {
+                        if (compareIngredientsForGroup(dish1Ingrs[i].DishModel, dish2Ingrs[i]) == false)
+                        {
+                            retVal = false; break;
+                        }
+                    }
+                }
+            }
 
             return retVal;
         }
 
-        // **** настройки из config-файла хоста
+
+        private int getTotalItemsCount(List<OrderModel> ordersList)
+        {
+            int retVal = 0;
+            foreach (OrderModel item in ordersList)
+            {
+                retVal += item.Dishes.Count;
+            }
+            return retVal;
+        }
+
+        private string getOrdersLogString(List<OrderModel> orders)
+        {
+            return string.Join(",", 
+                orders.Select(o => 
+                    string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number.ToString(), o.Dishes.Count.ToString()))
+                );
+        }
+
+        // ограничение количества отдаваемых клиенту объектов
+        private void limitOrderItems(ServiceResponce svcResp, ClientDataFilter clientFilter)
+        {
+            int idxOrder = -1;
+            List<OrderModel> orderList = svcResp.OrdersList;
+
+            if (svcResp.NewOrderIds.IsNull() == false)
+            {
+                idxOrder = 0;
+            }
+            // найти индекс элемента коллекции заказов, 
+            // у которого order.Id==clientFilter.OrderId && dish.Id==clientFilter.DishId
+            // элементов order.Id==clientFilter.OrderId может быть несколько при группировке по времени
+            else if ((clientFilter.EndpointOrderID > 0) && (clientFilter.EndpointOrderItemID > 0))
+            {
+                idxOrder = orderList.FindIndex(om =>
+                (om.Id == clientFilter.EndpointOrderID) && (om.Dishes.Any(kvp => kvp.Value.Id == clientFilter.EndpointOrderItemID)));
+                AppLib.WriteLogTraceMessage("   - limit from OrderId={0} & OrderDishId={1}, order {2}", clientFilter.EndpointOrderID, clientFilter.EndpointOrderItemID, ((idxOrder==-1)?"NOT found":"FOUND"));
+            }
+            // если не найден такой OrderModel, то начинаем с первого элемента
+            if (idxOrder == -1) idxOrder = 0;
+
+            //int idxOrderItem = -1;
+            //int i = 0;
+            //foreach (KeyValuePair<int,OrderDishModel> item in orderList[idxOrder].Dishes)
+            //{
+            //    if (item.Value.Id == clientFilter.EndpointOrderItemID) { idxOrderItem = i;  break; }
+            //    i++;
+            //}
+            //// конечное блюдо не найдено - начинаем с начала или с конца коллекции элементов заказа
+            //if (idxOrderItem == -1)
+            //    idxOrderItem = (clientFilter.LeafDirection == LeafDirectionEnum.Backward) 
+            //        ? orderList[idxOrder].Dishes.Count : 0;
+
+            // отдавать по-заказно
+            int maxItems = clientFilter.ApproxMaxDishesCountOnPage;
+            //  движение назад
+            if (clientFilter.LeafDirection == LeafDirectionEnum.Backward)
+            {
+                int preOrderIdx = idxOrder;
+                if ((idxOrder > 0) && (clientFilter.EndpointOrderItemID == 0)) idxOrder--;
+                // найти заказы для возврата
+                while ((idxOrder >= 0) && (maxItems > 0))
+                {
+                    maxItems -= orderList[idxOrder].Dishes.Count;
+                    idxOrder--;
+                }
+                // если дошли до начала набора
+                if (idxOrder < 0)
+                {
+                    svcResp.isExistsPrevOrders = false;
+                    // то выбираем вперед maxItems элементов с начала набора
+                    idxOrder = 0; maxItems = clientFilter.ApproxMaxDishesCountOnPage;
+                    while ((idxOrder < orderList.Count) && (maxItems > 0))
+                    {
+                        maxItems -= orderList[idxOrder].Dishes.Count;
+                        idxOrder++;
+                    }
+                    // остальные - удалить
+                    if (idxOrder < (orderList.Count - 1))
+                    {
+                        orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
+                        svcResp.isExistsNextOrders = true;
+                    }
+                }
+                // иначе, удалить заказы перед idxOrder
+                else
+                {
+                    svcResp.isExistsPrevOrders = true;
+                    orderList.RemoveRange(0, idxOrder);
+                    // и после preOrderIdx
+                    if (preOrderIdx < (orderList.Count - 1))
+                    {
+                        orderList.RemoveRange(preOrderIdx + 1, orderList.Count - preOrderIdx - 1);
+                        svcResp.isExistsNextOrders = true;
+                    }
+                }
+            }
+
+            //  движение вперед или по месту
+            else
+            {
+                // сместить индекс вперед, если граничное блюдо - последнее
+                if ((clientFilter.LeafDirection == LeafDirectionEnum.Forward)
+                    && (orderList[idxOrder].Dishes.Last().Value.Id == clientFilter.EndpointOrderItemID))
+                    idxOrder++;
+
+                // удалить заказы перед idxOrder
+                if (idxOrder > 0)
+                {
+                    orderList.RemoveRange(0, idxOrder);
+                    svcResp.isExistsPrevOrders = true;
+                }
+                // найти заказы для возврата
+                idxOrder = 0;
+                while ((idxOrder < orderList.Count) && (maxItems > 0))
+                {
+                    maxItems -= orderList[idxOrder].Dishes.Count;
+                    idxOrder++;
+                }
+                // удалить заказы после idxOrder
+                if (idxOrder < (orderList.Count - 1))
+                {
+                    orderList.RemoveRange(idxOrder + 1, orderList.Count - idxOrder - 1);
+                    svcResp.isExistsNextOrders = true;
+                }
+            }
+
+        }
+
+        private bool checkOrderItem(List<int> clientStatusIDs, List<int> clientDepIDs, OrderDishModel orderItem)
+        {
+            if ((clientStatusIDs == null) || (clientDepIDs == null))
+                return false;
+            else
+                return (clientStatusIDs.Contains(orderItem.DishStatusId) && clientDepIDs.Contains(orderItem.DepartmentId));
+        }
+
+        private class DateTimeComparer : IComparer<DateTime>
+        {
+            public int Compare(DateTime x, DateTime y)
+            {
+                return x.CompareTo(y);
+            }
+        }
+
+        // **** настройки из config-файла сервиса
         public Dictionary<string, object> GetHostAppSettings(string machineName)
         {
             string logMsg = "GetHostAppSettings(): ";
@@ -283,7 +1058,9 @@ Contract: IMetadataExchange
                 string s2 = ((v1 == null) ? "" : string.Join(",", (HashSet<int>)v1));
 
                 retval.Add("ExpectedTake", AppProperties.GetIntProperty("ExpectedTake"));
+                retval.Add("IsReadTakenDishes", AppProperties.GetBoolProperty("IsReadTakenDishes"));
                 retval.Add("UseReadyConfirmedState", AppProperties.GetBoolProperty("UseReadyConfirmedState"));
+                retval.Add("AutoGotoReadyConfirmPeriod", AppProperties.GetIntProperty("AutoGotoReadyConfirmPeriod"));
                 retval.Add("TakeCancelledInAutostartCooking", AppProperties.GetBoolProperty("TakeCancelledInAutostartCooking"));
                 retval.Add("TimeOfAutoCloseYesterdayOrders", ts1.ToString());
                 retval.Add("UnusedDepartments", s2);
@@ -294,7 +1071,7 @@ Contract: IMetadataExchange
             {
                 logMsg += ex.Message;
             }
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
 
             return retval;
         }
@@ -310,150 +1087,333 @@ Contract: IMetadataExchange
                 logMsg += "Ok";
             else
                 logMsg += errMsg;
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
         }
 
         #endregion
 
         #region IKDSCommandService implementation
         // заблокировать заказ от изменения по таймеру
-        public void LockOrder(string machineName, int orderId)
+        public bool LockOrder(string machineName, int orderId)
         {
+            bool retVal = false;
             string logMsg = string.Format("LockOrder({0}): ", orderId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
-            if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
-            else hs[orderId] = false;
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
+                if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
+                else hs[orderId] = false;
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
         // разблокировать заказ от изменения по таймеру
-        public void DelockOrder(string machineName, int orderId)
+        public bool DelockOrder(string machineName, int orderId)
         {
+            bool retVal = false;
             string logMsg = string.Format("DelockOrder({0}): ", orderId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-            if (hs.ContainsKey(orderId)) hs[orderId] = true;
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
+                if (hs.ContainsKey(orderId)) hs[orderId] = true;
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
 
         // заблокировать блюдо от изменения по таймеру
-        public void LockDish(string machineName, int dishId)
+        public bool LockDish(string machineName, int dishId)
         {
+            bool retVal = false;
             string logMsg = string.Format("LockDish({0}): ", dishId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
-            AppProperties.SetProperty("lockedDishes", hs);
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
+                if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
+                AppProperties.SetProperty("lockedDishes", hs);
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
         // разблокировать блюдо от изменения по таймеру
-        public void DelockDish(string machineName, int dishId)
+        public bool DelockDish(string machineName, int dishId)
         {
+            bool retVal = false;
             string logMsg = string.Format("DelockDish({0}): ", dishId);
 
-            Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-            if (hs.ContainsKey(dishId)) hs[dishId] = true;
-            AppProperties.SetProperty("lockedDishes", hs);
+            try
+            {
+                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
+                if (hs.ContainsKey(dishId)) hs[dishId] = true;
+                AppProperties.SetProperty("lockedDishes", hs);
+                retVal = true;
+            }
+            catch (Exception)
+            {
+            }
 
             logMsg += "Ok";
-            AppEnv.WriteLogClientAction(machineName, logMsg);
+            AppLib.WriteLogClientAction(machineName, logMsg);
+            return retVal;
         }
 
         // обновление статуса заказа с КДСа
-        public void ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
+        public bool ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
         {
+            bool retVal = false;
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
             DateTime dtTmr = DateTime.Now;
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
-            //StopTimer();
-            _timerEnable = false;
+            AppLib.WriteLogClientAction(machineName, logMsg + " - START");
+
+            getClientInfo(machineName).SetDataFlag = true;
 
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
-                _ordersModel.Orders[orderId].UpdateStatus(orderStatus, true, machineName);
-                logMsg += "Ok";
+                OrderModel order = _ordersModel.Orders[orderId];
+                try
+                {
+                    retVal = order.UpdateStatus(orderStatus, true, machineName);
+                    logMsg += (retVal ? "Ok" : "Not changed");
+                }
+                catch (Exception ex)
+                {
+                    logMsg += "Error - " + ex.Message;
+                }
             }
             else
             {
-                logMsg += "order not found in the Model";
+                logMsg += $"order id {orderId} not found in the Model";
             }
 
-            //StartTimer();
-            _timerEnable = true;
+            getClientInfo(machineName).SetDataFlag = false;
+            AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH" + (DateTime.Now - dtTmr).ToString());
+            return retVal;
         }
 
         // обновление статуса блюда с КДСа
-        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
         {
+            bool retVal = false;
             string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
             DateTime dtTmr = DateTime.Now;
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - START");
-            //StopTimer();
-            _timerEnable = false;
+            AppLib.WriteLogClientAction(machineName, logMsg + " - START");
 
-            bool result = false;
+            getClientInfo(machineName).SetDataFlag = true;
+
             if (_ordersModel.Orders.ContainsKey(orderId))
             {
                 OrderModel modelOrder = _ordersModel.Orders[orderId];
                 if (modelOrder.Dishes.ContainsKey(orderDishId))
                 {
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
-
-                    result = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
+                    try
+                    {
+                        retVal = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
+                        logMsg += (retVal ? "Ok" : "Not changed");
+                    }
+                    catch (Exception ex)
+                    {
+                        logMsg += "Error - " + ex.Message;
+                    }
+                }
+                else
+                {
+                    logMsg += $"dish id {orderDishId} not found in the Order id {orderId}";
                 }
             }
+            else
+            {
+                logMsg += $"order id {orderId} not found in the Model";
+            }
 
-            //if (result)
-            //{
-            //    // убедиться, что в БД записан нужный статус
-            //    DateTime dt = DateTime.Now;
-            //    bool chkStat = false;
-            //    while ((!chkStat) && ((DateTime.Now - dt).TotalMilliseconds <= 2000))
-            //    {
-            //        System.Threading.Thread.Sleep(100);  // тормознуться на 100 мс
-            //        using (KDSEntities db = new KDSEntities())
-            //        {
-            //            try
-            //            {
-            //                OrderDish dbDish = db.OrderDish.Find(orderDishId);
-            //                chkStat = ((dbDish != null) && (dbDish.DishStatusId == (int)orderDishStatus));
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                AppEnv.WriteLogErrorMessage("Ошибка проверочного чтения после записи нового состояния в БД: {0}", AppEnv.GetShortErrMessage(ex));
-            //            }
-            //        }
-            //    }
-            //    // истекло время ожидания записи в БД
-            //    if (!chkStat)
-            //    {
-            //        AppEnv.WriteLogErrorMessage("Истекло время ожидания (2 сек) проверочного чтения после записи нового состояния.");
-            //    }
-            //}
+            AppLib.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
+            getClientInfo(machineName).SetDataFlag = false;
 
-            AppEnv.WriteLogClientAction(machineName, logMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
-
-            //StartTimer();
-            _timerEnable = true;
+            return retVal;
         }
+
+        // создание файла уведомления о состоянии ЗАКАЗА
+        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
+        // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
+        public bool CreateNoticeFileForOrder(string machineName, int orderId)
+        {
+            string logMsg = $"Создание файла состояния Заказа id {orderId}";
+            AppLib.WriteLogClientAction(machineName, logMsg);
+
+            string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
+            if (folder == null)
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                return false;
+            }
+            if (!_ordersModel.Orders.ContainsKey(orderId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - id не найден во внутреннем наборе заказов");
+                return false;
+            }
+
+            bool retVal = false;
+            bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
+            OrderModel modelOrder = _ordersModel.Orders[orderId];
+            OrderStatusEnum status = (OrderStatusEnum)modelOrder.OrderStatusId;
+            logMsg += $", № '{modelOrder.Number}' ... ";
+
+            #region для состояния Готов
+            if (
+                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
+                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
+                && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
+                )
+            {
+                {
+                    string file = $"{folder}ordNumber_{modelOrder.Number}" + ".txt";
+                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nState: {modelOrder.OrderStatusId}\nState name: {((OrderStatusEnum)modelOrder.OrderStatusId).ToString()}";
+                    try
+                    {
+                        System.IO.File.WriteAllText(file, fileText);
+
+                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        retVal = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+            }
+            #endregion
+
+            return retVal;
+        }
+
+        // создание файла уведомления о состоянии БЛЮДА
+        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
+        // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
+        // для блюда, не ингредиента, только, если сам заказ еще не готов и NoticeOrdermanDishNotice = 1 (создавать файл-уведомления для блюда)
+        public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId)
+        {
+            string logMsg = $"Создание файла состояния Заказа id {orderId}, Блюдо id {orderDishId}";
+            AppLib.WriteLogClientAction(machineName, logMsg);
+
+            string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
+            if (folder == null)
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                return false;
+            }
+            if (!_ordersModel.Orders.ContainsKey(orderId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - OrderId не найден во внутреннем наборе заказов");
+                return false;
+            }
+
+            bool retVal = false;
+            bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
+            OrderModel modelOrder = _ordersModel.Orders[orderId];
+            logMsg += $", № заказа '{modelOrder.Number}' ... ";
+            if (!modelOrder.Dishes.ContainsKey(orderDishId))
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + " - DishId не найден во внутреннем наборе блюд");
+                return false;
+            }
+
+            OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
+            OrderStatusEnum status = (OrderStatusEnum)modelDish.DishStatusId;
+            bool isDish = modelDish.ParentUid.IsNull();
+
+            #region для состояния Готов
+            if (
+                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.Ready))
+                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.ReadyConfirmed)))
+                && (isDish == true)
+                && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
+                && (AppProperties.GetBoolProperty("NoticeOrdermanDishNotice") == true)
+                )
+            {
+                {
+                    string file = $"{folder}ordNumber_{modelOrder.Number}(dishId_{modelDish.Id}).txt";
+                    logMsg = $"Сохранение уведомления о готовности блюда '{modelDish.Name}' в файл '{file}': ";
+                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nDish Id: {modelDish.Id}\nDish Name: {modelDish.Name}\nState: {modelDish.DishStatusId}\nState name: {((OrderStatusEnum)modelDish.DishStatusId).ToString()}";
+                    try
+                    {
+                        System.IO.File.WriteAllText(file, fileText);
+
+                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        retVal = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+            }
+            #endregion
+
+            return retVal;
+        }
+
         #endregion
+
+        private ClientInfo getClientInfo(string machineName)
+        {
+            if (_clients.ContainsKey(machineName) == false)
+                _clients.Add(machineName, new ClientInfo() { Name = machineName });
+            return _clients[machineName];
+        }
+
+        private static void dbBeforeCommandAction(string sqlText)
+        {
+            if (AppProperties.GetBoolProperty("TraceQueryToMSSQL"))
+            {
+                AppLib.WriteLogTraceMessage("DBContext| " + sqlText);
+            }
+        }
+
+        private static void dbErrorAction(string errMsg)
+        {
+            AppLib.WriteLogErrorMessage("DBContext error: " + errMsg);
+        }
+
 
         public void Dispose()
         {
-            AppEnv.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
+            AppLib.WriteLogTraceMessage("Закрытие служебного класса KDSService...");
             // таймер остановить, отписаться от события и уничтожить
             StopTimer();
             _observeTimer.Dispose();
+            MSSQLService.Dispose();
 
-            AppEnv.WriteLogTraceMessage("   close ServiceHost...");
+            AppLib.WriteLogTraceMessage("   close ServiceHost...");
             if (_host != null)
             {
                 try
@@ -462,11 +1422,11 @@ Contract: IMetadataExchange
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    AppLib.WriteLogErrorMessage("   Error: " + ex.ToString());
                 }
             }
 
-            AppEnv.WriteLogTraceMessage("   clear inner Orders collection...");
+            AppLib.WriteLogTraceMessage("   clear inner Orders collection...");
             if (_ordersModel != null)
             {
                 try
@@ -475,11 +1435,11 @@ Contract: IMetadataExchange
                 }
                 catch (Exception ex)
                 {
-                    AppEnv.WriteLogErrorMessage("   Error: " + ex.ToString());
+                    AppLib.WriteLogErrorMessage("   Error: " + ex.ToString());
                 }
             }
 
-            AppEnv.WriteLogInfoMessage("**** ЗАВЕРШЕНИЕ работы КДС-сервиса ****");
+            AppLib.WriteLogInfoMessage("**** ЗАВЕРШЕНИЕ работы КДС-сервиса ****");
         }
 
 

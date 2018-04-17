@@ -7,10 +7,9 @@
         xmlns:view="clr-namespace:KDSWPFClient.View"
         mc:Ignorable="d"
         Title="KDS" Height="720" Width="1024" ShowInTaskbar="True"
-        ResizeMode="NoResize" Icon="monitor7.ico" PreviewMouseDown="Window_PreviewMouseDown">
+        ResizeMode="NoResize" Icon="monitor7.ico">
 
     <Window.Resources>
-
     </Window.Resources>
 
     <Grid x:Name="grdMain">
@@ -18,9 +17,12 @@
             <ImageBrush ImageSource="Images/steel.jpg"/>
         </Grid.Background>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="30*"/>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="100*"/>
         </Grid.ColumnDefinitions>
+
+        <!-- затенение -->
+        <!--<Border x:Name="backgroundDisable" Background="DimGray" Grid.ColumnSpan="12" Opacity="0.8"/>-->
 
         <!-- админская панель -->
         <Border x:Name="brdAdmin"  Grid.Column="0" PreviewMouseDown="brdAdmin_PreviewMouseDown" PreviewMouseUp="brdAdmin_PreviewMouseUp">
@@ -32,17 +34,24 @@
             </Border.Background>
             <Grid x:Name="grdUserConfig">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="1.2*"/>
+                    <RowDefinition Height="0.5*"/>
+                    <RowDefinition Height="1.2*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="0.2*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="0.5*"/>
                 </Grid.RowDefinitions>
 
-                <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10" Margin="0,40,0,0" VerticalAlignment="Top" Click="button_Click"/>
+                <Button x:Name="btnCFG" Content="CFG" Height="20" Panel.ZIndex="10"  VerticalAlignment="Top" Click="button_Click" Visibility="Hidden"/>
 
-                <Border x:Name="btnColorsLegend" Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" VerticalAlignment="Bottom" Margin="0,30" Background="Transparent" Height="100"  PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp">
-                    <TextBlock x:Name="tbColorsLegend" Text="Легенда" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Foreground="Gray" FontSize="18" RenderTransformOrigin="0.5,0.5" Margin="-28,37" Width="87">
+                <Border x:Name="btnColorsLegend" Grid.Row="0" 
+                        BorderThickness="0,1,0,1" BorderBrush="DarkGray" Background="Transparent"  
+                        PreviewMouseDown="btnColorsLegend_PreviewMouseDown" PreviewMouseUp="btnColorsLegend_PreviewMouseUp"
+                        Height="80">
+                    <TextBlock x:Name="tbColorsLegend" Text="Легенда" Foreground="Gray"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               RenderTransformOrigin="0.5,0.5" FontSize="16" Margin="-6,0,-6,0">
                         <TextBlock.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="-90"/>
@@ -51,38 +60,24 @@
                     </TextBlock>
                 </Border>
 
-                <!-- кнопка переключения состояний -->
-                <Border x:Name="btnOrderGroup" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbOrderGroup_MouseDown" Background="Transparent">
-                    <TextBlock x:Name="tbOrderGroup" Text="По времени" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-78,-28" Width="110">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <RotateTransform Angle="-90"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Border>
-
-                <Border x:Name="btnDishStatusFilter" Grid.Row="3" BorderBrush="DarkGray" BorderThickness="2" MouseDown="tbDishStatusFilter_MouseDown">
-                    <TextBlock x:Name="tbDishStatusFilter" Text="В процессе" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" TextAlignment="Center" TextWrapping="Wrap" FontWeight="Bold" Height="28" Margin="0,0,-80,-28" Width="110">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <RotateTransform Angle="-90"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                </Border>
+                <!-- зона вкладок -->
+                <StackPanel x:Name="pnlLeftTabs" Grid.Row="3" Background="Transparent"/>
 
             </Grid>
         </Border>
 
-        <!-- панель заказов -->
-        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public"/>
+        <!-- панель заказов - канва отображения -->
+        <Viewbox x:Name="vbxOrders" Grid.Column="1" Stretch="Fill" x:FieldModifier="public" />
+        <!-- канва фонового размещения -->
+        <Border x:Name="bufPanelsContainer" Grid.Column="1" Visibility="Hidden">
+            <Canvas x:Name="bufferOrderPanels" x:FieldModifier="public"/>
+        </Border>
 
         <!-- сообщение об ошибке связи со службой -->
         <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
 
         <!-- кнопки листания страниц -->
-        <Viewbox x:Name="btnSetPagePrevious" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden" Stretch="Uniform">
+        <Viewbox x:Name="btnSetPagePrevious" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden" Stretch="Uniform" Height="100">
             <Canvas Width="100" Height="100" MouseDown="btnSetPagePrevious_MouseDown">
                 <Path>
                     <Path.Fill>
@@ -99,22 +94,16 @@
                         </PathGeometry>
                     </Path.Data>
                 </Path>
-                <Grid Width="100" Height="100">
-                    <TextBlock x:Name="tbPagePreviousNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" Margin="-10">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform/>
-                                <SkewTransform/>
-                                <RotateTransform Angle="-90"/>
-                                <TranslateTransform X="1.248" Y="2.016"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
+                <Grid Width="100" Height="70" Margin="0,100,0,0" RenderTransformOrigin="0,0">
+                    <Grid.RenderTransform>
+                        <RotateTransform Angle="-90"/>
+                    </Grid.RenderTransform>
+                    <TextBlock x:Name="tbPagePreviousNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top"/>
                 </Grid>
             </Canvas>
         </Viewbox>
-        <Viewbox x:Name="btnSetPageNext" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Hidden">
-            <Canvas Width="100" Height="100" MouseDown="btnSetPageNext_MouseDown">
+        <Viewbox x:Name="btnSetPageNext" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Hidden" Height="100">
+            <Canvas Width="100" Height="100" MouseDown="btnSetPageNext_MouseDown" >
                 <Path>
                     <Path.Fill>
                         <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5" Opacity="0.7">
@@ -130,17 +119,11 @@
                         </PathGeometry>
                     </Path.Data>
                 </Path>
-                <Grid Width="100" Height="100">
-                    <TextBlock x:Name="tbPageNextNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" Margin="-10">
-                        <TextBlock.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform/>
-                                <SkewTransform/>
-                                <RotateTransform Angle="90"/>
-                                <TranslateTransform X="1.248" Y="2.016"/>
-                            </TransformGroup>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
+                <Grid Width="100" Height="70" Margin="100,0,0,0" RenderTransformOrigin="0,0">
+                    <Grid.RenderTransform>
+                        <RotateTransform Angle="90"/>
+                    </Grid.RenderTransform>
+                    <TextBlock x:Name="tbPageNextNum" Foreground="White" Text="Стр. 1" FontSize="18" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top"/>
                 </Grid>
 
             </Canvas>

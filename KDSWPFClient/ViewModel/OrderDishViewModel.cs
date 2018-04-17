@@ -1,4 +1,6 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraLib;
+using IntegraWPFLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using System;
@@ -53,6 +55,9 @@ namespace KDSWPFClient.ViewModel
 
         public string ServiceErrorMessage { get; set; }
 
+        public string GroupedDishIds { get; set; }
+
+
         public string WaitingTimerString { get; set; }
 
         public string ViewTimerString { get; set; }
@@ -64,11 +69,24 @@ namespace KDSWPFClient.ViewModel
         private TimeSpan _tsCookingEstimated;
         private string _strCookingEstimated;
 
+        bool _isUseReadyConfirmed;
+        bool _enableTimerToAutoReadyConfirm;
+        public bool EnableTimerToAutoReadyConfirm { get { return _enableTimerToAutoReadyConfirm; } }
+
+        // период времени (в секундах), в течение которого официант должен забрать блюдо
+        TimeSpan _expTakeTS;
+        // период времени (в секундах), по истечении которого происходит автоматический переход из состояния Готово в ПодтвГотово
+        TimeSpan _autoGotoReadyConfirmTS, _savedReadyTS;
+
+
 
         // CONSTRUCTORS
         public OrderDishViewModel()
         {
-
+            // из глобальных настроек
+            _isUseReadyConfirmed = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            _expTakeTS = TimeSpan.FromSeconds(System.Convert.ToInt32(WpfHelper.GetAppGlobalValue("ExpectedTake")));
+            _autoGotoReadyConfirmTS = TimeSpan.FromSeconds(System.Convert.ToInt32(WpfHelper.GetAppGlobalValue("AutoGotoReadyConfirmPeriod", 0)));
         }
         public OrderDishViewModel(OrderDishModel svcOrderDish, int index): this()
         {
@@ -91,9 +109,12 @@ namespace KDSWPFClient.ViewModel
             DelayedStartTime = svcOrderDish.DelayedStartTime;
             EstimatedTime = svcOrderDish.EstimatedTime;
             ServiceErrorMessage = svcOrderDish.ServiceErrorMessage;
+            GroupedDishIds = svcOrderDish.GroupedDishIds;
+
             WaitingTimerString = svcOrderDish.WaitingTimerString;
 
             setLocalDTFields();
+            this.ViewTimerString = getViewTimerString();
         }
 
         private void setLocalDTFields()
@@ -110,6 +131,11 @@ namespace KDSWPFClient.ViewModel
             if (DishStatusId != svcOrderDish.DishStatusId)
             {
                 DishStatusId = svcOrderDish.DishStatusId;
+                // заходим в состояние Готово при включенном ПодтвГотово - запоминаем время готовки, чтобы потом вычислять таймер автомат.перехода в ПодтвГотово
+                if ((_isUseReadyConfirmed == true) && (svcOrderDish.DishStatusId == 2))
+                {
+                    _savedReadyTS = AppLib.GetTSFromString(svcOrderDish.WaitingTimerString);
+                }
                 OnPropertyChanged("Status");
             }
 
@@ -177,8 +203,20 @@ namespace KDSWPFClient.ViewModel
             }
         }
 
+
+        // время, отображаемое на панели блюда
         private string getViewTimerString()
         {
+            // для ИНГРЕДИЕНТОВ
+            if ((this.ParentUID != null) && (this.ParentUID.Length > 0))
+            {
+                // отключен флажок НЕЗАВИСИМОСТИ (IsIngredientsIndependent == false) и ВЫКЛЮЧЕН флажок показа таймера ShowTimerOnDependIngr
+                bool b1 = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false),
+                     b2 = (bool)WpfHelper.GetAppGlobalValue("ShowTimerOnDependIngr", false);
+                bool isShowTimer = b1 || (!b1 && b2);
+                if (isShowTimer == false) { return null; }
+            }
+
             // текущее значение таймера
             string timerString = this.WaitingTimerString;
             // состояние "Ожидание" начала готовки
@@ -203,36 +241,41 @@ namespace KDSWPFClient.ViewModel
                     timerString = _strCookingEstimated;
                 }
                 else
+                    // по умолчанию отправить 
                     timerString = "";
             }
 
             // другие состояния
             else
             {
-                if (this.Id == 482) Debug.Print("tmr, from svc: " + this.WaitingTimerString);
                 TimeSpan tsTimerValue = AppLib.GetTSFromString(this.WaitingTimerString);
 
-                // состояние "В процессе" - отображаем время приготовления по убыванию от планого времени приготовления,
+                // состояние "В процессе" - отображаем время приготовления по убыванию от планового времени приготовления,
                 // если нет планового времени приготовления, то сразу отрицат.значения
                 if (this.Status == OrderStatusEnum.Cooking)
                 {
                     tsTimerValue = _tsCookingEstimated - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
                 }
 
-                // состояние "ГОТОВО": проверить период ExpectedTake, в течение которого официант должен забрать блюдо
                 else
                 {
-                    // из глобальных настроек
-                    bool isUseReadyConfirmed = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
-                    if ((!isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready))
-                        || (isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed)))
+                    // состояние "Готово/ПодтвГотово" - счетчик по убыванию от ExpectedTake (период, в течение которого официант должен забрать блюдо)
+                    if ((!_isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready))
+                        || (_isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed)))
                     {
-                        int expTake = (int)AppPropsHelper.GetAppGlobalValue("ExpectedTake");
-                        if (expTake > 0)
+                        if (!_expTakeTS.IsZero())
                         {
-                            tsTimerValue = TimeSpan.FromSeconds(expTake) - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
-                            if (this.Id == 482) Debug.Print("tmr, expected: " + tsTimerValue.ToString());
+                            tsTimerValue = _expTakeTS - (tsTimerValue.Ticks < 0 ? tsTimerValue.Negate() : tsTimerValue);
                         }
+                    }
+                    // есть ПодтвГотово, находимся в состоянии Готово и _autoGotoReadyConfirmPeriod не равен 0 - счетчик по убыванию от _autoGotoReadyConfirmPeriod (период, по истечении которого происходит автоматический переход в состояние ПодтвГотово)
+                    //  && (_savedReadyTS.IsZero() == false)  -- зачем?
+                    else if (_isUseReadyConfirmed 
+                        && (!_autoGotoReadyConfirmTS.IsZero()) 
+                        && (this.Status == OrderStatusEnum.Ready))
+                    {
+                        tsTimerValue = _autoGotoReadyConfirmTS - (tsTimerValue - _savedReadyTS);
+                        _enableTimerToAutoReadyConfirm = (tsTimerValue.TotalSeconds > 0);
                     }
                 }
 

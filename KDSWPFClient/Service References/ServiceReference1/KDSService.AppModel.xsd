@@ -25,7 +25,7 @@
   <xs:element name="ArrayOfDepartmentModel" nillable="true" type="tns:ArrayOfDepartmentModel" />
   <xs:complexType name="DepartmentModel">
     <xs:sequence>
-      <xs:element minOccurs="0" name="DishQuantity" type="xs:decimal" />
+      <xs:element minOccurs="0" name="DishQuantity" type="xs:int" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="IsAutoStart" type="xs:boolean" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
@@ -33,6 +33,44 @@
     </xs:sequence>
   </xs:complexType>
   <xs:element name="DepartmentModel" nillable="true" type="tns:DepartmentModel" />
+  <xs:complexType name="ClientDataFilter">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="ApproxMaxDishesCountOnPage" type="xs:int" />
+      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="DepIDsList" nillable="true" type="q1:ArrayOfint" />
+      <xs:element minOccurs="0" name="EndpointOrderID" type="xs:int" />
+      <xs:element minOccurs="0" name="EndpointOrderItemID" type="xs:int" />
+      <xs:element minOccurs="0" name="GroupBy" type="tns:OrderGroupEnum" />
+      <xs:element minOccurs="0" name="IsDishGroupAndSumQuantity" type="xs:boolean" />
+      <xs:element minOccurs="0" name="LeafDirection" type="tns:LeafDirectionEnum" />
+      <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="StatusesList" nillable="true" type="q2:ArrayOfint" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ClientDataFilter" nillable="true" type="tns:ClientDataFilter" />
+  <xs:simpleType name="OrderGroupEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ByCreateTime" />
+      <xs:enumeration value="ByOrderNumber" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="OrderGroupEnum" nillable="true" type="tns:OrderGroupEnum" />
+  <xs:simpleType name="LeafDirectionEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NoLeaf" />
+      <xs:enumeration value="Forward" />
+      <xs:enumeration value="Backward" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="LeafDirectionEnum" nillable="true" type="tns:LeafDirectionEnum" />
+  <xs:complexType name="ServiceResponce">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="NewOrderIds" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="OrdersList" nillable="true" type="tns:ArrayOfOrderModel" />
+      <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="isExistsNextOrders" type="xs:boolean" />
+      <xs:element minOccurs="0" name="isExistsPrevOrders" type="xs:boolean" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ServiceResponce" nillable="true" type="tns:ServiceResponce" />
   <xs:complexType name="ArrayOfOrderModel">
     <xs:sequence>
       <xs:element minOccurs="0" maxOccurs="unbounded" name="OrderModel" nillable="true" type="tns:OrderModel" />
@@ -42,7 +80,7 @@
   <xs:complexType name="OrderModel">
     <xs:sequence>
       <xs:element minOccurs="0" name="CreateDate" type="xs:dateTime" />
-      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q1:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
+      <xs:element xmlns:q3="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Dishes" nillable="true" type="q3:ArrayOfKeyValueOfintOrderDishModel8uiKjqwq" />
       <xs:element minOccurs="0" name="DivisionColorRGB" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="HallName" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
@@ -64,11 +102,13 @@
       <xs:element minOccurs="0" name="DishStatusId" type="xs:int" />
       <xs:element minOccurs="0" name="EstimatedTime" type="xs:int" />
       <xs:element minOccurs="0" name="FilingNumber" type="xs:int" />
+      <xs:element minOccurs="0" name="GroupedDishIds" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Id" type="xs:int" />
       <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="ParentUid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Quantity" type="xs:decimal" />
       <xs:element minOccurs="0" name="ServiceErrorMessage" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="UID1C" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Uid" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="WaitingTimerString" nillable="true" type="xs:string" />
     </xs:sequence>

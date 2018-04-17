@@ -271,7 +271,7 @@ namespace ClientOrderQueue.Model
             TimeSpan ts = (_cookingEstMinutes == 0 ? DateTime.Now - _cookingEstDate : _cookingEstDate - DateTime.Now);
 
             ts = getRoundedTimeSpan(ts, 1d);
-            string tss = ts.ToStringExt();
+            string tss = AppLib.GetAppStringTS(ts);
 
             if (this.tbCookingTimer.Text != tss) this.tbCookingTimer.Text = tss;
         }

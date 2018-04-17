@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraWPFLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
@@ -73,7 +74,7 @@ namespace KDSWPFClient.View
             setChangeStateButtons();
 
             // кнопка Закрыть
-            double btnCloseFontSize = 0.3 * AppLib.GetRowHeightAbsValue(mainGrid, 3);
+            double btnCloseFontSize = 0.3 * WpfHelper.GetRowHeightAbsValue(mainGrid, 3);
             if (btnClose.FontSize != btnCloseFontSize)
             {
                 btnClose.FontSize = btnCloseFontSize;
@@ -101,7 +102,7 @@ namespace KDSWPFClient.View
 
             if (this.IsShowTitle)
             {
-                double titleFontSize = 0.5d * AppLib.GetRowHeightAbsValue(mainGrid, 0);
+                double titleFontSize = 0.5d * WpfHelper.GetRowHeightAbsValue(mainGrid, 0);
                 if (textTitle.Text != base.Title) textTitle.Text = base.Title;
                 if (textTitle.FontSize != titleFontSize)
                 {
@@ -118,7 +119,7 @@ namespace KDSWPFClient.View
         private void setMainMessage()
         {
             double rowHeight;
-            rowHeight = AppLib.GetRowHeightAbsValue(mainGrid, 1);
+            rowHeight = WpfHelper.GetRowHeightAbsValue(mainGrid, 1);
             // размер шрифта
             double messageFontSize = (Dish == null) ? 0.3d * rowHeight : 0.2d * rowHeight;
             if (tbMessage.FontSize != messageFontSize)
@@ -142,12 +143,12 @@ namespace KDSWPFClient.View
             sMsg = StateGraphHelper.GetStateDescription(_currentState, (Order != null));
             if (runState.Text != sMsg) runState.Text = sMsg;
 
-            if (preText != tbMessage.Text) AppLib.AssignFontSizeByMeasureHeight(tbMessage, new Size(mainGrid.Width, mainGrid.Height), rowHeight, true);
+            if (preText != tbMessage.Text) WpfHelper.AssignFontSizeByMeasureHeight(tbMessage, new Size(mainGrid.Width, mainGrid.Height), rowHeight, true);
         }
 
         private void setChangeStateButtons()
         {
-            double rowHeight = AppLib.GetRowHeightAbsValue(mainGrid, 2);
+            double rowHeight = WpfHelper.GetRowHeightAbsValue(mainGrid, 2);
 
             // количество кнопок смены состояния
             int buttonsCount = _allowedStates.Count;
@@ -158,7 +159,7 @@ namespace KDSWPFClient.View
             {
                 pnlStateButtons.Children.Clear();
                 double pnlWidth = mainGrid.Width;
-                double pnlHeight = AppLib.GetRowHeightAbsValue(mainGrid, 2);
+                double pnlHeight = WpfHelper.GetRowHeightAbsValue(mainGrid, 2);
                 // высота кнопок всегда одинаковая, а ширина и расстояние по горизонтали зависит от их кол-ва
                 // контейнер для кнопок уже центрирован по верт.и гориз. в своем контейнере, поэтому верт.поля не нужны
                 height = Math.Floor(0.75 * pnlHeight);
@@ -224,12 +225,12 @@ namespace KDSWPFClient.View
             if (tbStateName.Text != btnText1)
             {
                 tbStateName.Text = btnText1;
-                AppLib.AssignFontSizeByMeasureHeight(tbStateName, tbSize, reqHeight, true);
+                WpfHelper.AssignFontSizeByMeasureHeight(tbStateName, tbSize, reqHeight, true);
             }
             if (tbStateDescr.Text != btnText2)
             {
                 tbStateDescr.Text = btnText2;
-                AppLib.AssignFontSizeByMeasureHeight(tbStateDescr, tbSize, reqHeight, true);
+                WpfHelper.AssignFontSizeByMeasureHeight(tbStateDescr, tbSize, reqHeight, true);
             }
         }
 

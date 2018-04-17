@@ -51,13 +51,9 @@
     </StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="IntegraLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.8\lib\net45\NLog.dll</HintPath>
@@ -69,8 +65,10 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Runtime.Serialization.Formatters.Soap" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -81,96 +79,52 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppModel\AppActionEnum.cs" />
+    <Compile Include="AppModel\ClientDataFilter.cs" />
+    <Compile Include="AppModel\ClientInfo.cs" />
+    <Compile Include="AppModel\DishWithQty.cs" />
     <Compile Include="AppModel\IncrementalTimer.cs" />
     <Compile Include="AppModel\ModelDicts.cs" />
     <Compile Include="AppModel\OrderDishModel.cs" />
     <Compile Include="AppModel\OrderModel.cs" />
+    <Compile Include="AppModel\OrderGroupEnum.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
     <Compile Include="AppModel\OrderStatusEnum.cs" />
+    <Compile Include="AppModel\LeafDirectionEnum.cs" />
+    <Compile Include="AppModel\ServiceResponce.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />
     <Compile Include="AppModel\TimeCounter.cs" />
+    <Compile Include="DataSource\DBContext.cs" />
     <Compile Include="DataSource\DBOrderHelper.cs" />
-    <Compile Include="DataSource\Department.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\KDSEntities.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\Order.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDish.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDishReturnTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderDishRunTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderRunTime.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
-    <Compile Include="DataSource\OrderStatus.cs">
-      <DependentUpon>KDSEntities.tt</DependentUpon>
-    </Compile>
+    <Compile Include="DataSource\DBTypeExstensions.cs" />
+    <Compile Include="DataSource\Department.cs" />
+    <Compile Include="DataSource\Order.cs" />
+    <Compile Include="DataSource\OrderDish.cs" />
+    <Compile Include="DataSource\OrderDishReturnTime.cs" />
+    <Compile Include="DataSource\OrderDishRunTime.cs" />
+    <Compile Include="DataSource\OrderRunTime.cs" />
+    <Compile Include="DataSource\OrderStatus.cs" />
     <Compile Include="IKDSCommandService.cs" />
     <Compile Include="IKDSService.cs" />
     <Compile Include="KDSService.cs" />
-    <Compile Include="Lib\AppEnv.cs" />
-    <Compile Include="Lib\DebugTimer.cs" />
+    <Compile Include="Lib\AppLib.cs" />
+    <Compile Include="Lib\CalcObjectSizeHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DataSource\KDSEntities.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-      <LastGenOutput>KDSEntities.Context.cs</LastGenOutput>
-    </Content>
-    <Content Include="DataSource\KDSEntities.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-      <LastGenOutput>KDSEntities.cs</LastGenOutput>
-    </Content>
     <Content Include="history.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EntityDeploy Include="DataSource\KDSEntities.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>KDSEntities.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <None Include="DataSource\KDSEntities.edmx.diagram">
-      <DependentUpon>KDSEntities.edmx</DependentUpon>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\IntegraLib\IntegraLib.csproj">
-      <Project>{68445753-040e-4d30-8063-1f494d7370c4}</Project>
-      <Name>IntegraLib</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
       <FlavorProperties GUID="{3D9AD99F-2412-4246-B90B-4EAA41C64699}">
         <WcfProjectProperties>
-          <AutoStart>True</AutoStart>
+          <AutoStart>False</AutoStart>
         </WcfProjectProperties>
       </FlavorProperties>
     </VisualStudio>

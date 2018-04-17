@@ -4,13 +4,16 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.ServiceProcess;
+using IntegraLib;
+
 
 namespace KDSWinSvcHost
 {
     public partial class ServiceKDS : ServiceBase
     {
         // лог для приложений без UI
-        private string _logFile;
+//        private string _logFile;
+        private string _svcInstallLog;
 
         KDSService.KDSServiceClass service;
 
@@ -19,22 +22,41 @@ namespace KDSWinSvcHost
             InitializeComponent();
 
             this.AutoLog = true;
-            //_logFile = @"d:\KDSWinSvc.log";
-            _logFile = getAppPath() + "Logs\\kdsWinService.log";
+            _svcInstallLog = AppEnvironment.GetFullSpecialFileNameInAppDir("InstallLog", null, true);
 
-#if (DEBUG)
-            OnStart(null);
-#endif
+//            args = new string[] { "-autoGenLicence" };
         }
 
         protected override void OnStart(string[] args)
         {
             putToSvcLog("*** Запуск Windows-службы КДС ***");
+
+#if DEBUG == true
+            if (args != null)
+            {
+                putToSvcLog("аргументы запуска службы: " + string.Join(" ", args));
+            }
+#endif
+            // ЗАЩИТА PSW-файлом
+            // аргумент запуска args = new string[] { "-autoGenLicence" };
+            bool isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
+            // ключ реестра HKLM\Software\Integra\autoGenLicence = 01 (binary)
+            if (isLoyalClient == false) isLoyalClient = RegistryHelper.IsExistsAutoGenLicenceKey();
+            pswLib.CheckProtectedResult checkProtectedResult;
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSService", out checkProtectedResult, null, isLoyalClient) == false)
+            {
+                putToSvcLog(checkProtectedResult.LogMessage);
+                putToSvcLog(checkProtectedResult.CustomMessage);
+                Environment.Exit(2);
+                return;
+            }
+
+
             // 1. Инициализация сервисного класса KDSService
             try
             {
                 // config file
-                string cfgFile = getAppPath() + "KDSService.config";
+                string cfgFile = CfgFileHelper.GetAppConfigFile("KDSService");
                 putToSvcLog("Инициализация сервисного класса KDSService...");
                 service = new KDSService.KDSServiceClass();
                 service.InitService(cfgFile);
@@ -73,10 +95,6 @@ namespace KDSWinSvcHost
             putToSvcLog("**** Остановка Windows-службы КДС ****");
         }
 
-        private string getAppPath()
-        {
-            return AppDomain.CurrentDomain.BaseDirectory;
-        }
 
         private void exitApplication(int exitCode)
         {
@@ -90,10 +108,12 @@ namespace KDSWinSvcHost
             //Console.WriteLine(msg);
 
             // для приложений без UI
+            if (_svcInstallLog.IsNull()) return;
+
             StreamWriter sw = null;
             try
             {
-                sw = new StreamWriter(_logFile, true);
+                sw = new StreamWriter(_svcInstallLog, true);
                 msg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ": " + msg;
                 sw.WriteLine(msg);
             }

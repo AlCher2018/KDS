@@ -1,4 +1,5 @@
 ﻿using IntegraLib;
+using IntegraWPFLib;
 using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
@@ -33,19 +34,27 @@ namespace KDSWPFClient.Model
             }
         }
 
+        private static bool _useReadyConfirmedState;
+        public static bool UseReadyConfirmedState { get { return _useReadyConfirmedState; } }
+
+        private static bool _isReadTakenDishes;
+        public static bool IsReadTakenDishes { get { return _isReadTakenDishes; } }
+
+
         // конструктор
         static KDSModeHelper()
         { }
 
         public static void Init()
         {
+            _useReadyConfirmedState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            _isReadTakenDishes = (bool)WpfHelper.GetAppGlobalValue("IsReadTakenDishes", false);
+
             initDefinedKDSModes();
             initFromCfgFile();
         }
         private static void initDefinedKDSModes()
         {
-            bool useReadyConfirmedState = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
-
             // повар
             #region Повар
             KDSModeStates modeCook = new KDSModeStates() { KDSMode = KDSModeEnum.Cook };
@@ -65,14 +74,16 @@ namespace KDSWPFClient.Model
             // шеф-повар
             #region Шеф-повар
             KDSModeStates modeChef = new KDSModeStates() { KDSMode = KDSModeEnum.Chef };
-            if (useReadyConfirmedState)
+            // состояния
+            modeChef.AllowedStates.AddRange(new[]
+            { OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
+              OrderStatusEnum.Ready, OrderStatusEnum.Cancelled});
+            if (_useReadyConfirmedState) modeChef.AllowedStates.Add(OrderStatusEnum.ReadyConfirmed);
+            if (_isReadTakenDishes) modeChef.AllowedStates.Add(OrderStatusEnum.Took);
+
+            // действия
+            if (_useReadyConfirmedState)
             {
-                modeChef.AllowedStates.AddRange(new[]
-                {
-                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
-                OrderStatusEnum.Ready, OrderStatusEnum.ReadyConfirmed,
-                OrderStatusEnum.Cancelled
-                });
                 modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
@@ -86,11 +97,6 @@ namespace KDSWPFClient.Model
             }
             else
             {
-                modeChef.AllowedStates.AddRange(new[]
-                {
-                OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
-                OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
-                });
                 modeChef.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking),
@@ -106,13 +112,14 @@ namespace KDSWPFClient.Model
             // официант
             #region Официант
             KDSModeStates modeWaiter = new KDSModeStates() { KDSMode = KDSModeEnum.Waiter };
-            if (useReadyConfirmedState)
+            modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
             {
-                modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
-                {
                 OrderStatusEnum.WaitingCook, OrderStatusEnum.Cooking,
                 OrderStatusEnum.Ready, OrderStatusEnum.Cancelled
-                });
+            });
+            if (_useReadyConfirmedState)
+            {
+                modeWaiter.AllowedStates.Add(OrderStatusEnum.ReadyConfirmed);
                 modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.ReadyConfirmed, OrderStatusEnum.Took)
@@ -120,10 +127,6 @@ namespace KDSWPFClient.Model
             }
             else
             {
-                modeWaiter.AllowedStates.AddRange(new OrderStatusEnum[]
-                {
-                OrderStatusEnum.Cooking, OrderStatusEnum.Ready
-                });
                 modeWaiter.AllowedActions.AddRange(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>[]
                 {
                 new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(OrderStatusEnum.Ready, OrderStatusEnum.Took)
@@ -162,8 +165,10 @@ namespace KDSWPFClient.Model
 
                 string cfgVal = CfgFileHelper.GetAppSetting("KDSModeSpecialStates");
                 modeStates.StringToAllowedStates(cfgVal);
+
                 cfgVal = CfgFileHelper.GetAppSetting("KDSModeSpecialActions");
                 modeStates.StringToAllowedActions(cfgVal);
+
                 modeStates.CreateUserStateSets();
             }
 
@@ -220,6 +225,8 @@ namespace KDSWPFClient.Model
                     FontBrush = new SolidColorBrush(Colors.Navy)
                 };
                 curSet.States.AddRange(statesList);
+                // и удалить, если есть, Выдано
+                if (curSet.States.Contains(OrderStatusEnum.Took)) curSet.States.Remove(OrderStatusEnum.Took);
 
                 retVal.Insert(0, curSet);
             }
@@ -366,7 +373,19 @@ namespace KDSWPFClient.Model
             OrderStatusEnum eStatus;
             foreach (string item in aVal)
             {
-                if (Enum.TryParse<OrderStatusEnum>(item, out eStatus)) _allowedStates.Add(eStatus);
+                if (Enum.TryParse<OrderStatusEnum>(item, out eStatus))
+                {
+                    if (eStatus == OrderStatusEnum.ReadyConfirmed) 
+                    {
+                         if (KDSModeHelper.UseReadyConfirmedState == true) _allowedStates.Add(eStatus);
+                    }
+                    else if (eStatus == OrderStatusEnum.Took) 
+                    {
+                         if (KDSModeHelper.IsReadTakenDishes == true) _allowedStates.Add(eStatus);
+                    }
+                    else
+                        _allowedStates.Add(eStatus);
+                }
             }
         }
 
@@ -385,7 +404,14 @@ namespace KDSWPFClient.Model
                     {
                         OrderStatusEnum eStatFrom, eStatTo;
                         if (Enum.TryParse(aStr[0], out eStatFrom) && Enum.TryParse(aStr[1], out eStatTo))
-                            _allowedActions.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo));
+                        {
+                            if ((eStatFrom == OrderStatusEnum.ReadyConfirmed) || (eStatTo == OrderStatusEnum.ReadyConfirmed))
+                            {
+                                if (KDSModeHelper.UseReadyConfirmedState == true) _allowedActions.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo));
+                            }
+                            else
+                                _allowedActions.Add(new KeyValuePair<OrderStatusEnum, OrderStatusEnum>(eStatFrom, eStatTo));
+                        }
                     }
                 }
             }

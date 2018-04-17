@@ -1,6 +1,8 @@
 ﻿using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.Lib;
 using KDSWPFClient.ViewModel;
+using IntegraLib;
+using IntegraWPFLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +15,6 @@ using System.Diagnostics;
 using System.Windows;
 using System.Configuration;
 using System.Threading;
-using IntegraLib;
 
 namespace KDSWPFClient
 {
@@ -24,7 +25,9 @@ namespace KDSWPFClient
         private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
-        int openTimeoutSeconds = (int)AppPropsHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
+        int openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
+
+        public bool IsGetServiceData { get; set; }
 
         // **** СЛОВАРИ
         //   статусов
@@ -35,7 +38,7 @@ namespace KDSWPFClient
         public Dictionary<int, DepartmentViewModel> Departments { get { return _deps; } }
 
         private string _errMsg;
-        public string ErrorMessage { get { return _errMsg??""; } }
+        public string ErrorMessage { get { return _errMsg; } }
 
         public bool EnableGetChannel { get
             { return (_getClient != null)
@@ -56,6 +59,8 @@ namespace KDSWPFClient
         {
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
+            _machineName += "." + App.ClientName;
+            this.IsGetServiceData = false;
         }
 
         public bool CreateGetChannel()
@@ -72,22 +77,28 @@ namespace KDSWPFClient
                 setBindingBuffers(getBinding);
                 getBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
 
-                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8733/KDSService", hostName);
                 EndpointAddress getEndpointAddress = new EndpointAddress(addr);
 
                 _getClient = new KDSServiceClient(getBinding, getEndpointAddress);
+                // для отладки службы из-под клиента увеличить время операции
+                _getClient.InnerChannel.OperationTimeout = new TimeSpan(0,20,0);
 
-                _getClient.Open();
+                //_getClient.Open();
                 logClientInfo(_getClient);
-                if ((_ordStatuses.Count==0) || (_deps.Count == 0)) this.SetDictDataFromService();
-
-                retVal = true;
+                if ((_ordStatuses.Count==0) || (_deps.Count == 0))
+                {
+                    retVal = this.SetDictDataFromService();
+                }
+                else
+                    retVal = true;
             }
             catch (Exception ex)
             {
                 _errMsg = ex.Message;
+                throw;
             }
 
             return retVal;
@@ -110,7 +121,6 @@ namespace KDSWPFClient
             readQuotas.MaxStringContentLength = maxIntValue;
         }
 
-
         public bool CreateSetChannel()
         {
             bool retVal = false;
@@ -122,17 +132,17 @@ namespace KDSWPFClient
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
+                setBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
                 setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
                 setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
-                setBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
-                string hostName = (string)AppPropsHelper.GetAppGlobalValue("KDSServiceHostName", "");
+                string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
                 string addr = string.Format("net.tcp://{0}:8734/KDSCommandService", hostName);
                 EndpointAddress setEndpointAddress = new EndpointAddress(addr);
 
                 _setClient = new KDSCommandServiceClient(setBinding, setEndpointAddress);
 
-                _setClient.Open();
+                //_setClient.Open();
                 logClientInfo(_setClient);
 
                 retVal = true;
@@ -140,6 +150,7 @@ namespace KDSWPFClient
             catch (Exception ex)
             {
                 _errMsg = ex.Message;
+                throw;
             }
 
             return retVal;
@@ -158,6 +169,8 @@ namespace KDSWPFClient
             bool retVal = false;
             try
             {
+                if (this.EnableGetChannel == false) CreateGetChannel();
+
                 // получить со службы статусы заказов и сохранить их в _ordStatuses
                 AppLib.WriteLogInfoMessage("  - clt: получаю словарь статусов от службы...");
                 setOrderStatusFromService();
@@ -188,32 +201,33 @@ namespace KDSWPFClient
                     string s1;
                     foreach (KeyValuePair<string, object> pair in hostAppSettings)
                     {
-                        AppPropsHelper.SetAppGlobalValue(pair.Key, pair.Value);
+                        WpfHelper.SetAppGlobalValue(pair.Key, pair.Value);
                         if (sBuf.Length > 0) sBuf += "; ";
                         sBuf += string.Format("{0}: {1}", pair.Key, pair.Value);
                     }
 
                     // получить и преобразовать сложные типы из строк
                     //    TimeSpan
-                    s1 = (string)AppPropsHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
-                    if (!s1.IsNull()) AppPropsHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
+                    s1 = (string)WpfHelper.GetAppGlobalValue("TimeOfAutoCloseYesterdayOrders");
+                    if (!s1.IsNull()) WpfHelper.SetAppGlobalValue("TimeOfAutoCloseYesterdayOrders", TimeSpan.Parse(s1));
 
                     //    HashSet<int>
-                    s1 = (string)AppPropsHelper.GetAppGlobalValue("UnusedDepartments");
+                    s1 = (string)WpfHelper.GetAppGlobalValue("UnusedDepartments");
                     if (!s1.IsNull())
                     {
                         int[] iArr = s1.Split(',').Select(s => s.ToInt()).ToArray();
                         List<int> hsInt = new List<int>(iArr);
-                        AppPropsHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
+                        WpfHelper.SetAppGlobalValue("UnusedDepartments", hsInt);
                     }
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
 
+                this.IsGetServiceData = true;
                 retVal = true;
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
 
             return retVal;
@@ -256,34 +270,43 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
         }
         #endregion
 
-        public List<OrderModel> GetOrders()
+        public ServiceResponce GetOrders(ClientDataFilter clientFilter)
         {
-            if (_getClient.State == CommunicationState.Faulted)
-            {
-                AppLib.WriteLogTraceMessage(" - restart KDSServiceClient !!!");
-                _getClient = new KDSServiceClient();
-                _getClient.Open();
-            }
-
-            List<OrderModel> retVal = null;
+            ServiceResponce retVal = null;
             try
             {
-                retVal = _getClient.GetOrders(_machineName);
+                retVal = _getClient.GetOrders(_machineName, clientFilter);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _errMsg = getShortErrMsg(ex);
-                //MessageBox.Show(string.Format("Ошибка получения данных от WCF-службы: {0}", _errMsg), "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                AppLib.WriteLogErrorMessage(_errMsg);
             }
 
             return retVal;
         }
+
+        /// <summary>
+        /// Calculates the lenght in bytes of an object 
+        /// and returns the size 
+        /// </summary>
+        /// <param name="TestObject"></param>
+        /// <returns></returns>
+        private long GetObjectSize(object TestObject)
+        {
+            long retVal = 0;
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter bf = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                bf.Serialize(ms, TestObject);
+                retVal = ms.Length;
+            }
+            return retVal;
+        }
+
 
         #region get app dict item
         public OrderStatusViewModel GetOrderStatusModelById(int statusId)
@@ -323,7 +346,7 @@ namespace KDSWPFClient
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
             return retVal;
@@ -335,11 +358,11 @@ namespace KDSWPFClient
             try
             {
                 _getClient.SetExpectedTakeValue(_machineName, value);
-                AppPropsHelper.SetAppGlobalValue("ExpectedTakeValue", value);
+                WpfHelper.SetAppGlobalValue("ExpectedTakeValue", value);
             }
             catch (Exception ex)
             {
-                _errMsg = getShortErrMsg(ex);
+                _errMsg = ErrorHelper.GetShortErrMessage(ex);
                 AppLib.WriteLogErrorMessage(_errMsg);
             }
         }
@@ -347,31 +370,35 @@ namespace KDSWPFClient
         #endregion
 
         #region изменение статуса ЗАКАЗА
-        public void LockOrder(int orderId)
+        public bool LockOrder(int orderId)
         {
-            if (_setClient == null) return;
-            checkSvcState();
+            if (_setClient == null) return false;
+
+            bool retVal = false;
             try
             {
-                _setClient.LockOrder(_machineName, orderId);
+                checkSvcState();
+                retVal = _setClient.LockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
-                throw;
             }
+            return retVal;
         }
-        public void DelockOrder(int orderId)
+        public bool DelockOrder(int orderId)
         {
-            if (_setClient == null) return;
-            checkSvcState();
+            if (_setClient == null) return false;
+
+            bool retVal = false;
             try
             {
-                _setClient.DelockOrder(_machineName, orderId);
+                checkSvcState();
+                retVal = _setClient.DelockOrder(_machineName, orderId);
             }
             catch (Exception)
             {
-                throw;
             }
+            return retVal;
         }
 
         public void SetNewOrderStatus(int orderId, OrderStatusEnum newStatus)
@@ -425,27 +452,65 @@ namespace KDSWPFClient
             }
         }
 
-        public void SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
+        public bool SetNewDishStatus(int orderId, int dishId, OrderStatusEnum newStatus)
         {
-            if (_setClient == null) return;
+            if (_setClient == null) return false;
 
             AppLib.WriteLogClientAction("Установить статус БЛЮДА, состояние службы: {0}", _getClient.State);
-            checkSvcState();
-
+            bool retVal = false;
             try
             {
+                checkSvcState();
                 DateTime dtTmr = DateTime.Now;
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
-                _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
+                retVal = _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
 
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - FINISH - {3}", orderId, dishId, newStatus, (DateTime.Now - dtTmr).ToString());
+                retVal = true;
             }
             catch (Exception)
             {
                 throw;
             }
+
+            return retVal;
         }
+        #endregion
+
+        #region создание файлов-уведомлений
+        public bool CreateNoticeFileForOrder(int orderId)
+        {
+            if (_setClient == null) return false;
+
+            bool retVal = false;
+            try
+            {
+                checkSvcState();
+                retVal = _setClient.CreateNoticeFileForOrder(_machineName, orderId);
+            }
+            catch (Exception)
+            {
+            }
+            return retVal;
+        }
+
+        public bool CreateNoticeFileForDish(int orderId, int orderDishId)
+        {
+            if (_setClient == null) return false;
+
+            bool retVal = false;
+            try
+            {
+                checkSvcState();
+                retVal = _setClient.CreateNoticeFileForDish(_machineName, orderId, orderDishId);
+            }
+            catch (Exception)
+            {
+            }
+            return retVal;
+        }
+
         #endregion
 
         private void checkSvcState()
@@ -456,13 +521,6 @@ namespace KDSWPFClient
                 _setClient.Close();
                 _setClient = new KDSCommandServiceClient();
             }
-        }
-
-        private string getShortErrMsg(Exception ex)
-        {
-            string retVal = ex.Message;
-            if (ex.InnerException != null) retVal += " Inner exception: " + ex.InnerException.Message;
-            return retVal;
         }
 
         public void Dispose()

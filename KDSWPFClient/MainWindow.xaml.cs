@@ -2,6 +2,10 @@
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using KDSWPFClient.ViewModel;
+using KDSWPFClient.Model;
+using IntegraLib;
+using IntegraWPFLib;
+
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -10,10 +14,9 @@ using System.Diagnostics;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using KDSWPFClient.Model;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using IntegraLib;
+using System.Windows.Media;
 
 namespace KDSWPFClient
 {
@@ -29,34 +32,47 @@ namespace KDSWPFClient
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
+        private bool _isInit = true;
+        private string _clientName;
         private double _screenWidth, _screenHeight;
 
         private Timer _timer;
-        private short _canInvokeUpdateOrders;
+        private bool _mayGetData;
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
+        private double _autoBackTimersInterval;     // интервал для таймеров возврата
+        private bool _leafing;                      // признак процесса листания
 
         private AppDataProvider _dataProvider;
-        private bool _traceOrderDetails;
         private DishesFilter _dishesFilter = DishesFilter.Instance;
 
         // классы для циклического перебора клиентских условий отображения блюд
         private ListLooper<OrderGroupEnum> _orderGroupLooper;
         // набор фильтров состояний/вкладок (имя, кисти фона и текста, список состояний)
-        private ListLooper<KDSUserStatesSet> _orderStatesLooper;  
+        private ListLooper<KDSUserStatesSet> _orderStatesLooper;
+        // и соответствующие им вкладки
+        AppLeftTabControl _tabOrderGroup;
+        private bool _isMultipleStatusTabs;
+
+        // клиентский фильтр, передаваемый службе для получения ограниченного объема информации
+        ClientDataFilter _clientFilter;
+        // буфер для ответа службы
+        ServiceResponce _svcResp;
 
         // страницы заказов
         private OrdersPages _pages;
+        private OrderPageHelper _pageHelper;
+        private bool _viewPrevPageButton, _viewNextPageButton;
+        // флаг режима формирования панелей заказов на канве, если true - то с помощью _pageHelper, иначе - _pages
+        private bool _viewByPage = true;
 
-        // словарь (по Id) для хранения значений фильтрации блюд: Ид отделов, Ид статусов (для блюд - дочерних ингредиентов, для ингредиента - родительского блюда)
-        // т.е. зависимые и зависящие блюда/ингредиенты
-        private Dictionary<int, List<OrderFilterValue>> _dependentDishes;
-
-        private List<int> _preOrdersId;
+        // служебные коллекции
+        private List<OrderModel> _svcOrders;
         private List<OrderViewModel> _viewOrders;  // для отображения на экране
-
-        // временные коллекции для блюд и ингредиентов
-        KeyValuePair<int, OrderDishModel>[] _tmpDishes, _tmpIngrs;
+        // признак принудительной отрисовки с первого элемента коллекции заказов
+        private bool _forceFromFirstOrder = false;
+        // разбивать заказ в последней колонке при движении вперед (или по месту) 
+        private bool _keepSplitOrderOnLastColumnByForward = false;
 
         // временные списки для удаления неразрешенных блюд/заказов, т.к. от службы получаем ВСЕ блюда и ВСЕ заказы в нетерминальных состояниях
         private List<OrderModel> _delOrderIds;  // для удаления заказов
@@ -69,10 +85,22 @@ namespace KDSWPFClient
         private Timer _adminTimer;
         private DateTime _adminDate;
 
-        private bool _mayGetData;
-
         // звуки
-        System.Media.SoundPlayer _wavPlayer;
+        private System.Media.SoundPlayer _wavPlayer;
+        private bool _isNeedSound = true;
+
+        // делегаты на методы, вызываемые из таймеров
+        Action<LeafDirectionEnum> _getOrdersFromServiceDelegate;
+        Action _setFirstPageDelegate, _setOrderGroupByTimeDelegate;
+
+        public bool ClickPageButton { get; set; }
+
+        private AppLeftTabControl _tabDishGroup;
+        // максимальное количество архивных файлов
+        private int _maxLogFilesCount = 0;
+        // дата последней проверки максимального количества архивных файлов
+        private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
+
 
         // CONSTRUCTOR
         public MainWindow(string[] args)
@@ -81,62 +109,53 @@ namespace KDSWPFClient
 
             this.Loaded += MainWindow_Loaded;
 
-            _screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
-            _screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
+            _clientName = Environment.MachineName + "." + App.ClientName;
+            _screenWidth = (double)WpfHelper.GetAppGlobalValue("screenWidth");
+            _screenHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight");
 
             this.Top = 0; this.Left = 0;
             this.Width = _screenWidth; this.Height = _screenHeight;
-
+            
             // админ-кнопка для открытия окна конфигурации
             btnCFG.Visibility = (CfgFileHelper.GetAppSetting("IsShowCFGButton").ToBool() || args.Contains("-adm")) ? Visibility.Visible : Visibility.Hidden;
 
-            _traceOrderDetails = (bool)AppPropsHelper.GetAppGlobalValue("TraceOrdersDetails");
-
-            _dataProvider = (AppDataProvider)AppPropsHelper.GetAppGlobalValue("AppDataProvider");
+            _dataProvider = (AppDataProvider)WpfHelper.GetAppGlobalValue("AppDataProvider");
             setWindowsTitle();
 
-            double timerInterval = getOrderGroupTimerInterval(); // интервал таймера взять из config-файла
             // таймер автоматического перехода группировки заказов из "По номерам" в "По времени"
-            _timerBackToOrderGroupByTime = new Timer() { AutoReset = false, Interval = timerInterval };
-            Action _timerBackToOrderGroupByTimeDelegate = new Action(setOrderGroupTab);
-            _timerBackToOrderGroupByTime.Elapsed += (object sender, ElapsedEventArgs e) => 
-            {
-                if (_orderGroupLooper.Current != OrderGroupEnum.ByTime) _orderGroupLooper.Current = OrderGroupEnum.ByTime;
-                this.Dispatcher.Invoke(_timerBackToOrderGroupByTimeDelegate);
-            };
-
+            _timerBackToOrderGroupByTime = new Timer() { AutoReset = false };
+            _setOrderGroupByTimeDelegate = new Action(setOrdersGroupByTime);
+            _timerBackToOrderGroupByTime.Elapsed += 
+                (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_setOrderGroupByTimeDelegate);
             // таймер возврата на первую страницу
-            _timerBackToFirstPage = new Timer() { AutoReset = false, Interval = timerInterval };
-            Action _timerBackToFirstPageDelegate = new Action(() =>
-            {
-                _pages.SetFirstPage();
-                setCurrentPage();
-            });
-            _timerBackToFirstPage.Elapsed += (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_timerBackToFirstPageDelegate);
+            _timerBackToFirstPage = new Timer() { AutoReset = false };
+            _setFirstPageDelegate = new Action(setFirstPage);
+            _timerBackToFirstPage.Elapsed += 
+                (object sender, ElapsedEventArgs e) => this.Dispatcher.Invoke(_setFirstPageDelegate);
+            setBackTimersInterval();
 
-            // значения для фильтрации блюд
-            _dependentDishes = new Dictionary<int, List<OrderFilterValue>>();
+            // основной таймер опроса сервиса
+            _getOrdersFromServiceDelegate = new Action<LeafDirectionEnum>(getOrdersFromService);
+            _timer = new Timer(1000) { AutoReset = false };
+            _timer.Elapsed += _timer_Elapsed;
+            _timer.Start();
+
+            _clientFilter = new ClientDataFilter();
+            _clientFilter.DepIDsList = getClientDepsList();
 
             // класс для циклического перебора группировки заказов
             // в коде используется ТЕКУЩИЙ объект, но на вкладках отображается СЛЕДУЮЩИЙ !!!
-            _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByTime, OrderGroupEnum.ByOrderNumber });
-            setOrderGroupTab();
-            setOrderStatusFilterTab();
+            _orderGroupLooper = new ListLooper<OrderGroupEnum>(new[] { OrderGroupEnum.ByCreateTime, OrderGroupEnum.ByOrderNumber });
 
             // отступы панели заказов (ViewBox) внутри родительской панели
-            double verMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
+            double verMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersPanelTopBotMargin"));
             this.vbxOrders.Margin = new Thickness(0, verMargin, 0, verMargin);
+            this.bufferOrderPanels.Margin = new Thickness(0, verMargin, 0, verMargin);
 
-            _preOrdersId = new List<int>();
             _viewOrders = new List<OrderViewModel>();
 
-            // основной таймер опроса сервиса
-            _timer = new Timer(100) { AutoReset = false };
-            _timer.Elapsed += _timer_Elapsed;
-            _timer.Start(); _canInvokeUpdateOrders = -1;
-
             // кнопки переключения страниц
-            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
+            btnSetPagePrevious.Height = btnSetPagePrevious.Width = btnSetPageNext.Width = btnSetPageNext.Height = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersPanelScrollButtonSize"));
 
             // временные коллекции
             _delOrderIds = new List<OrderModel>();
@@ -149,12 +168,14 @@ namespace KDSWPFClient
 
             // звук предупреждения о появлении нового заказа
             _wavPlayer = new System.Media.SoundPlayer();
-            var wavFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
+            var wavFile = WpfHelper.GetAppGlobalValue("NewOrderAudioAttention");
             if (wavFile != null)
             {
                 _wavPlayer.SoundLocation = AppEnvironment.GetAppDirectory("Audio") + wavFile;
                 _wavPlayer.LoadAsync();
             }
+
+            _maxLogFilesCount = (int)WpfHelper.GetAppGlobalValue("MaxLogFiles", 0);
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -163,47 +184,69 @@ namespace KDSWPFClient
             var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
+            // ширина адм.панели
+            double admPanelPercentWidth = Convert.ToDouble(WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth"));
+            ColumnDefinition admColDef = grdMain.ColumnDefinitions[0];
+            if (admColDef.Width.Value != admPanelPercentWidth)
+            {
+                admColDef.Width = new GridLength(admPanelPercentWidth, GridUnitType.Star);
+                grdUserConfig.UpdateLayout();
+            }
+
             // размер канвы для панелей заказов
             recalcOrderPanelsLayot();
             _pages = new OrdersPages(vbxOrders);
-
-            // настройки кнопок пользов.группировки и фильтрации
-            double hRow = grdUserConfig.RowDefinitions[1].ActualHeight;
-            double wRow = grdUserConfig.ActualWidth;
-            double rad = 0.2 * wRow;
-            CornerRadius crnRad = new CornerRadius(rad, 0d, 0d, rad);
-            Thickness leftBtnMargin = new Thickness(rad, 0d, 0d, 0d);
-            Thickness leftTbMargin = new Thickness(0.1d * wRow, 0d, -hRow, -wRow);
-
-            btnOrderGroup.Margin = leftBtnMargin;
-            btnOrderGroup.CornerRadius = crnRad;
-            tbOrderGroup.Width = hRow; tbOrderGroup.Height = wRow;
-            tbOrderGroup.FontSize = 0.35d * wRow;
-            tbOrderGroup.Margin = leftTbMargin;
-
-            btnDishStatusFilter.Margin = leftBtnMargin;
-            btnDishStatusFilter.CornerRadius = crnRad;
-            tbDishStatusFilter.Width = hRow; tbDishStatusFilter.Height = wRow;
-            tbDishStatusFilter.FontSize = 0.35d * wRow;
-            tbDishStatusFilter.Margin = leftTbMargin;
-
-            SplashScreen.Splasher.CloseSplash();
-        }
-
-        private string getDepsFilter()
-        {
-            string retVal = "";
-            DepartmentViewModel curItem;
-            foreach (KeyValuePair<int, DepartmentViewModel> pair in _dataProvider.Departments)
+            if (_viewByPage)
             {
-                curItem = pair.Value;
-                if (curItem.IsViewOnKDS)
-                {
-                    if (retVal.IsNull() == false) retVal += ", ";
-                    retVal += string.Format("{0} (id {1})", curItem.Name, curItem.Id);
-                }
+                // постраничная отрисовка
+                _pageHelper = new OrderPageHelper(bufferOrderPanels);
+                _pageHelper.ResetOrderPanelSize();
+                _pageHelper.ResetMaxDishesCountOnPage();
             }
-            return retVal;
+
+            double dTabHeight = 0;  // высота строки грида
+            setPropsLegendButton();
+
+            // кнопка переключения группировки заказов
+            dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 1);
+            _tabOrderGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, "По времени", 0d);
+            _tabOrderGroup.IsEnabled = true;
+            _tabOrderGroup.PreviewMouseDown += tbOrderGroup_MouseDown;
+            _tabOrderGroup.SetValue(Grid.RowProperty, 1);
+            grdUserConfig.Children.Add(_tabOrderGroup);
+            setOrderGroupTab(false);
+            _tabOrderGroup.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, dTabHeight, true);
+//            _tabOrderGroup.RenderMargin();
+
+            // контрол группировки блюд
+            _isMultipleStatusTabs = (bool)WpfHelper.GetAppGlobalValue("IsMultipleStatusTabs");
+            bool isVisibleDishGroupControl = (bool)WpfHelper.GetAppGlobalValue("IsDishGroupAndSumQuantity", false);
+            //isVisibleDishGroupControl  = Environment.MachineName.Equals("prg01", StringComparison.OrdinalIgnoreCase);
+            dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 5);
+            _tabDishGroup = new AppLeftTabControl(grdUserConfig.ActualWidth, dTabHeight, null, 0d);
+            _tabDishGroup.IsEnabled = true;
+            _tabDishGroup.PreviewMouseDown += _tabDishGroup_PreviewMouseDown;
+            _tabDishGroup.SetValue(Grid.RowProperty, 5);
+            grdUserConfig.Children.Add(_tabDishGroup);
+            _tabDishGroup.Tag = "ungroup";  // текущий режим группировки блюд
+            setDishGroupTabProperties();
+            if (isVisibleDishGroupControl)
+            {
+                _tabDishGroup.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                _tabDishGroup.Visibility = Visibility.Hidden;
+                if (_isMultipleStatusTabs) pnlLeftTabs.SetValue(Grid.RowSpanProperty, 3);
+            }
+            _tabDishGroup.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, dTabHeight, true);
+            //_tabDishGroup.RenderMargin();
+
+            // вкладки статусов
+            setStatusTabs(_isMultipleStatusTabs);
+
+            SplashScreenLib.Splasher.CloseSplash();
+            _isInit = false;
         }
 
 
@@ -213,274 +256,275 @@ namespace KDSWPFClient
             {
                 _timer.Stop(); _timer.Dispose();
             }
-            AppLib.CloseChildWindows();
+            WpfHelper.CloseChildWindows();
             base.OnClosing(e);
         }
 
+        private void setPropsLegendButton()
+        {
+            double dTabHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, 0);
+            // вертикальное размещение текста
+            if (grdUserConfig.ActualWidth <= dTabHeight)
+            {
+                tbColorsLegend.FontSize = grdUserConfig.ActualWidth / 3d;
+                tbColorsLegend.UpdateLayout();
+                if (1.4 * tbColorsLegend.ActualWidth > 0.9*dTabHeight)
+                {
+                    tbColorsLegend.FontSize = 0.6 * tbColorsLegend.FontSize;
+                    tbColorsLegend.UpdateLayout();
+                }
+                tbColorsLegend.RenderTransformOrigin = new Point(0.5, 0.5);
+                tbColorsLegend.RenderTransform = new RotateTransform(-90);
+                double d2 = (tbColorsLegend.ActualWidth - grdUserConfig.ActualWidth) / 2d;
+                if (d2 < 0d) d2 = 0d;
+                tbColorsLegend.Margin = new Thickness(-d2, 0, -d2, 0);
+                btnColorsLegend.Height = 1.4 * tbColorsLegend.ActualWidth;
+            }
+            else
+            {
+                tbColorsLegend.FontSize = dTabHeight / 3d;
+                tbColorsLegend.UpdateLayout();
+                if (1.4 * tbColorsLegend.ActualWidth > 0.9 * grdUserConfig.ActualWidth)
+                {
+                    tbColorsLegend.FontSize = 0.6 * tbColorsLegend.FontSize;
+                    tbColorsLegend.UpdateLayout();
+                }
+                tbColorsLegend.RenderTransform = null;
+                btnColorsLegend.Height = 2.0 * tbColorsLegend.ActualHeight;
+            }
+        }
+
+
         // основной таймер отображения панелей заказов
-        // запускается каждые 100 мсек
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             DateTime dt = DateTime.Now;
-            short seconds = (short)dt.Second;  // от 0 до 59
-            if ((dt.Millisecond <= 200) && (_canInvokeUpdateOrders != seconds))
+            // проверка количества архивных файлов
+            if ((_maxLogFilesCount > 0) 
+                && ((dt.Minute == 1) && (dt.Second <= 10) && ((dt - _lastCheckDateMaxLogFiles).TotalSeconds > 10)
+                    || (_lastCheckDateMaxLogFiles.Equals(DateTime.MinValue)))
+                )
             {
-                _timer.Stop();
-                _canInvokeUpdateOrders = seconds;
-                _mayGetData = false;
-                try
-                {
-                    // потеря связи со службой
-                    if (_dataProvider.EnableGetChannel == false)
-                    {
-                        AppLib.WriteLogTraceMessage("потеря связи со службой получения данных, пересоздаю get-канал...");
-                        _mayGetData = _dataProvider.CreateGetChannel();
-                    }
-                    else
-                        _mayGetData = true;
-                }
-                catch (Exception ex)
-                {
-                    AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", AppLib.GetShortErrMessage(ex));
-                }
-
-                this.Dispatcher.Invoke(new Action(updateOrders));
+                AppLib.WriteLogTraceMessage("Удаление архивных файлов журнала (max {0})...", _maxLogFilesCount);
+                List<string> delFileNames = AppEnvironment.CheckLogFilesCount(_maxLogFilesCount);
+                if ((delFileNames == null) || (delFileNames.Count() == 0))
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: 0");
+                else
+                    AppLib.WriteLogTraceMessage(" - удалено файлов: {0} ({1})", delFileNames.Count, string.Join("; ", delFileNames));
+                _lastCheckDateMaxLogFiles = DateTime.Now;
             }
 
-            _timer.Start();  // т.к. AutoReset = false !!!
-        }  // method
+            //if (dt.Millisecond <= 200)
+            //{
+            // обновление по месту
+            this.Dispatcher.Invoke(_getOrdersFromServiceDelegate, LeafDirectionEnum.NoLeaf);
+            //getOrdersFromService(LeafDirectionEnum.NoLeaf);
+            //}
+        }
 
 
-        // 
-        // *********  ОСНОВНОЙ МЕТОД ПОЛУЧЕНИЯ ЗАКАЗОВ И ИХ ФИЛЬТРАЦИИ И ГРУППИРОВКИ НА КДСe  ************
-        //
-        // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
-        // с учетом фильтрации блюд (состояние и отдел)
-        private void updateOrders()
+        // получение данных от службы, учитывая условия, задаваемые конкретным клиентом
+        private void getOrdersFromService(LeafDirectionEnum leafDirection)
         {
-            DateTime dtTmr1 = DateTime.Now;
-            AppLib.WriteLogOrderDetails("get orders from SVC - START");
+            if (_timer.Enabled) _timer.Stop();
+
+            _mayGetData = false;
+            try
+            {
+                // потеря связи со службой
+                if (_dataProvider.EnableGetChannel == false)
+                {
+                    AppLib.WriteLogTraceMessage("потеря связи со службой получения данных: пересоздаю get-канал...");
+                    _mayGetData = _dataProvider.CreateGetChannel();
+                }
+                else if (_dataProvider.IsGetServiceData == false)
+                {
+                    AppLib.WriteLogTraceMessage("от службы не получены справочные данные: повторный запрос к службе...");
+                    _mayGetData = _dataProvider.SetDictDataFromService();
+                }
+                else
+                    _mayGetData = true;
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage("** Ошибка обновления заказов: {0}", ErrorHelper.GetShortErrMessage(ex));
+            }
 
             if (_mayGetData)
             {
                 if (tblChannelErrorMessage.Visibility == Visibility.Visible)
                     tblChannelErrorMessage.Visibility = Visibility.Hidden;
-            }
+
+                // запросить у службы отделы
+                if ((_clientFilter.DepIDsList == null) || (_clientFilter.DepIDsList.Count == 0))
+                {
+                    AppLib.WriteLogInfoMessage("У клиента нет отображаемых цехов!");
+                    if (_dataProvider.Departments.Count == 0)
+                    {
+                        AppLib.WriteLogInfoMessage(" - от службы не получен список цехов: повторный запрос к службе...");
+                        _dataProvider.SetDictDataFromService();
+                    }
+                    _clientFilter.DepIDsList = getClientDepsList();
+                }
+
+                // запрос данных от службы
+                // в службу передаются: статусы и отделы, отображаемые на клиенте (фильтр данных); способ группировки заказов;
+                // информация для ограничения объема возвращаемых данных: конечные Id заказа и блюда, направление листания (leaf) и приблизительное количество элементов.
+                _clientFilter.LeafDirection = leafDirection;
+                if (_clientFilter.ApproxMaxDishesCountOnPage != OrderPageHelper.MaxDishesCountOnPage)
+                    _clientFilter.ApproxMaxDishesCountOnPage = OrderPageHelper.MaxDishesCountOnPage;
+
+                if (_forceFromFirstOrder)
+                {
+                    _clientFilter.EndpointOrderID = 0;
+                    _clientFilter.EndpointOrderItemID = 0;
+                }
+                else
+                {
+                    bool fromFirstPanel = ((leafDirection == LeafDirectionEnum.NoLeaf)
+                        || (leafDirection == LeafDirectionEnum.Backward));
+                    int orderStartId, dishStartId;
+                    getModelIdFromViewContainer(fromFirstPanel, out orderStartId, out dishStartId);
+                    _clientFilter.EndpointOrderID = orderStartId;
+                    _clientFilter.EndpointOrderItemID = dishStartId;
+                }
+                AppLib.WriteLogOrderDetails("svc.GetOrders('{0}', '{1}') - START", _clientName, clientDataFilterToString(_clientFilter));
+
+                try
+                {
+                    _svcResp = _dataProvider.GetOrders(_clientFilter);
+
+                    if (_svcResp == null)
+                    {
+                        AppLib.WriteLogErrorMessage("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
+                        showErrorScreen();
+                        _timer.Start();
+                        return;
+                    }
+
+                    // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
+                    // уменьшить интервал таймера до 100 мсек
+                    if ((_svcResp.OrdersList.Count == 0) && (!_svcResp.ServiceErrorMessage.IsNull()))
+                    {
+                        string sErr = " - от службы получено 0 заказов: ";
+                        // служба еще читает данные
+                        if (_svcResp.ServiceErrorMessage.StartsWith("KDS service is reading data"))
+                        {
+                            if (_timer.Interval != 90)
+                            {
+                                _timer.Interval = 90;
+                                AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
+                            }
+                            AppLib.WriteLogOrderDetails(sErr + "служба читает данные из БД...");
+                        }
+                        // сообщение от службы об ошибке чтения данных
+                        else
+                        {
+                            AppLib.WriteLogErrorMessage(sErr + "ошибка службы: {0}", _svcResp.ServiceErrorMessage);
+                        }
+                    }
+                    else
+                    {
+                        _svcOrders = _svcResp.OrdersList;
+                        AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
+                        // вернуться на стандартный интервал в 1 сек
+                        if (_timer.Interval != 1000)
+                        {
+                            _timer.Interval = 1000;
+                            AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
+                        }
+
+                        // обновить данные во внутренней коллекции и обновить экран/панели
+                        updateOrders(leafDirection);
+
+                        // при листании назад:
+                        if (leafDirection == LeafDirectionEnum.Backward)
+                        {
+                            // взять из первого контейнера Ид заказа/блюда
+                            int orderStartId, dishStartId;
+                            getModelIdFromViewContainer(true, out orderStartId, out dishStartId);
+                            _clientFilter.EndpointOrderID = orderStartId;
+                            _clientFilter.EndpointOrderItemID = dishStartId;
+                            // эмулировать чтение данных по таймеру
+                            leafDirection = LeafDirectionEnum.NoLeaf;
+                            _clientFilter.LeafDirection = leafDirection;
+                            _svcResp = _dataProvider.GetOrders(_clientFilter);
+                            while (_svcResp == null)
+                            {
+                                System.Threading.Thread.Sleep(50);
+                                _svcResp = _dataProvider.GetOrders(_clientFilter);
+                            }
+                            _svcOrders = _svcResp.OrdersList;
+                            // обновить внутреннюю коллекцию
+                            updateOrders(leafDirection);
+                        }
+
+                        // поднять флаг проигрывания мелодии при появлении новых заказов
+                        if (!_isNeedSound)
+                        {
+                            _isNeedSound = true;
+                            AppLib.WriteLogTraceMessage("-- _isNeedSound = {0}", _isNeedSound.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.Message); // ErrorHelper.GetShortErrMessage(ex)
+                    _dataProvider.IsGetServiceData = false;
+                }
+
+            }  // if (_mayGetData)
 
             // очистить канву от заказов и отобразить сообщение об ошибке связи
             else
             {
-                if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
-                _pages.ClearPages();
-                if (_viewOrders.Count > 0) _viewOrders.Clear();
-                AppLib.WriteLogErrorMessage("Ошибка get-канала получения данных: " + _dataProvider.ErrorMessage??"");
-                return;
+                showErrorScreen();
             }
 
-            // получить заказы от сервиса
-            List<OrderModel> svcOrders = _dataProvider.GetOrders();
-            if (_traceOrderDetails)
-            {
-                if (svcOrders == null)
-                    AppLib.WriteLogOrderDetails(" - от службы получено 0 заказов");
-                else
-                {
-                    AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
-                    AppLib.WriteLogOrderDetails(" - отображаемые отделы: {0}", getDepsFilter());
-                }
-            }
+            _timer.Start();
+        }
 
-            if (svcOrders == null) return;
+        private void showErrorScreen()
+        {
+            if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
+            _pages.ClearPages();
+            if (_viewOrders.Count > 0) _viewOrders.Clear();
+            AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
+        }
 
-            //обновить словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - обновляю служебный словарь _dependDeps...");
-            try
-            {
-                updateDependDepsDict(svcOrders);
-                if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   словарь _dependDeps обновлен успешно");
-            }
-            catch (Exception ex1)
-            {
-                AppLib.WriteLogErrorMessage("   Error: {0}", AppLib.GetShortErrMessage(ex1));
-            }
+        private string clientDataFilterToString(ClientDataFilter source)
+        {
+            string s1 = (source.StatusesList == null) ? "" : string.Join(",", source.StatusesList);
+            string s2 = (source.DepIDsList == null) ? "" : string.Join(",", source.DepIDsList);
 
-            // ФИЛЬТРАЦИЯ блюд в svcOrders
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - фильтрация блюд (цеха и статусы данного КДС)...");
-            try
-            {
-                OrderDishModel curDish;
+            string retVal = string.Format("StatusesList={0}; DepIDsList={1}; GroupBy={2}; EndpointOrderID={3}; EndpointOrderItemID={4}; LeafDirection={5}", s1, s2, source.GroupBy.ToString(), source.EndpointOrderID, source.EndpointOrderItemID, source.LeafDirection.ToString());
 
-                _delOrderIds.Clear();
-                foreach (OrderModel orderModel in svcOrders)
-                {
-                    _delDishIds.Clear();
-                    // пройтись по блюдам
-                    _tmpDishes = orderModel.Dishes.Where(d => d.Value.ParentUid.IsNull()).ToArray();
-                    _dishUIDs.Clear(); _dishUIDs.AddRange(_tmpDishes.Select(d => d.Value.Uid));
-                    foreach (KeyValuePair<int, OrderDishModel> item in _tmpDishes)
-                    {
-                        curDish = item.Value;
-                        bool checkDish = _dishesFilter.Checked(curDish);
-
-                        // есть ли доступные ингредиенты
-                        bool checkIngrs = false;
-                        _tmpIngrs = orderModel.Dishes.Where(d => !d.Value.ParentUid.IsNull() && (d.Value.ParentUid == curDish.Uid)).ToArray();
-                        foreach (var ingr in _tmpIngrs)
-                        {
-                            if (_dishesFilter.Checked(ingr.Value))
-                            {
-                                checkIngrs = true; break;
-                            }
-                        }
-
-                        // если блюдо прошло проверку, то оставляем вместе со ВСЕМИ ингредиентами
-                        if (checkDish) { }
-                        // если блюдо не прошло проверку...
-                        else
-                        {
-                            // но есть прошедшие проверку ингредиенты, то удалить не прошедшие проверку ингредиенты
-                            if (checkIngrs)
-                            {
-                                foreach (var ingr in _tmpIngrs)
-                                {
-                                    if (!_dishesFilter.Checked(ingr.Value)) _delDishIds.Add(ingr.Key);
-                                }
-                            }
-                            // иначе удалить блюдо вместе с его ингредиентами
-                            else
-                            {
-                                _delDishIds.Add(item.Key);
-                                foreach (var ingr in _tmpIngrs) _delDishIds.Add(ingr.Key);
-                            }
-                        }
-                    }
-
-                    // поиск "висячих" ингредиентов, т.е. блюда нет (по статусу от службы), а ингредиенты - есть
-                    _tmpDishes = orderModel.Dishes.Where(d => (!d.Value.ParentUid.IsNull() && (!_dishUIDs.Contains(d.Value.ParentUid)))).ToArray();
-                    if (_tmpDishes.Length > 0)
-                    {
-                        foreach (var item in _tmpDishes) orderModel.Dishes.Remove(item.Key);
-                    }
-
-                    // удалить неразрешенные блюда
-                    _delDishIds.ForEach(key => orderModel.Dishes.Remove(key));
-
-                    if (orderModel.Dishes.Count == 0) _delOrderIds.Add(orderModel);
-                }
-                //   и заказы, у которых нет разрешенных блюд
-                _delOrderIds.ForEach(o => svcOrders.Remove(o));
-            }
-            catch (Exception ex2)
-            {
-                AppLib.WriteLogErrorMessage("Ошибка удаления из svcOrders блюд, не входящие в условия фильтрации: {0}", ex2.ToString());
-            }
-
-            if (_traceOrderDetails)
-            {
-                AppLib.WriteLogOrderDetails("   после фильтрации заказов {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
-            }
-
-            // условие проигрывания мелодии при появлении нового заказа
-            // появились ли в svcOrders (УЖЕ ОТФИЛЬТРОВАННОМ ПО ОТДЕЛАМ И СТАТУСАМ) заказы, 
-            // которых нет в preOrdersId, т.е. новые? (поиск по Id)
-            int[] curOrdersId = svcOrders.Select(o => o.Id).Distinct().ToArray();  // собрать уникальные Id
-            if ((_preOrdersId.Count > 0) || (_preOrdersId.Count==0 && svcOrders.Count != 0))
-            {
-                foreach (int curId in curOrdersId)
-                    if (!_preOrdersId.Contains(curId)) {
-                        _wavPlayer.Play() ; break;
-                    }
-                _preOrdersId.Clear();
-            }
-            _preOrdersId.AddRange(curOrdersId);
+            return retVal;
+        }
 
 
-            // *** СОРТИРОВКА ЗАКАЗОВ  ***
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails(" - режим группировки заказов: {0}", _orderGroupLooper.Current.ToString().ToUpper());
-            // группировка и сортировка заказов по номерам
-            if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)
-            {
-                svcOrders = svcOrders.OrderBy(o => o.Number).ToList();
-
-                int cntOrders = svcOrders.Count;
-                OrderModel curOrder, sameNumOrder;
-                for (int i = 0; i < cntOrders; i++)
-                {
-                    curOrder = svcOrders[i];
-                    if (curOrder.Dishes.Count > 0)
-                    {
-                        sameNumOrder = null;
-                        // найти еще заказы с таким же номером
-                        for (int j = i+1; j < cntOrders; j++)
-                        {
-                            if (curOrder.Number == svcOrders[j].Number)
-                            {
-                                sameNumOrder = svcOrders[j];
-                                foreach (OrderDishModel item in sameNumOrder.Dishes.Values) curOrder.Dishes.Add(item.Id, item);
-                                sameNumOrder.Dishes.Clear();
-                                i++;
-                            }
-                        }
-                    }
-                }
-                // пройтись еще раз по заказам и удалить пустые
-                svcOrders.RemoveAll(o => o.Dishes.Count==0);
-            }
-
-            // группировка по времени БЛЮДА и по номеру заказа
-            else
-            {
-                List<DateNumberOrder> sortOrders = new List<DateNumberOrder>();
-                OrderModel tmpOrder;
-                foreach (OrderModel om in svcOrders)
-                {
-                    // список уникальных дат
-                    List<DateTime> dtList = om.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
-                    // копия блюд по датам
-                    foreach (DateTime dt in dtList)
-                    {
-                        tmpOrder = getCopyOrderModel(om, dt);
-                        sortOrders.Add(new DateNumberOrder() {DishDate = dt, Number = om.Number, Order = tmpOrder } );
-                    }
-                }
-                // сортировка по CreateDate блюд и номеру заказа
-                sortOrders = (from o in sortOrders
-                              orderby o.DishDate ascending, o.Number ascending
-                              select o).ToList();
-
-                svcOrders.Clear();
-                svcOrders = sortOrders.Select(s => s.Order).ToList();
-            }
-
-            if (_traceOrderDetails) AppLib.WriteLogTraceMessage("   заказов после группировки: {0}, {1}", svcOrders.Count, _logOrderInfo(svcOrders));
-
-            // после реорганизации списка блюд
-            // группировка по подачам если надо
-            bool isFilingGroup = true;  
-            Dictionary<int,OrderDishModel> sortedDishes;
-            // сортировка словарей блюд
-            foreach (OrderModel orderModel in svcOrders)
-            {
-                if (isFilingGroup)   // сортировка по подачам и Ид
-                {
-                    sortedDishes = (from dish in orderModel.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
-                    orderModel.Dishes = sortedDishes;
-                }
-            }
+        // обновление данных во внутренней коллекции и на экране
+        private void updateOrders(LeafDirectionEnum leafDirection)
+        {
+            DateTime dtTmr1 = DateTime.Now;
+            string repaintReason=null;
 
             // *** ОБНОВИТЬ _viewOrdes (для отображения на экране) ДАННЫМИ ИЗ svcOrders (получено из БД)
+            // обновить внутреннюю коллекцию заказов данными, полученными от сервиса
             // в случае с группировкой по времени и разбивкой заказов на несколько панелей AppLib.JoinSortedLists() работает НЕПРАВИЛЬНО!!!
             //bool isViewRepaint = AppLib.JoinSortedLists<OrderViewModel, OrderModel>(_viewOrders, svcOrders);
             // поэтому сделано уникальной процедурой
-            if (_traceOrderDetails) AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
+            AppLib.WriteLogOrderDetails("   обновление служебной коллекции заказов (для отображения на экране)...");
             bool isViewRepaint2 = false;
             try
             {
-                isViewRepaint2 = updateViewOrdersList(svcOrders);
+                isViewRepaint2 = updateViewOrdersList();
+                if (isViewRepaint2) repaintReason = "update Orders from KDS service";
             }
             catch (Exception ex)
             {
                 AppLib.WriteLogErrorMessage("Ошибка обновления служебной коллекции заказов для отображения на экране: {0}", ex.ToString());
+                return;
             }
 
             // 2017-07-24 по заявке Ридченко
@@ -490,10 +534,12 @@ namespace KDSWPFClient
             foreach (OrderViewModel item in _viewOrders)
             {
                 allDishesStatus = AppLib.GetStatusAllDishesOwnDeps(item.Dishes);
-                if (item.StatusAllowedDishes != allDishesStatus)
+                if ((item.StatusAllowedDishes != allDishesStatus) 
+                    && (allDishesStatus != StatusEnum.WaitingCook))
                 {
                     item.StatusAllowedDishes = allDishesStatus;
                     isViewRepaint2 = true;
+                    AppLib.WriteLogTraceMessage("статус заказа (id {0}) для всех разрешенных блюд ({1}) изменен на статус всех блюд {2}", item.Id, item.StatusAllowedDishes.ToString(), allDishesStatus.ToString());
                 }
 
                 if ((item.StatusAllowedDishes != StatusEnum.None) 
@@ -501,29 +547,74 @@ namespace KDSWPFClient
                 {
                     _delOrderViewIds.Add(item);
                     isViewRepaint2 = true;
+                    if ((repaintReason != null) && !repaintReason.Equals("delete Orders with not allowed statuses")) repaintReason = "delete Orders with not allowed statuses";
                 }
             }
             _delOrderViewIds.ForEach(o => _viewOrders.Remove(o));
 
+            // условия перерисовки
             // перерисовать, если на экране было пусто, а во _viewOrders появились заказы
-            if (!isViewRepaint2) isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
+            if (!isViewRepaint2 && !_viewByPage)
+                isViewRepaint2 = ((_pages.CurrentPage.Children.Count == 0) && (_viewOrders.Count != 0));
 
-            if (_traceOrderDetails)
+            // от службы получены новые заказы
+            if (_svcResp.NewOrderIds.IsNull() == false)
             {
-                AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+                List<OrderViewModel> newOrdersList = new List<OrderViewModel>();
+                int[] newOrderIdsArray = _svcResp.NewOrderIds.Split(new char[] { ';' }).Select(sId => sId.ToInt()).ToArray();
+                foreach (int item in newOrderIdsArray)
+                {
+                    newOrdersList.AddRange(_viewOrders.Where(ord => ord.Id == item));
+                }
+                AppLib.WriteLogTraceMessage(" - новые заказы: {0}", _logOrderInfo(newOrdersList));
+                newOrdersList.Clear(); newOrdersList = null;
+
+                // не проигрывать мелодию, если только изменились условия выборки/группировки заказов
+                // - в элементах управления: кнопки листания страниц, группировка заказов, группировка блюд, фильтр статусов, 
+                // - или в окне настроек: отображаемые цеха, отображаемые статусы, 
+                AppLib.WriteLogTraceMessage("** sound play condition: _isNeedSound({0}) || _isInit({1})",_isNeedSound.ToString(), _isInit.ToString());
+                if (_isNeedSound || _isInit)
+                {
+                    Debug.Print("ta-da-a-a");
+                    _wavPlayer.Play();
+                    // принудительно перерисовать с первого полученного заказа
+                    _forceFromFirstOrder = true;
+                }
+
+                // перерисовать панели заказов на экране
+                if (!isViewRepaint2) isViewRepaint2 = true;
             }
 
-            // перерисовать полностью
-            if (isViewRepaint2 == true) repaintOrders("update Orders from KDS service");
+            if (!isViewRepaint2 && (leafDirection != LeafDirectionEnum.NoLeaf))
+            {
+                isViewRepaint2 = true; repaintReason = string.Format("move to {0} page", (leafDirection== LeafDirectionEnum.Backward ? "PREV" : "NEXT"));
+            }
 
-            AppLib.WriteLogOrderDetails("get orders from SVC - FINISH - " + (DateTime.Now - dtTmr1).ToString());
+            //if (_svcResp.IsExistsNewOrder &&
+            //    (((btnSetPageNext.Visibility == Visibility.Visible).Equals(_svcResp.isExistsNextOrders) == false)
+            //    || ((btnSetPagePrevious.Visibility == Visibility.Visible).Equals(_svcResp.isExistsPrevOrders) == false))
+            //    ) isViewRepaint2 = true;
+
+            AppLib.WriteLogOrderDetails("   для отображения на экране заказов: {0}; {1} - {2}", _viewOrders.Count, _logOrderInfo(_viewOrders), (isViewRepaint2 ? "ПЕРЕРИСОВКА всех заказов" : "только счетчики"));
+
+            // перерисовать полностью
+            if (isViewRepaint2)
+            {
+                if (repaintReason.IsNull()) repaintReason = "update Orders from KDS service";
+                repaintOrders(repaintReason, leafDirection);
+            }
+
+            AppLib.WriteLogOrderDetails("svc.GetOrders(...) - FINISH - " + (DateTime.Now - dtTmr1).ToString());
 
         }  // method
 
         private string _logOrderInfo(List<OrderModel> orders)
         {
-            string retVal = "id/Num/dishes: ";
-            if (orders.Count > 0) retVal += string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
+            string retVal = null;
+            if (orders.Count > 100)
+                retVal = "> 100 !!";
+            else
+                retVal = "id/Num/dishes: " + string.Join(", ", orders.Select(o => string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number, o.Dishes.Count.ToString())));
 
             return retVal;
         }
@@ -536,54 +627,20 @@ namespace KDSWPFClient
         }
 
 
-        //создать словарь зависимых/зависящих отделов, т.е. для блюда это будет список отделов ингредиентов этого блюда, а для ингредиента это будет отдел родительского блюда. Ключ - поле Id из БД, для уникальности в пределах всех заказов
-        // словарь будет уровня класса, чтобы не нарушать работу вложенного класса ValueChecker для отделов
-        private void updateDependDepsDict(List<OrderModel> svcOrders)
-        {
-            _dependentDishes.Clear();
-            foreach (OrderModel orderModel in svcOrders)
-            {
-                // отобрать только блюда
-                List<OrderDishModel> v1 = orderModel.Dishes.Values.Where(d => d.ParentUid.IsNull()).ToList();
-                foreach (OrderDishModel dish in v1)
-                {
-                    List<OrderFilterValue> dd = new List<OrderFilterValue>();
-                    _dependentDishes.Add(dish.Id, dd);
-                    // ингредиенты к блюду
-                    List<OrderDishModel> v2 = orderModel.Dishes.Values.Where(d => d.ParentUid == dish.Uid).ToList();
-                    foreach (OrderDishModel ingr in v2)
-                    {
-                        dd.Add(new OrderFilterValue()
-                            { DepartmentId = ingr.DepartmentId, StatusId = ingr.DishStatusId }
-                        );
-
-                        // а для ингредиента - поля родит.блюда
-                        if (_dependentDishes.ContainsKey(ingr.Id) == false)
-                        {
-                            _dependentDishes.Add(ingr.Id, 
-                                new List<OrderFilterValue>()
-                                    { new OrderFilterValue() { DepartmentId = dish.DepartmentId, StatusId = dish.DishStatusId } }
-                            );
-                        }
-                    }
-                }  // foreach dish
-            }  // foreach order
-        }
-
         #region updateViewOrdersList()
         // обновить _viewOrders данными из svcOrders
-        private bool updateViewOrdersList(List<OrderModel> svcOrders)
+        private bool updateViewOrdersList()
         {
             bool isViewRepaint = false;
             OrderViewModel curViewOrder;
             int index = -1;  // порядковый номер
-            if (_viewOrders.Count > svcOrders.Count)
+            if (_viewOrders.Count > _svcOrders.Count)
             {
-                int delIndexFrom = (svcOrders.Count == 0) ? 0 : svcOrders.Count - 1;
-                _viewOrders.RemoveRange(delIndexFrom, _viewOrders.Count - svcOrders.Count);
+                int delIndexFrom = (_svcOrders.Count == 0) ? 0 : _svcOrders.Count - 1;
+                _viewOrders.RemoveRange(delIndexFrom, _viewOrders.Count - _svcOrders.Count);
                 isViewRepaint = true;
             }
-            foreach (OrderModel om in svcOrders)
+            foreach (OrderModel om in _svcOrders)
             {
                 index++;
                 // добавить
@@ -596,7 +653,7 @@ namespace KDSWPFClient
                 else
                 {
                     curViewOrder = _viewOrders[index];
-                    if ((curViewOrder.Number == om.Number) && (curViewOrder.CreateDate == om.CreateDate)
+                    if ((curViewOrder.Id == om.Id) && (curViewOrder.CreateDate == om.CreateDate)
                         && compareOrderDishes(om, curViewOrder))
                     {
                         curViewOrder.UpdateFromSvc(om);
@@ -636,69 +693,28 @@ namespace KDSWPFClient
         }
         #endregion
 
-        // создать копию OrderMode с блюдами, у которых дата равна параметру
-        // для разбивки заказов по датам блюд (!!!)
-        private OrderModel getCopyOrderModel(OrderModel om, DateTime dtDish)
-        {
-            OrderModel retVal = new OrderModel()
-            {
-                CreateDate = dtDish,
-                Dishes = new Dictionary<int, OrderDishModel>(),
-                HallName = om.HallName,
-                Id = om.Id,
-                Number = om.Number,
-                OrderStatusId = om.OrderStatusId,
-                TableName = om.TableName,
-                Uid = om.Uid,
-                Waiter = om.Waiter,
-                WaitingTimerString = om.WaitingTimerString,
-                DivisionColorRGB = om.DivisionColorRGB
-            };
-            // скопировать ссылки на блюда
-            // ингредиенты копируются вместе с блюдом, независимо от флажка IsIngredientsIndependent
-            bool isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
-            // все блюда
-            List<OrderDishModel> dishes = om.Dishes.Values.ToList();
-            // блюда для копирования
-            List<OrderDishModel> dishesForCopy = dishes.Where(d => d.ParentUid.IsNull() && d.CreateDate == dtDish).ToList();
-            List<OrderDishModel> ingrsForCopy;
-            foreach (OrderDishModel dm in dishesForCopy)
-            {
-                retVal.Dishes.Add(dm.Id, dm);
-                dishes.Remove(dm);
-                // и собрать все ингредиенты с ТАКИМ же CreateDate!
-                ingrsForCopy = dishes.Where(d => (d.ParentUid == dm.Uid) && (d.CreateDate == dtDish)).ToList();
-                foreach (OrderDishModel dmIngr in ingrsForCopy)
-                {
-                    if (!retVal.Dishes.ContainsKey(dmIngr.Id))
-                    {
-                        retVal.Dishes.Add(dmIngr.Id, dmIngr);
-                        dishes.Remove(dmIngr);
-                    }
-                }
-            }
-            // оставшиеся блюда/ингредиенты на дату dtDish
-            List<OrderDishModel> rest = dishes.Where(d => d.CreateDate == dtDish).ToList();
-            foreach (OrderDishModel dm in rest) retVal.Dishes.Add(dm.Id, dm);
 
-            return retVal;
-        }
-
-        private void repaintOrders(string reason)
+        // перерисовать заказы
+        private void repaintOrders(string reason, LeafDirectionEnum leafDirection)
         {
             if (_pages == null) return;
 
-            string sLogMsg = string.Format(" - redraw reason: {0}", reason);
             DateTime dtTmr = DateTime.Now;
+            string sLogMsg = string.Format(" - redraw reason: {0}", reason);
             AppLib.WriteLogOrderDetails(sLogMsg + " - START");
-            _pages.ClearPages(); // очистить панели заказов
+            Cursor = System.Windows.Input.Cursors.Wait;
 
-            // добавить заказы
-            DebugTimer.Init("AddOrdersPanels");
-            _pages.AddOrdersPanels(_viewOrders);
-            DebugTimer.GetInterval();
+            if (_viewByPage)
+            {
+                repaintOrdersNew(leafDirection);
+            }
+            else
+            {
+                _pages.AddOrdersPanels(_viewOrders);
+            }
 
             setCurrentPage();
+            Cursor = null; //System.Windows.Input.Cursors.Arrow;
             AppLib.WriteLogOrderDetails(sLogMsg + " - FINISH - " + (DateTime.Now - dtTmr).ToString());
         }
 
@@ -706,57 +722,354 @@ namespace KDSWPFClient
         private void recalcOrderPanelsLayot()
         {
             //   кол-во столбцов заказов
-            int cntCols = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            int cntCols = Convert.ToInt32(WpfHelper.GetAppGlobalValue("OrdersColumnsCount"));
 
             //   ширина столбцов заказов и расстояния между столбцами
             double pnlWidth = vbxOrders.ActualWidth;
             // wScr = wCol*cntCols + koef*wCol*(cntCols+1) ==> wCol = wScr / (cntCols + koef*(cntCols+1))
             // где, koef = доля поля от ширины колонки
-            double koef = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
+            double koef = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrderPanelLeftMargin"));
             double colWidth = Math.Floor(pnlWidth / (cntCols + koef * (cntCols + 1)));
             double colMargin = Math.Floor(koef * colWidth);  // поле между заказами по горизонтали
-            AppPropsHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
-            AppPropsHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+            WpfHelper.SetAppGlobalValue("OrdersColumnWidth", colWidth);
+            WpfHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
+        }
+
+        private void repaintOrdersNew(LeafDirectionEnum shiftDirection)
+        {
+            #region найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
+            DateTime dtTmr = DateTime.Now;
+            // найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
+            int orderStartIndex =-1, dishStartIndex=-1;
+            int orderFinishIndex=-1, dishFinishIndex=-1;
+            bool bShiftDirForward = true;
+
+            // перерисовка с первого заказа/блюда: еще нет панелей на канве или соотв.флаг
+            if ((_pages.CurrentPage.Children.Count == 0) || _forceFromFirstOrder)
+            {
+                orderStartIndex = 0; dishStartIndex = 0;
+                shiftDirection = LeafDirectionEnum.NoLeaf;
+                if (_forceFromFirstOrder) _forceFromFirstOrder = false;
+            }
+            // найти первый/последний элемент
+            else
+            {
+                switch (shiftDirection)
+                {
+                    case LeafDirectionEnum.NoLeaf:
+                        // с первого элемента на канве и вперед
+                        getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+                        bShiftDirForward = true;
+                        break;
+                    case LeafDirectionEnum.Forward:
+                        // с последнего элемента на канве и вперед
+                        getModelIndexesFromViewContainer(false, out orderStartIndex, out dishStartIndex);
+                        bShiftDirForward = true;
+                        break;
+                    case LeafDirectionEnum.Backward:
+                        // с первого элемента на канве и назад
+                        getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+                        bShiftDirForward = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            // следующий/предыдущий элемент, с которого будет отрисовываться страница
+            //    прямое направление
+            if (bShiftDirForward)
+            {
+                if (orderStartIndex < 0)
+                {
+                    orderStartIndex = 0; dishStartIndex = 0;
+                }
+                else if ((_viewOrders.Count > 0) && (dishStartIndex > _viewOrders[orderStartIndex].Dishes.Count - 1))
+                {
+                    if (orderStartIndex < (_viewOrders.Count-1)) orderStartIndex++;
+                    dishStartIndex = 0;
+                }
+                else if (shiftDirection == LeafDirectionEnum.Forward)
+                {
+                    dishStartIndex++;
+                    //OrderViewModel orderModel = _viewOrders[orderStartIndex];
+                    // пропустить "назад" ингредиенты - блюда, у которых не пустой ParentUID
+                    //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex > 0)) dishStartIndex--;
+                }
+            }
+            //    обратное направлении
+            else
+            {
+                if ((dishStartIndex <= 0) && (_viewOrders.Count > 0))
+                {
+                    if (orderStartIndex > 0)
+                    {
+                        orderStartIndex--;
+                        dishStartIndex = _viewOrders[orderStartIndex].Dishes.Count - 1;
+                    }
+                }
+                else
+                {
+                    dishStartIndex--;
+                    // пропустить "вперед" ингредиенты - блюда, у которых не пустой ParentUID
+                    //OrderViewModel orderModel = _viewOrders[orderStartIndex];
+                    //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count - 1))) dishStartIndex++;
+                }
+            }
+            AppLib.WriteLogOrderDetails("   - find Id order/dish draw from, dir {0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+            #endregion
+
+            dtTmr = DateTime.Now;
+            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+            AppLib.WriteLogOrderDetails("  - DrawOrderPanelsOnPage(), dir-{0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+
+            // если при листании назад, первая панель находится НЕ в первой колонке, 
+            // или, наоборот, в первой колонке и свободного места более половины,
+            // то разместить заново с первой колонки вперед
+            // делать ДО переноса панелей из канвы размещения в канву отображения
+            if (!bShiftDirForward && _pageHelper.NeedRelayout())
+            {
+                dtTmr = DateTime.Now;
+                getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+                bShiftDirForward = true;
+                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+                AppLib.WriteLogOrderDetails("  - re_DrawOrderPanelsOnPage() forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
+            }
+
+            dtTmr = DateTime.Now;
+            movePanelsToView(); // перенос панелей в область просмотра
+            AppLib.WriteLogOrderDetails("   - move panels to view canvas - {0}", (DateTime.Now - dtTmr).ToString());
+
+            // при листании вперед, получить индексы последних заказ/блюдо на странице
+            if (bShiftDirForward) getModelIndexesFromViewContainer(false, out orderFinishIndex, out dishFinishIndex);
+            // при листании назад, получить первые индексы
+            else
+            {
+                orderFinishIndex = orderStartIndex; dishFinishIndex = dishStartIndex;
+                getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
+            }
+
+            // кнопки листания
+            _viewPrevPageButton = ((orderStartIndex > 0) || (dishStartIndex > 0));
+            if ((orderFinishIndex == -1) || (_viewOrders.Count == 0))
+                _viewNextPageButton = false;
+            else if (orderFinishIndex < _viewOrders.Count-1)
+                _viewNextPageButton = true;
+            else
+            {
+                OrderViewModel lastOrder = _viewOrders.LastOrDefault();
+                if (lastOrder != null) _viewNextPageButton = (dishFinishIndex < (lastOrder.Dishes.Count - 1));
+            }
+            // из объекта, возвращаемого службой
+            if (!_viewPrevPageButton) _viewPrevPageButton = _svcResp.isExistsPrevOrders;
+            if (!_viewNextPageButton) _viewNextPageButton = _svcResp.isExistsNextOrders;
+        }
+
+        // берем первую или последнюю панель на странице, первое или последнее блюдо, в зависимости от флажка fromFirstItem
+        // и находим их индексы в наборе _viewOrders
+        private void getModelIndexesFromViewContainer(bool fromFirstItem, out int orderIndex, out int dishIndex)
+        {
+            orderIndex = -1; dishIndex = -1;
+
+            // источник панелей - или bufferOrderPanels, или vbxOrders.Child
+            // предпочтение bufferOrderPanels, если там не пусто
+            UIElementCollection pnlSource = null;
+            try
+            {
+                pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
+                    ? ((Canvas)vbxOrders.Child).Children
+                    : this.bufferOrderPanels.Children;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            if (pnlSource == null) return;
+            else if (pnlSource.Count == 0) return;
+
+            // индекс панели заказа
+            int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
+            OrderPanel edgeOrderPanel = (OrderPanel)pnlSource[i];
+            DishPanel edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
+            if (edgeDishPanel == null) return;
+            
+            // заказ (OrderViewModel) из панели
+            OrderViewModel fromPanelOrderModel = edgeOrderPanel.OrderViewModel;
+            // блюдо (OrderDishViewModel) из панели
+            OrderDishViewModel fromPanelDishModel = edgeDishPanel.DishView;
+
+            // найти заказ в _viewOrders с таким же id заказа и id блюда, как в панели экрана
+            foreach (OrderViewModel item in _viewOrders.FindAll(vOrd => vOrd.Id == fromPanelOrderModel.Id))
+            {
+                dishIndex = item.Dishes.FindIndex(d => d.Id == fromPanelDishModel.Id);
+                if (dishIndex != -1)
+                {
+                    orderIndex = _viewOrders.IndexOf(item);
+                    break;
+                }
+            }
+        }
+
+        // id или первого, или последнего элемента заказ/блюдо, в зависимости от флажка fromFirstItem
+        private void getModelIdFromViewContainer(bool fromFirstItem, out int orderId, out int dishId)
+        {
+            orderId = -1; dishId = -1;
+
+            // источник панелей - или bufferOrderPanels, или vbxOrders.Child
+            // предпочтение bufferOrderPanels, если там не пусто
+            UIElementCollection pnlSource = null;
+            try
+            {
+                pnlSource = ((this.bufferOrderPanels.Children.Count == 0) && (vbxOrders.Child is Canvas))
+                    ? ((Canvas)vbxOrders.Child).Children
+                    : this.bufferOrderPanels.Children;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            if ((pnlSource != null) && (pnlSource.Count == 0)) return;
+
+            int i = (fromFirstItem) ? 0 : pnlSource.Count - 1;
+            // граничная панель заказа
+            OrderPanel edgeOrderPanel = (OrderPanel)pnlSource[i];
+            OrderViewModel curPanelOrderModel = edgeOrderPanel.OrderViewModel;  // OrderViewModel из панели
+            orderId = curPanelOrderModel.Id;
+
+            // граничная панель блюда
+            DishPanel edgeDishPanel = findEdgeDishPanel(edgeOrderPanel, fromFirstItem);
+            OrderDishViewModel curPanelDishModel = edgeDishPanel.DishView;  // OrderDishViewModel из панели
+            dishId = curPanelDishModel.Id;
+        }
+
+
+        // поиск граничной панели блюда в панели заказа, с пропуском разделителей
+        private DishPanel findEdgeDishPanel(OrderPanel edgeOrderPanel, bool fromFirstItem)
+        {
+            UIElement item = null;
+            for (int i = (fromFirstItem) ? 0 : edgeOrderPanel.DishPanels.Count - 1;
+                (fromFirstItem) ? i < edgeOrderPanel.DishPanels.Count : i >= 0;
+                i += (fromFirstItem) ? 1 : -1)
+            {
+                item = edgeOrderPanel.DishPanels[i];
+                if (item is DishPanel) return (item as DishPanel);
+            }
+            return null;
+        }
+
+        private int getDishIndex(bool fromFirstItem, OrderDishViewModel curPanelDishModel, List<OrderViewModel> tmpOrderModels, ref OrderViewModel foundDishOrder)
+        {
+            int dishIndex = -1;
+
+            if (tmpOrderModels != null)
+            {
+                foreach (OrderViewModel om in tmpOrderModels)
+                {
+                    // поиск индекса блюда findingDishModel в om
+                    dishIndex = om.Dishes.FindIndex(d => d.Id == curPanelDishModel.Id);
+                    if (dishIndex != -1)
+                    {
+                        foundDishOrder = om;
+                        return dishIndex;
+                    }
+                }
+            }
+
+            return dishIndex;
         }
 
 
         #region change page
         // *** кнопки листания страниц ***
-        private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (_pages.SetNextPage()) setCurrentPage();
-        }
-
         private void btnSetPagePrevious_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (_pages.SetPreviousPage()) setCurrentPage();
+            e.Handled = true;
+            if (_leafing == true) return;
+
+            _leafing = true;
+            if (_viewByPage)
+            {
+                //_keepSplitOrderOnLastColumnByForward = true;
+                _isNeedSound = false;
+                getOrdersFromService(LeafDirectionEnum.Backward);
+                setCurrentPage();
+            }
+            else if (_pages.SetPreviousPage())
+                setCurrentPage();
+            _leafing = false;
+            
+            this.ClickPageButton = true;
         }
 
+        private void btnSetPageNext_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            if (_leafing == true) return;
+
+            _leafing = true;
+            if (_viewByPage)
+            {
+                _keepSplitOrderOnLastColumnByForward = false;
+                _isNeedSound = false;
+                getOrdersFromService(LeafDirectionEnum.Forward);
+                setCurrentPage();
+            }
+            else if (_pages.SetNextPage())
+                setCurrentPage();
+            _leafing = false;
+        }
+
+        // отображение кнопок с номерами страниц и вкл/выкл таймера возврата на первую страницу
         private void setCurrentPage()
         {
-            this.vbxOrders.Child = _pages.CurrentPage;
-
             btnSetPagePrevious.Visibility = Visibility.Hidden;
             btnSetPageNext.Visibility = Visibility.Hidden;
             if (_pages.Count == 0) return;
 
-            // состояние кнопки перехода на предыдущюю страницу
-            if ((_pages.CurrentPageIndex - 1) > 0)
+            // постраничные кнопки, если _pages содержит несколько страниц
+            if (!_viewByPage && (_pages.Count > 1))
             {
-                tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
-                btnSetPagePrevious.Visibility = Visibility.Visible;
+                // кнопка перехода на предыдущюю страницу
+                if ((_pages.CurrentPageIndex - 1) > 0)
+                {
+                    tbPagePreviousNum.Text = "Стр. " + (_pages.CurrentPageIndex - 1).ToString();
+                    btnSetPagePrevious.Visibility = Visibility.Visible;
+                }
+                // кнопка перехода на следующую страницу
+                if (_pages.CurrentPageIndex < _pages.Count)
+                {
+                    tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
+                    btnSetPageNext.Visibility = Visibility.Visible;
+                }
+            }
+            else if (_viewByPage && (_pageHelper != null))
+            {
+                // кнопка перехода на предыдущюю страницу
+                if (_viewPrevPageButton)
+                {
+                    tbPagePreviousNum.Text = "предыд. стр";
+                    btnSetPagePrevious.Visibility = Visibility.Visible;
+                }
+                // кнопка перехода на следующую страницу
+                if (_viewNextPageButton)
+                {
+                    tbPageNextNum.Text = "след. стр.";
+                    btnSetPageNext.Visibility = Visibility.Visible;
+                }
             }
 
-            // и на следующую страницу
-            if (_pages.CurrentPageIndex < _pages.Count)
+            // перезапуск всех автотаймеров
+            // таймер возврата в группировку по времени
+            if ((_timerBackToOrderGroupByTime != null) && (_autoBackTimersInterval > 0d))
             {
-                tbPageNextNum.Text = "Стр. " + (_pages.CurrentPageIndex + 1).ToString();
-                btnSetPageNext.Visibility = Visibility.Visible;
+                _timerBackToOrderGroupByTime.Stop();
+                if (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber) _timerBackToOrderGroupByTime.Start();
             }
-
             // таймер возврата на первую страницу
-            if (_timerBackToFirstPage.Enabled) _timerBackToFirstPage.Stop();
-            if (_pages.CurrentPageIndex > 1) _timerBackToFirstPage.Start();
+            if ((_timerBackToFirstPage != null) && (_autoBackTimersInterval > 0d))
+            {
+                _timerBackToFirstPage.Stop();
+                if (_viewPrevPageButton) _timerBackToFirstPage.Start();
+            }
         }
 
         #endregion
@@ -775,22 +1088,32 @@ namespace KDSWPFClient
             ConfigEdit cfgEdit = new ConfigEdit() { DepartmentsDict = _dataProvider.Departments };
             cfgEdit.ShowDialog();
 
-            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + ":" + s.Value));
+            string sLogMsg = string.Join("; ", cfgEdit.AppNewSettings.Select(s => s.Key + "=" + s.Value));
             AppLib.WriteLogClientAction("   changed: " + sLogMsg);
+
+            bool isRepaintScreen=false, isRequestOrders=false;
 
             //  ОБНОВЛЕНИЕ ПАРАМЕТРОВ ПРИЛОЖЕНИЯ
             if (cfgEdit.AppNewSettings.Count > 0)
             {
                 if (cfgEdit.AppNewSettings.ContainsKey("depUIDs"))
                 {
+                    _clientFilter.DepIDsList = getClientDepsList();
+                    isRequestOrders = true;
                 }
 
                 // обновить фильтр блюд
+                bool isUpdatedTabs = false;
+                if (cfgEdit.AppNewSettings.ContainsKey("IsMultipleStatusTabs"))
+                {
+                    bool newValue = cfgEdit.AppNewSettings["IsMultipleStatusTabs"].ToBool();
+                    setStatusTabs(newValue);
+                    isUpdatedTabs = true;
+                }
                 if (cfgEdit.AppNewSettings.ContainsKey("KDSMode"))
                 {
                     setWindowsTitle();
-                    _orderStatesLooper = null;
-                    setOrderStatusFilterTab();
+                    if (!isUpdatedTabs) setStatusTabs(_isMultipleStatusTabs);
                 }
                 else if (cfgEdit.AppNewSettings.ContainsKey("KDSModeSpecialStates") 
                     && (cfgEdit.AppNewSettings["KDSModeSpecialStates"].IsNull() == false))
@@ -798,38 +1121,48 @@ namespace KDSWPFClient
                     if (KDSModeHelper.CurrentKDSMode != KDSModeEnum.Special) KDSModeHelper.CurrentKDSMode = KDSModeEnum.Special;
 
                     setWindowsTitle();
-                    _orderStatesLooper = null;
-                    setOrderStatusFilterTab();
+                    if (!isUpdatedTabs) setStatusTabs(_isMultipleStatusTabs);
                 }
 
+                bool resetMaxDishesCountOnPage = false;
                 if (cfgEdit.AppNewSettings.ContainsKey("IsShowOrderStatusByAllShownDishes"))
                 {
-                    repaintOrders("change config parameter IsShowOrderStatusByAllShownDishes");
+                    isRepaintScreen = true;
                 }
 
                 // масштаб шрифта
                 // перерисовать полностью, т.к. по таймеру может все не обновиться
                 if (cfgEdit.AppNewSettings.ContainsKey("AppFontScale"))
                 {
-                    AppPropsHelper.SetAppGlobalValue("AppFontScale", cfgEdit.AppNewSettings["AppFontScale"].ToDouble());
-                    repaintOrders("change config parameter AppFontScale");  
+                    double newAppFontScale = cfgEdit.AppNewSettings["AppFontScale"].ToDouble();
+                    WpfHelper.SetAppGlobalValue("AppFontScale", newAppFontScale);
+                    if (_viewByPage)
+                    {
+                        resetMaxDishesCountOnPage = true;
+                    }
+                    isRepaintScreen = true;
                 }
 
                 // кол-во колонок заказов
                 if (cfgEdit.AppNewSettings.ContainsKey("OrdersColumnsCount"))
                 {
                     recalcOrderPanelsLayot();
-                    _pages.ResetOrderPanelSize();
-
-                    repaintOrders("change config parameter OrdersColumnsCount");  // перерисовать заказы
+                    if (_viewByPage)
+                    {
+                        _pageHelper.ResetOrderPanelSize();
+                        resetMaxDishesCountOnPage = true;
+                    }
+                    else
+                    {
+                        _pages.ResetOrderPanelSize();
+                    }
+                    isRepaintScreen = true;
                 }
 
                 // интервал таймера сброса группировки заказов по номерам
                 if (cfgEdit.AppNewSettings.ContainsKey("AutoReturnOrdersGroupByTime"))
                 {
-                    double newInterval = getOrderGroupTimerInterval();
-                    _timerBackToOrderGroupByTime.Interval = newInterval;
-                    _timerBackToFirstPage.Interval = newInterval;
+                    setBackTimersInterval();
                 }
 
                 // плановое время выноса блюда (ExpectedTake)
@@ -845,7 +1178,7 @@ namespace KDSWPFClient
                 {
                     string wavFile = cfgEdit.AppNewSettings["NewOrderAudioAttention"];
                     // сохранить в свойствах приложения 
-                    AppPropsHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
+                    WpfHelper.SetAppGlobalValue("NewOrderAudioAttention", wavFile);
                     // в config-файле
                     string errMsg;
                     CfgFileHelper.SaveAppSettings("NewOrderAudioAttention", wavFile,out errMsg);
@@ -854,17 +1187,36 @@ namespace KDSWPFClient
                     _wavPlayer.LoadAsync();
                 }
 
+                if (cfgEdit.AppNewSettings.ContainsKey("IsDishGroupAndSumQuantity"))
+                {
+                    bool isDishGroupTabVisible = cfgEdit.AppNewSettings["IsDishGroupAndSumQuantity"].ToBool();
+                    dishGroupTabVisibility(isDishGroupTabVisible);
+                    setStatusTabs(_isMultipleStatusTabs);
+                }
+
+
+                if (resetMaxDishesCountOnPage) _pageHelper.ResetMaxDishesCountOnPage();
+
+                if (isRequestOrders)
+                {
+                    _forceFromFirstOrder = true;
+                    _isNeedSound = false;
+                    getOrdersFromService(LeafDirectionEnum.NoLeaf);
+                }
+                else if (isRepaintScreen)
+                {
+                    repaintOrders("changed config parameters", LeafDirectionEnum.NoLeaf);
+                }
+
             }
             cfgEdit = null;
 
             _timer.Start();
         }
 
-        // получить из config-файла интервал таймера сброса группировки заказов по номерам
-        private double getOrderGroupTimerInterval()
+        private List<int> getClientDepsList()
         {
-            string cfgStr = CfgFileHelper.GetAppSetting("AutoReturnOrdersGroupByTime");
-            return 1000d * ((cfgStr.IsNull()) ? 10d : cfgStr.ToDouble());  // и перевести в мсек
+            return (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
         }
 
         private void setWindowsTitle()
@@ -883,54 +1235,13 @@ namespace KDSWPFClient
 
         #endregion
 
-        #region Настройка приложения боковыми кнопками
-        // обновить элементы фильтра состояний блюд
-        private void setOrderStatusFilterTab()
-        {
-            // если нет пользовательского фильтра состояний,
-            if ((KDSModeHelper.CurrentKDSStates.StateSets == null) || (KDSModeHelper.CurrentKDSStates.StateSets.Count == 0))
-            {
-                // то уничтожить объект перебора значений
-                if (_orderStatesLooper != null) _orderStatesLooper = null;
-                // скрыть вкладку перебора фильтра состояний
-                btnDishStatusFilter.Visibility = Visibility.Hidden;
-            }
-
-            // применить пользовательский фильтр состояний
-            else
-            {
-                // попытаться создать объект перебора значений
-                if (_orderStatesLooper == null)
-                {
-                    _orderStatesLooper = new ListLooper<KDSUserStatesSet>(KDSModeHelper.CurrentKDSStates.StateSets);
-
-                    KDSUserStatesSet cookingSet = null;
-                    // ПО УМОЛЧАНИЮ  набор состояний - "В Процессе"
-                    //cookingSet = _userStatesLooper.InnerList.FirstOrDefault(s => s.Name == "В процессе");
-                    // ПО УМОЛЧАНИЮ  набор состояний - первый: "Все статусы"
-                    if ((_orderStatesLooper.InnerList != null) && (_orderStatesLooper.InnerList.Count > 0))
-                        cookingSet = _orderStatesLooper.InnerList[0];
-
-                    if (cookingSet != null) _orderStatesLooper.Current = cookingSet;
-                }
-
-                // текущий набор состояний
-                KDSUserStatesSet statesSet = _orderStatesLooper.Current;
-                _dishesFilter.SetAllowedStatuses(statesSet);
-
-                // вкладка перебора фильтров состояний
-                if (btnDishStatusFilter.Visibility == Visibility.Hidden) btnDishStatusFilter.Visibility = Visibility.Visible;
-
-                btnDishStatusFilter.Background = statesSet.BackBrush;
-                tbDishStatusFilter.Text = statesSet.Name;
-                tbDishStatusFilter.Foreground = statesSet.FontBrush;
-            }
-        }
-
-        // *************************
+        #region группировка заказов
         // *** группировка заказов
         private void tbOrderGroup_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            e.Handled = true;
+
+            Debug.Print("tbOrderGroup_MouseDown");
             // сдвинуть текущий элемент
             _orderGroupLooper.SetNextIndex();
 
@@ -939,46 +1250,91 @@ namespace KDSWPFClient
             setOrderGroupTab();
         }
 
+        private void setFirstPage()
+        {
+            if (_viewPrevPageButton)
+            {
+                _pages.SetFirstPage();
+                _forceFromFirstOrder = true;
+                _isNeedSound = false;
+                getOrdersFromService(LeafDirectionEnum.Forward);
+            }
+        }
+
+        private void setOrdersGroupByTime()
+        {
+            _orderGroupLooper.Current = OrderGroupEnum.ByCreateTime;
+            setOrderGroupTab(true);
+        }
+
+        private void setBackTimersInterval()
+        {
+            // интервал таймера взять из config-файла
+            string cfgStr = CfgFileHelper.GetAppSetting("AutoReturnOrdersGroupByTime");
+
+            // и перевести в мсек
+            _autoBackTimersInterval = 1000d * ((cfgStr.IsNull()) ? 0d : cfgStr.ToDouble());
+            if (_autoBackTimersInterval > 0d)
+            {
+                resetTimerInterval(_timerBackToOrderGroupByTime, _autoBackTimersInterval);
+                // включить таймер при необходимости
+                if ((_orderGroupLooper != null) && (_orderGroupLooper.Current == OrderGroupEnum.ByOrderNumber)) _timerBackToOrderGroupByTime.Start();
+
+                resetTimerInterval(_timerBackToFirstPage, _autoBackTimersInterval);
+                // включить таймер, если находимся не на первой странице
+                if (btnSetPagePrevious.Visibility == Visibility.Visible) _timerBackToFirstPage.Start();
+            }
+            else
+            {
+                _timerBackToOrderGroupByTime.Enabled = false;
+                _timerBackToFirstPage.Enabled = false;
+            }
+        }
+
+        private void resetTimerInterval(Timer timer, double interval)
+        {
+            if (timer.Enabled)
+            {
+                timer.Stop();
+                timer.Interval = interval;
+                timer.Start();
+            }
+            else
+                timer.Interval = interval;
+        }
+
         // отобразить на вкладке СЛЕДУЮЩИЙ элемент!!
-        private void setOrderGroupTab()
+        private void setOrderGroupTab(bool resetDataPanels = true)
         {
             //OrderGroupEnum eOrderGroup = _orderGroupLooper.GetNextObject();
             OrderGroupEnum eOrderGroup = _orderGroupLooper.Current; // отображать текущий объект!!
+            _clientFilter.GroupBy = eOrderGroup;
 
             switch (eOrderGroup)
             {
-                case OrderGroupEnum.ByTime:
-                    tbOrderGroup.Text = "По времени";
+                case OrderGroupEnum.ByCreateTime:
+                    _tabOrderGroup.Text = "По времени";
+                    // выключить таймер автовозврата в группировку по времени, если он был включен
+                    if (_timerBackToOrderGroupByTime.Enabled) _timerBackToOrderGroupByTime.Stop();
                     break;
 
                 case OrderGroupEnum.ByOrderNumber:
-                    tbOrderGroup.Text = "По заказам";
-                    if (_timerBackToOrderGroupByTime != null) _timerBackToOrderGroupByTime.Start();
+                    _tabOrderGroup.Text = "По заказам";
+                    // включить таймер автовозврата в группировку по времени
+                    if (_autoBackTimersInterval > 0d) _timerBackToOrderGroupByTime.Start();
                     break;
 
                 default:
                     break;
             }
-        }
 
-        // ****************************
-        // **  фильтр по состояниям
-        // перебор фильтров состояний по клику на вкладке
-        private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            _timer.Stop();
-
-            // сдвинуть фильтр
-            _orderStatesLooper.SetNextIndex();
-
-            AppLib.WriteLogClientAction("Change Status Filter to " + _orderStatesLooper.Current.Name);
-
-            // обновить пользовательский фильтр текущим набором
-            setOrderStatusFilterTab();
-
-            _preOrdersId.Clear();
-
-            _timer.Start();
+            // получить заказы, начиная с первого, и обновить экран
+            if (resetDataPanels)
+            {
+                _forceFromFirstOrder = true;
+                _isNeedSound = false;
+                getOrdersFromService(LeafDirectionEnum.Forward);
+            }
         }
 
         #endregion
@@ -1036,13 +1392,347 @@ namespace KDSWPFClient
 
         }
 
-        private enum OrderGroupEnum { ByTime, ByOrderNumber}
-
         private class DateNumberOrder
         {
             public DateTime DishDate { get; set; }
             public int Number { get; set; }
             public OrderModel Order { get; set; }
+        }
+
+        #endregion
+
+        #region вкладки фильтра статусов
+        // одна вкладка на все наборы статусов или по вкладке на каждый набор
+        private void setStatusTabs(bool newTabsMode)
+        {
+            _isMultipleStatusTabs = newTabsMode;
+            // сохранить статус текущей вкладки
+            string curStatesSetName = null;
+            foreach (AppLeftTabControl item in pnlLeftTabs.Children.OfType<AppLeftTabControl>())
+            {
+                if (item.IsEnabled) { curStatesSetName = item.StatesSet.Name; break; }
+            }
+            // удалить предыдущие вкладки
+            pnlLeftTabs.Children.Clear();
+            AppLeftTabControl tab;
+
+            #region высота зоны вкладок
+            double[] curRowHeights = grdUserConfig.RowDefinitions.Select(row => row.Height.Value).ToArray();
+            double[] newRowHeights;
+            if (_isMultipleStatusTabs)
+            {
+                // увеличить зону вкладок (4-й элемент)
+                /*
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="4*"/>
+                    <RowDefinition Height="0.3*"/>
+                    <RowDefinition Height="0.6*"/>
+                    <RowDefinition Height="0.3*"/>
+                 */
+                newRowHeights = new double[] { 1d, 1d, 0.3d, 4d, 0.3d, 0.6d, 0.3d };
+            }
+            else
+            {
+                // уменьшить зону вкладок
+                /*
+                    <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="1.2*"/>
+                    <RowDefinition Height="0.5*"/>
+                    <RowDefinition Height="1.2*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.7*"/>
+                    <RowDefinition Height="0.5*"/>
+                 */
+                newRowHeights = new double[] { 1.5d, 1.2d, 0.5d, 1.2d, 1d, 0.7d, 0.5d };
+            }
+
+            // изменилась ли высота хоть какой-нибудь строки
+            bool isEqualRowHeights = true;
+            for (int i = 0; i < curRowHeights.Length; i++)
+            {
+                if (curRowHeights[i] != newRowHeights[i]) { isEqualRowHeights = false; break; }
+            }
+            // если изменилась
+            if (!isEqualRowHeights)
+            {
+                for (int i = 0; i < curRowHeights.Length; i++)
+                {
+                    if (grdUserConfig.RowDefinitions[i].Height.Value != newRowHeights[i])
+                    {
+                        grdUserConfig.RowDefinitions[i].Height = new GridLength(newRowHeights[i], GridUnitType.Star);
+                    }
+                }
+
+                // обновить высоту вкладок
+                foreach (UIElement item in grdUserConfig.Children)
+                {
+                    if (item is AppLeftTabControl)
+                    {
+                        tab = (item as AppLeftTabControl);
+                        if (tab.Visibility == Visibility.Visible)
+                        {
+                            int gridRow = (int)tab.GetValue(Grid.RowProperty);
+                            double newHeight = WpfHelper.GetRowHeightAbsValue(grdUserConfig, gridRow);
+                            tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, newHeight, true);
+                        }
+                    }
+                }
+
+                setPropsLegendButton();
+            }
+            #endregion
+
+            // количество наборов статусов
+            List<KDSUserStatesSet> curStatuses = KDSModeHelper.CurrentKDSStates.StateSets;
+            if (curStatuses.Count == 0) return;
+
+            // расширение панели вкладок состояний в зависимости от видимости вкладки группировки блюд
+            if (!_isMultipleStatusTabs || (_tabDishGroup.Visibility == Visibility.Visible))
+            {
+                // снять расширение панели вкладок состояний
+                int rowSpan = System.Convert.ToInt32(pnlLeftTabs.GetValue(Grid.RowSpanProperty));
+                if (rowSpan > 1)
+                {
+                    pnlLeftTabs.SetValue(Grid.RowSpanProperty, 1);
+                }
+            }
+            else
+            {
+                // расширить панель вкладок состояний на несколько строк
+                int rowSpan = System.Convert.ToInt32(pnlLeftTabs.GetValue(Grid.RowSpanProperty));
+                if (rowSpan == 1)
+                {
+                    pnlLeftTabs.SetValue(Grid.RowSpanProperty, 3);
+                }
+            }
+
+            grdUserConfig.UpdateLayout();
+            double tabsZoneHeight = pnlLeftTabs.ActualHeight;
+            // для каждого набора статусов отдельная вкладка
+            if (_isMultipleStatusTabs)
+            {
+                // кол-во вкладок - кол-во отображаемых статусов для текущей роли КДСа
+                double tabHeight;
+                double tabsCount = curStatuses.Count;
+                double dBetweenKoef = 0.05d;
+                if (tabsCount == 1)
+                {
+                    tabHeight = tabsZoneHeight;
+                    tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, curStatuses[0].Name, 0d);
+                    tab.SetStatesSet(curStatuses[0]);
+                    tab.IsEnabled = true;
+                    pnlLeftTabs.Children.Add(tab);
+                }
+                else
+                {
+                    tabHeight = tabsZoneHeight / (tabsCount + dBetweenKoef * (tabsCount - 1));
+                    bool isFirstItem = true;
+                    foreach (KDSUserStatesSet item in curStatuses)
+                    {
+                        tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabHeight, item.Name, 
+                            (isFirstItem) ? 0d: dBetweenKoef);
+                        tab.SetStatesSet(item);
+                        if (isFirstItem) isFirstItem = false;
+                        tab.PreviewMouseDown += tbDishStatusFilter_MouseDown;
+                        pnlLeftTabs.Children.Add(tab);
+                        tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, tabHeight, true);
+                        tab.IsEnabled = false;
+                    }
+                }
+            }
+
+            // все статусы на одной вкладке и настроить ее для первого набора состояний
+            else
+            {
+                // создать объект циклического перебора
+                _orderStatesLooper = new ListLooper<KDSUserStatesSet>(KDSModeHelper.CurrentKDSStates.StateSets);
+                KDSUserStatesSet currentStatesSet = null;
+                // ПО УМОЛЧАНИЮ  набор состояний - "В Процессе"
+                //cookingSet = _userStatesLooper.InnerList.FirstOrDefault(s => s.Name == "В процессе");
+                // ПО УМОЛЧАНИЮ  набор состояний - первый: "Все статусы"
+                currentStatesSet = _orderStatesLooper.InnerList[0];
+                _orderStatesLooper.Current = currentStatesSet;
+
+                // создать вкладку
+                tab = new AppLeftTabControl(grdUserConfig.ActualWidth, tabsZoneHeight, currentStatesSet.Name, 0d);
+                tab.SetStatesSet(currentStatesSet);
+                // перебор по клику мыши, если наборов больше 1
+                if (curStatuses.Count > 1) tab.PreviewMouseDown += tbDishStatusFilter_MouseDown;
+                pnlLeftTabs.Children.Add(tab);
+                tab.SetSizeAndTextOrientation(grdUserConfig.ActualWidth, tabsZoneHeight, true);
+            }
+
+            // активизировать вкладку состояния
+            if ((_isInit) || (grdUserConfig == null))
+            {
+                // обновить пользовательские фильтры для первой кнопки
+                AppLeftTabControl firstTab = (AppLeftTabControl)pnlLeftTabs.Children[0];
+                firstTab.IsEnabled = true;
+                updateOrderStateFilter(firstTab.StatesSet);
+            }
+            else if (curStatesSetName != null)
+            {
+                foreach (AppLeftTabControl item in pnlLeftTabs.Children.OfType<AppLeftTabControl>())
+                {
+                    if (item.StatesSet.Name == curStatesSetName) {  item.IsEnabled = true; break; }
+                }
+            }
+
+        }  // method
+
+
+        // перебор фильтров состояний по клику на вкладке
+        private void tbDishStatusFilter_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+
+            // новый набор состояний
+            AppLeftTabControl curTab = (AppLeftTabControl)sender;
+
+            // кнопки для каждого набора статусов
+            if (_isMultipleStatusTabs)
+            {
+                if (curTab.IsEnabled)
+                {
+                    curTab = null;
+                }
+                else
+                {
+                    // снять выделение со всех кнопок
+                    foreach (UIElement item in pnlLeftTabs.Children)
+                    {
+                        if (item is AppLeftTabControl)
+                        {
+                            AppLeftTabControl tab = (item as AppLeftTabControl);
+                            if (tab.IsEnabled) tab.IsEnabled = false;
+                        }
+                    }
+                    // установить выделение на нажатую кнопку
+                    curTab.IsEnabled = true;
+                }
+            }
+
+            // одна кнопка
+            else
+            {
+                // сдвинуть лупер и получить новый набор статусов
+                _orderStatesLooper.SetNextIndex();
+                // обновить вкладку
+                curTab = (AppLeftTabControl)pnlLeftTabs.Children[0];
+                curTab.SetStatesSet(_orderStatesLooper.Current);
+            }
+
+            // обновить пользовательский фильтр текущим набором
+            if (curTab != null)
+            {
+                updateOrderStateFilter(curTab.StatesSet);
+            }
+        }
+
+        private void updateOrderStateFilter(KDSUserStatesSet newStatesSet)
+        {
+            AppLib.WriteLogClientAction("Change Status Filter to '{0}'", newStatesSet.Name);
+            _dishesFilter.SetAllowedStatuses(newStatesSet);
+
+            List<int> statusesIDs = newStatesSet.States.Select(state => (int)state).ToList();
+            _clientFilter.StatusesList = statusesIDs;
+
+            // получить заказы из БД, начиная с первого
+            _forceFromFirstOrder = true;
+            _isNeedSound = false;  // без проигрывания мелодии
+            getOrdersFromService(LeafDirectionEnum.NoLeaf);
+        }
+
+        #endregion
+
+        #region вкладка группировки блюд
+        private void _tabDishGroup_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            AppLeftTabControl tab = (AppLeftTabControl)sender;
+            if (tab.Tag != null)
+            {
+                string mode = System.Convert.ToString(tab.Tag);
+                if (mode == "group") mode = "ungroup"; else mode = "group";
+                tab.Tag = mode;
+
+                setDishGroupTabProperties();
+                dishGroupAction(mode);
+            }
+        }
+
+        private void setDishGroupTabProperties()
+        {
+            if (_tabDishGroup.Tag != null)
+            {
+                string mode = System.Convert.ToString(_tabDishGroup.Tag);
+                // текст на вкладке - для следующего состояния!
+                _tabDishGroup.Text = (mode == "group" ? "Разгруп." : "Групп.")
+                    + (_tabDishGroup.Width < 1.5 * _tabDishGroup.Height ? Environment.NewLine : " ")
+                    + "блюд";
+            }
+        }
+
+        private void dishGroupAction(string mode)
+        {
+            if (mode == "group")
+            {
+                _clientFilter.IsDishGroupAndSumQuantity = true;
+                AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+            }
+            else
+            {
+                _clientFilter.IsDishGroupAndSumQuantity = false;
+                AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+            }
+
+            _forceFromFirstOrder = true;
+            _isNeedSound = false;  // без проигрывания мелодии
+            getOrdersFromService(LeafDirectionEnum.NoLeaf);
+        }
+
+        private void dishGroupTabVisibility(bool visible)
+        {
+            if (_tabDishGroup == null) return;
+
+            // отобразить вкладку
+            if ((_tabDishGroup.Visibility == Visibility.Hidden) && (visible == true))
+            {
+                _tabDishGroup.Visibility = Visibility.Visible;
+            }
+            // скрыть вкладку
+            else if ((_tabDishGroup.Visibility == Visibility.Visible) && (visible == false))
+            {
+                // отключить группировку блюд
+                if (_clientFilter.IsDishGroupAndSumQuantity == true)
+                {
+                    _clientFilter.IsDishGroupAndSumQuantity = false;
+                    AppLib.WriteLogClientAction("Запрос к службе: отключить группировку блюд, т.к. выключили соотв. вкладку");
+                    _forceFromFirstOrder = true;
+                    _isNeedSound = false;  // без проигрывания мелодии
+                    getOrdersFromService(LeafDirectionEnum.NoLeaf);
+                }
+
+                _tabDishGroup.Visibility = Visibility.Hidden;
+            }
+        }
+        private void cbxDishesGroup_Changed(object sender, RoutedEventArgs e)
+        {
+            //if (cbxDishesGroup.IsChecked ?? false)
+            //{
+            //    _clientFilter.IsDishGroupAndSumQuantity = true;
+            //    AppLib.WriteLogClientAction("Запрос к службе: сгруппировать одинаковые блюда...");
+            //}
+            //else
+            //{
+            //    _clientFilter.IsDishGroupAndSumQuantity = false;
+            //    AppLib.WriteLogClientAction("Запрос к службе: все блюда раздельно...");
+            //}
+
+            //_forceFromFirstOrder = true;
+            //_isNeedSound = false;  // без проигрывания мелодии
+            //getOrdersFromService(LeafDirectionEnum.NoLeaf);
         }
 
         #endregion
@@ -1097,15 +1787,12 @@ namespace KDSWPFClient
         {
             _adminDate = DateTime.Now;
             e.Handled = true;
-        }
 
-        private void Window_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (AppLib.IsOpenWindow("ColorLegend"))
-            {
-                ColorLegend colorLegendWin = (ColorLegend)AppPropsHelper.GetAppGlobalValue("ColorLegendWindow");
-                if (colorLegendWin != null) colorLegendWin.Hide();
-            }
+            ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
+            if (colorLegendWin.IsVisible == false)
+                colorLegendWin.Visibility = Visibility.Visible;
+            else
+                colorLegendWin.Visibility = Visibility.Hidden;
         }
 
         private void btnColorsLegend_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -1113,16 +1800,38 @@ namespace KDSWPFClient
             double admSecs = (DateTime.Now - _adminDate).TotalSeconds;
             if ((admSecs > 3d) && (admSecs < 10d))
             {
+                // закрыть легенду цветов таймеров
+                ColorLegend colorLegendWin = (ColorLegend)WpfHelper.GetAppGlobalValue("ColorLegendWindow");
+                if (colorLegendWin.IsVisible) colorLegendWin.Visibility = Visibility.Hidden;
+
                 openConfigPanel();
-            }
-            // открыть/закрыть легенду цветов таймеров
-            else
-            {
-                App.OpenColorLegendWindow();
             }
 
             _adminDate = DateTime.MaxValue;
             e.Handled = true;
+        }
+
+        // переписывание панелей из bufferOrderPanels в vbxOrders.Child
+        private void movePanelsToView()
+        {
+            Canvas workContainer = (Canvas)vbxOrders.Child;
+            List<FrameworkElement> pnlList = new List<FrameworkElement>();
+
+            // очистить канву отображения
+            workContainer.Children.Clear();
+            // сохранить панели из канвы размещения в коллекции и очистить канву размещения (отсоединить панели)
+            saveOrderPanelsToList(bufferOrderPanels, pnlList);
+            bufferOrderPanels.Children.Clear();
+
+            // загрузить панели в канву отображения
+            pnlList.ForEach(p => workContainer.Children.Add(p));
+        }
+
+        // сохранение панелей заказов в коллекцию и удаление их из контейнера
+        private void saveOrderPanelsToList(Canvas container, List<FrameworkElement> saveList)
+        {
+            saveList.Clear();
+            foreach (FrameworkElement item in container.Children) saveList.Add(item);
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
@@ -1133,4 +1842,5 @@ namespace KDSWPFClient
         #endregion
 
     }  // class MainWindow
+
 }

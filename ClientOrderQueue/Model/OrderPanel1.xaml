@@ -48,7 +48,7 @@
                     </TextBlock>
                 </Viewbox>
 
-                <Viewbox x:Name="cntCookingTimer" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Collapsed">
+                <Viewbox x:Name="cntCookingTimer" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden" Width="{Binding ActualWidth, ElementName=grdRow1, Mode=OneWay}">
                     <TextBlock Margin="5,0">
                         <Run x:Name="tbCookingTimerTitle" FontSize="12"/>
                         <Run Text=" "/>

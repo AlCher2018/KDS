@@ -10,10 +10,10 @@ using System.Windows;
 [assembly: AssemblyTitle("KDS WPF Client")]
 [assembly: AssemblyDescription("KDS WPF Client")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Integra-IT Solutions")]
+[assembly: AssemblyCompany("Integra-IT Solutions, Kyiv, Ukraine, http://www.integra-its.com.ua/")]
 [assembly: AssemblyProduct("KDSWPFClient")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
-[assembly: AssemblyTrademark("Integra ITS, http://www.integra-its.com.ua/")]
+[assembly: AssemblyTrademark("Integra ITS")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
@@ -51,5 +51,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.0.0.4")]
-[assembly: AssemblyFileVersion("2.0.0.4")]
+[assembly: AssemblyVersion("2.0.1.8")]
+[assembly: AssemblyFileVersion("2.0.1.8")]
+[assembly: Guid("E724CE24-F123-4B61-9C12-4A843E8D97C2")]
+

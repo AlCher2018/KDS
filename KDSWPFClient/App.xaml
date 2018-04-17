@@ -8,12 +8,13 @@
     <Application.Resources>
         <!-- конвертеры -->
         <locLib:MultiplyParamValueConverter x:Key="multParamConv"/>
+        <locLib:AddParamValueConverter x:Key="addParamConv"/>
         <locLib:GetMargin x:Key="getMargin"/>
         <locLib:GetCornerRadius x:Key="getCornerRadius"/>
         <locLib:IsNullConverter x:Key="isNullConverter"/>
         <locLib:ViewDateConverter x:Key="viewDateConverter"/>
         <locLib:IsZeroConverter x:Key="isZeroConverter"/>
-        
+        <locLib:DishQuantityToStringConverter x:Key="dishQuantityToStringConverter"/>
 
         <locLib:BrushConverter x:Key="brushConverter" />
         <locLib:BrushOrderHeaderConverter x:Key="brushOrderHeaderConverter" />

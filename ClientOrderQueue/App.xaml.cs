@@ -1,5 +1,8 @@
 ﻿using ClientOrderQueue.Lib;
 using ClientOrderQueue.Model;
+using IntegraLib;
+using IntegraWPFLib;
+using SplashScreenLib;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -18,44 +21,83 @@ namespace ClientOrderQueue
         [STAThread]
         public static void Main()
         {
-            AppLib.WriteLogInfoMessage("****  Start application  ****");
-            AppLib.WriteLogInfoMessage("Системное окружение: " + AppLib.GetEnvironmentString());
-            AppLib.WriteLogInfoMessage("Версия файла {0}: {1}", AppLib.GetAppFileName(), AppLib.GetAppVersion());
-            AppLib.WriteLogInfoMessage("Настройки из config-файла: " + AppLib.GetAppSettingsFromConfigFile());
-
             App app = new App();
 
             // splash
-            getAppLayout();
-            string fileName = (AppLib.IsAppVerticalLayout ? "Images/bg 3ver 1080x1920 splash.png" : "Images/bg 3hor 1920x1080 splash.png");
-            SplashScreen splashScreen = new SplashScreen(fileName);
-            splashScreen.Show(true);
+            Splasher.Splash = new View.SplashScreen();
+            Splasher.ShowSplash();
+            //for (int i = 0; i < 5000; i += 1)
+            //{
+            //    MessageListener.Instance.ReceiveMessage(string.Format("Load module {0}", i));
+            //    Thread.Sleep(1);
+            //}
 
-            // проверка доступа к БД
+            // таймаут запуска приложения
+            string cfgValue = CfgFileHelper.GetAppSetting("StartTimeout");
+            int startTimeout = 0;
+            if (cfgValue != null) startTimeout = cfgValue.ToInt();
+            if (startTimeout != 0)
+            {
+                for (int i = startTimeout; i > 0; i--)
+                {
+                    MessageListener.Instance.ReceiveMessage($"Таймаут запуска приложения - {i} секунд.");
+                    System.Threading.Thread.Sleep(1000);
+                }
+            }
+
+            MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
+            AppLib.InitAppLogger();
+            System.Threading.Thread.Sleep(500);
+
+            AppLib.WriteLogInfoMessage("****  Start application  ****");
+
+            // защита PSW-файлом
+            // текст в MessageListener.Instance прибинден к текстовому полю на сплэше
+            MessageListener.Instance.ReceiveMessage("Проверка лицензии...");
+            pswLib.CheckProtectedResult checkProtectedResult;
+            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue", out checkProtectedResult) == false)
+            {
+                AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
+                appExit(2, checkProtectedResult.CustomMessage);
+                return;
+            }
+            System.Threading.Thread.Sleep(500);
+
+            // информация о файлах, сборках и настройках из конфиг-файлов
+            MessageListener.Instance.ReceiveMessage("Получаю информацию о сборках и настройках...");
+            // для хранения в свойствах приложения (из config-файла или др.)
+            setAppGlobalValues();  
+            AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
+            AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
+            asmInfo = new ITSAssemmblyInfo("IntegraWPFLib");
+            AppLib.WriteLogInfoMessage(" - Integra WPF lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
+
+            AppLib.WriteLogInfoMessage("Системное окружение: " + AppEnvironment.GetEnvironmentString());
+            AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
+
+            // флажки для логов
+            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
+            WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
+            System.Threading.Thread.Sleep(300);
+
+            // проверить доступность БД
+            MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");
             if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
             {
                 bool result = false;
-                AppStartWait winWait = new AppStartWait();
-                winWait.Show();
-
+                int tryCount = 20;
                 // сделать цикл проверки подключения: 20 раз через 2 сек
-                for (int i = 1; i <= 20; i++)
+                for (int i = tryCount; i >= 1; i--)
                 {
-                    winWait.Dispatcher.Invoke(() =>
-                    {
-                        int iVal = winWait.txtNumAttempt.Text.ToInt();
-                        iVal++;
-                        winWait.txtNumAttempt.Text = iVal.ToString();
-                        winWait.InvalidateProperty(TextBlock.TextProperty);
-                        winWait.InvalidateVisual();
-                        winWait.Refresh();
-                    });
-                    Thread.Sleep(2000);
+                    cfgValue = $"Попытка подключения к БД: {i} из {tryCount}";
+                    MessageListener.Instance.ReceiveMessage(cfgValue);
+                    AppLib.WriteLogInfoMessage(cfgValue);
 
+                    Thread.Sleep(2000);
                     result = AppLib.CheckDBConnection(typeof(KDSContext));
                     if (result) break;
                 }
-                winWait.Close();
 
                 if (!result)
                 {
@@ -65,43 +107,48 @@ namespace ClientOrderQueue
                 // перезапусить приложение
                 else
                 {
-                    AppLib.RestartApplication();
+                    AppEnvironment.RestartApplication();
                 }
             }
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
 
-            setAppGlobalValues();  // для хранения в свойствах приложения (из config-файла или др.)
-
-            MainWindow mWindow = new MainWindow();
+            MessageListener.Instance.ReceiveMessage("Работаю...");
+            View.MainWindow mWindow = new View.MainWindow();
             app.Run(mWindow);
 
             AppLib.WriteLogInfoMessage("****  End application  ****");
         }
 
-
-        private static void getAppLayout()
+        private static void appExit(int exitCode, string errMsg)
         {
-            AppLib.SetAppGlobalValue("screenWidth", SystemParameters.PrimaryScreenWidth);
-            AppLib.SetAppGlobalValue("screenHeight", SystemParameters.PrimaryScreenHeight);
+            if ((exitCode != 0) && (errMsg.IsNull() == false))
+            {
+                MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
+            }
+            Environment.Exit(exitCode);
         }
+
 
         // сохранить в свойствах приложения часто используемые значения, чтобы не дергать config-файл
         private static void setAppGlobalValues()
         {
             string cfgValue;
 
+            cfgValue = CfgFileHelper.GetAppSetting("MidnightShiftShowYesterdayOrders");
+            WpfHelper.SetAppGlobalValue("MidnightShiftShowYesterdayOrders", (cfgValue==null ? 0 : cfgValue.ToDouble()));
+
             // файл изображения состояния
-            string sPath = AppLib.GetAppSetting("ImagesPath");
-            AppLib.SetAppGlobalValue("ImagesPath", sPath);
-            string sFile = AppLib.GetAppSetting("StatusReadyImage");
-            string fileName = AppLib.GetFullFileName(sPath, sFile);
-            if ((fileName != null) && (System.IO.File.Exists(fileName))) AppLib.SetAppGlobalValue("StatusReadyImageFile", fileName);
+            string sPath = CfgFileHelper.GetAppSetting("ImagesPath");
+            WpfHelper.SetAppGlobalValue("ImagesPath", sPath);
+            string sFile = CfgFileHelper.GetAppSetting("StatusReadyImage");
+            string fileName = AppEnvironment.GetFullFileName(sPath, sFile);
+            if ((fileName != null) && (System.IO.File.Exists(fileName))) WpfHelper.SetAppGlobalValue("StatusReadyImageFile", fileName);
 
             // неиспользуемые цеха
             HashSet<int> unUsed = new HashSet<int>();
-            cfgValue = AppLib.GetAppSetting("UnusedDepartments");
+            cfgValue = CfgFileHelper.GetAppSetting("UnusedDepartments");
             if (cfgValue != null)
             {
                 if (cfgValue.Contains(",")) cfgValue = cfgValue.Replace(',', ';');
@@ -113,62 +160,58 @@ namespace ClientOrderQueue
                 }
                     
             }
-            AppLib.SetAppGlobalValue("UnusedDepartments", unUsed);
+            WpfHelper.SetAppGlobalValue("UnusedDepartments", unUsed);
 
             // кисти фона и текста заголовка окна
             createWinTitleBrushes();
             // кисти фона панели заказа (CellBrushes - кисть фона и разделительной полосы)
             createPanelBackBrushes();
 
-            // размер шрифта номера заказа
-            cfgValue = AppLib.GetAppSetting("OrderNumberFontSize");
-            AppLib.SetAppGlobalValue("OrderNumberFontSize", cfgValue.ToDouble());
-
             // показывать ли ожидаемое время приготовления заказа
-            cfgValue = AppLib.GetAppSetting("IsShowOrderEstimateTime");
-            AppLib.SetAppGlobalValue("IsShowOrderEstimateTime", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderEstimateTime");
+            WpfHelper.SetAppGlobalValue("IsShowOrderEstimateTime", cfgValue.ToBool());
             // ожидаемое время приготовления заказа
-            cfgValue = AppLib.GetAppSetting("OrderEstimateTime");
-            AppLib.SetAppGlobalValue("OrderEstimateTime", cfgValue.ToDouble());
+            cfgValue = CfgFileHelper.GetAppSetting("OrderEstimateTime");
+            WpfHelper.SetAppGlobalValue("OrderEstimateTime", cfgValue.ToDouble());
             // имя клиента - отображается на панели, если есть
-            cfgValue = AppLib.GetAppSetting("IsShowClientName");
-            AppLib.SetAppGlobalValue("IsShowClientName", cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsShowClientName");
+            WpfHelper.SetAppGlobalValue("IsShowClientName", cfgValue.ToBool());
 
-            cfgValue = AppLib.GetAppSetting("IsWriteTraceMessages");
-            AppLib.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
+            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
+            WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", (cfgValue == null) ? false : cfgValue.ToBool());
 
             // массивы строк для различных языков
-            cfgValue = AppLib.GetAppSetting("StatusTitle");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusTitle");
             if (cfgValue == null) cfgValue = "Заказ|Замовлення|Order";
-            AppLib.SetAppGlobalValue("StatusTitle", cfgValue);
+            WpfHelper.SetAppGlobalValue("StatusTitle", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("PanelWaitText");
+            cfgValue = CfgFileHelper.GetAppSetting("PanelWaitText");
             if (cfgValue != null) cfgValue = "Ожидать|Чекати|Wait";
-            AppLib.SetAppGlobalValue("PanelWaitText", cfgValue);
+            WpfHelper.SetAppGlobalValue("PanelWaitText", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("StatusLang0");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusLang0");
             if (cfgValue == null) cfgValue = "Готовится|Готується|In process";
-            AppLib.SetAppGlobalValue("Status1Langs", cfgValue);
+            WpfHelper.SetAppGlobalValue("Status1Langs", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("StatusLang1");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusLang1");
             if (cfgValue == null) cfgValue = "Готов|Готово|Done";
-            AppLib.SetAppGlobalValue("Status2Langs", cfgValue);
+            WpfHelper.SetAppGlobalValue("Status2Langs", cfgValue);
 
-            cfgValue = AppLib.GetAppSetting("StatusLang2");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusLang2");
             if (cfgValue == null) cfgValue = "Забрали|Забрали|Taken";
-            AppLib.SetAppGlobalValue("Status3Langs", cfgValue);
+            WpfHelper.SetAppGlobalValue("Status3Langs", cfgValue);
         }
 
         private static void createWinTitleBrushes()
         {
             string cfgValue;
-            cfgValue = AppLib.GetAppSetting("WinTitleBackground");
+            cfgValue = CfgFileHelper.GetAppSetting("WinTitleBackground");
             if (cfgValue == null) cfgValue = "122;34;104";   // по умолчанию - т.фиолетовый
-            AppLib.SetAppGlobalValue("WinTitleBackground", getBrushByName(cfgValue, "122;34;104"));
+            WpfHelper.SetAppGlobalValue("WinTitleBackground", DrawHelper.GetBrushByName(cfgValue, "122;34;104"));
 
-            cfgValue = AppLib.GetAppSetting("WinTitleForeground");
+            cfgValue = CfgFileHelper.GetAppSetting("WinTitleForeground");
             if (cfgValue == null) cfgValue = "255;200;62";   // по умолчанию - т.желтый
-            AppLib.SetAppGlobalValue("WinTitleForeground", getBrushByName(cfgValue, "255;200;62"));
+            WpfHelper.SetAppGlobalValue("WinTitleForeground", DrawHelper.GetBrushByName(cfgValue, "255;200;62"));
         }
 
         private static void createPanelBackBrushes()
@@ -176,50 +219,16 @@ namespace ClientOrderQueue
             Brush[] cellBrushes = new Brush[2];
 
             string cfgValue;
-            cfgValue = AppLib.GetAppSetting("StatusCookingPanelBackground");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusCookingPanelBackground");
             if (cfgValue == null) cfgValue = "Gold";
-            cellBrushes[0] = getBrushByName(cfgValue, "Gold");
+            cellBrushes[0] = DrawHelper.GetBrushByName(cfgValue, "Gold");
 
-            cfgValue = AppLib.GetAppSetting("StatusReadyPanelBackground");
+            cfgValue = CfgFileHelper.GetAppSetting("StatusReadyPanelBackground");
             if (cfgValue == null) cfgValue = "LimeGreen";
-            cellBrushes[1] = getBrushByName(cfgValue, "LimeGreen");
+            cellBrushes[1] = DrawHelper.GetBrushByName(cfgValue, "LimeGreen");
 
             // сохранить в свойствах
-            AppLib.SetAppGlobalValue("PanelBackgroundBrushes", cellBrushes);
-        }
-
-        // brushName может быть как наименованием цвета, так и RGB
-        private static SolidColorBrush getBrushByName(string brushName, string defaultBrushName = null)
-        {
-            SolidColorBrush retVal = null;
-
-            // кисть по RGB
-            if (brushName.Contains(";"))
-            {
-                string[] rgb = brushName.Split(';');
-                if (rgb.Length == 3)
-                {
-                    Color c = Color.FromRgb(Convert.ToByte(rgb[0]), Convert.ToByte(rgb[1]), Convert.ToByte(rgb[2]));
-                    retVal = new SolidColorBrush(c);
-                }
-            }
-            else
-            {
-                Type t = typeof(Brushes);
-                System.Reflection.PropertyInfo[] bProps = t.GetProperties();
-                foreach (System.Reflection.PropertyInfo item in bProps)
-                {
-                    if (item.Name == brushName)
-                    {
-                        retVal = (SolidColorBrush)item.GetValue(null, null);
-                        break;
-                    }
-                }
-            }
-
-            if ((retVal == null) && (defaultBrushName != null)) retVal = getBrushByName(defaultBrushName);
-
-            return retVal;
+            WpfHelper.SetAppGlobalValue("PanelBackgroundBrushes", cellBrushes);
         }
 
     }  // class App

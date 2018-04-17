@@ -1,4 +1,5 @@
-﻿using KDSWPFClient.Lib;
+﻿using IntegraWPFLib;
+using KDSWPFClient.Lib;
 using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.View;
 using System;
@@ -24,7 +25,7 @@ namespace KDSWPFClient.View
             Dictionary<string, BrushesPair> appBrushes = BrushHelper.AppBrushes;
 
             // собрать кисти в список для легенды
-            bool isUseReadyConfirm = (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            bool isUseReadyConfirm = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
             List<BrushesPair> context = new List<BrushesPair>();
             foreach (KeyValuePair<string, BrushesPair> item in appBrushes)
             {

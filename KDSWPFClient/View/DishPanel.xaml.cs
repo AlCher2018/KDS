@@ -20,6 +20,7 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl==false
     /// <summary>
     /// Interaction logic for DishPanel.xaml
     /// </summary>
@@ -29,50 +30,50 @@ namespace KDSWPFClient.View
         internal OrderDishViewModel DishView { get { return _dishView; } }
 
         private bool _isDish, _isIngrIndepend;
-        private double _fontSize, _padd;
+        private double _padd;
         private string _currentBrushKey;
-        private DishPanel _parentPanel;
+        //private DishPanel _parentPanel;
 
 
-        public DishPanel(OrderDishViewModel dishView, DishPanel parentPanel = null)
+        public DishPanel(OrderDishViewModel dishView, double panelWidth)
         {
+            this.Width = panelWidth;
             InitializeComponent();
 
+            this.MouseUp += root_MouseUp;
             _dishView = dishView;
-            _parentPanel = parentPanel;
+            //_parentPanel = parentPanel;
             grdDishLine.DataContext = _dishView;
-
+    
             _isDish = _dishView.ParentUID.IsNull();  // признак блюда
-            _isIngrIndepend = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
+            _isIngrIndepend = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
 
-            dishView.PropertyChanged += DishView_PropertyChanged;
+            _dishView.PropertyChanged += DishView_PropertyChanged;
 
-            //double dishLineMinHeight = (double)AppLib.GetAppGlobalValue("ordPnlDishLineMinHeight");
-            //base.MinHeight = dishLineMinHeight;
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale",1.0d);
+            double fontSizeDishName = (double)WpfHelper.GetAppGlobalValue("ordPnlDishNameFontSize");
 
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale",1.0d);
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishLineFontSize"); // 12d
-            _fontSize = fontSize * fontScale;
-
-            // на уровне всего элемента для всех TextBlock-ов  - НЕЛЬЗЯ!!! т.к. Measure() неправильно считает размер!
-            // this.SetValue(TextBlock.FontSizeProperty, _fontSize);   
-            this.tbDishIndex.FontSize = 0.8 * _fontSize;
-            //this.tbDishFilingNumber.FontSize = _fontSize;
-            this.tbDishName.FontSize = _fontSize;
+            this.tbDishIndex.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishIndexFontSize");
+            this.tbDishName.FontSize = fontScale * (_isDish 
+                ? (double)WpfHelper.GetAppGlobalValue("ordPnlDishNameFontSize") 
+                : (double)WpfHelper.GetAppGlobalValue("ordPnlIngrNameFontSize"));
             // модификаторы
             if (dishView.Comment.IsNull() == false)
             {
                 this.tbComment.Text = string.Format("\n({0})", dishView.Comment);
-                this.tbComment.FontSize = 0.9 * _fontSize;
+                this.tbComment.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishCommentFontSize");
             }
-            this.tbDishQuantity.FontSize = _fontSize;
+            this.tbDishQuantity.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishQuantityFontSize");
 
-            tbDishStatusTS.FontSize = _fontSize;
+            tbDishStatusTS.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlDishTimerFontSize");
             tbDishStatusTS.FontWeight = FontWeights.Bold;
 
-            _padd = 0.5 * fontSize;  // от немасштабного фонта
-            brdMain.Padding = new Thickness(0, 0.5*_padd, 0, 0.5*_padd);
+            _padd = 0.5 * fontSizeDishName;  // от размера фонта наименования блюда
+            brdMain.Padding = new Thickness(0, 0.5 *_padd, 0, 0.5 *_padd);
+
             brdTimer.Padding = new Thickness(0, _padd, 0, _padd);
+            double timerCornerRadius = 0.015 * this.Width;
+            brdTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
 
             // рамка вокруг таймера
             setTimerBorder();
@@ -122,6 +123,10 @@ namespace KDSWPFClient.View
                     brushKey = "estimateCook";
                 }
             }
+            else if ((_dishView.Status == OrderStatusEnum.Ready) && _dishView.EnableTimerToAutoReadyConfirm)
+            {
+                brushKey = OrderStatusEnum.ReadyConfirmed.ToString() + OrderStatusEnum.Ready.ToString();
+            }
             else
             {
                 bool negativeTimer = (!_dishView.ViewTimerString.IsNull() && _dishView.ViewTimerString.StartsWith("-"));
@@ -162,7 +167,7 @@ namespace KDSWPFClient.View
             else if (!_isDish)
             {
                 // IsIngredientsIndependent может меняться динамически, поэтому проверяем каждый раз
-                bool b1 = (bool)AppPropsHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
+                bool b1 = (bool)WpfHelper.GetAppGlobalValue("IsIngredientsIndependent", false);
                 if (!b1)
                 {
                     AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по ингр/допНП не разрешен в IsIngredientsIndependent)");
@@ -171,7 +176,7 @@ namespace KDSWPFClient.View
             }
 
             OrderViewModel orderView = null;
-            FrameworkElement orderPanel = AppLib.FindVisualParent(this, typeof(OrderPanel), null);
+            FrameworkElement orderPanel = WpfHelper.FindVisualParent(this, typeof(OrderPanel), null);
             if (orderPanel != null) orderView = (orderPanel as OrderPanel).OrderViewModel;
 
             AppLib.WriteLogClientAction("{0} - open StateChange window for dishId {1} ({2})", sLogMsg, _dishView.Id, _dishView.DishName);
@@ -182,4 +187,5 @@ namespace KDSWPFClient.View
         }
 
     }  // class
+#endif
 }

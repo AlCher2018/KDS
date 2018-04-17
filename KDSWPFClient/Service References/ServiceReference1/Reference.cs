@@ -116,7 +116,7 @@ namespace KDSWPFClient.ServiceReference1 {
         private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
-        private decimal DishQuantityField;
+        private int DishQuantityField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
@@ -141,7 +141,7 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public decimal DishQuantity {
+        public int DishQuantity {
             get {
                 return this.DishQuantityField;
             }
@@ -201,6 +201,297 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.UIDField, value) != true)) {
                     this.UIDField = value;
                     this.RaisePropertyChanged("UID");
+                }
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="ClientDataFilter", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    [System.SerializableAttribute()]
+    public partial class ClientDataFilter : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
+        
+        [System.NonSerializedAttribute()]
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int ApproxMaxDishesCountOnPageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<int> DepIDsListField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int EndpointOrderIDField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private int EndpointOrderItemIDField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private KDSWPFClient.ServiceReference1.OrderGroupEnum GroupByField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool IsDishGroupAndSumQuantityField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirectionField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<int> StatusesListField;
+        
+        [global::System.ComponentModel.BrowsableAttribute(false)]
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
+            get {
+                return this.extensionDataField;
+            }
+            set {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int ApproxMaxDishesCountOnPage {
+            get {
+                return this.ApproxMaxDishesCountOnPageField;
+            }
+            set {
+                if ((this.ApproxMaxDishesCountOnPageField.Equals(value) != true)) {
+                    this.ApproxMaxDishesCountOnPageField = value;
+                    this.RaisePropertyChanged("ApproxMaxDishesCountOnPage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<int> DepIDsList {
+            get {
+                return this.DepIDsListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.DepIDsListField, value) != true)) {
+                    this.DepIDsListField = value;
+                    this.RaisePropertyChanged("DepIDsList");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EndpointOrderID {
+            get {
+                return this.EndpointOrderIDField;
+            }
+            set {
+                if ((this.EndpointOrderIDField.Equals(value) != true)) {
+                    this.EndpointOrderIDField = value;
+                    this.RaisePropertyChanged("EndpointOrderID");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EndpointOrderItemID {
+            get {
+                return this.EndpointOrderItemIDField;
+            }
+            set {
+                if ((this.EndpointOrderItemIDField.Equals(value) != true)) {
+                    this.EndpointOrderItemIDField = value;
+                    this.RaisePropertyChanged("EndpointOrderItemID");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public KDSWPFClient.ServiceReference1.OrderGroupEnum GroupBy {
+            get {
+                return this.GroupByField;
+            }
+            set {
+                if ((this.GroupByField.Equals(value) != true)) {
+                    this.GroupByField = value;
+                    this.RaisePropertyChanged("GroupBy");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool IsDishGroupAndSumQuantity {
+            get {
+                return this.IsDishGroupAndSumQuantityField;
+            }
+            set {
+                if ((this.IsDishGroupAndSumQuantityField.Equals(value) != true)) {
+                    this.IsDishGroupAndSumQuantityField = value;
+                    this.RaisePropertyChanged("IsDishGroupAndSumQuantity");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public KDSWPFClient.ServiceReference1.LeafDirectionEnum LeafDirection {
+            get {
+                return this.LeafDirectionField;
+            }
+            set {
+                if ((this.LeafDirectionField.Equals(value) != true)) {
+                    this.LeafDirectionField = value;
+                    this.RaisePropertyChanged("LeafDirection");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<int> StatusesList {
+            get {
+                return this.StatusesListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.StatusesListField, value) != true)) {
+                    this.StatusesListField = value;
+                    this.RaisePropertyChanged("StatusesList");
+                }
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="OrderGroupEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    public enum OrderGroupEnum : int {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ByCreateTime = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        ByOrderNumber = 1,
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LeafDirectionEnum", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    public enum LeafDirectionEnum : int {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        NoLeaf = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Forward = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Backward = 2,
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="ServiceResponce", Namespace="http://schemas.datacontract.org/2004/07/KDSService.AppModel")]
+    [System.SerializableAttribute()]
+    public partial class ServiceResponce : object, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {
+        
+        [System.NonSerializedAttribute()]
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string NewOrderIdsField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersListField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string ServiceErrorMessageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool isExistsNextOrdersField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private bool isExistsPrevOrdersField;
+        
+        [global::System.ComponentModel.BrowsableAttribute(false)]
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData {
+            get {
+                return this.extensionDataField;
+            }
+            set {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string NewOrderIds {
+            get {
+                return this.NewOrderIdsField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.NewOrderIdsField, value) != true)) {
+                    this.NewOrderIdsField = value;
+                    this.RaisePropertyChanged("NewOrderIds");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> OrdersList {
+            get {
+                return this.OrdersListField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.OrdersListField, value) != true)) {
+                    this.OrdersListField = value;
+                    this.RaisePropertyChanged("OrdersList");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string ServiceErrorMessage {
+            get {
+                return this.ServiceErrorMessageField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
+                    this.ServiceErrorMessageField = value;
+                    this.RaisePropertyChanged("ServiceErrorMessage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool isExistsNextOrders {
+            get {
+                return this.isExistsNextOrdersField;
+            }
+            set {
+                if ((this.isExistsNextOrdersField.Equals(value) != true)) {
+                    this.isExistsNextOrdersField = value;
+                    this.RaisePropertyChanged("isExistsNextOrders");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool isExistsPrevOrders {
+            get {
+                return this.isExistsPrevOrdersField;
+            }
+            set {
+                if ((this.isExistsPrevOrdersField.Equals(value) != true)) {
+                    this.isExistsPrevOrdersField = value;
+                    this.RaisePropertyChanged("isExistsPrevOrders");
                 }
             }
         }
@@ -453,6 +744,9 @@ namespace KDSWPFClient.ServiceReference1 {
         private int FilingNumberField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string GroupedDishIdsField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
         private int IdField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
@@ -466,6 +760,9 @@ namespace KDSWPFClient.ServiceReference1 {
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string ServiceErrorMessageField;
+        
+        [System.Runtime.Serialization.OptionalFieldAttribute()]
+        private string UID1CField;
         
         [System.Runtime.Serialization.OptionalFieldAttribute()]
         private string UidField;
@@ -575,6 +872,19 @@ namespace KDSWPFClient.ServiceReference1 {
         }
         
         [System.Runtime.Serialization.DataMemberAttribute()]
+        public string GroupedDishIds {
+            get {
+                return this.GroupedDishIdsField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.GroupedDishIdsField, value) != true)) {
+                    this.GroupedDishIdsField = value;
+                    this.RaisePropertyChanged("GroupedDishIds");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
         public int Id {
             get {
                 return this.IdField;
@@ -635,6 +945,19 @@ namespace KDSWPFClient.ServiceReference1 {
                 if ((object.ReferenceEquals(this.ServiceErrorMessageField, value) != true)) {
                     this.ServiceErrorMessageField = value;
                     this.RaisePropertyChanged("ServiceErrorMessage");
+                }
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string UID1C {
+            get {
+                return this.UID1CField;
+            }
+            set {
+                if ((object.ReferenceEquals(this.UID1CField, value) != true)) {
+                    this.UID1CField = value;
+                    this.RaisePropertyChanged("UID1C");
                 }
             }
         }
@@ -730,10 +1053,10 @@ namespace KDSWPFClient.ServiceReference1 {
         System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.DepartmentModel>> GetDepartmentsAsync(string machineName);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName);
+        KDSWPFClient.ServiceReference1.ServiceResponce GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetOrders", ReplyAction="http://tempuri.org/IKDSService/GetOrdersResponse")]
-        System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName);
+        System.Threading.Tasks.Task<KDSWPFClient.ServiceReference1.ServiceResponce> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSService/GetHostAppSettings", ReplyAction="http://tempuri.org/IKDSService/GetHostAppSettingsResponse")]
         System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName);
@@ -791,12 +1114,12 @@ namespace KDSWPFClient.ServiceReference1 {
             return base.Channel.GetDepartmentsAsync(machineName);
         }
         
-        public System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel> GetOrders(string machineName) {
-            return base.Channel.GetOrders(machineName);
+        public KDSWPFClient.ServiceReference1.ServiceResponce GetOrders(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+            return base.Channel.GetOrders(machineName, clientFilter);
         }
         
-        public System.Threading.Tasks.Task<System.Collections.Generic.List<KDSWPFClient.ServiceReference1.OrderModel>> GetOrdersAsync(string machineName) {
-            return base.Channel.GetOrdersAsync(machineName);
+        public System.Threading.Tasks.Task<KDSWPFClient.ServiceReference1.ServiceResponce> GetOrdersAsync(string machineName, KDSWPFClient.ServiceReference1.ClientDataFilter clientFilter) {
+            return base.Channel.GetOrdersAsync(machineName, clientFilter);
         }
         
         public System.Collections.Generic.Dictionary<string, object> GetHostAppSettings(string machineName) {
@@ -821,40 +1144,52 @@ namespace KDSWPFClient.ServiceReference1 {
     public interface IKDSCommandService {
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        void LockOrder(string machineName, int orderId);
+        bool LockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/LockOrderResponse")]
-        System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId);
+        System.Threading.Tasks.Task<bool> LockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        void DelockOrder(string machineName, int orderId);
+        bool DelockOrder(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockOrder", ReplyAction="http://tempuri.org/IKDSCommandService/DelockOrderResponse")]
-        System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId);
+        System.Threading.Tasks.Task<bool> DelockOrderAsync(string machineName, int orderId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        void LockDish(string machineName, int dishId);
+        bool LockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/LockDish", ReplyAction="http://tempuri.org/IKDSCommandService/LockDishResponse")]
-        System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId);
+        System.Threading.Tasks.Task<bool> LockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        void DelockDish(string machineName, int dishId);
+        bool DelockDish(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/DelockDish", ReplyAction="http://tempuri.org/IKDSCommandService/DelockDishResponse")]
-        System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId);
+        System.Threading.Tasks.Task<bool> DelockDishAsync(string machineName, int dishId);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        bool ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
+        System.Threading.Tasks.Task<bool> ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus", ReplyAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse")]
-        System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        System.Threading.Tasks.Task<bool> ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrderResponse")]
+        bool CreateNoticeFileForOrder(string machineName, int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrderResponse")]
+        System.Threading.Tasks.Task<bool> CreateNoticeFileForOrderAsync(string machineName, int orderId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDishResponse")]
+        bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish", ReplyAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDishResponse")]
+        System.Threading.Tasks.Task<bool> CreateNoticeFileForDishAsync(string machineName, int orderId, int orderDishId);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -884,52 +1219,68 @@ namespace KDSWPFClient.ServiceReference1 {
                 base(binding, remoteAddress) {
         }
         
-        public void LockOrder(string machineName, int orderId) {
-            base.Channel.LockOrder(machineName, orderId);
+        public bool LockOrder(string machineName, int orderId) {
+            return base.Channel.LockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task LockOrderAsync(string machineName, int orderId) {
+        public System.Threading.Tasks.Task<bool> LockOrderAsync(string machineName, int orderId) {
             return base.Channel.LockOrderAsync(machineName, orderId);
         }
         
-        public void DelockOrder(string machineName, int orderId) {
-            base.Channel.DelockOrder(machineName, orderId);
+        public bool DelockOrder(string machineName, int orderId) {
+            return base.Channel.DelockOrder(machineName, orderId);
         }
         
-        public System.Threading.Tasks.Task DelockOrderAsync(string machineName, int orderId) {
+        public System.Threading.Tasks.Task<bool> DelockOrderAsync(string machineName, int orderId) {
             return base.Channel.DelockOrderAsync(machineName, orderId);
         }
         
-        public void LockDish(string machineName, int dishId) {
-            base.Channel.LockDish(machineName, dishId);
+        public bool LockDish(string machineName, int dishId) {
+            return base.Channel.LockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task LockDishAsync(string machineName, int dishId) {
+        public System.Threading.Tasks.Task<bool> LockDishAsync(string machineName, int dishId) {
             return base.Channel.LockDishAsync(machineName, dishId);
         }
         
-        public void DelockDish(string machineName, int dishId) {
-            base.Channel.DelockDish(machineName, dishId);
+        public bool DelockDish(string machineName, int dishId) {
+            return base.Channel.DelockDish(machineName, dishId);
         }
         
-        public System.Threading.Tasks.Task DelockDishAsync(string machineName, int dishId) {
+        public System.Threading.Tasks.Task<bool> DelockDishAsync(string machineName, int dishId) {
             return base.Channel.DelockDishAsync(machineName, dishId);
         }
         
-        public void ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
-            base.Channel.ChangeOrderStatus(machineName, orderId, orderStatus);
+        public bool ChangeOrderStatus(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+            return base.Channel.ChangeOrderStatus(machineName, orderId, orderStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
+        public System.Threading.Tasks.Task<bool> ChangeOrderStatusAsync(string machineName, int orderId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderStatus) {
             return base.Channel.ChangeOrderStatusAsync(machineName, orderId, orderStatus);
         }
         
-        public void ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
-            base.Channel.ChangeOrderDishStatus(machineName, orderId, orderDishId, orderDishStatus);
+        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+            return base.Channel.ChangeOrderDishStatus(machineName, orderId, orderDishId, orderDishStatus);
         }
         
-        public System.Threading.Tasks.Task ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
+        public System.Threading.Tasks.Task<bool> ChangeOrderDishStatusAsync(string machineName, int orderId, int orderDishId, KDSWPFClient.ServiceReference1.OrderStatusEnum orderDishStatus) {
             return base.Channel.ChangeOrderDishStatusAsync(machineName, orderId, orderDishId, orderDishStatus);
+        }
+        
+        public bool CreateNoticeFileForOrder(string machineName, int orderId) {
+            return base.Channel.CreateNoticeFileForOrder(machineName, orderId);
+        }
+        
+        public System.Threading.Tasks.Task<bool> CreateNoticeFileForOrderAsync(string machineName, int orderId) {
+            return base.Channel.CreateNoticeFileForOrderAsync(machineName, orderId);
+        }
+        
+        public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId) {
+            return base.Channel.CreateNoticeFileForDish(machineName, orderId, orderDishId);
+        }
+        
+        public System.Threading.Tasks.Task<bool> CreateNoticeFileForDishAsync(string machineName, int orderId, int orderDishId) {
+            return base.Channel.CreateNoticeFileForDishAsync(machineName, orderId, orderDishId);
         }
     }
 }

@@ -19,83 +19,88 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl == false
     /// <summary>
     /// Interaction logic for OrderPanelHeader.xaml
     /// </summary>
     public partial class OrderPanelHeader : UserControl
     {
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
 
-        #region dependency properties
-        //public static readonly DependencyProperty PanelWidthProperty = DependencyProperty.Register("PanelWidth", typeof(double), typeof(OrderPanelHeader), new PropertyMetadata(300d));
-        //public double PanelWidth
-        //{
-        //    get { return (double)GetValue(PanelWidthProperty); }
-        //    set { SetValue(PanelWidthProperty, value); }
-        //}
-
-        //// фон заголовка для строк 1 и 2
-        //public static readonly DependencyProperty HeaderBackground12Property = DependencyProperty.Register("HeaderBackground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Green)));
-        //public Brush HeaderBackground12
-        //{
-        //    get { return (Brush)GetValue(HeaderBackground12Property); }
-        //    set { SetValue(HeaderBackground12Property, value); }
-        //}
-        //// фон заголовка для строки 3
-        //public static readonly DependencyProperty HeaderBackground3Property = DependencyProperty.Register("HeaderBackground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
-        //public Brush HeaderBackground3
-        //{
-        //    get { return (Brush)GetValue(HeaderBackground3Property); }
-        //    set { SetValue(HeaderBackground3Property, value); }
-        //}
-        //// фон счетчика приготовления Заказа
-        //public static readonly DependencyProperty OrderStatusTSBackgroundProperty = DependencyProperty.Register("OrderStatusTSBackground", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.YellowGreen)));
-        //public Brush OrderStatusTSBackground
-        //{
-        //    get { return (Brush)GetValue(OrderStatusTSBackgroundProperty); }
-        //    set { SetValue(OrderStatusTSBackgroundProperty, value); }
-        //}
-
-        //// цвет текста для строк 1, 2
-        //public static readonly DependencyProperty HeaderForeground12Property = DependencyProperty.Register("HeaderForeground12", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.White)));
-        //public Brush HeaderForeground12
-        //{
-        //    get { return (Brush)GetValue(HeaderForeground12Property); }
-        //    set { SetValue(HeaderForeground12Property, value); }
-        //}
-        //// цвет текста для строки 3
-        //public static readonly DependencyProperty HeaderForeground3Property = DependencyProperty.Register("HeaderForeground3", typeof(Brush), typeof(OrderPanelHeader), new PropertyMetadata(new SolidColorBrush(Colors.Black)));
-        //public Brush HeaderForeground3
-        //{
-        //    get { return (Brush)GetValue(HeaderForeground3Property); }
-        //    set { SetValue(HeaderForeground3Property, value); }
-        //}
-
-        #endregion
 
         public OrderPanelHeader(OrderViewModel order, double width)
         {
             InitializeComponent();
-
+            
+            this.MouseUp += root_MouseUp;
             grdHeader.DataContext = order;
 
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            // стили и кисти
+            BrushesPair brPair;
+            StatusEnum status1 = order.Status, status2 = order.StatusAllowedDishes;
+            string key = null;
+            if (((bool)WpfHelper.GetAppGlobalValue("IsShowOrderStatusByAllShownDishes"))
+                && (status2 != StatusEnum.None) && (status2 != StatusEnum.WaitingCook) && (status2 != status1))
+                key = status2.ToString();
+            else
+                key = status1.ToString();
+            if (!key.IsNull() && BrushHelper.AppBrushes.ContainsKey(key))
+            {
+                brPair = BrushHelper.AppBrushes[key];
+                brdHrdTableRow.Background = brPair.Background;
+                brdHrdTableRow.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+                brdHdrWaiter.Background = brPair.Background;
+                brdHdrWaiter.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+                brdHdrOrderTime.Background = brPair.Background;
+                brdHdrOrderTime.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+            }
+            // уголки рамок
+            brdHrdTableRow.CornerRadius = new CornerRadius(0.03 * width, 0.03 * width, 0, 0);
+            // отступы
+            Thickness rowMargin = new Thickness(0.02 * width, 0, 0.02 * width, 0);
+            tblTable.Margin = rowMargin;
+            tblOrderNumber.Margin = rowMargin;
+            tbWaiter.Margin = rowMargin;
+            grdHdrOrderTime.Margin = rowMargin;
 
-            double fSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");  // 12d
+            // таймер
+            double timerCornerRadius = 0.025 * width;
+            brdOrderTimer.CornerRadius = new CornerRadius(timerCornerRadius, timerCornerRadius, timerCornerRadius, timerCornerRadius);
+            brPair = BrushHelper.AppBrushes["orderHeaderTimer"];
+            if (brPair != null)
+            {
+                brdOrderTimer.Background = brPair.Background;
+                brdOrderTimer.SetValue(TextBlock.ForegroundProperty, brPair.Foreground);
+            }
+
+            // шрифты
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+
+            double fSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrLabelFontSize");
             tbTableLabel1.FontSize = fSize;
             tbTableLabel2.FontSize = fSize;
             tbOrderDateLabel.FontSize = fSize;
             tbOrderCookingCounterLabel.FontSize = fSize;
 
-            tbTableName.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");  // 14d
-            tbOrderNumber.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");  // 14d
-            tbWaiter.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");  // 12d
-            tbOrderDate.FontSize = tbTableName.FontSize;
-
-            tbOrderCookingCounter.FontSize = fontScale * (double)AppPropsHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");  // 12d
+            tbTableName.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrTableNameFontSize");
+            tbOrderNumber.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderNumberFontSize");
+            tbWaiter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrWaiterNameFontSize");
+            tbOrderDate.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderCreateDateFontSize");
+            tbOrderCookingCounter.FontSize = fontScale * (double)WpfHelper.GetAppGlobalValue("ordPnlHdrOrderTimerFontSize");
 
             if (!order.DivisionColorRGB.IsNull())
             {
-                brdDivisionMark.Fill = AppLib.GetBrushFromRGBString(order.DivisionColorRGB);
+                brdDivisionMark.Fill = WpfHelper.GetBrushFromRGBString(order.DivisionColorRGB);
             }
         }
 
@@ -104,7 +109,7 @@ namespace KDSWPFClient.View
             string sLogMsg = "click on order HEADER";
 
             // 1. настройка в config-файле для заголовка заказа
-            if ((bool)AppPropsHelper.GetAppGlobalValue("OrderHeaderClickable", false) == false)
+            if ((bool)WpfHelper.GetAppGlobalValue("OrderHeaderClickable", false) == false)
             {
                 AppLib.WriteLogClientAction(sLogMsg + " - NO action (клик по заголовку не разрешен в OrderHeaderClickable)");
                 return;
@@ -119,4 +124,5 @@ namespace KDSWPFClient.View
             e.Handled = true;
         }
     }// class 
+#endif
 }

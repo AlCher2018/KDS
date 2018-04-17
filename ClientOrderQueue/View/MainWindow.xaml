@@ -1,0 +1,65 @@
+﻿<Window x:Class="ClientOrderQueue.View.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClientOrderQueue"
+        xmlns:localModel="clr-namespace:ClientOrderQueue.Model"
+        mc:Ignorable="d" WindowState="Maximized" WindowStyle="None"  Title="ClientOrderQueue" Icon="ClientOrderQueue.ico">
+
+    <Grid x:Name="mainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="8*"/>
+        </Grid.RowDefinitions>
+
+        <Image Grid.RowSpan="2" x:Name="backgroundImage" Stretch="Fill"/>
+
+        <Border x:Name="brdTitle" Grid.Row="0">
+            <Grid Margin="20,0,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.5*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="tbMainTitle" Grid.Column="0" Text="Статус заказов / Status of orders"  HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Arial" FontWeight="Bold"/>
+
+                <Image x:Name="imgLogo" Grid.Column="1" HorizontalAlignment="Right" Stretch="Uniform"/>
+            </Grid>
+        </Border>
+
+        <!-- grid 5x3 -->
+        <Grid x:Name="G15" Grid.Row="1" Visibility="Visible" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+        </Grid>
+        <!-- grid 6x4 -->
+        <Grid x:Name="G24" Grid.Row="1" Visibility="Hidden" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+        </Grid>
+
+    </Grid>
+</Window>

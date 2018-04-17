@@ -12,6 +12,8 @@ using IntegraLib;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl == false
+
     /// <summary>
     /// Interaction logic for OrderPanel.xaml
     /// </summary>
@@ -23,13 +25,70 @@ namespace KDSWPFClient.View
         private Size _size;
 
         // высота панели заказа
-        public double HeightPanel { get { return this.DesiredSize.Height; } }
+        public double PanelHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.ActualHeight;
+#else
+                return this.DesiredSize.Height;
+#endif
+            }
+        }
+
+        public double HeaderHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.grdHeader.ActualHeight;
+#else
+                return this.grdHeader.DesiredSize.Height;
+#endif
+            }
+        }
+        public double DishTableHeaderHeight
+        {
+            get
+            {
+#if fromActualHeight
+                return this.brdTblHeader.ActualHeight;
+#else
+                return this.brdTblHeader.DesiredSize.Height;
+#endif
+            }
+        }
+
+
+        public UIElementCollection DishPanels { get { return this.stkDishes.Children; } }
+        public int ItemsCount { get { return this.DishPanels.Count; } }
+
+        public int CanvasColumnIndex { get; set; }
+
+        public OrderPanelHeader HeaderPanel {
+            get
+            {
+                return (this.grdHeader.Children.Count == 0) ? null : (OrderPanelHeader)this.grdHeader.Children[0];
+            }
+            set
+            {
+                if (value == null)
+                {
+                    if (this.grdHeader.Children.Count != 0) this.grdHeader.Children.Clear();
+                }
+                else if ((value is OrderPanelHeader) && (value.Parent == null))
+                {
+                    if (this.grdHeader.Children.Count == 0) this.grdHeader.Children.Add(value);
+                    else this.grdHeader.Children[0] = value;
+                }
+            }
+        }
+
 
         public OrderViewModel OrderViewModel { get { return _orderView; } }
 
         public int PageIndex { get { return _pageIndex; } }
-
-        public int Lines { get { return this.stkDishes.Children.Count; } }
 
         // ctor
         public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
@@ -40,7 +99,7 @@ namespace KDSWPFClient.View
             _size = new Size(base.Width, double.PositiveInfinity);
 
             _orderView = orderView;
-            orderView.ViewPanel = this;
+            if (orderView != null) orderView.ViewPanel = this;
 
             if (isCreateHeaderPanel)
             {
@@ -51,17 +110,14 @@ namespace KDSWPFClient.View
             }
 
             // установить шрифт текстовых блоков в заголовке таблицы блюд
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontSize = (double)WpfHelper.GetAppGlobalValue("ordPnlDishTblHeaderFontSize"); // 10d
+            double fontScale = (double)WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d);
             _fontSize = fontSize * fontScale;
             IEnumerable<TextBlock> tbs = grdTblHeader.Children.OfType<TextBlock>();
             foreach (TextBlock tb in tbs)
             {
                 tb.FontSize = _fontSize;
             }
-
-            // пересчитать высоту панели
-//            this.Measure(_size);
 
             //if (!orderView.DivisionColorRGB.IsNull())
             //{
@@ -79,12 +135,33 @@ namespace KDSWPFClient.View
         }
 
         // добавить массив элементов в стек
-        internal void AddDish(UIElement[] delItems)
+        internal void AddDishes(IEnumerable<UIElement> dishPanels)
         {
-            foreach (UIElement item in delItems)
+            foreach (UIElement item in dishPanels)
             {
                 this.stkDishes.Children.Add(item);
             }
+        }
+
+        internal void InsertDish(int index, UIElement dishPanel)
+        {
+            this.stkDishes.Children.Insert(index, dishPanel);
+        }
+        internal void InsertDishes(int index, List<FrameworkElement> dishPanels)
+        {
+            for (int i = 0; i < dishPanels.Count; i++)
+            {
+                this.stkDishes.Children.Insert(index, dishPanels[i]);
+            }
+        }
+
+        internal void DetachDish(UIElement item)
+        {
+            this.stkDishes.Children.Remove(item);
+        }
+        internal void DetachDishes(List<UIElement> items)
+        {
+            items.ForEach(e => this.stkDishes.Children.Remove(e));
         }
 
         // для удаляемого блюда (при переносе в следующую колонку), создать массив UI-элементов, которые будут
@@ -111,7 +188,8 @@ namespace KDSWPFClient.View
 
                 // условия переноса строки заказа в следующий столбец
                 // - это разделитель (номер подачи)
-                isMove = (uiElem is DishDelimeterPanel);
+                isMove = ((uiElem is DishDelimeterPanel) && ((DishDelimeterPanel)uiElem).DontTearOffNext);
+
                 // - или это блюдо для переносимого ингредиента
                 if ((!isMove) && (uiElem is DishPanel) && !parentUid.IsNull())
                 {
@@ -119,6 +197,7 @@ namespace KDSWPFClient.View
                     isMove = (dsPnl.DishView.UID == parentUid) && dsPnl.DishView.ParentUID.IsNull(); // признак блюда
                    //((uiElem as DishPanel).DishView.ParentUID == parentUid)))
                 }
+                
                 // - или выходим за рамки по вертикали
                 if (!isMove && (Math.Ceiling(totalHeight) >= cnvHeight)) isMove = true;
 
@@ -146,6 +225,35 @@ namespace KDSWPFClient.View
         {
             this.stkDishes.Children.Add(delimPanel);
         }
+        public void InsertDelimiter(int index, DishDelimeterPanel delimPanel)
+        {
+            this.stkDishes.Children.Insert(index, delimPanel);
+        }
+
+        // отсоединить заголовок и вернуть его
+        internal OrderPanelHeader DetachHeader()
+        {
+            if ((this.grdHeader.Children.Count > 0) && (this.grdHeader.Children[0] is OrderPanelHeader))
+            {
+                OrderPanelHeader retVal = (OrderPanelHeader)this.grdHeader.Children[0];
+                this.grdHeader.Children.Clear();
+                return retVal;
+            }
+            else
+                return null;
+        }
+
+        internal int DishPanelsCount()
+        {
+            int retVal = 0;
+            foreach (UIElement item in this.stkDishes.Children)
+            {
+                if (item is DishPanel) retVal++;
+            }
+
+            return retVal;
+        }
 
     }  // class
+#endif
 }

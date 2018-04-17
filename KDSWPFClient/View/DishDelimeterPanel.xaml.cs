@@ -17,14 +17,12 @@ using System.Windows.Shapes;
 
 namespace KDSWPFClient.View
 {
+#if notUserControl == false
     /// <summary>
     /// Interaction logic for DishDelimeterPanel.xaml
     /// </summary>
     public partial class DishDelimeterPanel : UserControl
     {
-
-        public int FilingNumber { get; set; }
-
         public string Text
         {
             get { return (string)GetValue(TextProperty); }
@@ -35,15 +33,19 @@ namespace KDSWPFClient.View
         public static readonly DependencyProperty TextProperty =
             DependencyProperty.Register("Text", typeof(string), typeof(DishDelimeterPanel), new PropertyMetadata(""));
 
+        public DishDelimeterPanelTypeEnum DelimeterType { get; set; }
 
-        public DishDelimeterPanel()
+
+
+        // признаки поведения элемента
+        public bool DontTearOffNext;
+
+        public DishDelimeterPanel(double width, Brush foreground, Brush background, string text)
         {
             InitializeComponent();
 
-            this.Loaded += DishDelimeterPanel_Loaded;
-
-            double fontSize = (double)AppPropsHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d);
-            double fontScale = (double)AppPropsHelper.GetAppGlobalValue("AppFontScale", 1.0d);
+            double fontSize = Convert.ToDouble(WpfHelper.GetAppGlobalValue("ordPnlDishDelimiterFontSize", 20d));
+            double fontScale = Convert.ToDouble(WpfHelper.GetAppGlobalValue("AppFontScale", 1.0d));
             if (fontScale == 0d) fontScale = 1.0d;
 
             fontSize *= fontScale;
@@ -51,13 +53,6 @@ namespace KDSWPFClient.View
 
         }
 
-        private void DishDelimeterPanel_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (FilingNumber == 1)
-            {
-                this.tbDelimText.Foreground = Brushes.Red;
-            }
-        }
-
     }  // class
+#endif
 }

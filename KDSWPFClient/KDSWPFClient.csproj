@@ -37,7 +37,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;notUserControl</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -47,7 +47,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;notUserControl</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -55,13 +55,22 @@
     <ApplicationIcon>monitor7.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IntegraLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Integra libs\IntegraLib\bin\Release\IntegraLib.dll</HintPath>
+    </Reference>
+    <Reference Include="IntegraWPFLib">
+      <HintPath>..\..\Integra libs\IntegraWPFLib\bin\Release\IntegraWPFLib.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.9\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="NumericUpDown">
-      <HintPath>..\NumericUpDown.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\Integra libs\CAVControlsLib\bin\Release\NumericUpDown.dll</HintPath>
+    </Reference>
+    <Reference Include="pswLib">
+      <HintPath>..\..\Integra libs\Integra PSW\pswLib\bin\Release\pswLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -85,27 +94,31 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Lib\AppPropsHelper.cs" />
-    <Compile Include="Lib\DebugTimer.cs" />
     <Compile Include="Model\DishesFilter.cs" />
     <Compile Include="Model\StateGraphHelper.cs" />
     <Compile Include="Model\KDSModeHelper.cs" />
     <Compile Include="Model\KDSModeEnum.cs" />
-    <Compile Include="SplashScreen\DispatcherHelper.cs" />
-    <Compile Include="SplashScreen\MessageListener.cs" />
-    <Compile Include="SplashScreen\Splasher.cs" />
-    <Compile Include="SplashScreen\SplashScreen.xaml.cs" />
+    <Compile Include="SplashScreen.xaml.cs">
+      <DependentUpon>SplashScreen.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\AppLeftTabControl.cs" />
     <Compile Include="View\BrushConverter.cs" />
     <Compile Include="View\BrushHelper.cs" />
     <Compile Include="View\ColorLegend.xaml.cs">
       <DependentUpon>ColorLegend.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\DishDelimeterPanel.cs" />
     <Compile Include="View\DishDelimeterPanel.xaml.cs">
       <DependentUpon>DishDelimeterPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\DishDelimeterPanelTypeEnum.cs" />
+    <Compile Include="View\DishPanel.cs" />
     <Compile Include="View\IContainIdField.cs" />
     <Compile Include="View\IContainInnerCollection.cs" />
     <Compile Include="View\IJoinSortedCollection.cs" />
+    <Compile Include="View\OrderPageHelper.cs" />
+    <Compile Include="View\OrderPanel.cs" />
+    <Compile Include="View\OrderPanelHeader.cs" />
     <Compile Include="View\SetHorizontalOffset.cs" />
     <Compile Include="View\ConfigEdit.xaml.cs">
       <DependentUpon>ConfigEdit.xaml</DependentUpon>
@@ -136,14 +149,13 @@
     <Compile Include="Model\AppDataProvider.cs" />
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="View\Converters.cs" />
-    <Compile Include="Lib\TypeExtensions.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="SplashScreen\SplashScreen.xaml">
-      <Generator>MSBuild:Compile</Generator>
+    <Page Include="SplashScreen.xaml">
       <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\ColorLegend.xaml">
       <SubType>Designer</SubType>
@@ -205,18 +217,18 @@
     </Compile>
     <Content Include="AppSettings.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <Content Include="docs\Настройка ПО Integra-КДС.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="SplashScreen\source.txt" />
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderModel.datasource">
+    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderStatusModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.OrderStatusModel.datasource">
+    <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.ServiceResponce.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
     <None Include="Service References\ServiceReference1\Reference.svcmap">
@@ -312,6 +324,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="monitor7.ico" />
+    <Resource Include="Images\dishGroup.bmp" />
     <Content Include="Images\restartApp1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -358,12 +371,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\IntegraLib\IntegraLib.csproj">
-      <Project>{68445753-040e-4d30-8063-1f494d7370c4}</Project>
-      <Name>IntegraLib</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

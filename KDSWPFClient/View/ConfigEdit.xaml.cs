@@ -1,5 +1,6 @@
 ﻿using CAVControls;
 using IntegraLib;
+using IntegraWPFLib;
 using KDSWPFClient.Lib;
 using KDSWPFClient.Model;
 using KDSWPFClient.ServiceReference1;
@@ -50,14 +51,16 @@ namespace KDSWPFClient.View
             _appNewSettings = new Dictionary<string, string>();
 
             // размеры окна
-            double screenWidth = (double)AppPropsHelper.GetAppGlobalValue("screenWidth");
-            double screenHeight = (double)AppPropsHelper.GetAppGlobalValue("screenHeight");
+            double screenWidth = (double)WpfHelper.GetAppGlobalValue("screenWidth");
+            double screenHeight = (double)WpfHelper.GetAppGlobalValue("screenHeight");
             this.Width = 0.67d * screenWidth;
             this.Height = 0.75d * screenHeight;
 
 
             // дополнтельные действия в зависимости от подтверджения готовности
-            _useReadyConfirmedState =  (bool)AppPropsHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+            cbxState3.IsEnabled = KDSModeHelper.IsReadTakenDishes;
+            // (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false)
+            _useReadyConfirmedState = KDSModeHelper.UseReadyConfirmedState;
             if (_useReadyConfirmedState)
             {
                 cbxState8.Visibility = Visibility.Visible;
@@ -65,6 +68,8 @@ namespace KDSWPFClient.View
                 cbx18.Visibility = Visibility.Visible;
                 cbx28.Visibility = Visibility.Visible;
                 cbx83.Visibility = Visibility.Visible;
+                cbx82.Visibility = Visibility.Visible;
+                cbx81.Visibility = Visibility.Visible;
             }
             else
             {
@@ -73,6 +78,8 @@ namespace KDSWPFClient.View
                 cbx18.Visibility = Visibility.Collapsed;
                 cbx28.Visibility = Visibility.Collapsed;
                 cbx83.Visibility = Visibility.Collapsed;
+                cbx82.Visibility = Visibility.Collapsed;
+                cbx81.Visibility = Visibility.Collapsed;
             }
 
             // заполнить комбобокс звуковых файлов
@@ -86,7 +93,7 @@ namespace KDSWPFClient.View
                 foreach (FileInfo fileInfo in dirInfo.GetFiles("*.wav", SearchOption.TopDirectoryOnly)) files.Add(fileInfo.Name);
                 cbxSelectAudio.ItemsSource = files;
 
-                var defFile = AppPropsHelper.GetAppGlobalValue("NewOrderAudioAttention");
+                var defFile = WpfHelper.GetAppGlobalValue("NewOrderAudioAttention");
                 if ((defFile != null) && (files.Contains(defFile)))
                 {
                     cbxSelectAudio.SelectedValue = defFile;
@@ -115,7 +122,11 @@ namespace KDSWPFClient.View
             _cfgValKeeper.AddPreValueDirectly("NewOrderAudioAttention", (string)cbxSelectAudio.SelectedValue);
             _cfgValKeeper.AddPreValue("OrderHeaderClickable", true, cbxOrderHeaderClickable);
             _cfgValKeeper.AddPreValue("IsIngredientsIndependent", true, cbxIngrClickable);
+            _cfgValKeeper.AddPreValue("ShowTimerOnDependIngr", true, cbxIngrShowTimer);
             _cfgValKeeper.AddPreValue("IsShowOrderStatusByAllShownDishes", true, cbxShowOrderStatusByAllShownDishes);
+            _cfgValKeeper.AddPreValue("IsMultipleStatusTabs", true, cbxMultipleStatusTabs);
+            _cfgValKeeper.AddPreValue("IsDishGroupAndSumQuantity", true, cbxTabDishGroup);
+            
 
             // получить от службы
             //AppDataProvider dataProvider = (AppDataProvider)AppLib.GetAppGlobalValue("AppDataProvider");
@@ -602,7 +613,7 @@ namespace KDSWPFClient.View
                 _key = key; _control = control; _fromAppProps = fromAppProps;
 
                 // из AppLib.GetAppSetting(_key) возвращается СТРОКА 
-                _preValue = (fromAppProps) ? AppPropsHelper.GetAppGlobalValue(_key) : CfgFileHelper.GetAppSetting(_key);
+                _preValue = (fromAppProps) ? WpfHelper.GetAppGlobalValue(_key) : CfgFileHelper.GetAppSetting(_key);
                 if (_preValue == null) return;
 
                 _typeName = _preValue.GetType().Name;
@@ -727,7 +738,7 @@ namespace KDSWPFClient.View
 
             internal void SaveToAppProps()
             {
-                if ((_fromAppProps) && IsChanged()) AppPropsHelper.SetAppGlobalValue(_key, _newValue);
+                if ((_fromAppProps) && IsChanged()) WpfHelper.SetAppGlobalValue(_key, _newValue);
             }
 
         } // class CfgValue
@@ -741,6 +752,17 @@ namespace KDSWPFClient.View
         private void btnRestartWithoutArgs_Click(object sender, RoutedEventArgs e)
         {
             AppEnvironment.RestartApplication();
+        }
+
+        private void cbxIngrClickable_Checked(object sender, RoutedEventArgs e)
+        {
+            if (cbxIngrShowTimer.IsChecked ?? false) cbxIngrShowTimer.IsChecked = false;
+            cbxIngrShowTimer.IsEnabled = false;
+        }
+
+        private void cbxIngrClickable_Unchecked(object sender, RoutedEventArgs e)
+        {
+            cbxIngrShowTimer.IsEnabled = true;
         }
     }  // class ConfigEdit
 }

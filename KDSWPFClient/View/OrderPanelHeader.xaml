@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="KDSWPFClient.View.OrderPanelHeader"
+﻿<UserControl x:Class="KDSWPFClient.View.OrderPanelHeader_pre"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,51 +6,11 @@
              xmlns:local="clr-namespace:KDSWPFClient.View"
              xmlns:viewModel="clr-namespace:KDSWPFClient.ViewModel"
              mc:Ignorable="d" 
-             Name="root" MouseUp="root_MouseUp"
+             Name="root"
              d:DesignHeight="80" d:DesignWidth="300"
              SnapsToDevicePixels="True">
 
-    <UserControl.Resources>
-        <Style x:Key="rowBrushesStyle" TargetType="Border">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <MultiBinding Converter="{StaticResource brushOrderHeaderConverter}" ConverterParameter="back" Mode="OneWay">
-                        <Binding Path="Status" />
-                        <Binding Path="StatusAllowedDishes" />
-                    </MultiBinding>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="TextBlock.Foreground">
-                <Setter.Value>
-                    <MultiBinding Converter="{StaticResource brushOrderHeaderConverter}" ConverterParameter="fore" Mode="OneWay">
-                        <Binding Path="Status" />
-                        <Binding Path="StatusAllowedDishes" />
-                    </MultiBinding>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        
-        <Style x:Key="rowMarginStyle" TargetType="FrameworkElement">
-            <Setter Property="Margin" Value="{Binding ActualWidth, ConverterParameter='0.02,0,0.02,0', Converter={StaticResource getMargin}, ElementName=root, Mode=OneWay}"/>
-        </Style>
-
-
-        <Style x:Key="timerStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter=0.025, Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
-            <Setter Property="Background" Value="{Binding Source='orderHeaderTimer', ConverterParameter=back, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
-            <Setter Property="TextBlock.Foreground" Value="{Binding Source='orderHeaderTimer', ConverterParameter=fore, Converter={StaticResource brushConverter}, Mode=OneWay}"/>
-        </Style>
-        
-        <Style x:Key="row1Style" TargetType="Border" BasedOn="{StaticResource rowBrushesStyle}">
-            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
-        </Style>
-        
-        <Style x:Key="cornRadBottomStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="{Binding ActualWidth, ConverterParameter='0,0,0.03,0.03', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}"/>
-        </Style>
-    </UserControl.Resources>
-    
+   
     <!-- строка заголовка, содержит 3 строки -->
     <Grid x:Name="grdHeader">
         <Grid.RowDefinitions>
@@ -62,26 +22,20 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!--<Border x:Name="brdDivisionMark" Grid.Row="0" Panel.ZIndex="5" CornerRadius="{Binding ActualWidth, ConverterParameter='0.03,0.03,0,0', Converter={StaticResource getCornerRadius}, ElementName=root, Mode=OneWay}" BorderThickness="5" Height="10" VerticalAlignment="Top"/>-->
-
         <!-- строка с наимен.стола и номером заказа Style="{StaticResource mainBackgroundStyle}" -->
-        <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0" Style="{StaticResource row1Style}">
+        <Border x:Name="brdHrdTableRow" Grid.Row="0" BorderBrush="DarkBlue" BorderThickness="1,1,1,0">
             <Grid x:Name="grdHdrTableRow">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource rowMarginStyle}">
+                <TextBlock x:Name="tblTable" Grid.Column="0" VerticalAlignment="Center">
                     <Run x:Name="tbTableLabel1" Text="Стол №: "/>
                     <Run x:Name="tbTableName" FontWeight="Bold" Text="{Binding TableName}"/>
                 </TextBlock>
 
-                <!--<Viewbox Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Width="{Binding ElementName=grdHdrTableRow, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" Height="50" Margin="0,-1,-1,0" Stretch="Fill" ClipToBounds="True">
-                    <Polygon x:Name="brdDivisionMark" Points="0,0 10,0 10,10"/>
-                </Viewbox>-->
-
                 <Border Grid.Column="1">
-                    <TextBlock x:Name="tblOrderNumber" HorizontalAlignment="Center" VerticalAlignment="Center"  Style="{StaticResource rowMarginStyle}">
+                    <TextBlock x:Name="tblOrderNumber" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Run x:Name="tbTableLabel2" Text="Заказ №: "/>
                         <Run x:Name="tbOrderNumber" FontWeight="Bold" Text="{Binding Number}"/>
                     </TextBlock>
@@ -90,19 +44,18 @@
         </Border>
 
         <!-- официант -->
-        <Border Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0" Style="{StaticResource rowBrushesStyle}">
-            <Grid x:Name="grdHdrWaiter" Style="{StaticResource rowMarginStyle}">
-                <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left" Margin="0,0,0,5"/>
-            </Grid>
+        <Border x:Name="brdHdrWaiter" Grid.Row="1" BorderBrush="DarkBlue" BorderThickness="1,0,1,0">
+            <TextBlock x:Name="tbWaiter" TextWrapping="Wrap" Text="{Binding Waiter}" FontWeight="Bold" HorizontalAlignment="Left"/>
         </Border>
 
+        <!-- метка отдела -->
         <Viewbox Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Width="{Binding ElementName=grdHdrTableRow, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.2}" Margin="0,0,0,0" Stretch="Fill" ClipToBounds="True">
             <Polygon x:Name="brdDivisionMark" Points="0,0 10,0 10,10" Opacity="0.7"/>
         </Viewbox>
 
         <!-- время создания заказа и счетчик приготовления -->
-        <Border Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1" Style="{StaticResource rowBrushesStyle}">
-            <Grid x:Name="grdHdrOrderTime" Style="{StaticResource rowMarginStyle}">
+        <Border x:Name="brdHdrOrderTime" Grid.Row="2" BorderBrush="DarkBlue" BorderThickness="1">
+            <Grid x:Name="grdHdrOrderTime">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="4*"/>
                     <ColumnDefinition Width="4*"/>
@@ -113,7 +66,7 @@
                     <TextBlock x:Name="tbOrderDate" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding CreateDate, Mode=OneWay, Converter={StaticResource viewDateConverter}}" TextWrapping="Wrap"/>
                 </WrapPanel>
                 
-                <Border Grid.Column="1" Padding="5,3" Margin="0,3" Style="{StaticResource timerStyle}">
+                <Border x:Name="brdOrderTimer" Grid.Column="1" Padding="5,3" Margin="0,3">
                     <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock x:Name="tbOrderCookingCounterLabel" Text="Прошло: " Foreground="Black" FontStretch="Condensed"/>
                         <TextBlock x:Name="tbOrderCookingCounter" FontWeight="Bold" Text="{Binding WaitingTimerString}" TextWrapping="Wrap"/>

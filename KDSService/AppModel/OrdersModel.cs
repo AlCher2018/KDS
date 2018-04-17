@@ -5,12 +5,12 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using KDSConsoleSvcHost;
 using System.Diagnostics;
 using System.Threading;
 using KDSService.DataSource;
-using KDSWPFClient.Lib;
+using KDSService.Lib;
 using IntegraLib;
+using System.Data;
 
 namespace KDSService.AppModel
 {
@@ -23,6 +23,7 @@ namespace KDSService.AppModel
         private HashSet<int> _unUsedDeps;
         private Dictionary<int, bool> _lockedOrders;
 
+        // буферы для хранения коллекций заказов
         private List<Order> _dbOrders;
         private Dictionary<int, OrderModel> _orders;
         public Dictionary<int, OrderModel> Orders { get { return _orders; } }
@@ -36,17 +37,20 @@ namespace KDSService.AppModel
         private bool _changeStatusYesterdayOrdersCfg, _changeStatusYesterdayOrdersCurrent;
         private DateTime _currentDate;
 
-        List<Order> _delOrders;
+        private List<Order> _delOrders;
+
+        private DateTime _tmpDT;
 
        
         // CONSTRUCTOR
         public OrdersModel()
         {
-            // статусы заказов, которые выбираются из БД для отображения на КДС (все НЕтерминальные)
+            // статусы заказов, которые выбираются из БД для отображения на КДС
             _allowedKDSStatuses = new HashSet<int>();
             _allowedKDSStatuses.Add((int)OrderStatusEnum.WaitingCook);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cooking);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Ready);
+            if (AppProperties.GetBoolProperty("IsReadTakenDishes")) _allowedKDSStatuses.Add((int)OrderStatusEnum.Took);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Cancelled);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.Transferred);
             _allowedKDSStatuses.Add((int)OrderStatusEnum.ReadyConfirmed);
@@ -56,6 +60,7 @@ namespace KDSService.AppModel
             _unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
             DBOrderHelper.UnusedDeps = _unUsedDeps;
 
+            // буферы для хранения коллекций заказов
             _dbOrders = DBOrderHelper.DBOrders;
             _orders = new Dictionary<int, OrderModel>();
 
@@ -64,7 +69,7 @@ namespace KDSService.AppModel
             // используется, если для детального лога нужно еще чего-то сделать
             _isLogOrderDetails = (AppProperties.GetBoolProperty("IsWriteTraceMessages") && AppProperties.GetBoolProperty("TraceOrdersDetails"));
 
-            _changeStatusYesterdayOrdersCfg = (AppEnv.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
+            _changeStatusYesterdayOrdersCfg = (AppLib.TimeOfAutoCloseYesterdayOrders != TimeSpan.Zero);
             _changeStatusYesterdayOrdersCurrent = _changeStatusYesterdayOrdersCfg;
             _currentDate = DateTime.Now.Date;
             //_currentDate = _currentDate.AddDays(-1);
@@ -80,7 +85,7 @@ namespace KDSService.AppModel
         //**************************************
         public string UpdateOrders()
         {
-            string sLog;
+            string sLog = "";
 
             #region автосброс вчерашних заказов
             if (_changeStatusYesterdayOrdersCfg)
@@ -103,179 +108,222 @@ namespace KDSService.AppModel
             }
             #endregion
 
-            AppEnv.WriteLogOrderDetails("GET ORDERS FROM DB - START");
-            Console.WriteLine("getting orders ...");
+            AppLib.WriteLogOrderDetails("GET ORDERS FROM DB - START");
+            Console.Write("getting orders ...");
             DebugTimer.Init(" - get orders from DB", false);
 
             // получить заказы из БД
-            _dbOrders.Clear();
             try
             {
                 DBOrderHelper.LoadDBOrders();
             }
             catch (Exception ex)
             {
-                return ex.Message;
+                return "MSSQLServer Error: " + ErrorHelper.GetShortErrMessage(ex);
             }
 
             // получено заказов из БД
             if (_isLogOrderDetails)
             {
-                string ids = string.Join(",", _dbOrders.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
-                AppEnv.WriteLogOrderDetails(" - from DB {0} id/Num: {1}", _dbOrders.Count, ids);
+                string ids = (_dbOrders.Count>50) ? "> 50" : getOrdersLogString(_dbOrders);
+                AppLib.WriteLogOrderDetails(" - from DB {0} id/Num/dishes: {1}", _dbOrders.Count, ids);
             }
 
             // цикл по полученным из БД заказам
             if (_dbOrders != null)
             {
                 #region *** ОБНОВЛЕНИЕ ВНУТРЕННЕГО СЛОВАРЯ ЗАКАЗОВ _orders коллекцией из БД _dbOrders ***
-                // 1. удалить
-                int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
-                delIds = _orders.Keys.Except(delIds).ToArray();
-                if (_isLogOrderDetails)
+                // заблокировать _orders
+                lock (_orders)
                 {
-                    string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
-                    if (s1 != "") AppEnv.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
-                }
-                foreach (int id in delIds)
-                {
-                    _orders[id].Dispose();
-                    _orders.Remove(id);
-                }
-
-                // 2. обновить или добавить
-                _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-                foreach (Order dbOrder in _dbOrders)
-                {
-                    // пропустить, если заказ заблокирован от изменений по таймеру при длительных операциях чтения из БД
-                    if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
+                    // 1. удалить
+                    int[] delIds = _dbOrders.Select(o => o.Id).ToArray();
+                    delIds = _orders.Keys.Except(delIds).ToArray();
+                    if (_isLogOrderDetails)
                     {
-                        AppEnv.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
-                        // если заказ стал неотображаемый, то удалить его из коллекции
+                        string s1 = ""; if (delIds.Length > 0) s1 = string.Join(",", delIds);
+                        if (s1 != "") AppLib.WriteLogOrderDetails("   appModel: remove order Ids {0}", s1);
+                    }
+                    foreach (int id in delIds)
+                    {
+                        _orders[id].Dispose();
+                        _orders.Remove(id);
+                    }
+
+                    // 2. обновить или добавить
+                    _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
+                    int iCnt = 0;
+                    foreach (Order dbOrder in _dbOrders)
+                    {
+                        iCnt++;
+                        // пропустить, если заказ заблокирован от изменений по таймеру при длительных операциях чтения из БД
+                        if ((_lockedOrders != null) && _lockedOrders.ContainsKey(dbOrder.Id))
+                        {
+                            AppLib.WriteLogOrderDetails("   appModel: locked order Id " + dbOrder.Id.ToString());
+                            // если заказ стал неотображаемый, то удалить его из коллекции
+                            if (_orders.ContainsKey(dbOrder.Id))
+                            {
+                                OrderModel om = _orders[dbOrder.Id];
+                                if (_allowedKDSStatuses.Contains(om.OrderStatusId) == false)
+                                {
+                                    _orders.Remove(dbOrder.Id);
+                                    AppLib.WriteLogOrderDetails("             remove from appModel set");
+                                }
+                            }
+                            continue;
+                        }
+
                         if (_orders.ContainsKey(dbOrder.Id))
                         {
-                            OrderModel om = _orders[dbOrder.Id];
-                            if (_allowedKDSStatuses.Contains(om.OrderStatusId) == false)
-                            {
-                                _orders.Remove(dbOrder.Id);
-                                AppEnv.WriteLogOrderDetails("             remove from appModel set");
-                            }
-                        }
-                        continue;
-                    }
+                            //sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
+                            //AppEnv.WriteLogOrderDetails(sLog + " - START");
+                            //_tmpDT = DateTime.Now;
 
-                    if (_orders.ContainsKey(dbOrder.Id))
-                    {
-                        sLog = string.Format("   appModel: update {0}/{1}", dbOrder.Id, dbOrder.Number);
-                        AppEnv.WriteLogOrderDetails(sLog + " - START");
-                        try
-                        {
-                            _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                            try
+                            {
+                                _orders[dbOrder.Id].UpdateFromDBEntity(dbOrder);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLib.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
+                            }
+
+                            //AppEnv.WriteLogOrderDetails(sLog + " - FINISH - " + _tmpPeriod());
                         }
-                        catch (Exception ex)
+                        // добавление заказа в словарь
+                        else
                         {
-                            AppEnv.WriteLogErrorMessage("Ошибка обновления служебного словаря для OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                        }
-                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
-                    }
-                    // добавление заказа в словарь
-                    else
-                    {
-                        sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
-                        AppEnv.WriteLogOrderDetails(sLog + " - START");
-                        try
-                        {
-                            OrderModel newOrder = new OrderModel(dbOrder);
-                            _orders.Add(dbOrder.Id, newOrder);
-                        }
-                        catch (Exception ex)
-                        {
-                            AppEnv.WriteLogErrorMessage("Ошибка добавления в служебный словарь заказа OrderId = {1}: {0}", ex.ToString(), dbOrder.Id);
-                        }
-                        AppEnv.WriteLogOrderDetails(sLog + " - FINISH");
-                    }  //curOrder
-                }  // foreach
+                            sLog = string.Format("   appModel: add new {0}/{1}", dbOrder.Id, dbOrder.Number);
+                            AppLib.WriteLogOrderDetails(sLog + " - START"); _tmpDT = DateTime.Now;
+                            try
+                            {
+                                OrderModel newOrder = new OrderModel(dbOrder);
+                                _orders.Add(dbOrder.Id, newOrder);
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLib.WriteLogErrorMessage("Ошибка добавления заказа в служебный словарь: {0}", ex.ToString());
+                            }
+                            AppLib.WriteLogOrderDetails(sLog + " - FINISH - " + _tmpPeriod());
+                        }  //curOrder
+                    }  // foreach
+                }  // lock _orders
                 #endregion
 
                 #region обновить словарь блюд с их количеством, которые ожидают готовки или уже готовятся
                 sLog = "   updateDishesQuantityDict()...";
-                AppEnv.WriteLogOrderDetails(sLog);
+                AppLib.WriteLogOrderDetails(sLog);
                 try
                 {
                     updateDishesQuantityDict(_orders);
-                    if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   - result (depId/count): " + getDishesQtyString());
+                    if (_isLogOrderDetails) AppLib.WriteLogOrderDetails("   - result (depId/count): " + getDishesQtyString());
 
                     // проверяем условие автоматического перехода в режим приготовления
                     checkAutoStartCooking(_orders);
                 }
                 catch (Exception ex)
                 {
-                    if (_isLogOrderDetails) AppEnv.WriteLogOrderDetails("   error: " + ex.ToString());
-                    else AppEnv.WriteLogErrorMessage("Ошибка обновления словаря количества готовящихся блюд по цехам: " + ex.ToString());
+                    if (_isLogOrderDetails) AppLib.WriteLogOrderDetails("   error: " + ex.ToString());
+                    else AppLib.WriteLogErrorMessage("Ошибка обновления словаря количества готовящихся блюд по цехам: " + ex.ToString());
                 }
                 #endregion
             }
 
             if (_isLogOrderDetails)
             {
-                string ids = string.Join(",", _orders.Values.Select(o => o.Id.ToString()+"/"+o.Number.ToString()));
-                AppEnv.WriteLogOrderDetails(" - to clients {0} id/Num: {1}", _orders.Count, ids);
+                string ids = (_dbOrders.Count > 50) ? "> 50" : getOrdersLogString(_dbOrders);
+                AppLib.WriteLogOrderDetails(" - to clients {0} id/Num/dishes: {1}", _orders.Count, ids);
             }
 
             // очистить словарь заблокированных заказов
             _lockedOrders = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
             if ((_lockedOrders != null) && (_lockedOrders.Count > 0)) _lockedOrders.Clear();
 
-            AppEnv.WriteLogOrderDetails("get orders from DB - FINISH" + " - " + DebugTimer.GetInterval());
-            Console.WriteLine("... " + _orders.Count.ToString() + "  " + DebugTimer.GetInterval()); 
+            AppLib.WriteLogOrderDetails("get orders from DB - FINISH" + " - " + DebugTimer.GetInterval());
+            Console.WriteLine(" - " + _orders.Count.ToString() + "  " + DebugTimer.GetInterval()); 
 
             return null;
         }  // method
 
 
-        // обновить статус вчерашних заказов
+        private string getOrdersLogString(List<Order> orders)
+        {
+            return string.Join(",",
+                orders.Select(o =>
+                    string.Format("{0}/{1}/{2}", o.Id.ToString(), o.Number.ToString(), o.Dishes.Count.ToString()))
+                );
+        }
+
+
+        // ОБНОВИТЬ СТАТУС "ВЧЕРАШНИХ" ЗАКАЗОВ
+        // "вчерашние" заказы - это заказы, у которых CreateDate меньше начала текущего дня (полночь)
+        // минус смещение от полуночи назад (MidnightShiftShowYesterdayOrders)
+        // "Вчерашним" заказам статус устанавливается в 9 и они НЕ будут отображаться на КДСе. 
         private bool updateYesterdayOrdersStatus()
         {
-            // дата/время, когда необходимо обновить статус вчерашних заказов
-            DateTime dtUpdate = _currentDate.Add(AppEnv.TimeOfAutoCloseYesterdayOrders);
+            // дата/время, КОГДА необходимо обновить статус вчерашних заказов
+            DateTime dtUpdate = _currentDate.Add(AppLib.TimeOfAutoCloseYesterdayOrders);
             if (DateTime.Now < dtUpdate) return false;
 
-            AppEnv.WriteLogOrderDetails(" - обновить статус вчерашних заказов... - START");
-            using (KDSEntities db = new KDSEntities())
+            AppLib.WriteLogOrderDetails(" - обновить статус вчерашних заказов... - START");
+            _tmpDT = DateTime.Now;
+
+            // дата/время, С КОТОРОГО заказы считаются "сегодяшними"
+            double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
+            dtUpdate = DateTime.Today.AddHours(-d1);
+
+            string sqlText = null;
+            int cntDishes = 0, cntOrders = 0, iAffected;
+            bool retVal = false;
+            try
             {
-                // вчерашние заказы, точнее заказы, у которых CreateDate меньше начала текущего дня (полночь)
-                // с учетом смещения от полуночи назад, созданные в течение которого вчерашние заказы будут отображаться на КДСе
-                double d1 = AppProperties.GetDoubleProperty("MidnightShiftShowYesterdayOrders");
-                dtUpdate = DateTime.Today.AddHours(-d1);
-
-                string sqlText = string.Format("SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < {0})", dtUpdate.ToSQLExpr());
-                int cntDishes = 0, cntOrders, iCnt;
-                List<int> idList = db.Database.SqlQuery<int>(sqlText).ToList();
-                cntOrders = idList.Count;  // кол-во заказов
-                // обновить статус в БД
-                bool retVal = false;
-                try
+                using (DBContext db = new DBContext())
                 {
-                    foreach (int orderId in idList)
+                    sqlText = string.Format("declare @dt datetime = {0}; SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < @dt)", dtUpdate.ToSQLExpr());
+                    DataTable dt = db.GetQueryTable(sqlText);
+
+                    if (dt != null)
                     {
-                        // обновить статус блюд
-                        sqlText = string.Format("UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={0})", orderId.ToString());
-                        iCnt = db.Database.ExecuteSqlCommand(sqlText);
-                        cntDishes += iCnt;
-                        // обновить статус заказа
-                        sqlText = string.Format("UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={0})", orderId.ToString());
-                        db.Database.ExecuteSqlCommand(sqlText);
+                        int orderId;
+                        foreach (DataRow dtRow in dt.Rows)
+                        {
+                            orderId = System.Convert.ToInt32(dtRow[0]);
+                            if (orderId > 0)
+                            {
+                                // обновить статус блюд
+                                sqlText = $"UPDATE [OrderDish] SET DishStatusId = 9 WHERE (OrderId={orderId.ToString()})";
+                                iAffected = db.ExecuteCommand(sqlText);
+                                cntDishes += iAffected;
+
+                                // обновить статус заказа
+                                sqlText = $"UPDATE [Order] SET OrderStatusId = 9, QueueStatusId = 9 WHERE (Id={orderId.ToString()})";
+                                iAffected = db.ExecuteCommand(sqlText);
+                                cntOrders += iAffected;
+                            }
+                        }
                     }
-                    AppEnv.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH", cntOrders, cntDishes);
-                    retVal = true;
-                }
-                catch (Exception ex)
-                {
-                    AppEnv.WriteLogOrderDetails(" - ошибка обновления заказов: {0} ({1}) - FINISH", AppEnv.GetShortErrMessage(ex), sqlText);
+
+                    dt.Dispose();
                 }
 
-                return retVal;
+                retVal = true;
             }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage(" - ошибка обновления заказов: {0} ({1})", ErrorHelper.GetShortErrMessage(ex), sqlText);
+            }
+            AppLib.WriteLogOrderDetails(" - обновлено заказов {0} (блюд {1}) - FINISH - {2}", cntOrders, cntDishes, _tmpPeriod());
+
+            return retVal;
+        }
+
+
+        private string _tmpPeriod()
+        {
+            if (_tmpDT.IsZero())
+                return "";
+            else
+                return (DateTime.Now - _tmpDT).ToString();
         }
 
 
@@ -369,12 +417,12 @@ namespace KDSService.AppModel
                         {
                             DateTime dtTmr = DateTime.Now;
                             string sLogMsg = string.Format(" - AutoStart Cooking Id {0}/{1}", dish.Id, dish.Name);
-                            AppEnv.WriteLogOrderDetails(sLogMsg + " - start");
+                            AppLib.WriteLogOrderDetails(sLogMsg + " - start");
 
                             dish.UpdateStatus(OrderStatusEnum.Cooking);
 
                             sLogMsg += " - finish - " + (DateTime.Now - dtTmr).ToString();
-                            AppEnv.WriteLogOrderDetails(sLogMsg);
+                            AppLib.WriteLogOrderDetails(sLogMsg);
                         }
                     }
                 }  // loop

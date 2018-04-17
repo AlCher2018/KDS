@@ -34,13 +34,14 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
+        <xs:element xmlns:q3="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="clientFilter" nillable="true" type="q3:ClientDataFilter" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="GetOrdersResponse">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q3="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="GetOrdersResult" nillable="true" type="q3:ArrayOfOrderModel" />
+        <xs:element xmlns:q4="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="GetOrdersResult" nillable="true" type="q4:ServiceResponce" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -54,7 +55,7 @@
   <xs:element name="GetHostAppSettingsResponse">
     <xs:complexType>
       <xs:sequence>
-        <xs:element xmlns:q4="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetHostAppSettingsResult" nillable="true" type="q4:ArrayOfKeyValueOfstringanyType" />
+        <xs:element xmlns:q5="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetHostAppSettingsResult" nillable="true" type="q5:ArrayOfKeyValueOfstringanyType" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -81,7 +82,9 @@
   </xs:element>
   <xs:element name="LockOrderResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="LockOrderResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="DelockOrder">
@@ -94,7 +97,9 @@
   </xs:element>
   <xs:element name="DelockOrderResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="DelockOrderResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="LockDish">
@@ -107,7 +112,9 @@
   </xs:element>
   <xs:element name="LockDishResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="LockDishResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="DelockDish">
@@ -120,7 +127,9 @@
   </xs:element>
   <xs:element name="DelockDishResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="DelockDishResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="ChangeOrderStatus">
@@ -128,13 +137,15 @@
       <xs:sequence>
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element xmlns:q5="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q5:OrderStatusEnum" />
+        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q6:OrderStatusEnum" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="ChangeOrderStatusResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="ChangeOrderStatusResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="ChangeOrderDishStatus">
@@ -143,13 +154,46 @@
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
         <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
-        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q6:OrderStatusEnum" />
+        <xs:element xmlns:q7="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q7:OrderStatusEnum" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
   <xs:element name="ChangeOrderDishStatusResponse">
     <xs:complexType>
-      <xs:sequence />
+      <xs:sequence>
+        <xs:element minOccurs="0" name="ChangeOrderDishStatusResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateNoticeFileForOrder">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="orderId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateNoticeFileForOrderResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="CreateNoticeFileForOrderResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateNoticeFileForDish">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="orderId" type="xs:int" />
+        <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateNoticeFileForDishResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="CreateNoticeFileForDishResult" type="xs:boolean" />
+      </xs:sequence>
     </xs:complexType>
   </xs:element>
 </xs:schema>

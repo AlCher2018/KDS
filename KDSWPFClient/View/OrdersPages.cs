@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Windows.Threading;
 using KDSWPFClient.ServiceReference1;
 using IntegraLib;
+using IntegraWPFLib;
 
 namespace KDSWPFClient.View
 {
@@ -26,7 +27,7 @@ namespace KDSWPFClient.View
         // для расчета размещения панелей заказов на канве
         private int _pageColsCount;
         private double _colWidth, _colMargin;
-        private int _curColIndex;
+        private int _curColIndex; // 1-based value !!!!
         private double _curTopValue;
         private double _hdrTopMargin;
         private int _currentPageIndex;  // 1-based value !!!!
@@ -52,10 +53,10 @@ namespace KDSWPFClient.View
 
         public void ResetOrderPanelSize()
         {
-            _pageColsCount = Convert.ToInt32(AppPropsHelper.GetAppGlobalValue("OrdersColumnsCount"));
-            _colWidth = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnWidth"));
-            _colMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrdersColumnMargin"));
-            _hdrTopMargin = Convert.ToDouble(AppPropsHelper.GetAppGlobalValue("OrderPanelTopMargin"));
+            _pageColsCount = Convert.ToInt32(WpfHelper.GetAppGlobalValue("OrdersColumnsCount"));
+            _colWidth = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersColumnWidth"));
+            _colMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrdersColumnMargin"));
+            _hdrTopMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrderPanelTopMargin"));
         }
 
         // добавить все заказы и определить кол-во страниц
@@ -71,8 +72,8 @@ namespace KDSWPFClient.View
                 AddOrderPanel(ord);
             }
 
+            SetFirstPage();
             _uiPanel.Visibility = vis;
-            CurrentPage = _pages[0]; _currentPageIndex = 1;
         }
 
         //*******************************************
@@ -80,7 +81,7 @@ namespace KDSWPFClient.View
         //*******************************************
         public void AddOrderPanel(OrderViewModel orderModel)
         {
-            OrderPanel ordPnl; DishPanel dshPnl, curDshPnl = null;
+            OrderPanel ordPnl; DishPanel dshPnl; //, curDshPnl = null;
 
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
             ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
@@ -92,7 +93,7 @@ namespace KDSWPFClient.View
             CurrentPage.AddOrder(ordPnl);
             CurrentPage.UpdateLayout();
             // перенос в новый столбец всего заказа
-            if ((_curTopValue + ordPnl.HeightPanel) >= _uiPanelSize.Height)
+            if ((_curTopValue + ordPnl.PanelHeight) >= _uiPanelSize.Height)
             {
                 moveToNewCol(ordPnl);
                 CurrentPage.UpdateLayout();
@@ -105,33 +106,34 @@ namespace KDSWPFClient.View
                 if (curFiling != dishModel.FilingNumber)
                 {
                     curFiling = dishModel.FilingNumber;
-                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel() { Text = "Подача " + curFiling.ToString(), FilingNumber = curFiling };
+                    Brush foreground = (curFiling == 1) ? Brushes.Red : Brushes.Blue;
+                    DishDelimeterPanel newDelimPanel = new DishDelimeterPanel(_colWidth, foreground, Brushes.AliceBlue, "Подача " + curFiling.ToString()) { DontTearOffNext = true };
                     ordPnl.AddDelimiter(newDelimPanel); // и добавить в стек
                 }
 
-                if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
-                dshPnl = new DishPanel(dishModel, curDshPnl);
-                if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
+                //if (dishModel.ParentUID.IsNull()) curDshPnl = null;  // сохранить родительское блюдо
+                dshPnl = new DishPanel(dishModel, _colWidth);  // , curDshPnl
+                //if (dishModel.ParentUID.IsNull()) curDshPnl = dshPnl;  // сохранить родительское блюдо
 
                 // добавить строку заказа в стек
                 ordPnl.AddDish(dshPnl);
                 CurrentPage.UpdateLayout();
 
-                if ((_curTopValue + Math.Ceiling(ordPnl.HeightPanel)) > _uiPanelSize.Height)  // переход в новый столбец
+                if ((_curTopValue + Math.Ceiling(ordPnl.PanelHeight)) > _uiPanelSize.Height)  // переход в новый столбец
                 {
                     // 1. удалить из ordPnl только что добавленное блюдо
                     //    и вернуть массив удаленных элементов, возможно с "висячим" разделителем номера подачи
                     UIElement[] delItems = ordPnl.RemoveDish(dshPnl, _curTopValue, _uiPanelSize.Height);
 
                     // разбиваем блюда заказа по колонкам на той же странице
-                    if ((ordPnl.Lines > 2) 
+                    if ((ordPnl.ItemsCount > 2) 
                         && ((_curColIndex < _pageColsCount) || ((_curColIndex == _pageColsCount) && (Convert.ToDouble(ordPnl.GetValue(Canvas.TopProperty))==0d))))
                     {
                         setNextColumn();
                         // 2. создать новый OrderPanel для текущего блюда с заголовком таблицы
                         ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
                         // 3. добавить только что удаленные блюда
-                        ordPnl.AddDish(delItems);
+                        ordPnl.AddDishes(delItems);
                         // 4. привязать к канве
                         ordPnl.SetPosition(_curTopValue, getLeftOrdPnl());
                         CurrentPage.AddOrder(ordPnl);
@@ -142,14 +144,14 @@ namespace KDSWPFClient.View
                         // 2. изменить координаты панели заказа
                         moveToNewCol(ordPnl);
                         // 3. добавить только что удаленные блюда
-                        ordPnl.AddDish(delItems);
+                        ordPnl.AddDishes(delItems);
                     }
                     CurrentPage.UpdateLayout();
                 }
 
             }  // foreach dishes
 
-            _curTopValue += ordPnl.HeightPanel;
+            _curTopValue += ordPnl.PanelHeight;
         }
 
         private void moveToNewCol(OrderPanel ordPnl)
@@ -183,58 +185,66 @@ namespace KDSWPFClient.View
         private void setNextColumn()
         {
             _curColIndex++;
-            if (_curColIndex > _pageColsCount)
-            {
-                OrdersPage page = new OrdersPage(_uiPanel);
-                _pages.Add(page);
-                _currentPageIndex = _pages.Count();
-                CurrentPage = page;
-                _curColIndex = 1;
-            }
+            if (_curColIndex > _pageColsCount) createNewPage();
+
             _curTopValue = 0d;
+        }
+
+        private void createNewPage()
+        {
+            OrdersPage page = new OrdersPage(_uiPanel);
+            _pages.Add(page);
+            CurrentPage = page;
+            _curColIndex = 1;
+
+            _currentPageIndex = _pages.Count;
+            _uiPanel.Child = CurrentPage;
         }
 
         // очистить все страницы и удалить все, кроме первой
         public void ClearPages()
         {
-            if (_pages.Count > 1)
-            {
-                foreach (OrdersPage page in _pages) page.ClearOrders();
-                _pages.RemoveRange(1, _pages.Count - 1);
-            }
+            // очистить все страницы
+            foreach (OrdersPage page in _pages) page.ClearOrders();
+            // удалить все страницы, кроме первой
+            if (_pages.Count > 1) _pages.RemoveRange(1, _pages.Count - 1);
 
             CurrentPage = _pages[0]; _currentPageIndex = 1;
-            CurrentPage.ClearOrders();
+
+            if (CurrentPage.Parent == null) _uiPanel.Child = CurrentPage;
         }
 
+        // возвращает true, если произошла смена страницы, иначе возвращает false
+        public bool SetPageIndex(int pageIndex)
+        {
+            if (pageIndex <= 0) pageIndex = 1;
+            else if (pageIndex > _pages.Count) pageIndex = _pages.Count;
+
+            bool retVal = false;
+            if (_currentPageIndex != pageIndex)
+            {
+                retVal = true;
+                _currentPageIndex = pageIndex;
+                CurrentPage = _pages[_currentPageIndex - 1];
+
+                if (CurrentPage.Parent == null) _uiPanel.Child = CurrentPage;
+            }
+
+            return retVal;
+        }
 
         public void SetFirstPage()
         {
-            _currentPageIndex = 1;
-            CurrentPage = _pages[_currentPageIndex - 1];  // because _currentPageIndex is 1-based var
+            SetPageIndex(1);
         }
 
         public bool SetNextPage()
         {
-            if (_currentPageIndex < _pages.Count)
-            {
-                _currentPageIndex++;
-                CurrentPage = _pages[_currentPageIndex-1];  // because _currentPageIndex is 1-based var
-                return true;
-            }
-            else
-                return false;
+            return SetPageIndex(_currentPageIndex + 1);
         }
         public bool SetPreviousPage()
         {
-            if (_currentPageIndex > 1)
-            {
-                _currentPageIndex--;
-                CurrentPage = _pages[_currentPageIndex - 1];  // because _currentPageIndex is 1-based var
-                return true;
-            }
-            else
-                return false;
+            return SetPageIndex(_currentPageIndex - 1);
         }
 
         private double getLeftOrdPnl()
