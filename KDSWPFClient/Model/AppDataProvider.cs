@@ -27,7 +27,12 @@ namespace KDSWPFClient
         private KDSCommandServiceClient _setClient = null;
         int openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
 
-        public bool IsGetServiceData { get; set; }
+        public bool IsGetServiceData {
+            get
+            {
+                return ((_ordStatuses.Count > 0) && (_deps.Count > 0));
+            }
+        }
 
         // **** СЛОВАРИ
         //   статусов
@@ -60,7 +65,6 @@ namespace KDSWPFClient
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
             _machineName += "." + App.ClientName;
-            this.IsGetServiceData = false;
         }
 
         public bool CreateGetChannel()
@@ -88,12 +92,8 @@ namespace KDSWPFClient
 
                 //_getClient.Open();
                 logClientInfo(_getClient);
-                if ((_ordStatuses.Count==0) || (_deps.Count == 0))
-                {
-                    retVal = this.SetDictDataFromService();
-                }
-                else
-                    retVal = true;
+
+                retVal = true;
             }
             catch (Exception ex)
             {
@@ -166,6 +166,8 @@ namespace KDSWPFClient
         #region get dictionaries from service
         public bool SetDictDataFromService()
         {
+            if ((_ordStatuses.Count > 0) && (_deps.Count > 0)) return true;
+
             bool retVal = false;
             try
             {
@@ -222,7 +224,6 @@ namespace KDSWPFClient
                 }
                 AppLib.WriteLogInfoMessage("  - получено: " + sBuf);
 
-                this.IsGetServiceData = true;
                 retVal = true;
             }
             catch (Exception ex)
@@ -413,7 +414,7 @@ namespace KDSWPFClient
                 DateTime dtTmr = DateTime.Now;
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - START", orderId, newStatus);
 
-                _setClient.ChangeOrderStatus(_machineName, orderId, newStatus);
+                _setClient.ChangeOrderStatus(_machineName, orderId, (int)newStatus);
 
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderStatus({0}, {1}) - FINISH - {2}", orderId, newStatus, (DateTime.Now - dtTmr).ToString());
             }
@@ -464,7 +465,7 @@ namespace KDSWPFClient
                 DateTime dtTmr = DateTime.Now;
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - START", orderId, dishId, newStatus);
 
-                retVal = _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, newStatus);
+                retVal = _setClient.ChangeOrderDishStatus(_machineName, orderId, dishId, (int)newStatus);
 
                 AppLib.WriteLogClientAction(" - svc.ChangeOrderDishStatus({0}, {1}, {2}) - FINISH - {3}", orderId, dishId, newStatus, (DateTime.Now - dtTmr).ToString());
                 retVal = true;
@@ -479,7 +480,7 @@ namespace KDSWPFClient
         #endregion
 
         #region создание файлов-уведомлений
-        public bool CreateNoticeFileForOrder(int orderId)
+        public bool CreateNoticeFileForOrder(int orderId, string dishIdsStr)
         {
             if (_setClient == null) return false;
 
@@ -487,7 +488,7 @@ namespace KDSWPFClient
             try
             {
                 checkSvcState();
-                retVal = _setClient.CreateNoticeFileForOrder(_machineName, orderId);
+                retVal = _setClient.CreateNoticeFileForOrder(_machineName, orderId, dishIdsStr);
             }
             catch (Exception)
             {

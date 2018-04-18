@@ -470,7 +470,6 @@ namespace KDSWPFClient
                 catch (Exception ex)
                 {
                     AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.Message); // ErrorHelper.GetShortErrMessage(ex)
-                    _dataProvider.IsGetServiceData = false;
                 }
 
             }  // if (_mayGetData)

@@ -45,6 +45,7 @@ namespace KDSService
         // дата последней проверки максимального количества архивных файлов
         private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
 
+        private bool _isUseReadyConfirmed;
 
 
         // CTOR
@@ -83,6 +84,7 @@ namespace KDSService
                 throw new Exception("Ошибка инициализации КДС-сервиса: " + msg);
 
             _maxLogFilesCount = AppProperties.GetIntProperty("MaxLogFiles");
+            _isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
 
             #region проверка наличия службы MSSQLServer
             // проверка наличия службы MSSQLServer
@@ -1065,6 +1067,16 @@ Contract: IMetadataExchange
                 retval.Add("TimeOfAutoCloseYesterdayOrders", ts1.ToString());
                 retval.Add("UnusedDepartments", s2);
 
+                // настройки файлов-уведомлений
+                /*
+  <add key="NoticeOrdermanFeature" value="1"/>
+  <add key="NoticeOrdermanFolder" value="c:\Users\Leschenko.V\Documents\Visual Studio 2015\Projects\Integra OrdermanServer\bin\Release distrib\OmanResources\Export\KDS"/>
+  <add key="NoticeOrdermanDishNotice" value="1"/>
+                 */
+                retval.Add("NoticeOrdermanFeature", AppProperties.GetBoolProperty("NoticeOrdermanFeature"));
+                retval.Add("NoticeOrdermanFolder", AppProperties.GetProperty("NoticeOrdermanFolder"));
+                retval.Add("NoticeOrdermanDishNotice", AppProperties.GetBoolProperty("NoticeOrdermanDishNotice"));
+
                 logMsg += "Ok";
             }
             catch (Exception ex)
@@ -1179,9 +1191,10 @@ Contract: IMetadataExchange
         }
 
         // обновление статуса заказа с КДСа
-        public bool ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus)
+        public bool ChangeOrderStatus(string machineName, int orderId, int statusId)
         {
             bool retVal = false;
+            OrderStatusEnum orderStatus = (OrderStatusEnum)statusId;
             string logMsg = string.Format("ChangeOrderStatus({0}, {1}): ", orderId, orderStatus);
             DateTime dtTmr = DateTime.Now;
             AppLib.WriteLogClientAction(machineName, logMsg + " - START");
@@ -1213,10 +1226,11 @@ Contract: IMetadataExchange
         }
 
         // обновление статуса блюда с КДСа
-        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus)
+        public bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, int dishStatusId)
         {
             bool retVal = false;
-            string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, orderDishStatus);
+            OrderStatusEnum dishStatus = (OrderStatusEnum)dishStatusId;
+            string logMsg = string.Format("ChangeOrderDishStatus(orderId:{0}, dishId:{1}, status:{2}): ", orderId, orderDishId, dishStatus);
             DateTime dtTmr = DateTime.Now;
             AppLib.WriteLogClientAction(machineName, logMsg + " - START");
 
@@ -1230,7 +1244,7 @@ Contract: IMetadataExchange
                     OrderDishModel modelDish = modelOrder.Dishes[orderDishId];
                     try
                     {
-                        retVal = modelDish.UpdateStatus(orderDishStatus, machineName: machineName);
+                        retVal = modelDish.UpdateStatus(dishStatus, machineName: machineName);
                         logMsg += (retVal ? "Ok" : "Not changed");
                     }
                     catch (Exception ex)
@@ -1257,55 +1271,103 @@ Contract: IMetadataExchange
         // создание файла уведомления о состоянии ЗАКАЗА
         // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
         // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
-        public bool CreateNoticeFileForOrder(string machineName, int orderId)
+        public bool CreateNoticeFileForOrder(string machineName, int orderId, string dishIdsStr)
         {
-            string logMsg = $"Создание файла состояния Заказа id {orderId}";
-            AppLib.WriteLogClientAction(machineName, logMsg);
+            string logMsg = $"Создание файла состояния Заказа id {orderId}...";
+            writeLog_Oman(machineName, logMsg);
 
             string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
             if (folder == null)
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                writeLog_Oman(machineName, " - Error: не задан путь сохранения файла");
                 return false;
             }
             if (!_ordersModel.Orders.ContainsKey(orderId))
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + " - id не найден во внутреннем наборе заказов");
+                writeLog_Oman(machineName, " - Error: id не найден во внутреннем наборе заказов");
                 return false;
             }
 
             bool retVal = false;
-            bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
             OrderModel modelOrder = _ordersModel.Orders[orderId];
             OrderStatusEnum status = (OrderStatusEnum)modelOrder.OrderStatusId;
-            logMsg += $", № '{modelOrder.Number}' ... ";
+            logMsg = $" - заказ № '{modelOrder.Number}', статус {status.ToString()}";
+            writeLog_Oman(machineName, logMsg);
 
-            #region для состояния Готов
-            if (
-                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready))
-                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed)))
-                && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
-                )
+            #region условия создания файла-уведомления
+            if (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
             {
+                string fileName = null, fileText = null;
+                OrderStatusEnum toFileStatus = (OrderStatusEnum)modelOrder.OrderStatusId;
+                if (toFileStatus == OrderStatusEnum.ReadyConfirmed) toFileStatus = OrderStatusEnum.Ready;
+                fileText = string.Format("Order UID: {1}{0}Order Id: {2}{0}Order Number: {3}{0}Order Status: {4} ({5}){0}Waiter Name: {6}",
+                    Environment.NewLine, modelOrder.Uid, modelOrder.Id, modelOrder.Number,
+                    ((int)toFileStatus).ToString(), toFileStatus.ToString(),
+                    modelOrder.Waiter);
+
+                // для терминального состояния Готов ЗАКАЗА
+                if (getFinReadyValue(status))
                 {
-                    string file = $"{folder}ordNumber_{modelOrder.Number}" + ".txt";
-                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nState: {modelOrder.OrderStatusId}\nState name: {((OrderStatusEnum)modelOrder.OrderStatusId).ToString()}";
+                    fileName = $"{folder}ordNumber_{modelOrder.Number}" + ".txt";
+                }
+
+                // иначе вывести в файл-уведомление БЛЮДА в состоянии Готово
+                else if (dishIdsStr.IsNull() == false)
+                {
+                    IEnumerable<int> dishIds = dishIdsStr.Split(';').Select<string, int>(sId => sId.ToInt());
+                    OrderDishModel currentDish;
+                    List<OrderDishModel> readyDishes = new List<OrderDishModel>();  // блюда в состоянии ГОТОВО
+                    foreach (int dishId in dishIds)
+                    {
+                        if (modelOrder.Dishes.ContainsKey(dishId))
+                        {
+                            currentDish = modelOrder.Dishes[dishId];
+                            // вывести в файл блюда в терминальном состоянии Готов и которые еще не были выведены в файл
+                            if (getFinReadyValue((OrderStatusEnum)currentDish.DishStatusId) 
+                                && (currentDish.IsOutToOrderman == false))
+                            {
+                                readyDishes.Add(currentDish);
+                                currentDish.IsOutToOrderman = true;
+                            }
+                        }
+                    }
+                    int cnt = readyDishes.Count;
+                    if (cnt > 0)
+                    {
+                        IntegraLib.StringHelper.SBufClear();
+                        foreach (OrderDishModel dish in readyDishes)
+                        {
+                            logMsg = $"   - блюдо '{dish.Name}' id {dish.Id}, status {((OrderStatusEnum)dish.DishStatusId).ToString()}";
+                            writeLog_Oman(machineName, logMsg);
+                            IntegraLib.StringHelper.SBufAppendText(Environment.NewLine + getDishStrForNoticeFile(dish));
+                        }
+                        fileText += IntegraLib.StringHelper.SBufGetString();
+                        fileName = $"{folder}ordNumber_{modelOrder.Number} ({cnt.ToString()} dishes)" + ".txt";
+                    }
+                }
+
+                if ((fileName != null) && (fileText != null))
+                {
                     try
                     {
-                        System.IO.File.WriteAllText(file, fileText);
+                        System.IO.File.WriteAllText(fileName, fileText);
 
-                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        writeLog_Oman(machineName, $" - файл '{fileName}' создан успешно");
                         retVal = true;
                     }
                     catch (Exception ex)
                     {
-                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                        writeLog_Oman(machineName, " - Error: " + ex.Message);
                     }
+                }
+                else
+                {
+                    writeLog_Oman(machineName, " - нет блюд в состоянии ГОТОВ");
                 }
             }
             else
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+                writeLog_Oman(machineName, " - не выполнены условия создания файла");
             }
             #endregion
 
@@ -1318,28 +1380,30 @@ Contract: IMetadataExchange
         // для блюда, не ингредиента, только, если сам заказ еще не готов и NoticeOrdermanDishNotice = 1 (создавать файл-уведомления для блюда)
         public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId)
         {
-            string logMsg = $"Создание файла состояния Заказа id {orderId}, Блюдо id {orderDishId}";
-            AppLib.WriteLogClientAction(machineName, logMsg);
+            string logMsg = $"Создание файла состояния Заказа id {orderId}, Блюдо id {orderDishId}...";
+            writeLog_Oman(machineName, logMsg);
 
             string folder = (string)AppProperties.GetProperty("NoticeOrdermanFolder"); // заканчивается на ...\
             if (folder == null)
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + " - не задан путь сохранения файла");
+                writeLog_Oman(machineName, " - Error: не задан путь сохранения файла");
                 return false;
             }
             if (!_ordersModel.Orders.ContainsKey(orderId))
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + " - OrderId не найден во внутреннем наборе заказов");
+                writeLog_Oman(machineName, " - Error: OrderId не найден во внутреннем наборе заказов");
                 return false;
             }
 
             bool retVal = false;
             bool isUseReadyConfirmed = AppProperties.GetBoolProperty("UseReadyConfirmedState");
             OrderModel modelOrder = _ordersModel.Orders[orderId];
-            logMsg += $", № заказа '{modelOrder.Number}' ... ";
+            logMsg = $" - заказ № '{modelOrder.Number}', статус {((OrderStatusEnum)modelOrder.OrderStatusId).ToString()}";
+            writeLog_Oman(machineName, logMsg);
+
             if (!modelOrder.Dishes.ContainsKey(orderDishId))
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + " - DishId не найден во внутреннем наборе блюд");
+                writeLog_Oman(machineName, $" - DishId {orderDishId} не найден во внутреннем наборе блюд!");
                 return false;
             }
 
@@ -1347,39 +1411,69 @@ Contract: IMetadataExchange
             OrderStatusEnum status = (OrderStatusEnum)modelDish.DishStatusId;
             bool isDish = modelDish.ParentUid.IsNull();
 
-            #region для состояния Готов
-            if (
-                ((!isUseReadyConfirmed && (status == OrderStatusEnum.Ready) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.Ready))
-                || (isUseReadyConfirmed && (status == OrderStatusEnum.ReadyConfirmed) && (modelOrder.OrderStatusId != (int)OrderStatusEnum.ReadyConfirmed)))
-                && (isDish == true)
+            #region условия создания файла-уведомления для БЛЮДА
+            if ((isDish == true)
                 && (AppProperties.GetBoolProperty("NoticeOrdermanFeature") == true)
                 && (AppProperties.GetBoolProperty("NoticeOrdermanDishNotice") == true)
                 )
             {
+                string fileName = $"{folder}ordNumber_{modelOrder.Number}(dishId_{modelDish.Id}).txt";
+                string fileText = null;
+
+                // для терминального состояния Готов
+                if (getFinReadyValue(status))
                 {
-                    string file = $"{folder}ordNumber_{modelOrder.Number}(dishId_{modelDish.Id}).txt";
-                    logMsg = $"Сохранение уведомления о готовности блюда '{modelDish.Name}' в файл '{file}': ";
-                    string fileText = $"Order Id: {modelOrder.Id}\nOrder Number: {modelOrder.Number}\nWaiter Name: {modelOrder.Waiter}\nDish Id: {modelDish.Id}\nDish Name: {modelDish.Name}\nState: {modelDish.DishStatusId}\nState name: {((OrderStatusEnum)modelDish.DishStatusId).ToString()}";
+                    fileText = string.Format("Order UID: {1}{0}Order Id: {2}{0}Order Number: {3}{0}Order Status: {4} ({5}){0}Waiter Name: {6}{0}{7}",
+                        Environment.NewLine, modelOrder.Uid, modelOrder.Id, modelOrder.Number,
+                        modelOrder.OrderStatusId.ToString(), ((OrderStatusEnum)modelOrder.OrderStatusId).ToString(),
+                        modelOrder.Waiter, getDishStrForNoticeFile(modelDish));
+                }
+
+                if (fileText != null)
+                {
                     try
                     {
-                        System.IO.File.WriteAllText(file, fileText);
+                        System.IO.File.WriteAllText(fileName, fileText);
 
-                        AppLib.WriteLogClientAction(machineName, logMsg + $"файл '{file}' создан успешно");
+                        writeLog_Oman(machineName, $" - файл '{fileName}' создан успешно");
+                        modelDish.IsOutToOrderman = true;
                         retVal = true;
                     }
                     catch (Exception ex)
                     {
-                        AppLib.WriteLogErrorMessage(logMsg + ex.Message);
+                        writeLog_Oman(machineName, " - Error: " + ex.Message);
                     }
                 }
             }
             else
             {
-                AppLib.WriteLogClientAction(machineName, logMsg + "- не выполнены условия создания файла");
+                writeLog_Oman(machineName, " - не выполнены условия создания файла");
             }
             #endregion
 
             return retVal;
+        }
+
+        private void writeLog_Oman(string machineName, string logMsg)
+        {
+            AppLib.WriteLogClientAction(machineName, "Oman|" + logMsg);
+        }
+
+        private bool getFinReadyValue(OrderStatusEnum state)
+        {
+            return (_isUseReadyConfirmed && (state == OrderStatusEnum.ReadyConfirmed))
+                || (!_isUseReadyConfirmed && (state == OrderStatusEnum.Ready));
+        }
+
+        private string getDishStrForNoticeFile(OrderDishModel dishModel)
+        {
+            OrderStatusEnum toFileStatus = (OrderStatusEnum)dishModel.DishStatusId;
+            if (toFileStatus == OrderStatusEnum.ReadyConfirmed) toFileStatus = OrderStatusEnum.Ready;
+
+            return string.Format("Dish: {1};{2}{0}Dish Status: {3} ({4})", 
+                Environment.NewLine,
+                dishModel.Id, dishModel.Name, 
+                (int)toFileStatus, toFileStatus.ToString());
         }
 
         #endregion

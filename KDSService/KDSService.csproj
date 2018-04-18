@@ -88,7 +88,6 @@
     <Compile Include="AppModel\OrderModel.cs" />
     <Compile Include="AppModel\OrderGroupEnum.cs" />
     <Compile Include="AppModel\OrdersModel.cs" />
-    <Compile Include="AppModel\OrderStatusEnum.cs" />
     <Compile Include="AppModel\LeafDirectionEnum.cs" />
     <Compile Include="AppModel\ServiceResponce.cs" />
     <Compile Include="AppModel\StatusDTS.cs" />

@@ -137,7 +137,7 @@
       <xs:sequence>
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element xmlns:q6="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderStatus" type="q6:OrderStatusEnum" />
+        <xs:element minOccurs="0" name="orderStatusId" type="xs:int" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -153,8 +153,8 @@
       <xs:sequence>
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
-        <xs:element xmlns:q7="http://schemas.datacontract.org/2004/07/KDSService.AppModel" minOccurs="0" name="orderDishStatus" type="q7:OrderStatusEnum" />
+        <xs:element minOccurs="0" name="dishId" type="xs:int" />
+        <xs:element minOccurs="0" name="dishStatusId" type="xs:int" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -170,6 +170,7 @@
       <xs:sequence>
         <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
         <xs:element minOccurs="0" name="orderId" type="xs:int" />
+        <xs:element minOccurs="0" name="dishIdsStr" nillable="true" type="xs:string" />
       </xs:sequence>
     </xs:complexType>
   </xs:element>

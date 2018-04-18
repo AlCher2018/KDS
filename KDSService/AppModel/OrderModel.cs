@@ -366,23 +366,25 @@ namespace KDSService.AppModel
 
             foreach (OrderDishModel dish in _dishesDict.Values)
             {
-                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId))) { }
-                else
+                // пропуск блюд, входящих в неотображаемые цеха
+                // или имеющие отрицательное количество - отмененные
+                if ((unUsedDeps != null) && (unUsedDeps.Contains(dish.DepartmentId))) continue;
+                if (dish.Quantity < 0) continue;
+
+                // первое доступное блюдо
+                if (iStat == -1) iStat = dish.DishStatusId;
+
+                // если хотя бы одно блюдо в состояние Готовится, то и заказ переводим в это состояние, если он был не в этом состоянии
+                if ((dish.DishStatusId == (int)OrderStatusEnum.Cooking)
+                    && (this.OrderStatusId != (int)OrderStatusEnum.Cooking))
                 {
-                    // первое доступное блюдо
-                    if (iStat == -1) iStat = dish.DishStatusId;
-
-                    // если хотя бы одно блюдо в состояние Готовится, то и заказ переводим в это состояние, если он был не в этом состоянии
-                    if ((dish.DishStatusId == (int)OrderStatusEnum.Cooking) && (this.OrderStatusId != (int)OrderStatusEnum.Cooking))
-                    {
-                        UpdateStatus(OrderStatusEnum.Cooking, false);
-                        _isUpdStatusFromDishes = true;
-                        return;
-                    }
-
-                    // есть неодинаковый статус - выйти
-                    if (iStat != dish.DishStatusId) return;
+                    UpdateStatus(OrderStatusEnum.Cooking, false);
+                    _isUpdStatusFromDishes = true;
+                    return;
                 }
+
+                // есть неодинаковый статус - выйти
+                if (iStat != dish.DishStatusId) return;
             }
 
             if ((iStat != -1) && (this.OrderStatusId != iStat))

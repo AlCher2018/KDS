@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ServiceModel;
 using KDSService.AppModel;
-
-
+using IntegraLib;
 
 namespace KDSService
 {
@@ -24,15 +23,15 @@ namespace KDSService
 
         // изменение статуса заказа
         [OperationContract]
-        bool ChangeOrderStatus(string machineName, int orderId, OrderStatusEnum orderStatus);
+        bool ChangeOrderStatus(string machineName, int orderId, int orderStatusId);
 
         // изменение статуса блюда
         [OperationContract]
-        bool ChangeOrderDishStatus(string machineName, int orderId, int orderDishId, OrderStatusEnum orderDishStatus);
+        bool ChangeOrderDishStatus(string machineName, int orderId, int dishId, int dishStatusId);
 
         // создание файла-уведомления для ЗАКАЗА
         [OperationContract]
-        bool CreateNoticeFileForOrder(string machineName, int orderId);
+        bool CreateNoticeFileForOrder(string machineName, int orderId, string dishIdsStr);
 
         // создание файла-уведомления для БЛЮДА
         [OperationContract]

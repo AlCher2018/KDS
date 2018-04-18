@@ -1,5 +1,4 @@
-﻿using KDSWPFClient.ServiceReference1;
-using KDSWPFClient.Lib;
+﻿using KDSWPFClient.Lib;
 using IntegraLib;
 using IntegraWPFLib;
 using SplashScreenLib;
@@ -13,8 +12,7 @@ using KDSWPFClient.View;
 using System.Windows.Media;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.IO.Compression;
+
 
 namespace KDSWPFClient
 {
@@ -110,6 +108,8 @@ namespace KDSWPFClient
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
             ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
+            asmInfo = new ITSAssemmblyInfo("IntegraWPFLib");
+            AppLib.WriteLogInfoMessage(" - Integra WPF lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
 
             MessageListener.Instance.ReceiveMessage("Получение параметров окружения...");
             AppLib.WriteLogInfoMessage(AppEnvironment.GetEnvironmentString());
@@ -384,6 +384,8 @@ namespace KDSWPFClient
                     {
                         string sLogMsg;
                         bool result = false;
+                        bool finReady = getFinReadyValue(newState); // флаг терминального окончания готовки
+
                         #region изменение статуса
                         try
                         {
@@ -403,16 +405,15 @@ namespace KDSWPFClient
                                     OrderStatusEnum preState = dishModel.Status;
                                     // изменить статус блюда с ингредиентами
                                     result = changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
-                                    
-                                    // откат на предыдущий статус
-                                    if (result == false)
+
+                                    // создание файла для Одермана - только для БЛЮДА, НЕ для ингредиента
+                                    if (result && dishModel.ParentUID.IsNull())
                                     {
-                                        AppLib.WriteLogClientAction("Dish state has NOT changed: state rollback...");
-                                        result = changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, preState);
-                                    }
-                                    else
-                                    {
-                                        dataProvider.CreateNoticeFileForDish(orderModel.Id, dishModel.Id);
+                                        // только для терминального окончания готовки и включенных уведомлений (получаем от сервиса)
+                                        if (finReady && WpfHelper.GetAppGlobalBool("NoticeOrdermanFeature"))
+                                        {
+                                            dataProvider.CreateNoticeFileForDish(orderModel.Id, dishModel.Id);
+                                        }
                                     }
 
                                     string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
@@ -436,8 +437,7 @@ namespace KDSWPFClient
                                 if (dataProvider.LockOrder(orderModel.Id))
                                 {
                                     AppLib.WriteLogClientAction("lock " + sLogMsg + ": success");
-
-                                    result = true;
+                                    List<int> dishIds = new List<int>(); // dishes id has changed
                                     // меняем статус БЛЮД в заказе, если блюдо разрешено для данного КДСа
                                     foreach (OrderDishViewModel item in orderModel.Dishes.Where(d => d.ParentUID.IsNull()))
                                     {
@@ -445,13 +445,18 @@ namespace KDSWPFClient
                                         {
                                             // изменить статус блюда с ингредиентами
                                             result = changeStatusDishWithIngrs(dataProvider, orderModel, item, newState);
-                                            if (result == false) break;
+                                            if (result) { dishIds.Add(item.Id); }
                                         }
                                     }  // foreach
 
-                                    if (result == true)
+                                    // создание файла-уведомления для Одермана, если это терминальный статус Готово и 
+                                    // статус всех блюд был успешно изменен и включено создание файлов-уведомлений
+                                    if (finReady && WpfHelper.GetAppGlobalBool("NoticeOrdermanFeature") 
+                                        && (dishIds.Count > 0))
                                     {
-                                        dataProvider.CreateNoticeFileForOrder(orderModel.Id);
+                                        // Id блюд с измененными статусами
+                                        string dishIdsToSvc = string.Join(";", dishIds.Select<int, string>(item => item.ToString()));
+                                        dataProvider.CreateNoticeFileForOrder(orderModel.Id, dishIdsToSvc);
                                     }
 
                                     string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
@@ -479,11 +484,22 @@ namespace KDSWPFClient
 
         }  // method
 
+        private static bool getFinReadyValue(OrderStatusEnum state)
+        {
+            bool confReady = WpfHelper.GetAppGlobalBool("UseReadyConfirmedState");
+            return (confReady && (state == OrderStatusEnum.ReadyConfirmed))
+                || (!confReady && (state == OrderStatusEnum.Ready));
+        }
+
         // изменение статуса блюда с ингредиентами
         private static bool changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
+            // для отмененного блюда статус не менять
+            if (dishModel.Quantity < 0) return false;
+
             // эта настройка от КДС-сервиса
             bool isConfirmedReadyState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
+
             bool result = false;
 
             // изменить статус блюда
@@ -515,6 +531,7 @@ namespace KDSWPFClient
                         if (DishesFilter.Instance.Checked(ingr)
                             || (!isConfirmedReadyState && (newState == OrderStatusEnum.Ready))
                             || (isConfirmedReadyState && (newState == OrderStatusEnum.ReadyConfirmed))
+                            || (newState == OrderStatusEnum.Cooking)
                             || (newState == OrderStatusEnum.Took)
                             || (newState == OrderStatusEnum.CancelConfirmed))
                         {

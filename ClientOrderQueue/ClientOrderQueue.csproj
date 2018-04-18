@@ -125,7 +125,6 @@
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
     <Compile Include="Lib\Converters.cs" />
-    <Compile Include="Model\OrderStatusEnum.cs" />
     <Compile Include="View\SplashScreen.xaml.cs">
       <DependentUpon>SplashScreen.xaml</DependentUpon>
     </Compile>

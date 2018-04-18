@@ -145,6 +145,7 @@ namespace KDSService.AppModel
         private DateTime _dtReadyStatusInput;
         private OrderDishModel _parentDish;
 
+        public bool IsOutToOrderman = false;
         #endregion
 
         // for serialization

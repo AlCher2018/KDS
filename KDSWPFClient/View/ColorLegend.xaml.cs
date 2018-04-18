@@ -1,13 +1,9 @@
-﻿using IntegraWPFLib;
-using KDSWPFClient.Lib;
-using KDSWPFClient.ServiceReference1;
-using KDSWPFClient.View;
+﻿using IntegraLib;
+using IntegraWPFLib;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 
 
 namespace KDSWPFClient.View
