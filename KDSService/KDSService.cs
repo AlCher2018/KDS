@@ -26,7 +26,7 @@ namespace KDSService
     {
         // таймер наблюдения за заказами в БД
         private Timer _observeTimer;
-        private double _observeInterval = 750;   // интервал в мсек опроса БД
+        private double _observeInterval = 1000;   // интервал в мсек опроса БД
 
         // сервис WCF
         private ServiceHost _host;
@@ -361,7 +361,7 @@ Contract: IMetadataExchange
         private void _observeTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             StopTimer();
-            AppLib.WriteLogOrderDetails("** Stop DB read timer.");
+            AppLib.WriteLogOrderDetails("** Elapse DB read timer.");
 
             // проверка количества архивных файлов
             DateTime dt = DateTime.Now;
@@ -382,6 +382,9 @@ Contract: IMetadataExchange
             // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
             if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))
             {
+                // проверка заблокированных заказов на наличие зависших блокировок
+                checkLockedOrders();
+
                 string errDBMsg = _ordersModel.UpdateOrders();
 
                 #region ошибка получения данных от MS SQL Server
@@ -451,6 +454,23 @@ Contract: IMetadataExchange
 
             StartTimer();
             AppLib.WriteLogOrderDetails("** Start DB read timer.");
+        }
+
+        private void checkLockedOrders()
+        {
+            int[] lockedOrders = OrderLocker.GetLockedOrders();
+            if (lockedOrders.Length == 0) return;
+
+            foreach (int orderId in lockedOrders)
+            {
+                // если заказ заблокирован более чем 5 сек, то 
+                if (OrderLocker.GetTimeOrderLocked(orderId).TotalSeconds > 5d)
+                {
+                    OrderModel order = _ordersModel.Orders[orderId];
+                    // обновить статус заказа статусом всех блюд
+                    order.UpdateStatusByVerificationDishes();
+                }
+            }
         }
 
 
@@ -1108,85 +1128,58 @@ Contract: IMetadataExchange
         // заблокировать заказ от изменения по таймеру
         public bool LockOrder(string machineName, int orderId)
         {
-            bool retVal = false;
             string logMsg = string.Format("LockOrder({0}): ", orderId);
+            bool retVal = OrderLocker.LockOrder(orderId);
 
-            try
-            {
-                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");  // получить
-                if (!hs.ContainsKey(orderId)) hs.Add(orderId, false);   // добавить
-                else hs[orderId] = false;
-                retVal = true;
-            }
-            catch (Exception)
-            {
-            }
-
-            logMsg += "Ok";
+            if (retVal)
+                logMsg += "Ok";
+            else
+                logMsg += "Error: " + OrderLocker.ErrMsg;
             AppLib.WriteLogClientAction(machineName, logMsg);
+
             return retVal;
         }
         // разблокировать заказ от изменения по таймеру
         public bool DelockOrder(string machineName, int orderId)
         {
-            bool retVal = false;
             string logMsg = string.Format("DelockOrder({0}): ", orderId);
+            bool retVal = OrderLocker.DelockOrder(orderId);
 
-            try
-            {
-                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedOrders");
-                if (hs.ContainsKey(orderId)) hs[orderId] = true;
-                retVal = true;
-            }
-            catch (Exception)
-            {
-            }
-
-            logMsg += "Ok";
+            if (retVal)
+                logMsg += "Ok";
+            else
+                logMsg += "Error: " + OrderLocker.ErrMsg;
             AppLib.WriteLogClientAction(machineName, logMsg);
+
             return retVal;
         }
 
         // заблокировать блюдо от изменения по таймеру
         public bool LockDish(string machineName, int dishId)
         {
-            bool retVal = false;
             string logMsg = string.Format("LockDish({0}): ", dishId);
+            bool retVal = OrderLocker.LockDish(dishId);
 
-            try
-            {
-                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-                if (!hs.ContainsKey(dishId)) hs.Add(dishId, false);
-                AppProperties.SetProperty("lockedDishes", hs);
-                retVal = true;
-            }
-            catch (Exception)
-            {
-            }
-
-            logMsg += "Ok";
+            if (retVal)
+                logMsg += "Ok";
+            else
+                logMsg += "Error: " + OrderLocker.ErrMsg;
             AppLib.WriteLogClientAction(machineName, logMsg);
+
             return retVal;
         }
         // разблокировать блюдо от изменения по таймеру
         public bool DelockDish(string machineName, int dishId)
         {
-            bool retVal = false;
             string logMsg = string.Format("DelockDish({0}): ", dishId);
+            bool retVal = OrderLocker.DelockDish(dishId);
 
-            try
-            {
-                Dictionary<int, bool> hs = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
-                if (hs.ContainsKey(dishId)) hs[dishId] = true;
-                AppProperties.SetProperty("lockedDishes", hs);
-                retVal = true;
-            }
-            catch (Exception)
-            {
-            }
-
-            logMsg += "Ok";
+            if (retVal)
+                logMsg += "Ok";
+            else
+                logMsg += "Error: " + OrderLocker.ErrMsg;
             AppLib.WriteLogClientAction(machineName, logMsg);
+
             return retVal;
         }
 

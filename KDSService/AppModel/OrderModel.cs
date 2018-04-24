@@ -229,22 +229,22 @@ namespace KDSService.AppModel
                 UpdateStatus(newStatus, false);
 
                 // *** СЛОВАРЬ БЛЮД  ***
-                // удалить блюда из внутр.модели заказа, которых уже нет в БД
+                // удалить блюда из внутр.модели заказа, которых уже нет в БД и которые НЕЗАБЛОКИРОВАНЫ
                 List<int> idDishList = dbOrder.Dishes.Select(d => d.Id).ToList();  // все Id блюд из БД
                 List<int> idForRemove = _dishesDict.Keys.Except(idDishList).ToList();  // Id блюд для удаления
                 foreach (int idDish in idForRemove)
                 {
+                    if (OrderLocker.IsLockDish(idDish)) continue;
                     _dishesDict[idDish].Dispose(); _dishesDict.Remove(idDish);
                 }
 
                 _isUpdStatusFromDishes = false;
 
                 // обновить состояние или добавить блюда
-                Dictionary<int, bool> lockedDishes = (Dictionary<int, bool>)AppProperties.GetProperty("lockedDishes");
                 foreach (OrderDish dbDish in dbOrder.Dishes)
                 {
                     // пропустить, если блюдо находится в словаре заблокированных от изменения по таймеру
-                    if ((lockedDishes != null) && lockedDishes.ContainsKey(dbDish.Id)) continue;
+                    if (OrderLocker.IsLockDish(dbDish.Id)) continue;
 
                     if (this._dishesDict.ContainsKey(dbDish.Id))  // есть такое блюдо во внут.словаре - обновить из БД
                     {
@@ -359,7 +359,7 @@ namespace KDSService.AppModel
         // обновление состояния заказа проверкой состояний всех блюд
         // установить сост.заказа в 0,2,3,4,5 если ВСЕ блюда наход.в этом состоянии
         // установить сост.заказа в 1, если ХОТЬ одно блюдо наход.в сост. 1
-        public void UpdateStatusByVerificationDishes(OrderStatusEnum preStatus, OrderStatusEnum newStatus)
+        public void UpdateStatusByVerificationDishes()
         {
             int iStat = -1;
             HashSet<int> unUsedDeps = (HashSet<int>)AppProperties.GetProperty("UnusedDepartments");
@@ -378,6 +378,10 @@ namespace KDSService.AppModel
                 if ((dish.DishStatusId == (int)OrderStatusEnum.Cooking)
                     && (this.OrderStatusId != (int)OrderStatusEnum.Cooking))
                 {
+                    AppLib.WriteLogOrderDetails(string.Format("   изменение статуса заказа {0}/{1} с {2} на 'Готовится', т.к. есть блюдо в состоянии 'Готовится'"
+                        , this.Id, this.Number
+                        , ((OrderStatusEnum)this.OrderStatusId).ToString()));
+
                     UpdateStatus(OrderStatusEnum.Cooking, false);
                     _isUpdStatusFromDishes = true;
                     return;

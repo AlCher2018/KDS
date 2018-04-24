@@ -252,12 +252,19 @@ namespace ClientOrderQueue.View
             int rowCount = grid.RowDefinitions.Count;
             int colCount = grid.ColumnDefinitions.Count;
             int listIndex;
+
+            DateTime dtProc = DateTime.Now;
+            AppLib.WriteLogTraceMessage("screen updating - START");
+
             for (int i = 0; i < rowCount; i++)
             {
                 for (int j = 0; j < colCount; j++)
                 {
+                    // индекс ячейки в одномерном массиве
                     listIndex = (i * colCount) + j;
+                    // ячейка таблицы (объект типа OrderPanel1)
                     OrderPanel1 cc = (OrderPanel1)grid.Children[listIndex];
+                    // обновить ячейки данными из набора _appOrders
                     if (listIndex < _appOrders.Count)
                     {
                         cc.OrderNumber = _appOrders[listIndex].Order.Number.ToString();
@@ -274,16 +281,15 @@ namespace ClientOrderQueue.View
                         }
                         if (cc.Visibility != Visibility.Visible) cc.Visibility = Visibility.Visible;
                     }
-                    else if (cc.Visibility == Visibility.Visible) cc.Visibility = Visibility.Hidden;
-
-                    //CellContainer cc = (CellContainer)grid.Children[listIndex];
-                    //if (listIndex < _appOrders.Count)
-                    //{
-                    //    cc.SetOrderData(_appOrders[listIndex]);
-                    //}
-                    //else if (cc.AppOrder != null) cc.Clear();
+                    // прочие ячейки таблицы
+                    else
+                    {
+                        // если панель заказа в ячейке видима, то скрыть ее
+                        if (cc.Visibility == Visibility.Visible) cc.Visibility = Visibility.Hidden;
+                    }
                 }
             }
+            AppLib.WriteLogTraceMessage("screen updating - FINISH - " + (DateTime.Now - dtProc).ToString());
         }
 
         private void setGridVisibility(Grid grid, Visibility visi)

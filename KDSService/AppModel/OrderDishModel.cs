@@ -382,7 +382,7 @@ namespace KDSService.AppModel
                     startStatusTimer(statusDTS);
 
                     // попытка обновить статус ЗАКАЗА проверкой состояний всех блюд/ингредиентов
-                    _modelOrder.UpdateStatusByVerificationDishes(preStatus, newStatus);
+                    _modelOrder.UpdateStatusByVerificationDishes();
 
                     isUpdSuccess = true;
                 }
