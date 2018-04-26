@@ -235,13 +235,16 @@ namespace KDSWPFClient
         }
         private void setOrderStatusFromService()
         {
-            _ordStatuses.Clear();
+            if (_ordStatuses.Count > 0) _ordStatuses.Clear();
             try
             {
                 List<OrderStatusModel> svcList = _getClient.GetOrderStatuses(_machineName);
-                svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
-                    new OrderStatusViewModel() { Id = o.Id, Name = o.Name, AppName = o.AppName, Description = o.Description }
-                    ));
+                if (svcList != null)
+                {
+                    svcList.ForEach((OrderStatusModel o) => _ordStatuses.Add(o.Id,
+                        new OrderStatusViewModel() { Id = o.Id, Name = o.Name, AppName = o.AppName, Description = o.Description }
+                        ));
+                }
             }
             catch (Exception)
             {
@@ -251,22 +254,26 @@ namespace KDSWPFClient
 
         private void setDepartmentsFromService()
         {
-            _deps.Clear();
+            if (_deps.Count > 0) _deps.Clear();
             try
             {
                 List<DepartmentModel> svcDict = _getClient.GetDepartments(_machineName);
-                foreach (DepartmentModel dep in svcDict)
+                if (svcDict != null)
                 {
-                    DepartmentViewModel newDep = new DepartmentViewModel()
+                    foreach (DepartmentModel dep in svcDict)
                     {
-                        Id = dep.Id, Name = dep.Name, UID = dep.UID,
-                        DishQuantity = dep.DishQuantity,
-                        IsAutoStart = dep.IsAutoStart,
-                        IsViewOnKDS = false
-                    };
+                        DepartmentViewModel newDep = new DepartmentViewModel()
+                        {
+                            Id = dep.Id,
+                            Name = dep.Name,
+                            UID = dep.UID,
+                            DishQuantity = dep.DishQuantity,
+                            IsAutoStart = dep.IsAutoStart,
+                            IsViewOnKDS = false
+                        };
 
-
-                    _deps.Add(dep.Id, newDep);
+                        _deps.Add(dep.Id, newDep);
+                    }
                 }
             }
             catch (Exception ex)

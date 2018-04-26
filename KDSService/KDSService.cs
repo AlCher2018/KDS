@@ -127,47 +127,49 @@ namespace KDSService
             AppLib.WriteLogInfoMessage("  Проверка доступа к базе данных...");
             AppLib.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
 
-            isResultOk = DBContext.CheckDBConnectionAlt();
-            if (!isResultOk)
+            msg = DBContext.CheckDBConnectionAlt();
+            if (!msg.IsNull())
             {
-                AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
-                throw new Exception("Ошибка проверки доступа к базе данных: " + DBContext.LastErrorText);
+                AppLib.WriteLogErrorMessage(msg);
+            }
+            else
+            {
+                // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
+                int cfgCompLevel = AppProperties.GetIntProperty("MSSQLServerCompatibleLevel");
+                if ((cfgCompLevel != 0) && DBContext.IsValidCompatibleLevel(cfgCompLevel))
+                    resetMSSQLServerCompatibleLevel(cfgCompLevel);
+
+                // проверка справочных таблиц (в классе ModelDicts)
+                AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
+                isResultOk = DBOrderHelper.CheckAppDBTable();
+                if (!isResultOk)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка проверки справочных таблиц: " + DBOrderHelper.ErrorMessage);
+                }
+                // получение словарей приложения из БД
+                AppLib.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
+                isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
+                if (!isResultOk)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка получения словарей из БД: " + msg);
+                }
             }
 
-            // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
-            int cfgCompLevel = AppProperties.GetIntProperty("MSSQLServerCompatibleLevel");
-            if ((cfgCompLevel != 0) && DBContext.IsValidCompatibleLevel(cfgCompLevel))
-                resetMSSQLServerCompatibleLevel(cfgCompLevel);
-
-            // проверка справочных таблиц (в классе ModelDicts)
-            AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
-            isResultOk = DBOrderHelper.CheckAppDBTable();
-            if (!isResultOk)
-            {
-                throw new Exception("Ошибка проверки справочных таблиц: " + DBOrderHelper.ErrorMessage);
-            }
-
-            // получение словарей приложения из БД
-            AppLib.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
-            isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
-            if (!isResultOk)
-                throw new Exception("Ошибка получения словарей из БД: " + msg);
 
             // периодичность опроса БД - 750 в мсек
             _observeTimer = new Timer(_observeInterval) { AutoReset = false };
             _observeTimer.Elapsed += _observeTimer_Elapsed;
 
-            AppLib.WriteLogInfoMessage("  Инициализация внутренней коллекции заказов...");
             try
             {
+                msg = "  Инициализация внутренней коллекции заказов...";
                 _ordersModel = new OrdersModel();
+                AppLib.WriteLogInfoMessage(msg + " УСПЕШНО");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                AppLib.WriteLogErrorMessage(msg + " ОШИБКА: " + ex.Message);
             }
-
-            AppLib.WriteLogInfoMessage("Инициализация КДС-сервиса... Ok");
         }
 
         private void resetMSSQLServerCompatibleLevel(int cfgCompLevel)
@@ -419,7 +421,10 @@ Contract: IMetadataExchange
                                 System.Threading.Thread.Sleep(waitSvcActionInterval);
                                 AppLib.WriteLogTraceMessage("mssql|Попытка {0} повторного чтения заказов из БД.", (i + 1).ToString());
                                 errDBMsg = _ordersModel.UpdateOrders();
-                                if (errDBMsg == null) break;
+                                if (errDBMsg == null)
+                                    break;
+                                else
+                                    AppLib.WriteLogErrorMessage(errDBMsg);
                             }
                             // sql-служба не ответила - перезапуск
                             if (i >= waitCircles)
@@ -469,6 +474,8 @@ Contract: IMetadataExchange
                     OrderModel order = _ordersModel.Orders[orderId];
                     // обновить статус заказа статусом всех блюд
                     order.UpdateStatusByVerificationDishes();
+                    // и снять блокировку
+                    OrderLocker.DelockOrder(orderId);
                 }
             }
         }
@@ -524,7 +531,11 @@ Contract: IMetadataExchange
             {
                 AppLib.WriteLogClientAction(machineName, " - return 0, svc reading data yet...");
                 retVal.ServiceErrorMessage = (_sqlServerErrorString.IsNull()) ? "KDS service is reading data..." : _sqlServerErrorString;
-                // возвращается пустой ServiceResponce - признак того, что надо уменьшить интервал таймера запроса данных к службе
+                return retVal;
+            }
+            else if (!_sqlServerErrorString.IsNull())
+            {
+                retVal.ServiceErrorMessage = _sqlServerErrorString;
                 return retVal;
             }
 
@@ -547,7 +558,7 @@ Contract: IMetadataExchange
                 //    iCnt++;
                 //Debug.Print(string.Format("- {0}. обработка Id - {1}", iCnt, order.Id.ToString()));
 
-                // разобрать плоский список блюд и ингр. в иерархический
+                // разобрать плоский список блюд и ингр. в иерархический Dish(1)->Ingr(n)
                 dishIngr.Clear();
                 foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
                 {
@@ -1262,7 +1273,6 @@ Contract: IMetadataExchange
         }
 
         // создание файла уведомления о состоянии ЗАКАЗА
-        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
         // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
         public bool CreateNoticeFileForOrder(string machineName, int orderId, string dishIdsStr)
         {
@@ -1368,7 +1378,6 @@ Contract: IMetadataExchange
         }
 
         // создание файла уведомления о состоянии БЛЮДА
-        // TODO 2018-04-11 сохранять в файле статут ГОТОВ заказа/блюда
         // для заказа создается файл [номер заказа].txt, для блюда - [номер заказа]([id блюда]).txt
         // для блюда, не ингредиента, только, если сам заказ еще не готов и NoticeOrdermanDishNotice = 1 (создавать файл-уведомления для блюда)
         public bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId)

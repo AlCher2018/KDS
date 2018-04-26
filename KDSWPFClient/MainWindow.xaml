@@ -74,7 +74,7 @@
         </Border>
 
         <!-- сообщение об ошибке связи со службой -->
-        <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.05}" Visibility="Hidden"/>
+        <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="20" Visibility="Hidden"/>
 
         <!-- кнопки листания страниц -->
         <Viewbox x:Name="btnSetPagePrevious" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Hidden" Stretch="Uniform" Height="100">

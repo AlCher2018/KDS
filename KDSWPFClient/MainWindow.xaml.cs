@@ -101,6 +101,9 @@ namespace KDSWPFClient
         // дата последней проверки максимального количества архивных файлов
         private DateTime _lastCheckDateMaxLogFiles = DateTime.MinValue;
 
+        private string _channelErrorMessageText = "Ошибка получения данных от службы КДС. Проверьте запущена ли служба.";
+        private double _channelErrorMessageFontSize;
+
 
         // CONSTRUCTOR
         public MainWindow(string[] args)
@@ -180,6 +183,9 @@ namespace KDSWPFClient
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            _channelErrorMessageFontSize = grdMain.ActualWidth * 0.05;
+            tblChannelErrorMessage.FontSize = _channelErrorMessageFontSize;
+
             // hide Close button
             var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
@@ -246,6 +252,7 @@ namespace KDSWPFClient
             setStatusTabs(_isMultipleStatusTabs);
 
             SplashScreenLib.Splasher.CloseSplash();
+
             _isInit = false;
         }
 
@@ -396,10 +403,11 @@ namespace KDSWPFClient
 
                     if (_svcResp == null)
                     {
-                        AppLib.WriteLogErrorMessage("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
-                        showErrorScreen();
-                        _timer.Start();
-                        return;
+                        throw new Exception("Служба вернула null в объекте возврата ServiceResponce. Возможно, проблема со связью.");
+                    }
+                    else if (!_svcResp.ServiceErrorMessage.IsNull())
+                    {
+                        throw new Exception(_svcResp.ServiceErrorMessage);
                     }
 
                     // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
@@ -469,7 +477,11 @@ namespace KDSWPFClient
                 }
                 catch (Exception ex)
                 {
-                    AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: {0}", ex.Message); // ErrorHelper.GetShortErrMessage(ex)
+                    // ErrorHelper.GetShortErrMessage(ex)
+                    string errMsg = string.Format("Ошибка получения данных от КДС-службы: {0}", ex.Message);
+
+                    AppLib.WriteLogErrorMessage(errMsg); 
+                    showErrorScreen(errMsg);
                 }
 
             }  // if (_mayGetData)
@@ -483,12 +495,25 @@ namespace KDSWPFClient
             _timer.Start();
         }
 
-        private void showErrorScreen()
+        // сообщение об ошибке связи
+        // если передано сообщение в параметре (msg), то оно отображается вместо стандартного
+        private void showErrorScreen(string msg = null)
         {
+            if (msg != null)
+            {
+                double d1 = (((double)msg.Length) / ((double)tblChannelErrorMessage.Text.Length) / 3d);
+                tblChannelErrorMessage.Text = msg;
+                if (d1 > 1d) tblChannelErrorMessage.FontSize *= (1d / d1);
+            }
+            else
+            {
+                tblChannelErrorMessage.Text = _channelErrorMessageText;
+                if (tblChannelErrorMessage.FontSize != _channelErrorMessageFontSize) tblChannelErrorMessage.FontSize = _channelErrorMessageFontSize;
+            }
             if (tblChannelErrorMessage.Visibility != Visibility.Visible) tblChannelErrorMessage.Visibility = Visibility.Visible;
+
             _pages.ClearPages();
             if (_viewOrders.Count > 0) _viewOrders.Clear();
-            AppLib.WriteLogOrderDetails("can't get orders due to service status Falted");
         }
 
         private string clientDataFilterToString(ClientDataFilter source)

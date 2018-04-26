@@ -79,8 +79,8 @@ namespace KDSService.AppModel
 
         //**************************************
         // ГЛАВНАЯ ПРОЦЕДУРА ОБНОВЛЕНИЯ ЗАКАЗОВ
-        //
         // здесь пишем в лог при включенном флаге TraceOrdersDetails
+        // возвращает текст ошибки
         //**************************************
         public string UpdateOrders()
         {
@@ -112,14 +112,17 @@ namespace KDSService.AppModel
             DebugTimer.Init(" - get orders from DB", false);
 
             // получить заказы из БД
+            string errMsg = null;
             try
             {
                 DBOrderHelper.LoadDBOrders();
+                errMsg = DBOrderHelper.ErrorMessage;
             }
             catch (Exception ex)
             {
-                return "MSSQLServer Error: " + ErrorHelper.GetShortErrMessage(ex);
+                errMsg = ErrorHelper.GetShortErrMessage(ex);
             }
+            if (errMsg != null) return errMsg;
 
             // получено заказов из БД
             if (_isLogOrderDetails)
@@ -280,7 +283,7 @@ namespace KDSService.AppModel
             {
                 using (DBContext db = new DBContext())
                 {
-                    sqlText = string.Format("declare @dt datetime = {0}; SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < @dt)", dtUpdate.ToSQLExpr());
+                    sqlText = string.Format("SELECT Id FROM [Order] WHERE (OrderStatusId < 3) AND (CreateDate < {0})", dtUpdate.ToSQLExpr());
                     DataTable dt = db.GetQueryTable(sqlText);
 
                     if (dt != null)
@@ -302,9 +305,8 @@ namespace KDSService.AppModel
                                 cntOrders += iAffected;
                             }
                         }
+                        dt.Dispose();
                     }
-
-                    dt.Dispose();
                 }
 
                 retVal = true;

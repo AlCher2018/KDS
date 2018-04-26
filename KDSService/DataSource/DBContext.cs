@@ -9,6 +9,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Connection Timeout можно указать в config-файле: Connection Timeout=7
+// или в коде
+// var sscsb = new SqlConnectionStringBuilder(_dbFactory.Database.ConnectionString);
+// sscsb.ConnectTimeout = 30;
+// var conn = new SqlConnection(sscsb.ConnectionString);
+
 
 namespace KDSService.DataSource
 {
@@ -99,6 +105,15 @@ namespace KDSService.DataSource
             try
             {
                 _connString = DBContext.getConnectionString();
+                // добавить таймаут на открытие в строку подключения
+                SqlConnectionStringBuilder scsb = new SqlConnectionStringBuilder(_connString);
+                // если по умолчанию (15 сек), то сделать 3 сек
+                if (scsb.ConnectTimeout == 15)  
+                {
+                    scsb.ConnectTimeout = 3;  // in seconds
+                    _connString = scsb.ConnectionString;
+                }
+
                 // получить Connection
                 try
                 {
@@ -131,6 +146,7 @@ namespace KDSService.DataSource
                 if (_conn.State == ConnectionState.Closed) _conn.Open();
                 return true;
             }
+
             catch (Exception e)
             {
                 errorAction("Ошибка открытия подключения к БД: " + e.Message);
@@ -146,28 +162,33 @@ namespace KDSService.DataSource
             DataTable retVal = null;
             if (Open())
             {
-                SqlTransaction st = _conn.BeginTransaction(isolationLevel);
-
-                SqlDataAdapter da = new SqlDataAdapter(sqlText, _conn);
-                da.SelectCommand.CommandTimeout = _commandTimeout;
-                da.SelectCommand.Transaction = st;
-
-                retVal = new DataTable();
+                SqlTransaction st = null;
+                SqlDataAdapter da = null;
                 try
                 {
+                    if (isolationLevel != IsolationLevel.Unspecified) st = _conn.BeginTransaction(isolationLevel);
+
+                    da = new SqlDataAdapter(sqlText, _conn);
+                    da.SelectCommand.CommandTimeout = _commandTimeout;
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) da.SelectCommand.Transaction = st;
+
+                    retVal = new DataTable();
+
                     da.Fill(retVal);
-                    st.Commit();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Commit();
                 }
+
                 catch (Exception ex)
                 {
-                    st.Rollback();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Rollback();
                     errorAction(ex.Message);
                     retVal = null;
                 }
+
                 finally
                 {
-                    da.Dispose();
-                    st.Dispose();
+                    if (da != null) da.Dispose();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Dispose();
                 }
             }
 
@@ -176,7 +197,7 @@ namespace KDSService.DataSource
 
         // метод, который выполняет SQL-запрос, не возвращающий данные, напр. вставка или удаление строк
         // возвращает кол-во измененных записей
-        public int ExecuteCommand(string sqlText, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, bool inTransaction = true)
+        public int ExecuteCommand(string sqlText, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
             OnBeforeExecute?.Invoke(sqlText);
 
@@ -184,28 +205,32 @@ namespace KDSService.DataSource
             if (Open())
             {
                 SqlTransaction st = null;
-                if (inTransaction) st = _conn.BeginTransaction(isolationLevel);
-
-                SqlCommand sc = _conn.CreateCommand();
-                sc.CommandTimeout = _commandTimeout;
-                if (inTransaction) sc.Transaction = st;
-                sc.CommandType = CommandType.Text;
-                sc.CommandText = sqlText;
+                SqlCommand sc = null;
 
                 try
                 {
+                    if (isolationLevel != IsolationLevel.Unspecified) st = _conn.BeginTransaction(isolationLevel);
+
+                    sc = _conn.CreateCommand();
+                    sc.CommandTimeout = _commandTimeout;
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) sc.Transaction = st;
+                    sc.CommandType = CommandType.Text;
+                    sc.CommandText = sqlText;
+
                     retVal = sc.ExecuteNonQuery();
-                    if (inTransaction) st.Commit();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Commit();
                 }
+
                 catch (Exception ex)
                 {
-                    if (inTransaction) st.Rollback();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Rollback();
                     errorAction(ex.Message);
                 }
+
                 finally
                 {
-                    sc.Dispose();
-                    if (inTransaction) st.Dispose();
+                    if (sc != null) sc.Dispose();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Dispose();
                 }
             }
             return retVal;
@@ -218,29 +243,34 @@ namespace KDSService.DataSource
             object retVal = null;
             if (Open())
             {
-                SqlTransaction st = _conn.BeginTransaction(isolationLevel);
-
-                SqlCommand sc = _conn.CreateCommand();
-                sc.CommandTimeout = _commandTimeout;
-                sc.Transaction = st;
-                sc.CommandType = CommandType.Text;
-                sc.CommandText = sqlText;
+                SqlTransaction st = null;
+                SqlCommand sc = null;
 
                 try
                 {
+                    if (isolationLevel != IsolationLevel.Unspecified) st = _conn.BeginTransaction(isolationLevel);
+
+                    sc = _conn.CreateCommand();
+                    sc.CommandTimeout = _commandTimeout;
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) sc.Transaction = st;
+                    sc.CommandType = CommandType.Text;
+                    sc.CommandText = sqlText;
+
                     retVal = sc.ExecuteScalar();
-                    st.Commit();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Commit();
                 }
+
                 catch (Exception ex)
                 {
-                    st.Rollback();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Rollback();
                     errorAction(ex.Message);
                     retVal = false;
                 }
+
                 finally
                 {
-                    sc.Dispose();
-                    st.Dispose();
+                    if (sc != null) sc.Dispose();
+                    if ((isolationLevel != IsolationLevel.Unspecified) && (st != null)) st.Dispose();
                 }
             }
 
@@ -476,54 +506,70 @@ index name              type
             bool retVal = false;
             using (DBContext db = new DBContext())
             {
-                if (getCountTableName != null)
+                // нет ошибок во время создания DBContext
+                if (db.ErrMsg.IsNull())
                 {
-                    string sqlText = $"SELECT Count(*) FROM [{getCountTableName}]";
-                    int cnt = (int)db.ExecuteScalar(sqlText);
-                    outMsg = $"table [{getCountTableName}] has {cnt.ToString()} records.";
+                    // прочитать из БД кол-во записей указанной таблицы
+                    if (getCountTableName != null)
+                    {
+                        string sqlText = $"SELECT Count(*) FROM [{getCountTableName}]";
+                        int cnt = (int)db.ExecuteScalar(sqlText);
+                        if (db.ErrMsg.IsNull())
+                        {
+                            outMsg = $"table [{getCountTableName}] has {cnt.ToString()} records.";
+                            retVal = true;
+                        }
+                        // ошибка во время чтения данных
+                        else
+                        {
+                            outMsg = db.ErrMsg;
+                        }
+                    }
+                    // просто открыть БД
+                    else
+                    {
+                        outMsg = "DB has opened successful.";
+                        retVal = true;
+                    }
                 }
+                // вернуть описание ошибки
                 else
                 {
-                    outMsg = "DB has opened successful.";
+                    outMsg = db.ErrMsg;
                 }
-                retVal = true;
             }
 
             return retVal;
         }
 
         // попытаться открыть подключение к БД и закрыть его
-        public static bool CheckDBConnectionAlt()
+        // возвращает сообщение об ошибке или пустую строку, если все Ок
+        public static string CheckDBConnectionAlt()
         {
-            bool retVal = false;
+            string retVal = "";
             string connString = DBContext.getConnectionString();
-            if (connString == null) return retVal;
+            if (connString == null) return "Не могу получить строку подключения из конфигурационного файла.";
 
-            // установить ConnectTimeout в 2 сек
-            SqlConnectionStringBuilder confBld = new SqlConnectionStringBuilder(connString);
-            SqlConnectionStringBuilder testBld = new SqlConnectionStringBuilder()
-            {
-                DataSource = confBld.DataSource,
-                InitialCatalog = confBld.InitialCatalog,
-                PersistSecurityInfo = confBld.PersistSecurityInfo,
-                IntegratedSecurity = confBld.IntegratedSecurity,
-                UserID = confBld.UserID,
-                Password = confBld.Password,
-                ConnectTimeout = 2
-            };
-            SqlConnection testConn = new SqlConnection(testBld.ConnectionString);
+            connString += "; Connect Timeout = 2; ConnectRetryCount = 0; ConnectRetryInterval = 1";
+
             try
             {
+                // создать новое подключение
+                SqlConnection testConn = new SqlConnection(connString);
+                // открыть его
                 testConn.Open();
                 System.Threading.Thread.Sleep(500);
+                // и закрыть
                 testConn.Close();
-                retVal = true;
+                // уничтожить объект
+                if (testConn != null) testConn.Dispose();
+                testConn = null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                retVal = ex.Message;
+                LastErrorText = ex.Message;
             }
-            if (testConn != null) testConn.Dispose();
-            testConn = null;
 
             return retVal;
         }

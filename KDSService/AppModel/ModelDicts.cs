@@ -17,6 +17,12 @@ namespace KDSService.AppModel
         private static Dictionary<int, OrderStatusModel> _statuses;
         private static Dictionary<int, DepartmentModel> _departments;
 
+        static ModelDicts()
+        {
+            _statuses = new Dictionary<int, OrderStatusModel>();
+            _departments = new Dictionary<int, DepartmentModel>();
+        }
+
         public static bool UpdateModelDictsFromDB(out string errMsg)
         {
             errMsg = "";
@@ -27,14 +33,12 @@ namespace KDSService.AppModel
                 errMsg = DBOrderHelper.ErrorMessage;
                 return false;
             }
-            _statuses = new Dictionary<int, OrderStatusModel>();
             list1.ForEach(item => _statuses.Add(item.Id, item));
 
             // список отделов -> в словарь
             // а также обновить словарь кол-ва блюд по цехам
             Dictionary<int, decimal> depQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
             depQty.Clear();
-            _departments = new Dictionary<int, DepartmentModel>();
             List<DepartmentModel> list2 = DBOrderHelper.GetDepartmentsList();
             if (list2 == null)
             {
