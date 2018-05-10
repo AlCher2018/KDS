@@ -71,8 +71,8 @@ namespace KDSService
 
             // информация о файлах и сборках
             AppLib.WriteLogInfoMessage(" - host-файл: '{0}', ver. {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
-            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("KDSService");
-            AppLib.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
+            ITSAssemblyInfo asmInfo = new ITSAssemblyInfo("KDSService");
+            AppLib.WriteLogInfoMessage(" - KDSService lib: '{0}', ver. {1}, changed {2}", asmInfo.FullFileName, asmInfo.Version, asmInfo.DateChanged);
             asmInfo.LoadInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', ver. {1}", asmInfo.FullFileName, asmInfo.Version);
 
@@ -135,9 +135,7 @@ namespace KDSService
             else
             {
                 // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
-                int cfgCompLevel = AppProperties.GetIntProperty("MSSQLServerCompatibleLevel");
-                if ((cfgCompLevel != 0) && DBContext.IsValidCompatibleLevel(cfgCompLevel))
-                    resetMSSQLServerCompatibleLevel(cfgCompLevel);
+                checkMSSQLServerCompatibleLevel();
 
                 // проверка справочных таблиц (в классе ModelDicts)
                 AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
@@ -172,33 +170,55 @@ namespace KDSService
             }
         }
 
-        private void resetMSSQLServerCompatibleLevel(int cfgCompLevel)
+        // проверка уровня совместимости MS SQL Server
+        private void checkMSSQLServerCompatibleLevel()
         {
-            int dbCompatibleLevel = DBContext.GetDBCompatibleLevel();
-            string dbName = DBContext.GetDBName();
-            AppLib.WriteLogInfoMessage("  Уровень совместимости БД {0}: {1} ({2}). Попытка установить уровень {3} ({4})", 
-                dbName, 
-                dbCompatibleLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel),
-                cfgCompLevel.ToString(), DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
+            AppLib.WriteLogInfoMessage("Проверка уровня совместимости БД MS SQL Server...");
 
+            int cfgCompatibleLevel = AppProperties.GetIntProperty("MSSQLServerCompatibleLevel");
+            string cfgCompatibleName = DBContext.getSQLServerNameByCompatibleLevel(cfgCompatibleLevel);
+            AppLib.WriteLogInfoMessage(" - из config-файла: {0} ({1})",
+                cfgCompatibleLevel.ToString(), cfgCompatibleName);
+            if ((cfgCompatibleLevel == 0) || (!DBContext.IsValidCompatibleLevel(cfgCompatibleLevel)))
+            {
+                AppLib.WriteLogInfoMessage("   ...уровень совместимости не проверяется");
+                return;
+            }
+
+            int dbCompatibleLevel = DBContext.GetDBCompatibleLevel();
+            string dbCompatibleName = DBContext.getSQLServerNameByCompatibleLevel(dbCompatibleLevel);
+            string dbName = DBContext.GetDBName();
+            AppLib.WriteLogInfoMessage(" - БД '{0}' на сервере '{1}': {2} ({3})", 
+                dbName, MSSQLService.Controller.DisplayName,
+                dbCompatibleLevel.ToString(), cfgCompatibleName);
             if (dbCompatibleLevel == 0)
             {
                 AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
+                return;
             }
+            // уровни одинаковые - выходим
+            if (cfgCompatibleLevel == dbCompatibleLevel) return;
+
+            // попытка изменить уровень совместимости
+            AppLib.WriteLogInfoMessage(" - попытка изменить уровень совместимости БД '{0}' на {1} ({2})",
+                dbName, cfgCompatibleLevel, cfgCompatibleName);
             // только ПОНИЖАЕМ уровень совместимости
-            else if (dbCompatibleLevel > cfgCompLevel)  
+            if (dbCompatibleLevel > cfgCompatibleLevel)  
             {
-                AppLib.WriteLogInfoMessage("  Изменение уровня совместимости БД {0} на {1} ({2})", dbName, cfgCompLevel, DBContext.getSQLServerNameByCompatibleLevel(cfgCompLevel));
-                if (DBContext.SetDBCompatibleLevel(cfgCompLevel) == false)
+                if (DBContext.SetDBCompatibleLevel(cfgCompatibleLevel) == false)
                 {
                     AppLib.WriteLogErrorMessage(DBContext.LastErrorText);
                     AppLib.WriteLogErrorMessage("Произошла ошибка при изменении уровня совместимости БД. Приложение может работать нестабильно.");
+                }
+                else
+                {
+                    AppLib.WriteLogInfoMessage(" - уровень совместимости изменен успешно");
                 }
             }
             // повышить нельзя
             else
             {
-                AppLib.WriteLogInfoMessage("  - запрещено повышать уровень совместимости");
+                AppLib.WriteLogInfoMessage(" - запрещено повышать уровень совместимости");
             }
         }
 

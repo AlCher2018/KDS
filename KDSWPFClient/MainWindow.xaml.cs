@@ -501,7 +501,10 @@ namespace KDSWPFClient
         {
             if (msg != null)
             {
-                double d1 = (((double)msg.Length) / ((double)tblChannelErrorMessage.Text.Length) / 3d);
+                double d1 = (((double)msg.Length) / ((double)tblChannelErrorMessage.Text.Length));
+                if (d1 > 6d) d1 /= 3d;
+                else if (d1 > 3d) d1 /= 2d;
+                else if (d1 > 1d) d1 /= 1.5d;
                 tblChannelErrorMessage.Text = msg;
                 if (d1 > 1d) tblChannelErrorMessage.FontSize *= (1d / d1);
             }
@@ -1123,6 +1126,7 @@ namespace KDSWPFClient
                 if (cfgEdit.AppNewSettings.ContainsKey("depUIDs"))
                 {
                     _clientFilter.DepIDsList = getClientDepsList();
+                    setWindowsTitle();
                     isRequestOrders = true;
                 }
 

@@ -515,9 +515,12 @@ namespace KDSWPFClient.View
                     string file = openFileDialog.FileName;
                     FileInfo fileInfo = new FileInfo(file);
                     string destFile = _audioPath + fileInfo.Name;
+                    
+                    // если в Audio такого файла нет, то он туда копируется
                     FileInfo destFileInfo = (File.Exists(destFile)) ? new FileInfo(destFile) : fileInfo.CopyTo(destFile);
 
                     List<string> filesList = (List<string>)cbxSelectAudio.ItemsSource;
+                    // и если в выпадающем списке такого имени нет, то добавляется
                     if (!filesList.Contains(fileInfo.Name)) filesList.Add(fileInfo.Name);
                     // отобразить в списке и проиграть
                     cbxSelectAudio.SelectedValue = fileInfo.Name;

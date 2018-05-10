@@ -100,7 +100,7 @@ namespace ClientOrderQueue.View
                     {
                         Visibility = Visibility.Hidden,
                         BackBrushes = _cellBrushes,
-                        MarginKoefStr = "0.05,0.05",
+                        MarginKoefStr = (string)WpfHelper.GetAppGlobalValue("MarginKoefStr"),
                         IsShowClientName = _isShowClientName,
                         IsShowCookingTime = _isShowCookingTime,
 
@@ -155,26 +155,29 @@ namespace ClientOrderQueue.View
                 return;
             }
 
-            updateAppOrders(orders);
-
-            if (orders.Count <= 15)
+            if (updateAppOrders(orders))
             {
-                fillCells(G15);
-                setGridVisibility(G24, Visibility.Collapsed);
-                setGridVisibility(G15, Visibility.Visible);
-            }
-            else
-            {
-                fillCells(G24);
-                setGridVisibility(G15, Visibility.Collapsed);
-                setGridVisibility(G24, Visibility.Visible);
+                if (orders.Count <= 15)
+                {
+                    fillCells(G15);
+                    setGridVisibility(G24, Visibility.Collapsed);
+                    setGridVisibility(G15, Visibility.Visible);
+                }
+                else
+                {
+                    fillCells(G24);
+                    setGridVisibility(G15, Visibility.Collapsed);
+                    setGridVisibility(G24, Visibility.Visible);
+                }
             }
         }
 
-        private void updateAppOrders(List<Order> orders)
+        // возвращает признак того, что были сделаны какие-то изменения во внутренней коллекции заказов
+        private bool updateAppOrders(List<Order> orders)
         {
+            bool retVal = false;
             // признак того, что появился заказ в статусе ГОТОВ и надо проиграть мелодию
-            bool isCooked = false;  
+            bool isCooked = false;
 
             int[] dbIds = orders.Select(o => o.Id).ToArray();
             // удалить выданные заказы
@@ -183,6 +186,7 @@ namespace ClientOrderQueue.View
             {
                 foreach (int item in delIds) _appOrders.RemoveAll(o => o.Id == item);
                 AppLib.WriteLogTraceMessage("- app-orders remove(ids): " + string.Join(",", delIds));
+                retVal = true;
             }
 
             // добавить новые
@@ -205,6 +209,7 @@ namespace ClientOrderQueue.View
 
                     _appOrders.Add(newAppOrder);
                     if (ordersAdded == null) ordersAdded = dbOrd.Id.ToString(); else ordersAdded += "," + dbOrd.Id.ToString();
+                    retVal = true;
                 }
 
                 // update exists
@@ -218,6 +223,7 @@ namespace ClientOrderQueue.View
                         AppLib.WriteLogTraceMessage("- app-order id {0} changing its state: {1}({2}) to {3}({4})", 
                             dbOrd.Id, curAppOrd.Order.QueueStatusId, (OrderStatusEnum)curAppOrd.Order.QueueStatusId,
                             dbOrd.QueueStatusId, (OrderStatusEnum)dbOrd.QueueStatusId);
+                        retVal = true;
                     }
 
                     curAppOrd.Order = dbOrd;
@@ -229,8 +235,14 @@ namespace ClientOrderQueue.View
             // проиграть мелодию
             if ((isCooked) && (simpleSound != null)) simpleSound.Play();
 
-            // сортировка orderby o.CreateDate ascending, o.Number ascending
-            _appOrders = _appOrders.OrderBy(o => o.Order.CreateDate).ThenBy(o => o.Order.Number).ToList();
+            // если есть изменения
+            if (retVal)
+            {
+                // сортировка orderby o.CreateDate ascending, o.Number ascending
+                _appOrders = _appOrders.OrderBy(o => o.Order.CreateDate).ThenBy(o => o.Order.Number).ToList();
+            }
+
+            return retVal;
         }
 
         private void hideCells(Grid grid)
@@ -289,7 +301,7 @@ namespace ClientOrderQueue.View
                     }
                 }
             }
-            AppLib.WriteLogTraceMessage("screen updating - FINISH - " + (DateTime.Now - dtProc).ToString());
+            AppLib.WriteLogTraceMessage("screen updating - FINISH, " + getFormattedTS(dtProc));
         }
 
         private void setGridVisibility(Grid grid, Visibility visi)
@@ -299,6 +311,10 @@ namespace ClientOrderQueue.View
 
         private List<Order> getOrders()
         {
+            DateTime dtProc = DateTime.Now;
+            string logMsg = "get DB-orders - ", errMsg= null;
+            AppLib.WriteLogTraceMessage(logMsg + "START");
+
             // сформировать sql-запрос к БД
             if (DateTime.Now.Date != _currentDate)
             {
@@ -307,8 +323,6 @@ namespace ClientOrderQueue.View
             }
 
             List <Order> retVal = null;
-            string logMsg = null;
-
             try
             {
                 using (KDSContext db = new KDSContext())
@@ -356,19 +370,21 @@ namespace ClientOrderQueue.View
             }
             catch (Exception ex)
             {
-                logMsg = ex.Message;
-                if (ex.InnerException != null) logMsg += "(inner message: " + ex.InnerException.Message + ")";
+                errMsg = ex.Message;
+                if (ex.InnerException != null) errMsg += "(inner message: " + ex.InnerException.Message + ")";
             }
 
-            if (logMsg != null)
+            logMsg += "FINISH, " + getFormattedTS(dtProc);
+
+            if (errMsg == null)
             {
-                AppLib.WriteLogErrorMessage(logMsg);
+                logMsg += $", orders count {retVal.Count}";
+                if ((retVal != null) && (retVal.Count > 0)) logMsg += "(ids " + string.Join(",", retVal.Select(o => o.Id.ToString())) + ")";
+                AppLib.WriteLogTraceMessage(logMsg);
             }
             else
             {
-                logMsg = string.Format("get DB-orders ({0})", retVal.Count);
-                if (retVal.Count > 0) logMsg += ": " + string.Join(",", retVal.Select(o => o.Id.ToString()));
-                AppLib.WriteLogTraceMessage(logMsg);
+                AppLib.WriteLogErrorMessage(logMsg + " - Error: " + errMsg);
             }
 
             return retVal;
@@ -384,9 +400,18 @@ namespace ClientOrderQueue.View
 
         #endregion
 
-        #region set elements
+        private string getFormattedTS(DateTime initDT)
+        {
+            TimeSpan ts = (DateTime.Now - initDT);
 
-        private void setAppLayout()
+            return ((ts.TotalMilliseconds >= 0.01) 
+                ? ts.ToString("hh\\:mm\\:ss\\.fffffff") 
+                : "< 0.01 msec");
+        }
+
+    #region set elements
+
+    private void setAppLayout()
         {
             string bgImageFile = CfgFileHelper.GetAppSetting("ImagesPath");
 

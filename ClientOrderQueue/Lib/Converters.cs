@@ -138,6 +138,7 @@ namespace ClientOrderQueue.Lib
             doubleValues[0] = values[0].ToString().ToDouble();  // width
             doubleValues[1] = values[1].ToString().ToDouble();  // height
 
+            if ((doubleValues[0] == 0d) || (doubleValues[1] == 0d)) return new Thickness(0);
             if (string.IsNullOrEmpty(values[2].ToString())) return new Thickness(0);
 
             string sMargs = values[2].ToString();

@@ -688,7 +688,7 @@ index name              type
             bool retVal = false;
             using (DBContext db = new DBContext())
             {
-                int iResult = db.ExecuteCommand(sqlText, IsolationLevel.Snapshot);
+                int iResult = db.ExecuteCommand(sqlText, IsolationLevel.Unspecified);
                 if ((iResult > 0) || db.ErrMsg.IsNull()) retVal = true;
             }
 

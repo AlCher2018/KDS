@@ -33,6 +33,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KDSConsoleSvcHost", "KDSCon
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nlog_add_maxArchiveFiles", "nlog_add_maxArchiveFiles\nlog_add_maxArchiveFiles.csproj", "{64CA657D-A885-4AAD-BF95-1D1303EDCECC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{0483F1C9-64A1-49DE-899B-7057770C60E3}"
+	ProjectSection(SolutionItems) = preProject
+		D:\Integra-Its\KDS\docs\КДС. Администрирование.docx = D:\Integra-Its\KDS\docs\КДС. Администрирование.docx
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,5 +78,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0483F1C9-64A1-49DE-899B-7057770C60E3} = {0DEC3B92-8B25-4A42-961A-5F81DD6D2836}
 	EndGlobalSection
 EndGlobal

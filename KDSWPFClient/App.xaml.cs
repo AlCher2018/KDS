@@ -106,9 +106,9 @@ namespace KDSWPFClient
 
             // информация о файлах и сборках
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
-            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
+            ITSAssemblyInfo asmInfo = new ITSAssemblyInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
-            asmInfo = new ITSAssemmblyInfo("IntegraWPFLib");
+            asmInfo = new ITSAssemblyInfo("IntegraWPFLib");
             AppLib.WriteLogInfoMessage(" - Integra WPF lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
 
             MessageListener.Instance.ReceiveMessage("Получение параметров окружения...");
@@ -235,6 +235,8 @@ namespace KDSWPFClient
             // боковая панель
             // Ширина кнопочной панели в процентах от ширины экрана.
             setGlobIntValueFromCfg("ControlPanelPercentWidth", 5);
+            int cfgValue = (int)WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth");
+            if (cfgValue <= 0) WpfHelper.SetAppGlobalValue("ControlPanelPercentWidth", 5);
             // флажок отрисовки вкладок фильтра статусов по-отдельности
             setGlobBoolValueFromCfg("IsMultipleStatusTabs", false);
             // флажок группировки блюд по наименованию и суммирования количество порций
@@ -243,6 +245,8 @@ namespace KDSWPFClient
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
             setGlobIntValueFromCfg("OrdersColumnsCount", 4);        // кол-во столбцов заказов
+            cfgValue = (int)WpfHelper.GetAppGlobalValue("OrdersColumnsCount");
+            if (cfgValue <= 0) WpfHelper.SetAppGlobalValue("OrdersColumnsCount", 4);
             // масштабный коэффициент размера шрифтов панели заказа
             setGlobDoubleValueFromCfg("AppFontScale", 1.0d);
             setGlobIntValueFromCfg("OrdersPanelTopBotMargin", 40);  // отступ сверху/снизу для панели заказов, в пикселях
@@ -300,32 +304,40 @@ namespace KDSWPFClient
         {
             string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
 
-            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
-               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue));
+            string key = ((globVarName == null) ? cfgElementName : globVarName);
+            string value = (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue);
+
+            WpfHelper.SetAppGlobalValue(key, value);
         }
 
         private static void setGlobBoolValueFromCfg(string cfgElementName, bool defaultValue = false, string globVarName = null)
         {
             string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
 
-            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
-               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToBool()));
+            string key = ((globVarName == null) ? cfgElementName : globVarName);
+            bool value = (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToBool());
+
+            WpfHelper.SetAppGlobalValue(key, value);
         }
 
         private static void setGlobIntValueFromCfg(string cfgElementName, int defaultValue = 0, string globVarName = null)
         {
             string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
 
-            WpfHelper.SetAppGlobalValue( ((globVarName == null) ? cfgElementName : globVarName), 
-               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToInt()) );
+            string key = ((globVarName == null) ? cfgElementName : globVarName);
+            int value = (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToInt());
+
+            WpfHelper.SetAppGlobalValue(key, value);
         }
 
         private static void setGlobDoubleValueFromCfg(string cfgElementName, double defaultValue = 0d, string globVarName = null)
         {
             string sCfgValue = CfgFileHelper.GetAppSetting(cfgElementName);
 
-            WpfHelper.SetAppGlobalValue(((globVarName == null) ? cfgElementName : globVarName),
-               (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToDouble()));
+            string key = ((globVarName == null) ? cfgElementName : globVarName);
+            double value = (string.IsNullOrEmpty(sCfgValue) ? defaultValue : sCfgValue.ToDouble());
+
+            WpfHelper.SetAppGlobalValue(key, value);
         }
 #endregion
 
@@ -495,8 +507,7 @@ namespace KDSWPFClient
         private static bool changeStatusDishWithIngrs(AppDataProvider dataProvider, OrderViewModel orderModel, OrderDishViewModel dishModel, OrderStatusEnum newState)
         {
             // для отмененного блюда статус не менять
-            if (dishModel.Quantity < 0) return false;
-
+            //if (dishModel.Quantity < 0) return false;
             // эта настройка от КДС-сервиса
             bool isConfirmedReadyState = (bool)WpfHelper.GetAppGlobalValue("UseReadyConfirmedState", false);
 

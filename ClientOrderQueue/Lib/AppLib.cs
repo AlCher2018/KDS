@@ -25,10 +25,20 @@ namespace ClientOrderQueue.Lib
         }
 
         #region app logger
-        public static void InitAppLogger()
+        // логгер приложения
+        public static string InitAppLogger()
         {
-            // логгер приложения
-            AppLogger = NLog.LogManager.GetLogger("fileLogger");
+            string retVal = null;
+            try
+            {
+                AppLogger = NLog.LogManager.GetLogger("fileLogger");
+                if (AppLogger.IsTraceEnabled == false) throw new Exception("Ошибка конфигурирования логгера. Проверьте настройки логгера в файле ClientOrderQueue.exe.config");
+            }
+            catch (Exception ex)
+            {
+                retVal = ex.Message;
+            }
+            return retVal;
         }
 
         // отладочные сообщения

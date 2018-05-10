@@ -219,9 +219,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="docs\Настройка ПО Integra-КДС.docx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <None Include="Service References\ServiceReference1\KDSWPFClient.ServiceReference1.DepartmentModel.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>

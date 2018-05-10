@@ -24,6 +24,7 @@ namespace ClientOrderQueue
             App app = new App();
 
             // splash
+
             Splasher.Splash = new View.SplashScreen();
             Splasher.ShowSplash();
             //for (int i = 0; i < 5000; i += 1)
@@ -46,7 +47,11 @@ namespace ClientOrderQueue
             }
 
             MessageListener.Instance.ReceiveMessage("Инициализация журнала событий...");
-            AppLib.InitAppLogger();
+            cfgValue = AppLib.InitAppLogger();
+            if (cfgValue != null)
+            {
+                appExit(1, "Ошибка инициализации журнала приложения: " + cfgValue);
+            }
             System.Threading.Thread.Sleep(500);
 
             AppLib.WriteLogInfoMessage("****  Start application  ****");
@@ -68,9 +73,9 @@ namespace ClientOrderQueue
             // для хранения в свойствах приложения (из config-файла или др.)
             setAppGlobalValues();  
             AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
-            ITSAssemmblyInfo asmInfo = new ITSAssemmblyInfo("IntegraLib");
+            ITSAssemblyInfo asmInfo = new ITSAssemblyInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
-            asmInfo = new ITSAssemmblyInfo("IntegraWPFLib");
+            asmInfo = new ITSAssemblyInfo("IntegraWPFLib");
             AppLib.WriteLogInfoMessage(" - Integra WPF lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
 
             AppLib.WriteLogInfoMessage("Системное окружение: " + AppEnvironment.GetEnvironmentString());
@@ -123,10 +128,13 @@ namespace ClientOrderQueue
 
         private static void appExit(int exitCode, string errMsg)
         {
+            Splasher.CloseSplash();
+
             if ((exitCode != 0) && (errMsg.IsNull() == false))
             {
                 MessageBox.Show(errMsg, "Аварийное завершение программы", MessageBoxButton.OK, MessageBoxImage.Stop);
             }
+
             Environment.Exit(exitCode);
         }
 
@@ -135,12 +143,16 @@ namespace ClientOrderQueue
         private static void setAppGlobalValues()
         {
             string cfgValue;
+            double dCfg;
 
             cfgValue = CfgFileHelper.GetAppSetting("MidnightShiftShowYesterdayOrders");
-            WpfHelper.SetAppGlobalValue("MidnightShiftShowYesterdayOrders", (cfgValue==null ? 0 : cfgValue.ToDouble()));
+            dCfg = (cfgValue == null ? 0 : cfgValue.ToDouble());
+            if (dCfg < 0) dCfg = 0d;
+            WpfHelper.SetAppGlobalValue("MidnightShiftShowYesterdayOrders", dCfg);
 
             // файл изображения состояния
             string sPath = CfgFileHelper.GetAppSetting("ImagesPath");
+            if (string.IsNullOrEmpty(sPath)) sPath = "Images";
             WpfHelper.SetAppGlobalValue("ImagesPath", sPath);
             string sFile = CfgFileHelper.GetAppSetting("StatusReadyImage");
             string fileName = AppEnvironment.GetFullFileName(sPath, sFile);
@@ -166,6 +178,10 @@ namespace ClientOrderQueue
             createWinTitleBrushes();
             // кисти фона панели заказа (CellBrushes - кисть фона и разделительной полосы)
             createPanelBackBrushes();
+
+            // поля панели заказа в ячейке - два double-значения, разделенные ";"
+            cfgValue = checkMarginKoefString();
+            WpfHelper.SetAppGlobalValue("MarginKoefStr", cfgValue);
 
             // показывать ли ожидаемое время приготовления заказа
             cfgValue = CfgFileHelper.GetAppSetting("IsShowOrderEstimateTime");
@@ -200,6 +216,26 @@ namespace ClientOrderQueue
             cfgValue = CfgFileHelper.GetAppSetting("StatusLang2");
             if (cfgValue == null) cfgValue = "Забрали|Забрали|Taken";
             WpfHelper.SetAppGlobalValue("Status3Langs", cfgValue);
+        }
+
+        private static string checkMarginKoefString()
+        {
+            // строки по умолчанию
+            string cfgValue = CfgFileHelper.GetAppSetting("MarginHor");
+            if (cfgValue.IsNull()) cfgValue = "0.05";
+            string s1 = CfgFileHelper.GetAppSetting("MarginVer");
+            cfgValue += ";" + (s1.IsNull() ? "0.05" : s1);
+            
+            // проверить цифровые значения
+            string[] a1 = cfgValue.Split(';');
+            double d1 = a1[0].ToDouble(), d2 = ((a1.Length > 1) ? a1[1].ToDouble() : d1);
+            if (d1 < 0d) d1 = 0.01d; else if (d1 > 0.4d) d1 = 0.4d;
+            if (d2 < 0d) d2 = 0.01d; else if (d2 > 0.4d) d2 = 0.4d;
+
+            IFormatProvider dotFormatter = FormatProviderHelper.DotFormatter();
+            string retVal = d1.ToString(dotFormatter) + ";" + d2.ToString(dotFormatter);
+
+            return retVal;
         }
 
         private static void createWinTitleBrushes()

@@ -331,7 +331,17 @@ namespace ClientOrderQueue.Model
             parseLangStrToArray("Забрали|Забрали|Taken", ref _statusLangs[2]);
 
             parseLangStrToArray("Ожидать|Чекати|Wait", ref _cookingTimeTitleLangs);
+
+            this.Loaded += OrderPanel1_Loaded;
         } // ctor
+
+        private void OrderPanel1_Loaded(object sender, RoutedEventArgs e)
+        {
+            Thickness margin = this.Margin;
+            double w = this.Width, h = this.Height;
+
+            this.Margin = new Thickness();
+        }
 
         private void parseLangStrToArray(string strLangs,ref string[] arrLangs)
         {
