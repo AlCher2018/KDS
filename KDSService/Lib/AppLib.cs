@@ -66,7 +66,6 @@ namespace KDSService.Lib
             // уведомление Одерманов о готовом заказе
             setGlobalValueFromCfg("NoticeOrdermanFeature", false);
             setGlobalValueFromCfg<string>("NoticeOrdermanFolder", null);
-            setGlobalValueFromCfg("NoticeOrdermanDishNotice", false);
             // проверка настроек ф-и уведомления
             if (AppProperties.GetBoolProperty("NoticeOrdermanFeature"))
             {

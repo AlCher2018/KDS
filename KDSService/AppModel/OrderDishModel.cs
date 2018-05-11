@@ -395,6 +395,11 @@ namespace KDSService.AppModel
             return isUpdSuccess;
         }  // method UpdateStatus
 
+        public bool IsReadyStatusFinal()
+        {
+            return (_isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed))
+               || (!_isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready));
+        }
 
         // первый (инициализирующий) старт таймера
         private void startStatusTimerAtFirst()

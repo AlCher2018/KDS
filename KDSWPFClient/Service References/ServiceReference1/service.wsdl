@@ -100,18 +100,6 @@
   <wsdl:message name="IKDSCommandService_ChangeOrderDishStatus_OutputMessage">
     <wsdl:part name="parameters" element="tns:ChangeOrderDishStatusResponse" />
   </wsdl:message>
-  <wsdl:message name="IKDSCommandService_CreateNoticeFileForOrder_InputMessage">
-    <wsdl:part name="parameters" element="tns:CreateNoticeFileForOrder" />
-  </wsdl:message>
-  <wsdl:message name="IKDSCommandService_CreateNoticeFileForOrder_OutputMessage">
-    <wsdl:part name="parameters" element="tns:CreateNoticeFileForOrderResponse" />
-  </wsdl:message>
-  <wsdl:message name="IKDSCommandService_CreateNoticeFileForDish_InputMessage">
-    <wsdl:part name="parameters" element="tns:CreateNoticeFileForDish" />
-  </wsdl:message>
-  <wsdl:message name="IKDSCommandService_CreateNoticeFileForDish_OutputMessage">
-    <wsdl:part name="parameters" element="tns:CreateNoticeFileForDishResponse" />
-  </wsdl:message>
   <wsdl:portType name="IKDSService">
     <wsdl:operation name="GetOrderStatuses">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSService/GetOrderStatuses" message="tns:IKDSService_GetOrderStatuses_InputMessage" />
@@ -158,14 +146,6 @@
     <wsdl:operation name="ChangeOrderDishStatus">
       <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus" message="tns:IKDSCommandService_ChangeOrderDishStatus_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatusResponse" message="tns:IKDSCommandService_ChangeOrderDishStatus_OutputMessage" />
-    </wsdl:operation>
-    <wsdl:operation name="CreateNoticeFileForOrder">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder" message="tns:IKDSCommandService_CreateNoticeFileForOrder_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrderResponse" message="tns:IKDSCommandService_CreateNoticeFileForOrder_OutputMessage" />
-    </wsdl:operation>
-    <wsdl:operation name="CreateNoticeFileForDish">
-      <wsdl:input wsaw:Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish" message="tns:IKDSCommandService_CreateNoticeFileForDish_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDishResponse" message="tns:IKDSCommandService_CreateNoticeFileForDish_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="NetTcpBinding_IKDSService" type="tns:IKDSService">
@@ -269,24 +249,6 @@
     </wsdl:operation>
     <wsdl:operation name="ChangeOrderDishStatus">
       <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/ChangeOrderDishStatus" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="CreateNoticeFileForOrder">
-      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForOrder" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="CreateNoticeFileForDish">
-      <soap12:operation soapAction="http://tempuri.org/IKDSCommandService/CreateNoticeFileForDish" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>

@@ -28,14 +28,5 @@ namespace KDSService
         // изменение статуса блюда
         [OperationContract]
         bool ChangeOrderDishStatus(string machineName, int orderId, int dishId, int dishStatusId);
-
-        // создание файла-уведомления для ЗАКАЗА
-        [OperationContract]
-        bool CreateNoticeFileForOrder(string machineName, int orderId, string dishIdsStr);
-
-        // создание файла-уведомления для БЛЮДА
-        [OperationContract]
-        bool CreateNoticeFileForDish(string machineName, int orderId, int orderDishId);
-
     }
 }

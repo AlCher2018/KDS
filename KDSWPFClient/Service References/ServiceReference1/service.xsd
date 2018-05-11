@@ -165,36 +165,4 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:element name="CreateNoticeFileForOrder">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
-        <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element minOccurs="0" name="dishIdsStr" nillable="true" type="xs:string" />
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="CreateNoticeFileForOrderResponse">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element minOccurs="0" name="CreateNoticeFileForOrderResult" type="xs:boolean" />
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="CreateNoticeFileForDish">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element minOccurs="0" name="machineName" nillable="true" type="xs:string" />
-        <xs:element minOccurs="0" name="orderId" type="xs:int" />
-        <xs:element minOccurs="0" name="orderDishId" type="xs:int" />
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="CreateNoticeFileForDishResponse">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element minOccurs="0" name="CreateNoticeFileForDishResult" type="xs:boolean" />
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
 </xs:schema>

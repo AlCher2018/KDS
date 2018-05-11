@@ -108,6 +108,7 @@
     <Compile Include="Lib\AppLib.cs" />
     <Compile Include="Lib\CalcObjectSizeHelper.cs" />
     <Compile Include="Lib\OrderLocker.cs" />
+    <Compile Include="Lib\OrdermanNotifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

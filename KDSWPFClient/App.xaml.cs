@@ -418,16 +418,6 @@ namespace KDSWPFClient
                                     // изменить статус блюда с ингредиентами
                                     result = changeStatusDishWithIngrs(dataProvider, orderModel, dishModel, newState);
 
-                                    // создание файла для Одермана - только для БЛЮДА, НЕ для ингредиента
-                                    if (result && dishModel.ParentUID.IsNull())
-                                    {
-                                        // только для терминального окончания готовки и включенных уведомлений (получаем от сервиса)
-                                        if (finReady && WpfHelper.GetAppGlobalBool("NoticeOrdermanFeature"))
-                                        {
-                                            dataProvider.CreateNoticeFileForDish(orderModel.Id, dishModel.Id);
-                                        }
-                                    }
-
                                     string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
                                     if (dataProvider.DelockOrder(orderModel.Id))
                                         AppLib.WriteLogClientAction(sBuf + ": success");
@@ -460,16 +450,6 @@ namespace KDSWPFClient
                                             if (result) { dishIds.Add(item.Id); }
                                         }
                                     }  // foreach
-
-                                    // создание файла-уведомления для Одермана, если это терминальный статус Готово и 
-                                    // статус всех блюд был успешно изменен и включено создание файлов-уведомлений
-                                    if (finReady && WpfHelper.GetAppGlobalBool("NoticeOrdermanFeature") 
-                                        && (dishIds.Count > 0))
-                                    {
-                                        // Id блюд с измененными статусами
-                                        string dishIdsToSvc = string.Join(";", dishIds.Select<int, string>(item => item.ToString()));
-                                        dataProvider.CreateNoticeFileForOrder(orderModel.Id, dishIdsToSvc);
-                                    }
 
                                     string sBuf = "delock " + sLogMsg + " - " + (DateTime.Now - dtTmr).ToString();
                                     if (dataProvider.DelockOrder(orderModel.Id))

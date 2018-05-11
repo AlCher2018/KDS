@@ -486,41 +486,6 @@ namespace KDSWPFClient
         }
         #endregion
 
-        #region создание файлов-уведомлений
-        public bool CreateNoticeFileForOrder(int orderId, string dishIdsStr)
-        {
-            if (_setClient == null) return false;
-
-            bool retVal = false;
-            try
-            {
-                checkSvcState();
-                retVal = _setClient.CreateNoticeFileForOrder(_machineName, orderId, dishIdsStr);
-            }
-            catch (Exception)
-            {
-            }
-            return retVal;
-        }
-
-        public bool CreateNoticeFileForDish(int orderId, int orderDishId)
-        {
-            if (_setClient == null) return false;
-
-            bool retVal = false;
-            try
-            {
-                checkSvcState();
-                retVal = _setClient.CreateNoticeFileForDish(_machineName, orderId, orderDishId);
-            }
-            catch (Exception)
-            {
-            }
-            return retVal;
-        }
-
-        #endregion
-
         private void checkSvcState()
         {
             if (_setClient.State == CommunicationState.Faulted)

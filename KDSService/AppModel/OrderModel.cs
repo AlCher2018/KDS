@@ -295,7 +295,7 @@ namespace KDSService.AppModel
             {
                 // изменить статус в ОБЪЕКТЕ
                 OrderStatusEnum preStatus = this.Status;
-                Status = newStatus;
+                this.Status = newStatus;
                 OrderStatusId = (int)Status;
 
                 // сохраняем в записи RunTimeRecord дату входа в новое состояние
@@ -338,8 +338,37 @@ namespace KDSService.AppModel
             if (machineName == null) AppLib.WriteLogOrderDetails(sLogMsg);
             else AppLib.WriteLogClientAction(machineName, sLogMsg);
 
+            // различные действия после успешного изменения статуса заказа
+            if (retVal)
+            {
+                // создание файла для Одермана (feature enable, ready status is terminal)
+                if (OrdermanNotifier.IsEnable && IsReadyStatusFinal())
+                {
+                    OrdermanNotifier omanNotifier = new OrdermanNotifier(this);
+                    bool result = omanNotifier.CreateNoticeFileForOrder();
+                }
+            }
+
             return retVal;
         }  // method
+
+        public bool IsReadyStatusFinal()
+        {
+            return (_isUseReadyConfirmed && (this.Status == OrderStatusEnum.ReadyConfirmed))
+               || (!_isUseReadyConfirmed && (this.Status == OrderStatusEnum.Ready));
+        }
+
+        // получить подмножество блюд с заданным статусом
+        public List<OrderDishModel> GetDishesByStatus(OrderStatusEnum status)
+        {
+            int iStatus = (int)status;
+            return this._dishesDict.Values.Where(d => (d.DishStatusId == iStatus)).ToList();
+        }
+
+        public List<OrderDishModel> GetDishesReadyStatFin()
+        {
+            return this._dishesDict.Values.Where(d => d.IsReadyStatusFinal()).ToList();
+        }
 
         private void startStatusTimer(StatusDTS statusDTS)
         {
