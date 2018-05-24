@@ -216,10 +216,18 @@ namespace KDSWPFClient
         
         private static void setAppGlobalValues()
         {
+            int icfgValue;
+
             // Имя или ip-адрес компьютера, на котором запущена КДС-служба
             setGlobStringValueFromCfg("KDSServiceHostName", "localhost");
-            // УНИКАЛЬНОЕ ИМЯ КДС-КЛИЕНТА
-            setGlobStringValueFromCfg("KDSClientName", "uniqClientName");
+            // Стандартный интервал опроса КДС-службы, в мсек. Допустимые значения от 500 до 2000. По умолчанию - 1000.
+            setGlobIntValueFromCfg("KDSServiceIntervalStd", 1000);
+            icfgValue = (int)WpfHelper.GetAppGlobalValue("KDSServiceIntervalStd");
+            if ((icfgValue < 500) || (icfgValue > 2000)) WpfHelper.SetAppGlobalValue("KDSServiceIntervalStd", 1000);
+            // Уменьшенный интервал опроса КДС-службы, в мсек. Используется, когда клиент не смог получить данные от службы по причине того, что служба была занята чтением данных из БД. Допустимые значения от 50 до 450. По умолчанию - 100. Если не указано, то стандартный интервал таймера НЕ изменяется на альтернативный.
+            setGlobIntValueFromCfg("KDSServiceIntervalAlt", 100);
+            icfgValue = (int)WpfHelper.GetAppGlobalValue("KDSServiceIntervalAlt");
+            if ((icfgValue < 50) || (icfgValue > 450)) WpfHelper.SetAppGlobalValue("KDSServiceIntervalAlt", 100);
 
             // звуковой файл, проигрываемый при появлении нового заказа
             setGlobStringValueFromCfg("NewOrderAudioAttention");
@@ -235,8 +243,8 @@ namespace KDSWPFClient
             // боковая панель
             // Ширина кнопочной панели в процентах от ширины экрана.
             setGlobIntValueFromCfg("ControlPanelPercentWidth", 5);
-            int cfgValue = (int)WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth");
-            if (cfgValue <= 0) WpfHelper.SetAppGlobalValue("ControlPanelPercentWidth", 5);
+            icfgValue = (int)WpfHelper.GetAppGlobalValue("ControlPanelPercentWidth");
+            if (icfgValue <= 0) WpfHelper.SetAppGlobalValue("ControlPanelPercentWidth", 5);
             // флажок отрисовки вкладок фильтра статусов по-отдельности
             setGlobBoolValueFromCfg("IsMultipleStatusTabs", false);
             // флажок группировки блюд по наименованию и суммирования количество порций
@@ -245,8 +253,8 @@ namespace KDSWPFClient
 
             // **** РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
             setGlobIntValueFromCfg("OrdersColumnsCount", 4);        // кол-во столбцов заказов
-            cfgValue = (int)WpfHelper.GetAppGlobalValue("OrdersColumnsCount");
-            if (cfgValue <= 0) WpfHelper.SetAppGlobalValue("OrdersColumnsCount", 4);
+            icfgValue = (int)WpfHelper.GetAppGlobalValue("OrdersColumnsCount");
+            if (icfgValue <= 0) WpfHelper.SetAppGlobalValue("OrdersColumnsCount", 4);
             // масштабный коэффициент размера шрифтов панели заказа
             setGlobDoubleValueFromCfg("AppFontScale", 1.0d);
             setGlobIntValueFromCfg("OrdersPanelTopBotMargin", 40);  // отступ сверху/снизу для панели заказов, в пикселях
@@ -290,6 +298,7 @@ namespace KDSWPFClient
             setGlobBoolValueFromCfg("IsWriteTraceMessages", true);
             setGlobBoolValueFromCfg("TraceOrdersDetails", true);
             setGlobBoolValueFromCfg("IsLogClientAction", true);
+            setGlobBoolValueFromCfg("TraceScreenDrawDetails", true);
 
             // таймаут открытия канала
             WpfHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);

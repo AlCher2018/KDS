@@ -88,40 +88,22 @@ namespace ClientOrderQueue
 
             // проверить доступность БД
             MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");
-            if (AppLib.CheckDBConnection(typeof(KDSContext)) == false)
-            {
-                bool result = false;
-                int tryCount = 20;
-                // сделать цикл проверки подключения: 20 раз через 2 сек
-                for (int i = tryCount; i >= 1; i--)
-                {
-                    cfgValue = $"Попытка подключения к БД: {i} из {tryCount}";
-                    MessageListener.Instance.ReceiveMessage(cfgValue);
-                    AppLib.WriteLogInfoMessage(cfgValue);
-
-                    Thread.Sleep(2000);
-                    result = AppLib.CheckDBConnection(typeof(KDSContext));
-                    if (result) break;
-                }
-
-                if (!result)
-                {
-                    MessageBox.Show("Ошибка подключения к базе данных. См. журнал в папке Logs.\nПриложение будет закрыто", "Аварийное завершение", MessageBoxButton.OK, MessageBoxImage.Stop);
-                    Environment.Exit(3);
-                }
-                // перезапусить приложение
-                else
-                {
-                    AppEnvironment.RestartApplication();
-                }
-            }
+            AppLib.CheckDBConnection(typeof(KDSContext));
 
             // настройка приложения
             app.InitializeComponent();  // определенные в app.xaml
 
             MessageListener.Instance.ReceiveMessage("Работаю...");
             View.MainWindow mWindow = new View.MainWindow();
-            app.Run(mWindow);
+            try
+            {
+                app.Run(mWindow);
+            }
+            catch (Exception ex)
+            {
+                AppLib.WriteLogErrorMessage(ex.ToString());
+                MessageBox.Show(ex.Message, "Error Application", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+            }
 
             AppLib.WriteLogInfoMessage("****  End application  ****");
         }

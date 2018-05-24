@@ -85,6 +85,11 @@ namespace KDSWPFClient.Lib
             if (_appLogger.IsErrorEnabled) _appLogger.Error(format, args);
         }
 
+        public static void WriteScreenDrawDetails(string msg)
+        {
+            if ((bool)WpfHelper.GetAppGlobalValue("TraceScreenDrawDetails", false)) _appLogger.Trace(msg);
+        }
+
         #endregion
 
         //  ДЛЯ КОНКРЕТНОГО ПРИЛОЖЕНИЯ

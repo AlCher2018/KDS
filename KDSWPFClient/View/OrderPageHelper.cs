@@ -170,7 +170,7 @@ namespace KDSWPFClient.View
 
                 DateTime dtTmr = DateTime.Now;
                 OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo, bSplit);
-                AppLib.WriteLogTraceMessage("   - create order panel N {0} - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString());
+                AppLib.WriteScreenDrawDetails($"   - create order panel N {orderModel.Number} - {(DateTime.Now - dtTmr).ToString()}");
 
                 dishStartIndex = -1;  // для последующих заказов - все блюда
                 if (ordPanel == null) continue;
@@ -187,7 +187,7 @@ namespace KDSWPFClient.View
 #else
                 // get DesiredSize
                 ordPanel.Measure(_sizeMeasure);  // немного легче, чем UpdateLayout
-                AppLib.WriteLogTraceMessage("   - measure size by Measure/DesiredSize, panel N {0} - {1}", orderModel.Number, (DateTime.Now - dtTmr).ToString());
+                AppLib.WriteScreenDrawDetails($"   - measure size by Measure/DesiredSize, panel N {orderModel.Number} - {(DateTime.Now - dtTmr).ToString()}");
 #endif
 
                 // 2. Размещение панели на странице
@@ -202,7 +202,7 @@ namespace KDSWPFClient.View
                     dtTmr = DateTime.Now;
                     _canvas.Children.Remove(ordPanel);
                     splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward);
-                    AppLib.WriteLogTraceMessage("     - split order to some columns - {0}", (DateTime.Now - dtTmr).ToString());
+                    AppLib.WriteScreenDrawDetails("     - split order to some columns - " + (DateTime.Now - dtTmr).ToString());
                 }
 
                 freeHeight = getFreeHeight();

@@ -36,7 +36,10 @@ namespace KDSWPFClient
         private string _clientName;
         private double _screenWidth, _screenHeight;
 
+        // таймер опроса КДС-службы
         private Timer _timer;
+        private double _timerIntervalStd, _timerIntervalAlt;
+
         private bool _mayGetData;
         private Timer _timerBackToOrderGroupByTime;  //  таймер возврата группировки заказов по времени
         private Timer _timerBackToFirstPage;        // таймер возврата на первую страницу
@@ -139,7 +142,12 @@ namespace KDSWPFClient
 
             // основной таймер опроса сервиса
             _getOrdersFromServiceDelegate = new Action<LeafDirectionEnum>(getOrdersFromService);
-            _timer = new Timer(1000) { AutoReset = false };
+            _timerIntervalStd = Convert.ToDouble(WpfHelper.GetAppGlobalValue("KDSServiceIntervalStd"));
+            _timerIntervalAlt = Convert.ToDouble(WpfHelper.GetAppGlobalValue("KDSServiceIntervalAlt"));
+            _timer = new Timer()
+            {
+                AutoReset = false, Interval = _timerIntervalStd
+            };
             _timer.Elapsed += _timer_Elapsed;
             _timer.Start();
 
@@ -407,81 +415,76 @@ namespace KDSWPFClient
                     }
                     else if (!_svcResp.ServiceErrorMessage.IsNull())
                     {
+                        // если служба еще читала данные из БД, то уменьшить интервал таймера до 100 мсек
+                        if (_svcResp.ServiceErrorMessage.Contains("is reading data"))
+                        {
+                            AppLib.WriteLogErrorMessage("Ошибка получения данных от КДС-службы: " + _svcResp.ServiceErrorMessage);
+                            if ((_timerIntervalAlt != 0) && (_timer.Interval != _timerIntervalAlt))
+                            {
+                                _timer.Interval = _timerIntervalAlt;
+                                AppLib.WriteLogOrderDetails(" - set timer Interval to " + _timer.Interval.ToString() + " msec");
+                            }
+                        }
+
                         throw new Exception(_svcResp.ServiceErrorMessage);
                     }
 
-                    // клиент не смог получить заказы, т.к. служба еще читала данные из БД - 
-                    // уменьшить интервал таймера до 100 мсек
-                    if ((_svcResp.OrdersList.Count == 0) && (!_svcResp.ServiceErrorMessage.IsNull()))
+                    _svcOrders = _svcResp.OrdersList;
+                    AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
+                    // вернуться на стандартный интервал
+                    if (_timer.Interval != _timerIntervalStd)
                     {
-                        string sErr = " - от службы получено 0 заказов: ";
-                        // служба еще читает данные
-                        if (_svcResp.ServiceErrorMessage.StartsWith("KDS service is reading data"))
-                        {
-                            if (_timer.Interval != 90)
-                            {
-                                _timer.Interval = 90;
-                                AppLib.WriteLogOrderDetails(" - set timer.Interval = 0,1 sec");
-                            }
-                            AppLib.WriteLogOrderDetails(sErr + "служба читает данные из БД...");
-                        }
-                        // сообщение от службы об ошибке чтения данных
-                        else
-                        {
-                            AppLib.WriteLogErrorMessage(sErr + "ошибка службы: {0}", _svcResp.ServiceErrorMessage);
-                        }
+                        _timer.Interval = _timerIntervalStd;
+                        AppLib.WriteLogOrderDetails(" - set timer Interval to " + _timer.Interval.ToString() + " msec");
                     }
-                    else
+
+                    // обновить данные во внутренней коллекции и обновить экран/панели
+                    updateOrders(leafDirection);
+
+                    // при листании назад:
+                    if (leafDirection == LeafDirectionEnum.Backward)
                     {
-                        _svcOrders = _svcResp.OrdersList;
-                        AppLib.WriteLogOrderDetails(" - от службы получено заказов: {0}, {1}", _svcOrders.Count, _logOrderInfo(_svcOrders));
-                        // вернуться на стандартный интервал в 1 сек
-                        if (_timer.Interval != 1000)
+                        // взять из первого контейнера Ид заказа/блюда
+                        int orderStartId, dishStartId;
+                        getModelIdFromViewContainer(true, out orderStartId, out dishStartId);
+                        _clientFilter.EndpointOrderID = orderStartId;
+                        _clientFilter.EndpointOrderItemID = dishStartId;
+                        // эмулировать чтение данных по таймеру
+                        leafDirection = LeafDirectionEnum.NoLeaf;
+                        _clientFilter.LeafDirection = leafDirection;
+                        _svcResp = _dataProvider.GetOrders(_clientFilter);
+                        while (_svcResp == null)
                         {
-                            _timer.Interval = 1000;
-                            AppLib.WriteLogTraceMessage(" - set timer.Interval = 1 sec");
-                        }
-
-                        // обновить данные во внутренней коллекции и обновить экран/панели
-                        updateOrders(leafDirection);
-
-                        // при листании назад:
-                        if (leafDirection == LeafDirectionEnum.Backward)
-                        {
-                            // взять из первого контейнера Ид заказа/блюда
-                            int orderStartId, dishStartId;
-                            getModelIdFromViewContainer(true, out orderStartId, out dishStartId);
-                            _clientFilter.EndpointOrderID = orderStartId;
-                            _clientFilter.EndpointOrderItemID = dishStartId;
-                            // эмулировать чтение данных по таймеру
-                            leafDirection = LeafDirectionEnum.NoLeaf;
-                            _clientFilter.LeafDirection = leafDirection;
+                            System.Threading.Thread.Sleep(50);
                             _svcResp = _dataProvider.GetOrders(_clientFilter);
-                            while (_svcResp == null)
-                            {
-                                System.Threading.Thread.Sleep(50);
-                                _svcResp = _dataProvider.GetOrders(_clientFilter);
-                            }
-                            _svcOrders = _svcResp.OrdersList;
-                            // обновить внутреннюю коллекцию
-                            updateOrders(leafDirection);
                         }
+                        _svcOrders = _svcResp.OrdersList;
+                        // обновить внутреннюю коллекцию
+                        updateOrders(leafDirection);
+                    }
 
-                        // поднять флаг проигрывания мелодии при появлении новых заказов
-                        if (!_isNeedSound)
-                        {
-                            _isNeedSound = true;
-                            AppLib.WriteLogTraceMessage("-- _isNeedSound = {0}", _isNeedSound.ToString());
-                        }
+                    // поднять флаг проигрывания мелодии при появлении новых заказов
+                    if (!_isNeedSound)
+                    {
+                        _isNeedSound = true;
+                        AppLib.WriteLogTraceMessage("-- _isNeedSound = {0}", _isNeedSound.ToString());
                     }
                 }
                 catch (Exception ex)
                 {
                     // ErrorHelper.GetShortErrMessage(ex)
-                    string errMsg = string.Format("Ошибка получения данных от КДС-службы: {0}", ex.Message);
-
-                    AppLib.WriteLogErrorMessage(errMsg); 
-                    showErrorScreen(errMsg);
+                    // некоторые сообщения на экране не показывать
+                    //Ошибка получения данных от КДС - службы: KDS service is reading data...
+                    if (ex.Message.Contains("is reading data"))
+                    {
+                        // NOP
+                    }
+                    else
+                    {
+                        string errMsg = string.Format("Ошибка получения данных от КДС-службы: {0}", ex.Message);
+                        AppLib.WriteLogErrorMessage(errMsg);
+                        showErrorScreen(errMsg);
+                    }
                 }
 
             }  // if (_mayGetData)
@@ -842,12 +845,12 @@ namespace KDSWPFClient
                     //while (!orderModel.Dishes[dishStartIndex].ParentUID.IsNull() && (dishStartIndex < (orderModel.Dishes.Count - 1))) dishStartIndex++;
                 }
             }
-            AppLib.WriteLogOrderDetails("   - find Id order/dish draw from, dir {0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteScreenDrawDetails($"   - find Id order/dish draw from, dir {shiftDirection.ToString()} - {(DateTime.Now - dtTmr).ToString()}");
             #endregion
 
             dtTmr = DateTime.Now;
             _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-            AppLib.WriteLogOrderDetails("  - DrawOrderPanelsOnPage(), dir-{0} - {1}", shiftDirection.ToString(), (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteScreenDrawDetails($"  - DrawOrderPanelsOnPage(), dir-{shiftDirection.ToString()} - {(DateTime.Now - dtTmr).ToString()}");
 
             // если при листании назад, первая панель находится НЕ в первой колонке, 
             // или, наоборот, в первой колонке и свободного места более половины,
@@ -859,12 +862,12 @@ namespace KDSWPFClient
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
                 _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
-                AppLib.WriteLogOrderDetails("  - re_DrawOrderPanelsOnPage() forward after backward, {0}", (DateTime.Now - dtTmr).ToString());
+                AppLib.WriteScreenDrawDetails("  - re_DrawOrderPanelsOnPage() forward after backward - " + (DateTime.Now - dtTmr).ToString());
             }
 
             dtTmr = DateTime.Now;
             movePanelsToView(); // перенос панелей в область просмотра
-            AppLib.WriteLogOrderDetails("   - move panels to view canvas - {0}", (DateTime.Now - dtTmr).ToString());
+            AppLib.WriteScreenDrawDetails("   - move panels to view canvas - " + (DateTime.Now - dtTmr).ToString());
 
             // при листании вперед, получить индексы последних заказ/блюдо на странице
             if (bShiftDirForward) getModelIndexesFromViewContainer(false, out orderFinishIndex, out dishFinishIndex);

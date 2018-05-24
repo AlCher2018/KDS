@@ -21,6 +21,10 @@ namespace ClientOrderQueue.View
         private const string _readOrdersSQLTextDefault = "SELECT Id, Number, QueueStatusId, LanguageTypeId, CreateDate, ClientName FROM dbo.[Order] WHERE(QueueStatusId IN (0, 1)) AND (OrderStatusId IN (1, 2, 8))";
 
         private List<AppOrder> _appOrders;
+        private string _readOrdersSQLText;
+        private DateTime _currentDate, _currentDateTime;
+        private double _hoursBeforeMidnight = 0d;
+        private string _dbErrMsg;
 
         private System.Media.SoundPlayer simpleSound = null;
         private System.Timers.Timer _updateTimer;
@@ -30,9 +34,10 @@ namespace ClientOrderQueue.View
         private double _cookingEstMinutes;
         private HashSet<int> _unUsedDeps;
 
-        private string _readOrdersSQLText;
-        private DateTime _currentDate;
-        private double _hoursBeforeMidnight = 0d;
+        // status line
+        GridLength _statusRowHeightHide = new GridLength(0d, GridUnitType.Star);
+        GridLength _statusRowHeightShow = new GridLength(0.5d, GridUnitType.Star);
+
 
         public MainWindow()
         {
@@ -42,8 +47,13 @@ namespace ClientOrderQueue.View
             _unUsedDeps = (HashSet<int>)WpfHelper.GetAppGlobalValue("UnusedDepartments");
 
             // кисти заголовка окна
-            brdTitle.Background = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleBackground");
-            tbMainTitle.Foreground = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleForeground");
+            Brush titleBackColor = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleBackground");
+            Brush titleForeColor = (SolidColorBrush)WpfHelper.GetAppGlobalValue("WinTitleForeground");
+            brdTitle.Background = titleBackColor;
+            tbMainTitle.Foreground = titleForeColor;
+            // статусная строка
+            statusBorder.Background = titleBackColor;
+            statusBorder.SetValue(TextBlock.ForegroundProperty, titleForeColor);
 
             // кисти для панелей заказов
             _cellBrushes = (Brush[])WpfHelper.GetAppGlobalValue("PanelBackgroundBrushes");
@@ -147,13 +157,10 @@ namespace ClientOrderQueue.View
 
         private void loadItems()
         {
+            // получить заказы из БД
+            preGetOrders();
             List<Order> orders = getOrders();
-
-            if ((orders == null) || (orders.Count == 0))
-            {
-                hideCells(G15); hideCells(G24);
-                return;
-            }
+            postGetOrders(orders);
 
             if (updateAppOrders(orders))
             {
@@ -172,12 +179,61 @@ namespace ClientOrderQueue.View
             }
         }
 
+        // перед получением заказов из БД
+        private void preGetOrders()
+        {
+            _dbErrMsg = null;
+            _currentDateTime = DateTime.Now;
+            AppLib.WriteLogTraceMessage("get DB-orders - START");
+            if (DateTime.Now.Date != _currentDate)
+            {
+                _currentDate = DateTime.Now.Date;
+                _readOrdersSQLText = getReadOrdersSQLText();
+            }
+        }
+        // после получения заказов из БД: write log msg, show/hide status msg
+        private void postGetOrders(List<Order> orders)
+        {
+            string logMsg = "get DB-orders - FINISH, " + getFormattedTS(_currentDateTime);
+
+            if (_dbErrMsg == null)
+            {
+                logMsg += $", orders count " + (orders == null ? 0 : orders.Count).ToString();
+                if ((orders != null) && (orders.Count > 0)) logMsg += "(ids " + string.Join(",", orders.Select(o => o.Id.ToString())) + ")";
+                AppLib.WriteLogTraceMessage(logMsg);
+                // если статусная строка была на экране, то погасить ее
+                if (statusRow.Height.Value != 0d)
+                {
+                    statusText.Text = null;
+                    statusRow.Height = _statusRowHeightHide;
+                }
+            }
+            else
+            {
+                AppLib.WriteLogErrorMessage(logMsg + " - Error: " + _dbErrMsg);
+                statusText.Text = "Ошибка получения заказов из базы данных MS SQL Server. Обратитеть к системному администратору.";
+                if (statusRow.Height.Value == 0d)
+                {
+                    statusRow.Height = _statusRowHeightShow;
+                }
+            }
+        }
+
+
         // возвращает признак того, что были сделаны какие-то изменения во внутренней коллекции заказов
         private bool updateAppOrders(List<Order> orders)
         {
             bool retVal = false;
             // признак того, что появился заказ в статусе ГОТОВ и надо проиграть мелодию
             bool isCooked = false;
+
+            if ((orders == null) || (orders.Count == 0))
+            {
+                hideCells(G15); hideCells(G24);
+                _appOrders.Clear();
+                AppLib.WriteLogTraceMessage("- app-orders clear");
+                return true;
+            }
 
             int[] dbIds = orders.Select(o => o.Id).ToArray();
             // удалить выданные заказы
@@ -311,22 +367,12 @@ namespace ClientOrderQueue.View
 
         private List<Order> getOrders()
         {
-            DateTime dtProc = DateTime.Now;
-            string logMsg = "get DB-orders - ", errMsg= null;
-            AppLib.WriteLogTraceMessage(logMsg + "START");
-
-            // сформировать sql-запрос к БД
-            if (DateTime.Now.Date != _currentDate)
-            {
-                _currentDate = DateTime.Now.Date;
-                _readOrdersSQLText = getReadOrdersSQLText();
-            }
-
             List <Order> retVal = null;
             try
             {
                 using (KDSContext db = new KDSContext())
                 {
+                    
                     db.Database.Connection.Open();
                     if (db.Database.Connection.State == System.Data.ConnectionState.Open)
                     {
@@ -370,23 +416,11 @@ namespace ClientOrderQueue.View
             }
             catch (Exception ex)
             {
-                errMsg = ex.Message;
-                if (ex.InnerException != null) errMsg += "(inner message: " + ex.InnerException.Message + ")";
+                _dbErrMsg = ex.Message;
+                if (ex.InnerException != null) _dbErrMsg += "(inner message: " + ex.InnerException.Message + ")";
             }
 
-            logMsg += "FINISH, " + getFormattedTS(dtProc);
-
-            if (errMsg == null)
-            {
-                logMsg += $", orders count {retVal.Count}";
-                if ((retVal != null) && (retVal.Count > 0)) logMsg += "(ids " + string.Join(",", retVal.Select(o => o.Id.ToString())) + ")";
-                AppLib.WriteLogTraceMessage(logMsg);
-            }
-            else
-            {
-                AppLib.WriteLogErrorMessage(logMsg + " - Error: " + errMsg);
-            }
-
+            if (retVal == null) retVal = new List<Order>();
             return retVal;
         }
 
