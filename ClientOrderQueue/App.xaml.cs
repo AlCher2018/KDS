@@ -21,6 +21,12 @@ namespace ClientOrderQueue
         [STAThread]
         public static void Main()
         {
+            //System.IO.FileStream writer = new System.IO.FileStream(@"c:\Users\Leschenko.V\Documents\Visual Studio 2015\Projects\Integra KDS1\ClientOrderQueue\bin\Debug\updFiles\ClientOrderQueue.exe", System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None);
+            //byte[] ba = new byte[] {50,51,52 };
+            //writer.Write(ba,0,ba.Length);
+            //writer.Close();
+            //writer.Dispose();
+
             App app = new App();
 
             // splash
@@ -68,11 +74,13 @@ namespace ClientOrderQueue
             }
             System.Threading.Thread.Sleep(500);
 
+            // получить настройки (из config-файла или пр.) для хранения в свойствах приложения
+            setAppGlobalValues();
+
             // информация о файлах, сборках и настройках из конфиг-файлов
             MessageListener.Instance.ReceiveMessage("Получаю информацию о сборках и настройках...");
-            // для хранения в свойствах приложения (из config-файла или др.)
-            setAppGlobalValues();  
-            AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), AppEnvironment.GetAppVersion());
+            string appVersion = AppEnvironment.GetAppVersion();
+            AppLib.WriteLogInfoMessage(" - файл: {0}, Version {1}", AppEnvironment.GetAppFullFile(), appVersion);
             ITSAssemblyInfo asmInfo = new ITSAssemblyInfo("IntegraLib");
             AppLib.WriteLogInfoMessage(" - Integra lib: '{0}', Version {1}", asmInfo.FullFileName, asmInfo.Version);
             asmInfo = new ITSAssemblyInfo("IntegraWPFLib");
@@ -81,10 +89,8 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("Системное окружение: " + AppEnvironment.GetEnvironmentString());
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
-            // флажки для логов
-            cfgValue = CfgFileHelper.GetAppSetting("IsWriteTraceMessages");
-            WpfHelper.SetAppGlobalValue("IsWriteTraceMessages", cfgValue.ToBool());
-            System.Threading.Thread.Sleep(300);
+            // проверка обновления софта
+            updateApplication();
 
             // проверить доступность БД
             MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");
@@ -106,6 +112,39 @@ namespace ClientOrderQueue
             }
 
             AppLib.WriteLogInfoMessage("****  End application  ****");
+        }
+
+        private static void updateApplication()
+        {
+            string appVersion = AppEnvironment.GetAppVersion();
+            string storagePath = "ftp://82.207.112.88/IT Department/!Soft_dev/KDS/ClientQueue/";
+
+            AppAutoUpdater updater = new AppAutoUpdater(AppEnvironment.GetAppAssemblyName() + "/Update/", storagePath, "integra-its\\ftp", "Qwerty1234");
+            // 1. проверка в реестре настроек автообновления
+            if (updater.Enable)
+            {
+                AppLib.WriteLogInfoMessage($"Проверка обновлений в хранилище '{storagePath}'...");
+                if (updater.IsNeedUpdate())
+                {
+                    AppLib.WriteLogInfoMessage($" - причина обновления: {updater.UpdateReasonString()}");
+                    if (updater.DoUpdate())  // перезапуск приложения
+                    {
+
+                    }
+                }
+                else if (updater.LastError != null)
+                {
+                    AppLib.WriteLogInfoMessage($" - ошибка проверки обновления: " + updater.LastError);
+                }
+                else
+                {
+                    AppLib.WriteLogInfoMessage($"Обновление приложения НЕ требуется");
+                }
+            }
+            else
+            {
+                AppLib.WriteLogInfoMessage("Автообновления приложения ВЫКЛЮЧЕНО.");
+            }
         }
 
         private static void appExit(int exitCode, string errMsg)

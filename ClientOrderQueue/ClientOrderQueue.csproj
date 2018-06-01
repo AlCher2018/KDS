@@ -121,6 +121,10 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\AppAutoUpdater.cs" />
+    <Compile Include="Lib\FSItemTypeEnum.cs" />
+    <Compile Include="Lib\FTPHelper.cs" />
+    <Compile Include="Lib\XMLComparer.cs" />
     <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
