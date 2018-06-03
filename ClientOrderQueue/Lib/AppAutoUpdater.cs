@@ -35,9 +35,6 @@ namespace ClientOrderQueue.Lib
         private string _errorMsg;
         public string LastError { get { return _errorMsg; } }
 
-        private string _updatePath;
-        public string UpdatePath { get { return _updatePath; } }
-
         // причины обновления
         private List<AppUpdateReason> _updateReasons;
         public List<AppUpdateReason> UpdateReasons { get { return _updateReasons; } }
@@ -46,68 +43,87 @@ namespace ClientOrderQueue.Lib
         private List<AppUpdateItem> _updateItems;
         public List<AppUpdateItem> UpdateItems { get { return _updateItems; } }
 
+        // папка-источник
         private FTPFolder _updFTPFolder;
-        private string _appFolder;
+        public string UpdateFTPFolder { get { return (_updFTPFolder == null ? "" : _updFTPFolder.Name); } }
+
+        // папка-назначение
+        private string _destDirFullName;
+        public string DestinationPath { get { return _destDirFullName; } }
+        // папка временного нахождения скачиваемых файлов
+        private string _tmpDir;
+
+        public event EventHandler<string> UpdateActionBefore;
+        public event EventHandler<string> UpdateActionAfter;
 
         #endregion
 
 
-        public AppAutoUpdater(string registryPath, string storagePath, string storageLogin, string storagePWD)
+        public AppAutoUpdater(string registryPath, string storagePath, string storageLogin, string storagePWD, string destDirFullName)
         {
             _registryPath = registryPath;
             _storagePath = storagePath; _storageLogin = storageLogin; _storagePWD = storagePWD;
             _updateItems = new List<AppUpdateItem>();
             _updateReasons = new List<AppUpdateReason>();
 
-            _appFolder = AppEnvironment.GetAppDirectory();
-
-            _updatePath = AppEnvironment.GetAppDirectory() + "updFiles";
-            checkUpdPath();
+            initPathes(destDirFullName);
 
             checkRegSettings();
         }
 
-        private bool checkUpdPath()
+        private void initPathes(string destDirFullName)
         {
-            bool retVal = false;
-            try
-            {
-                if (System.IO.Directory.Exists(_updatePath) == false)
-                {
-                    System.IO.Directory.CreateDirectory(_updatePath);
-                }
-                if (_updatePath.EndsWith("\\") == false) _updatePath += "\\";
-                retVal = true;
-            }
-            catch (Exception ex)
-            {
-                _errorMsg = ex.Message;
-            }
-            return retVal;
-        }
-
-        // очистить папку обновляемых файлов
-        private void clearUpdPath()
-        {
-            if (checkUpdPath())
+            _destDirFullName = (destDirFullName == null) ? AppEnvironment.GetAppDirectory() : destDirFullName;
+            if (_destDirFullName != null)
             {
                 try
                 {
-                    string[] dirs = System.IO.Directory.GetDirectories(_updatePath);
-                    foreach (string dirName in dirs)
-                    {
-                        System.IO.Directory.Delete(dirName, true);
-                    }
-
-                    string[] files = System.IO.Directory.GetFiles(_updatePath);
-                    foreach (string filName in files)
-                    {
-                        System.IO.File.Delete(filName);
-                    }
+                    if (!Directory.Exists(_destDirFullName)) Directory.CreateDirectory(_destDirFullName);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    _errorMsg = ex.Message;
+                    _destDirFullName = null;
+                    return;
                 }
+                if (_destDirFullName.EndsWith("\\") == false) _destDirFullName += "\\";
+
+                _tmpDir = _destDirFullName + "tmp\\";
+                try
+                {
+                    if (Directory.Exists(_tmpDir))
+                        clearTmpDir();
+                    else
+                        Directory.CreateDirectory(_tmpDir);
+                }
+                catch (Exception ex)
+                {
+                    _errorMsg = ex.Message;
+                    _tmpDir = null;
+                }
+
+            }
+        }
+
+        // очистить папку обновляемых файлов
+        private void clearTmpDir()
+        {
+            try
+            {
+                string[] dirs = Directory.GetDirectories(_tmpDir);
+                foreach (string dirName in dirs)
+                {
+                    System.IO.Directory.Delete(dirName, true);
+                }
+
+                string[] files = System.IO.Directory.GetFiles(_tmpDir);
+                foreach (string filName in files)
+                {
+                    System.IO.File.Delete(filName);
+                }
+            }
+            catch (Exception)
+            {
             }
         }
 
@@ -154,11 +170,12 @@ namespace ClientOrderQueue.Lib
                 // получить рекурсивно имена ВСЕХ файлов из папки последней версии
                 if (_storagePath.RightString(1) != "/") _storagePath += "/";
                 _updFTPFolder = ftpHelper.GetFTPFolder(_storagePath + newestFolder.Name + "/", true);
+                _updFTPFolder.Name = newestFolder.Name;
 
                 // получить файлы exe/dll
-                clearUpdPath(); // очистить папку файлов, загружаемых с ФТП
+                clearTmpDir(); // очистить папку файлов, загружаемых с ФТП
                 string[] checkedExt = new string[] { "exe", "dll" };
-                FileInfo[] appFiles = (new DirectoryInfo(_appFolder)).GetFiles().Where(f => checkedExt.Contains(f.Extension.Remove(0,1))).ToArray();
+                FileInfo[] appFiles = (new DirectoryInfo(_destDirFullName)).GetFiles().Where(f => checkedExt.Contains(f.Extension.Remove(0,1))).ToArray();
                 FTPFile[] ftpFiles = _updFTPFolder.Items.Where(f => f.ItemType == FSItemTypeEnum.File).Select(f => (FTPFile)f).Where(f => checkedExt.Contains(f.Ext)).ToArray();
                 foreach (FTPFile item in ftpFiles)
                 {
@@ -178,13 +195,13 @@ namespace ClientOrderQueue.Lib
                     {
                         bool needUpd = false;
                         // дата создания
-                        if (appFileInfo.CreationTime != item.DateTime)
+                        if (item.DateTime > appFileInfo.LastWriteTime)
                         {
                             _updateReasons.Add(new AppUpdateReason()
                             {
                                 FileName = item.Name,
-                                FileAttribute = "creationTime",
-                                ValueExist = appFileInfo.CreationTime.ToString(),
+                                FileAttribute = "lastWriteTime",
+                                ValueExist = appFileInfo.LastWriteTime.ToString(),
                                 ValueNew = item.DateTime.ToString()
                             });
                             needUpd = true;
@@ -206,7 +223,7 @@ namespace ClientOrderQueue.Lib
                         // при необходимости, проверяем версию, загружая файл с ФТП
                         if (!needUpd)
                         {
-                            string newUpdFileFullName = _updatePath + item.Name;
+                            string newUpdFileFullName = _destDirFullName + item.Name;
                             if (ftpHelper.DownloadFile(item.FullName, newUpdFileFullName))
                             {
                                 string appFileVersion = AppEnvironment.GetFileVersion(appFileInfo.FullName);
@@ -225,7 +242,7 @@ namespace ClientOrderQueue.Lib
                         }
                     }
                 }  // for
-                clearUpdPath();
+                clearTmpDir();
             }
             else
             {
@@ -237,7 +254,6 @@ namespace ClientOrderQueue.Lib
             if (retVal)
             {
                 _errorMsg = null;
-                // TODO debug here
                 createUpdateActions();
                 retVal = (_errorMsg == null);
             }
@@ -245,30 +261,44 @@ namespace ClientOrderQueue.Lib
             return retVal;
         }
 
+        #region FTPHelper
         private FTPHelper getFTPHelper()
         {
-            return new FTPHelper()
+            FTPHelper retVal = new FTPHelper()
             {
                 Login = _storageLogin,
                 PWD = _storagePWD,
                 IsAlive = false,
                 IsPassive = true
             };
+            retVal.DownloadFileBeforeHandler += FtpHelper_DownloadFileBeforeHandler;
+            retVal.DownloadFileAfterHandler += FtpHelper_DownloadFileAfterHandler;
+
+            return retVal;
         }
+        private void FtpHelper_DownloadFileBeforeHandler(object sender, string e)
+        {
+            UpdateActionBefore?.Invoke(this, "Downloading file: " + e);
+        }
+        private void FtpHelper_DownloadFileAfterHandler(object sender, string e)
+        {
+            UpdateActionAfter?.Invoke(this, "Download file result: " + e);
+        }
+
+        #endregion
 
         // заполнить _updItems
         private void createUpdateActions()
         {
             _updateItems.Clear();
             AppUpdateItem appItem;
-            string appDirectory = AppEnvironment.GetAppDirectory();
             foreach (FTPItem item in _updFTPFolder.Items)
             {
                 // файлы в корне целевой папки могут быть добавлены, заменены или модифицированы (для *.config)
                 // config-файлы по умолчанию не заменяются!!
                 if (item.ItemType == FSItemTypeEnum.File)
                 {
-                    appItem = getUpdateItemForFile(item, appDirectory, true);
+                    appItem = getUpdateItemForFile(item, true);
                     if (appItem == null)
                     {
                         if (_errorMsg != null) { _updateItems.Clear(); break; }
@@ -283,25 +313,26 @@ namespace ClientOrderQueue.Lib
                 // для FTP есть _updFTPFolder, который содержит структуру папки-источника обновления
                 else if (item.ItemType == FSItemTypeEnum.Folder)
                 {
-                    compareFolders(item, appDirectory);
+                    compareFolders(item, _destDirFullName);
                 }
             }
         }
 
-        private AppUpdateItem getUpdateItemForFile(FTPItem ftpItem, string destDirectory, bool checkConfig = false)
+        private AppUpdateItem getUpdateItemForFile(FTPItem ftpItem, bool checkConfig = false)
         {
             AppUpdateItem retVal = null;
 
             FTPFile ftpFile = (FTPFile)ftpItem;
-            DirectoryInfo dirInfo = new DirectoryInfo(destDirectory);
+            DirectoryInfo dirInfo = new DirectoryInfo(_destDirFullName);
             FileInfo fInfo = dirInfo.GetFiles().FirstOrDefault(f => f.Name == ftpFile.Name);
             if (fInfo == null) // новый файл
             {
                 retVal = new AppUpdateItem()
                 {
                     ItemType = FSItemTypeEnum.File,
-                    Name = ftpFile.Name,
-                    ActionType = AppUpdateActionTypeEnum.AddNew
+                    ActionType = AppUpdateActionTypeEnum.AddNew,
+                    FullNameFrom = ftpFile.FullName,
+                    FullNameTo = _destDirFullName + ftpFile.Name
                 };
             }
             else if(isNeedFileUpdate(ftpFile, fInfo))
@@ -315,8 +346,9 @@ namespace ClientOrderQueue.Lib
                     retVal = new AppUpdateItem()
                     {
                         ItemType = FSItemTypeEnum.File,
-                        Name = fInfo.Name,
-                        ActionType = AppUpdateActionTypeEnum.Replace
+                        ActionType = AppUpdateActionTypeEnum.Replace,
+                        FullNameFrom = ftpFile.FullName,
+                        FullNameTo = fInfo.FullName,
                     };
                 }
 
@@ -347,8 +379,9 @@ namespace ClientOrderQueue.Lib
                             AppUpdateItem updItem = new AppUpdateItem()
                             {
                                 ItemType = FSItemTypeEnum.File,
-                                Name = destFileFullName,
-                                ActionType = AppUpdateActionTypeEnum.AddNew
+                                ActionType = AppUpdateActionTypeEnum.AddNew,
+                                FullNameFrom = ftpFile.FullName,
+                                FullNameTo = destFileFullName
                             };
                             _updateItems.Add(updItem);
                         }
@@ -358,8 +391,9 @@ namespace ClientOrderQueue.Lib
                             AppUpdateItem updItem = new AppUpdateItem()
                             {
                                 ItemType = FSItemTypeEnum.File,
-                                Name = destFileFullName,
-                                ActionType = AppUpdateActionTypeEnum.Replace
+                                ActionType = AppUpdateActionTypeEnum.Replace,
+                                FullNameFrom = ftpFile.FullName,
+                                FullNameTo = destFileFullName
                             };
                             _updateItems.Add(updItem);
                         }
@@ -379,8 +413,9 @@ namespace ClientOrderQueue.Lib
                 AppUpdateItem updItem = new AppUpdateItem()
                 {
                     ItemType = FSItemTypeEnum.Folder,
-                    Name = ftpItem.Name,
-                    ActionType = AppUpdateActionTypeEnum.AddNew
+                    ActionType = AppUpdateActionTypeEnum.AddNew,
+                    FullNameFrom = ftpItem.FullName,
+                    FullNameTo = destFolder
                 };
                 _updateItems.Add(updItem);
             }
@@ -403,18 +438,19 @@ namespace ClientOrderQueue.Lib
 
         private bool isNeedFileUpdate(FTPFile ftpFile, FileInfo fInfo)
         {
-            bool retVal = (ftpFile.Size != fInfo.Length) || (ftpFile.DateTime != fInfo.CreationTime);
+            // разный размер файла и дата создания файла из хранилища БОЛЬШЕ даты создания из целевой папки
+            bool retVal = (ftpFile.Size != fInfo.Length) || (ftpFile.DateTime > fInfo.LastWriteTime);
 
             // при одинаковом размере и дате создания, для exe/dll дополнительно проверить версию файла
             if ((retVal == false) && ((fInfo.Extension == "exe") || (fInfo.Extension == "dll")))
             {
                 FTPHelper ftpHelper = getFTPHelper();
-                string newUpdFileFullName = _updatePath + ftpFile.Name;
-                if (ftpHelper.DownloadFile(ftpFile.FullName, newUpdFileFullName))
+                string checkedFileFullName = _tmpDir + ftpFile.Name;
+                if (ftpHelper.DownloadFile(ftpFile.FullName, checkedFileFullName))
                 {
                     // версия
                     string appFileVersion = AppEnvironment.GetFileVersion(fInfo.FullName);
-                    string updFileVersion = AppEnvironment.GetFileVersion(newUpdFileFullName);
+                    string updFileVersion = AppEnvironment.GetFileVersion(checkedFileFullName);
                     retVal = (appFileVersion != updFileVersion);
                 }
             }
@@ -425,7 +461,7 @@ namespace ClientOrderQueue.Lib
         private AppUpdateItem getConfigModifyItems(FTPItem ftpItem, FileInfo fInfo)
         {
             // скачать файл с ФТП
-            string ftpDestFile = _updatePath + fInfo.Name;
+            string ftpDestFile = _tmpDir + fInfo.Name;
             FTPHelper ftpHelper = getFTPHelper();
             if (ftpHelper.DownloadFile(ftpItem.FullName, ftpDestFile) == false)
             {
@@ -439,6 +475,24 @@ namespace ClientOrderQueue.Lib
             {
                 xDocSrc = XDocument.Load(ftpDestFile);
                 xDocDst = XDocument.Load(fInfo.FullName);
+
+                // все элементы - add -> возможный config-файл
+                if (xDocSrc.Root.Elements().All(e => e.Name.LocalName == "add"))
+                {
+                    // если все add-элементы содержат только два элемента key и value, 
+                    // то это "правильный" config-файл, т.е. его можно преобразовать в xml для сравнения
+                    // где атрибут key становится именем элемента!
+                    if (isCorrectConfigFile(xDocSrc))
+                    {
+                        xDocSrc = convertConfigToXML(xDocSrc);
+                        xDocDst = convertConfigToXML(xDocDst);
+                    }
+                    // "неправильный" config-файл пропускаем
+                    else
+                    {
+                        return null;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -457,7 +511,7 @@ namespace ClientOrderQueue.Lib
                 }
                 else
                 {
-                    retVal = new AppUpdateCfgFile(fInfo.FullName);
+                    retVal = new AppUpdateCfgFile(ftpItem.FullName, fInfo.FullName);
                     retVal.ActionType = AppUpdateActionTypeEnum.Replace;
                     AppUpdateCfgFileItem curCfgFileItem;
                     foreach (XMLCompareChangeItem item in result)
@@ -507,10 +561,223 @@ namespace ClientOrderQueue.Lib
 
             return retVal;
         }
-
+        
         public bool DoUpdate()
         {
-            bool retVal = false;
+            if (_errorMsg != null) _errorMsg = null;
+            if ((_updateItems == null) || (_updateItems.Count == 0)) return false;
+            bool result;
+            clearTmpDir();
+
+            foreach (AppUpdateItem updItem in _updateItems)
+            {
+                string sFrom = updItem.FullNameFrom;
+                string sTo = updItem.FullNameTo;
+
+                if (updItem.ItemType == FSItemTypeEnum.Folder)
+                {
+                    // папки можно только добавлять! вместе со всеми вложенными подпапками и файлами!
+                    #region download folder
+                    if (updItem.ActionType == AppUpdateActionTypeEnum.AddNew)
+                    {
+                        UpdateActionBefore?.Invoke(this, $"Загружаю папку '{sFrom}' в '{sTo}'");
+                        FTPFolder ftpFolderFrom = getFTPFolderFrom(_updFTPFolder, updItem.FullNameFrom);
+                        if (ftpFolderFrom == null)
+                        {
+                            UpdateActionBefore?.Invoke(this, $"Ошибка получения папки с FTP: " + _errorMsg);
+                        }
+                        else
+                        {
+                            result = createDirectory(ftpFolderFrom, updItem.FullNameTo);
+                            if (result)
+                            {
+                                UpdateActionAfter?.Invoke(this, $"Папка '{sTo}' создана успешно");
+                            }
+                            else
+                            {
+                                UpdateActionAfter?.Invoke(this, $"Ошибка получения папки с FTP: " + _errorMsg);
+                                return false;
+                            }
+                        }
+                    }
+                    #endregion
+                }
+                else if (updItem.ItemType == FSItemTypeEnum.File)
+                {
+                    #region download file
+                    // добавление файла
+                    if (updItem.ActionType == AppUpdateActionTypeEnum.AddNew)
+                    {
+                        downoadFile(sFrom ,sTo);
+                    }
+
+                    // замена файла
+                    else if (updItem.ActionType == AppUpdateActionTypeEnum.Replace)
+                    {
+                        UpdateActionBefore?.Invoke(this, $"Обновление файла '{sTo}'...");
+                        // загрузить файл в _tmpDir
+                        FileInfo fInfo = new FileInfo(sTo);
+                        result = downoadFile(sFrom, _tmpDir + fInfo.Name);
+                        if (result)
+                        {
+                            // исходный скопировать в архив
+                            result = copyFileToArchive(fInfo);
+                            if (result)
+                            {
+                                FileInfo tmpFInfo = new FileInfo(_tmpDir + fInfo.Name);
+                                // скопировать файл из _tmpDir в файл-назначение
+                                result = copyFileTo(tmpFInfo, fInfo.DirectoryName);
+                                if (result)
+                                {
+                                    UpdateActionAfter?.Invoke(this, $"Файл обновлен успешно: " + sTo);
+                                }
+                                else
+                                {
+                                    UpdateActionAfter?.Invoke(this, $"Ошибка обновления файла '{sTo}': " + _errorMsg);
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                UpdateActionAfter?.Invoke(this, $"Ошибка обновления файла '{sTo}': " + _errorMsg);
+                                return false;
+                            }
+                        }
+                    }
+
+                    // обновление config-файла
+                    else if ((updItem.ActionType == AppUpdateActionTypeEnum.Modify) && (updItem is AppUpdateCfgFile))
+                    {
+                        // TODO update config-file
+                    }
+                    #endregion
+                }
+            }
+
+            clearTmpDir();
+            return true;
+        }
+
+        private bool copyFileToArchive(FileInfo fInfo)
+        {
+            string archivePath = _destDirFullName + "archive\\";
+            if (createDirectory(archivePath) == false) return false;
+
+            archivePath += DateTime.Now.ToString("yyyy-MM-dd") + "\\";
+            if (createDirectory(archivePath) == false) return false;
+
+            return copyFileTo(fInfo, archivePath);
+        }
+
+        private bool copyFileTo(FileInfo fInfo, string destPath)
+        {
+            try
+            {
+                if (!destPath.EndsWith("\\")) destPath += "\\";
+                fInfo.CopyTo(destPath + fInfo.Name, true);
+            }
+            catch (Exception ex)
+            {
+                _errorMsg = ex.ToString();
+                return false;
+            }
+            return true;
+        }
+
+        private bool createDirectory(string dirFullPath)
+        {
+            if (!Directory.Exists(dirFullPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(dirFullPath);
+                }
+                catch (Exception ex)
+                {
+                    _errorMsg = ex.ToString();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool downoadFile(string sFrom, string sTo)
+        {
+            UpdateActionBefore?.Invoke(this, $"Загружаю файл из '{sFrom}' в '{sTo}'");
+            FTPHelper ftpHelper = getFTPHelper();
+            bool result = ftpHelper.DownloadFile(sFrom, sTo);
+            if (result)
+            {
+                UpdateActionAfter?.Invoke(this, $"Файл '{sTo}' создан успешно");
+            }
+            else
+            {
+                UpdateActionAfter?.Invoke(this, $"Ошибка загрузки файла '{sTo}': " + ftpHelper.LastErrorMessage);
+            }
+            ftpHelper = null;
+            return result;
+        }
+
+        private bool createDirectory(FTPFolder ftpFolderFrom, string destDirectory)
+        {
+            DirectoryInfo dirInfo = null;
+            try
+            {
+                // создать папку назначения
+                if (System.IO.Directory.Exists(destDirectory) == false)
+                {
+                    dirInfo = Directory.CreateDirectory(destDirectory);
+                }
+                // или очистить ее
+                else
+                {
+                    dirInfo = new DirectoryInfo(destDirectory);
+                    foreach (FileInfo item in dirInfo.EnumerateFiles()) item.Delete();
+                    foreach (DirectoryInfo item in dirInfo.EnumerateDirectories()) item.Delete(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorMsg = ex.ToString();
+                return false;
+            }
+
+            // файлы загрузить с ФТП
+            bool result;
+            if (ftpFolderFrom.Items.Any(f => f.ItemType== FSItemTypeEnum.File))
+            {
+                FTPHelper ftpHelper = getFTPHelper();
+                foreach (FTPItem item in ftpFolderFrom.Items.Where(f => f.ItemType == FSItemTypeEnum.File))
+                {
+                    result = ftpHelper.DownloadFile(item.FullName, destDirectory + item.Name);
+                    if (result == false) { _errorMsg = ftpHelper.LastErrorMessage; return false; }
+                }
+                ftpHelper = null;
+            }
+            // папки создать
+            if (ftpFolderFrom.Items.Any(f => f.ItemType == FSItemTypeEnum.Folder))
+            {
+                foreach (FTPFolder item in ftpFolderFrom.Items.Where(f => f.ItemType == FSItemTypeEnum.Folder))
+                {
+                    result = createDirectory(item, destDirectory + item.Name + "\\");
+                    if (result == false) { return false; }
+                }
+            }
+
+            return true;
+        }
+
+        private FTPFolder getFTPFolderFrom(FTPFolder ftpFolder, string fullNameFrom)
+        {
+            string[] flds = fullNameFrom.Substring(ftpFolder.FullName.Length).Split('/');
+
+            FTPFolder retVal = ftpFolder;
+            for (int i = 0; (i < flds.Length) && (retVal != null); i++)
+            {
+                retVal = (FTPFolder)retVal.Items.FirstOrDefault(fld => (fld is FTPFolder) && (fld.Name == flds[i]));
+            }
+
+            if (retVal == null) _errorMsg = "Папка '" + fullNameFrom + "' не найдена!!";
 
             return retVal;
         }
@@ -523,11 +790,38 @@ namespace ClientOrderQueue.Lib
                 _updateReasons.ForEach(r =>
                 {
                     if (bld.Length > 0) bld.Append(Environment.NewLine);
-                    bld.Append(r.ToString());
+                    bld.Append("\t" + r.ToString());
                 });
             }
 
             return bld.ToString();
+        }
+
+        // проверка на config, т.е. файл, который состоит из элементов add, 
+        // каждый из которых имеет строго по 2 атрибута: key и value 
+        private bool isCorrectConfigFile(XDocument xDoc)
+        {
+            bool retVal = true;
+
+            foreach (XElement item in xDoc.Root.Elements())
+            {
+                if (item.Name.LocalName != "add") { retVal = false;  break; }
+
+                IEnumerable<XAttribute> attrs = item.Attributes();
+                if (attrs.Count() != 2) { retVal = false;  break; }
+                if ((attrs.ElementAt(0).Name.LocalName != "key") && (attrs.ElementAt(1).Name.LocalName != "value")) { retVal = false; break; }
+            }
+
+            return retVal;
+        }
+
+        private XDocument convertConfigToXML(XDocument xConfigDoc)
+        {
+            XElement[] keys = xConfigDoc.Root.Elements().Select(e =>
+                new XElement(e.Attribute("key").Value, new XAttribute(e.Attribute("value")))
+                ).ToArray();
+            XDocument xDoc = new XDocument(xConfigDoc.Declaration, new XElement(xConfigDoc.Root.Name, xConfigDoc.Root.Attributes(), keys));
+            return xDoc;
         }
 
     }  // class
@@ -536,7 +830,8 @@ namespace ClientOrderQueue.Lib
 
     public class AppUpdateItem
     {
-        public string Name { get; set; }
+        public string FullNameFrom { get; set; }
+        public string FullNameTo { get; set; }
         public FSItemTypeEnum ItemType { get; set; }
         public AppUpdateActionTypeEnum ActionType { get; set; }
     }
@@ -551,10 +846,11 @@ namespace ClientOrderQueue.Lib
         }
 
 
-        public AppUpdateCfgFile(string fileName)
+        public AppUpdateCfgFile(string fileNameFrom, string fileNameTo)
         {
             this.ItemType = FSItemTypeEnum.File;
-            this.Name = fileName;
+            this.FullNameFrom = fileNameFrom;
+            this.FullNameTo = fileNameTo;
             _items = new List<AppUpdateCfgFileItem>();
         }
     }

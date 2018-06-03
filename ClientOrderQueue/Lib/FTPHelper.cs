@@ -16,6 +16,9 @@ namespace ClientOrderQueue.Lib
         public bool IsAlive { get; set; }
         public bool IsPassive { get; set; }
 
+        public event EventHandler<string> DownloadFileBeforeHandler;
+        public event EventHandler<string> DownloadFileAfterHandler;
+
         private string _errorMsg;
         public string LastErrorMessage { get { return _errorMsg; } }
 
@@ -37,43 +40,67 @@ namespace ClientOrderQueue.Lib
             try
             {
                 if (path.Last() != '/') path += "/";
-                FtpWebRequest requestDir = (FtpWebRequest)WebRequest.Create(path);
-                requestDir.KeepAlive = this.IsAlive;
-                requestDir.UsePassive = this.IsPassive;
-                requestDir.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
-                requestDir.Credentials = new NetworkCredential(this.Login, this.PWD);
+                retVal = getFTPFolder(path);
 
-                FtpWebResponse responseDir = (FtpWebResponse)requestDir.GetResponse();
-                using (StreamReader readerDir = new StreamReader(responseDir.GetResponseStream()))
+                // рекурсивное заполение папок
+                if ((retVal != null) && isRecurse)
                 {
-                    retVal = new FTPFolder() { ItemType = FSItemTypeEnum.Folder, FullName = path };
-
-                    string line = readerDir.ReadLine();
-                    FTPItem item;
-                    while (line != null)
+                    foreach (FTPItem item in retVal.Items)
                     {
-                        item = FTPItem.Parse(line);
-                        if (item != null)
+                        if (item.ItemType == FSItemTypeEnum.Folder)
                         {
-                            item.FullName = path + item.Name;
-                            if ((item.ItemType == FSItemTypeEnum.Folder) && isRecurse)
+                            FTPItem ftpItem = GetFTPFolder(path + item.Name + "/", true);
+                            if (ftpItem != null)
                             {
-                                string savedName = item.Name;
-                                item = GetFTPFolder(path + item.Name + "/", true);
-                                item.Name = savedName;
-                            }
-                            retVal.Items.Add(item);
-                        }
+                                FTPFolder ftpFolder = (FTPFolder)ftpItem;
+                                FTPItem[] ftpItems = new FTPItem[ftpFolder.Items.Count];
+                                ftpFolder.Items.CopyTo(ftpItems);
+                                ftpFolder = null;
 
-                        line = readerDir.ReadLine();
+                                ((FTPFolder)item).Items.AddRange(ftpItems);
+                            }
+                        }
                     }
                 }
-                responseDir.Close();
             }
             catch (Exception ex)
             {
                 _errorMsg = ex.Message;
             }
+
+            return retVal;
+        }
+
+        public FTPFolder getFTPFolder(string path)
+        {
+            FTPFolder retVal = null;
+
+            FtpWebRequest requestDir = (FtpWebRequest)WebRequest.Create(path);
+            FtpWebRequest.DefaultCachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
+            requestDir.KeepAlive = this.IsAlive;
+            requestDir.UsePassive = this.IsPassive;
+            requestDir.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+            requestDir.Credentials = new NetworkCredential(this.Login, this.PWD);
+
+            FtpWebResponse responseDir = (FtpWebResponse)requestDir.GetResponse();
+            using (StreamReader readerDir = new StreamReader(responseDir.GetResponseStream()))
+            {
+                retVal = new FTPFolder() { ItemType = FSItemTypeEnum.Folder, FullName = path };
+
+                string line = readerDir.ReadLine();
+                FTPItem item;
+                while (line != null)
+                {
+                    item = FTPItem.Parse(line);
+                    if (item != null)
+                    {
+                        item.FullName = path + item.Name;
+                        retVal.Items.Add(item);
+                    }
+                    line = readerDir.ReadLine();
+                }
+            }
+            responseDir.Close();
 
             return retVal;
         }
@@ -142,15 +169,17 @@ namespace ClientOrderQueue.Lib
 
         public bool DownloadFile(string ftpFullFileName, string localFullFileName)
         {
-            bool retVal = false;
             _errorMsg = null;
 
             if (string.IsNullOrEmpty(ftpFullFileName) || string.IsNullOrEmpty(localFullFileName)) return false;
+
+            DownloadFileBeforeHandler?.Invoke(this, ftpFullFileName);
 
             string[] tmpPair = parseFTPFileFullName(ftpFullFileName);
             if (tmpPair == null)
             {
                 _errorMsg = "Error during parse full name to path and name: " + ftpFullFileName;
+                DownloadFileAfterHandler?.Invoke(this, _errorMsg);
                 return false;
             }
 
@@ -159,6 +188,7 @@ namespace ClientOrderQueue.Lib
             FTPFile ftpFile = GetFTPFile(ftpPath, ftpFileName);
             if (ftpFile == null)
             {
+                DownloadFileAfterHandler?.Invoke(this, "Can not get file: " + ftpFullFileName);
                 return false;
             }
 
@@ -198,14 +228,16 @@ namespace ClientOrderQueue.Lib
                 fInfo.CreationTime = ftpFile.DateTime;
                 fInfo.LastWriteTime = ftpFile.DateTime;
 
-                retVal = true;
+                DownloadFileAfterHandler?.Invoke(this, "Success downloaded to: " + localFullFileName);
             }
             catch (Exception ex)
             {
                 _errorMsg = ex.Message;
+                DownloadFileAfterHandler?.Invoke(this, _errorMsg);
+                return false;
             }
 
-            return retVal;
+            return true;
         }
 
         private string[] parseFTPFileFullName(string ftpFileFullName)
@@ -300,7 +332,7 @@ namespace ClientOrderQueue.Lib
                 if (string.IsNullOrEmpty(fileExt))
                     return false;
                 else
-                    return (fileExt == "config");
+                    return ((fileExt == "config") || (fileExt == "xml"));
             }
         }
 

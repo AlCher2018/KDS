@@ -89,9 +89,9 @@ namespace ClientOrderQueue.Lib
 
         internal static bool CheckDBConnection(Type dbType)
         {
-            AppLib.WriteLogInfoMessage(" - проверка доступа к базе данных...");
+            AppLib.WriteLogInfoMessage("Проверка доступа к базе данных...");
             string strConn = CfgFileHelper.GetDBConnectionStringFromConfigFile(dbType.Name);
-            AppLib.WriteLogInfoMessage("   строка подключения из config-файла: " + strConn);
+            AppLib.WriteLogInfoMessage(" - строка подключения из config-файла: " + strConn);
 
             // контекст БД
             DbContext dbContext = (DbContext)Activator.CreateInstance(dbType);
@@ -121,7 +121,7 @@ namespace ClientOrderQueue.Lib
             }
             catch (Exception ex)
             {
-                AppLib.WriteLogErrorMessage("--- ошибка доступа к БД: " + ex.Message);
+                AppLib.WriteLogErrorMessage(" - ошибка доступа к БД: " + ex.Message);
             }
             finally
             {
@@ -129,7 +129,7 @@ namespace ClientOrderQueue.Lib
                 testConn = null;
             }
 
-            AppLib.WriteLogTraceMessage("- проверка доступа к базе данных - " + ((retVal) ? "READY" : "ERROR!!!"));
+            AppLib.WriteLogTraceMessage(" - проверка доступа к базе данных - " + ((retVal) ? "READY" : "ERROR!!!"));
             return retVal;
         }
 

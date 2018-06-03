@@ -30,7 +30,6 @@ namespace ClientOrderQueue
             App app = new App();
 
             // splash
-
             Splasher.Splash = new View.SplashScreen();
             Splasher.ShowSplash();
             //for (int i = 0; i < 5000; i += 1)
@@ -116,18 +115,26 @@ namespace ClientOrderQueue
 
         private static void updateApplication()
         {
-            string appVersion = AppEnvironment.GetAppVersion();
             string storagePath = "ftp://82.207.112.88/IT Department/!Soft_dev/KDS/ClientQueue/";
 
-            AppAutoUpdater updater = new AppAutoUpdater(AppEnvironment.GetAppAssemblyName() + "/Update/", storagePath, "integra-its\\ftp", "Qwerty1234");
+            AppAutoUpdater updater = new AppAutoUpdater(AppEnvironment.GetAppAssemblyName() + "/Update/", storagePath, "integra-its\\ftp", "Qwerty1234", "D:\\test\\");
+            updater.UpdateActionBefore += updater_UpdateActionBefore;
+            updater.UpdateActionAfter += updater_UpdateActionAfter;
             // 1. проверка в реестре настроек автообновления
             if (updater.Enable)
             {
+                MessageListener.Instance.ReceiveMessage("Проверяю необходимость обновления файлов...");
                 AppLib.WriteLogInfoMessage($"Проверка обновлений в хранилище '{storagePath}'...");
-                if (updater.IsNeedUpdate())
+                bool result;
+                result = updater.IsNeedUpdate();
+                if (result == true)
                 {
-                    AppLib.WriteLogInfoMessage($" - причина обновления: {updater.UpdateReasonString()}");
-                    if (updater.DoUpdate())  // перезапуск приложения
+                    AppLib.WriteLogInfoMessage(" - папка обновления: " + updater.UpdateFTPFolder);
+                    AppLib.WriteLogInfoMessage(" - причина обновления:" + Environment.NewLine + updater.UpdateReasonString());
+                    // обновление файлов
+                    MessageListener.Instance.ReceiveMessage("Обновляю файлы...");
+                    result = updater.DoUpdate();
+                    if (result == true)
                     {
 
                     }
@@ -287,6 +294,16 @@ namespace ClientOrderQueue
             // сохранить в свойствах
             WpfHelper.SetAppGlobalValue("PanelBackgroundBrushes", cellBrushes);
         }
+
+        private static void updater_UpdateActionBefore(object sender, string e)
+        {
+            AppLib.WriteLogTraceMessage(e);
+        }
+        private static void updater_UpdateActionAfter(object sender, string e)
+        {
+            AppLib.WriteLogTraceMessage(e);
+        }
+
 
     }  // class App
 }

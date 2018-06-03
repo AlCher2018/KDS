@@ -26,10 +26,6 @@ namespace ClientOrderQueue.Lib
         private string _errMsg;
         public string ErrorMessage { get { return _errMsg; } }
 
-        // если IsConfigFile=true, то файл состоит из add-элементов
-        // надо преобразовать config-файл в xml-документ, у которого атрибут key становится именем элемента!
-        private bool _isConfigFile { get; set; }
-
         public XMLComparer(XDocument xDocSrc, XDocument xDocDest)
         {
             _xDocSrc = xDocSrc;
@@ -44,19 +40,10 @@ namespace ClientOrderQueue.Lib
             _changes.Clear();
             if ((_xDocSrc == null) || (_xDocDest == null)) return false;
 
-            // проверка на config
-            _isConfigFile = _xDocSrc.Root.Elements().All(e => e.Name.LocalName=="add");
-            if (_isConfigFile)
-            {
-                _xDocSrc = convertConfigToXML(_xDocSrc);
-                _xDocDest = convertConfigToXML(_xDocDest);
-            }
-
             compareXElements(_xDocSrc.Root, _xDocDest.Root);
 
             return (_errMsg == null);
         }
-
 
         private void compareXElements(XElement xESrc, XElement xEDst)
         {
@@ -141,15 +128,6 @@ namespace ClientOrderQueue.Lib
                     _changes.Add(newItem);
                 }
             }
-        }
-
-        private XDocument convertConfigToXML(XDocument xConfigDoc)
-        {
-            XElement[] keys = xConfigDoc.Root.Elements().Select(e =>
-                new XElement(e.Attribute("key").Value, new XAttribute(e.Attribute("value")))
-                ).ToArray();
-            XDocument xDoc = new XDocument(xConfigDoc.Declaration, new XElement(xConfigDoc.Root.Name, xConfigDoc.Root.Attributes(), keys));
-            return xDoc;
         }
 
     }  // class
