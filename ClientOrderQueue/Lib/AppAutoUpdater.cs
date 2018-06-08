@@ -30,10 +30,6 @@ namespace IntergaLib
         private string _errorMsg;
         public string LastError { get { return _errorMsg; } }
 
-        // причины обновления
-        private List<AppUpdateReason> _updateReasons;
-        public List<AppUpdateReason> UpdateReasons { get { return _updateReasons; } }
-
         // действия по обновлению
         private List<AppUpdateItem> _updateItems;
         public List<AppUpdateItem> UpdateItems { get { return _updateItems; } }
@@ -62,7 +58,6 @@ namespace IntergaLib
         public AppAutoUpdater(string appName, string destDirFullName = null, bool autoCreateRegKeys = false)
         {
             _updateItems = new List<AppUpdateItem>();
-            _updateReasons = new List<AppUpdateReason>();
 
             _registryPath = appName + "/Update/";
             _autoCreateRegKeys = autoCreateRegKeys;
@@ -139,114 +134,72 @@ namespace IntergaLib
             }
         }
 
-        // проверка необходимости обновления: сравнение версий файлов (exe | dll) 
+        // проверка необходимости обновления, создать действия обновления приложения
         public bool IsNeedUpdate()
         {
             if (_errorMsg != null) _errorMsg = null;
-            _updateReasons.Clear();
             if (_enable == false) return false;
 
             // получить папки версий
             FTPHelper ftpHelper = getFTPHelper();
-            FTPFolder ftpFolder = ftpHelper.GetFTPFolder(_storagePath);
+            FTPFolder ftpFolder = ftpHelper.GetFTPFolder(_storagePath, false);
             if ((ftpFolder != null) && (ftpFolder.Items.Count > 0))
             {
                 // папка с самой свежей версией (сравнение по дате)
-                FTPItem newestFolder = null; DateTime dtMax = DateTime.MinValue;
-                ftpFolder.Items.ForEach(f => 
+                FTPFolder newestFolder = getNewestFTPFolder(ftpFolder);
+                if (newestFolder == null)
                 {
-                    if (f.DateTime > dtMax) { newestFolder = f; dtMax = f.DateTime; }
-                });
+                    _errorMsg = "В папке хранилища версий не обраружена папка для обновления";
+                    return false;
+                }
+                UpdateActionBefore?.Invoke(this, "Папка с последней версией: " + newestFolder.Name);
 
                 // получить рекурсивно имена ВСЕХ файлов из папки последней версии
                 if (_storagePath.RightString(1) != "/") _storagePath += "/";
                 _updFTPFolder = ftpHelper.GetFTPFolder(_storagePath + newestFolder.Name + "/", true);
                 _updFTPFolder.Name = newestFolder.Name;
 
-                // получить файлы (exe/dll и конфиги)
+                #region проверка необходимости обновления
                 clearTmpDir(); // очистить папку файлов, загружаемых с ФТП
-                string[] checkedExt = new string[] { "exe", "dll", "ini", "xml", "config" };
-                FileInfo[] appFiles = (new DirectoryInfo(_destDirFullName)).GetFiles().Where(f => checkedExt.Contains(f.Extension.Remove(0,1))).ToArray();
-                FTPFile[] ftpFiles = _updFTPFolder.Items.Where(f => f.ItemType == FSItemTypeEnum.File).Select(f => (FTPFile)f).Where(f => checkedExt.Contains(f.Ext)).ToArray();
-                foreach (FTPFile item in ftpFiles)
+                _updateItems.Clear();
+                UpdateActionBefore?.Invoke(this, "Create update actions...");
+
+                compareFolders(_updFTPFolder, _destDirFullName);
+
+                if (_errorMsg != null)
                 {
-                    FileInfo appFileInfo = appFiles.FirstOrDefault(f => f.Name==item.Name);
-                    // файл отсутствует
-                    if (appFileInfo == null)
-                    {
-                        _updateReasons.Add(new AppUpdateReason()
-                        {
-                            FileName = item.Name, FileAttribute = "file",
-                            ValueExist = "not exist", ValueNew = "exist"
-                        });
-                    }
-
-                    // сравнить размер, дату, версию файла
+                    UpdateActionBefore?.Invoke(this, "Not created update actions due to error: " + _errorMsg);
+                }
+                else
+                {
+                    if (_updateItems.Count == 0)
+                        UpdateActionBefore?.Invoke(this, "Not need update, no any actions");
                     else
-                    {
-                        bool needUpd = false;
-                        // дата создания
-                        if (item.DateTime > appFileInfo.LastWriteTime)
-                        {
-                            _updateReasons.Add(new AppUpdateReason()
-                            {
-                                FileName = item.Name,
-                                FileAttribute = "lastWriteTime",
-                                ValueExist = appFileInfo.LastWriteTime.ToString(),
-                                ValueNew = item.DateTime.ToString()
-                            });
-                            needUpd = true;
-                        }
-
-                        // размер файла
-                        if (appFileInfo.Length != item.Size)
-                        {
-                            _updateReasons.Add(new AppUpdateReason()
-                            {
-                                FileName = item.Name,
-                                FileAttribute = "size",
-                                ValueExist = appFileInfo.Length.ToString(),
-                                ValueNew = item.Size.ToString()
-                            });
-                            needUpd = true;
-                        }
-
-                        // при необходимости, проверяем версию, загружая файл с ФТП (только для exe/dll)
-                        if (!needUpd && !item.IsConfigFile)
-                        {
-                            string newUpdFileFullName = _destDirFullName + item.Name;
-                            if (ftpHelper.DownloadFile(item.FullName, newUpdFileFullName))
-                            {
-                                string appFileVersion = AppEnvironment.GetFileVersion(appFileInfo.FullName);
-                                string updFileVersion = AppEnvironment.GetFileVersion(newUpdFileFullName);
-                                if (appFileVersion != updFileVersion)
-                                {
-                                    _updateReasons.Add(new AppUpdateReason()
-                                    {
-                                        FileName = item.Name,
-                                        FileAttribute = "version",
-                                        ValueExist = appFileVersion,
-                                        ValueNew = updFileVersion
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }  // for
+                        UpdateActionBefore?.Invoke(this, "Update reasons: " + Environment.NewLine + "\t" + string.Join(Environment.NewLine + "\t", _updateItems));
+                }
                 clearTmpDir();
+                #endregion
             }
             else
             {
                 _errorMsg = "Ошибка получения папки хранилища версий '" + _storagePath + "' : " + ftpHelper.LastErrorMessage; 
             }
 
-            // создать действия обновления приложения
-            bool retVal = ((_updateReasons.Count > 0) && (_errorMsg == null));
-            if (retVal)
+            bool retVal = ((_updateItems.Count > 0) && (_errorMsg == null));
+            return retVal;
+        }
+
+        private FTPFolder getNewestFTPFolder(FTPFolder storageFolders)
+        {
+            DateTime dtMax = DateTime.MinValue;
+            FTPFolder retVal = null;
+            foreach (FTPFolder item in storageFolders.Items.Where(f => f is FTPFolder).Select(f => (FTPFolder)f))
             {
-                _errorMsg = null;
-                createUpdateActions();
-                retVal = (_errorMsg == null);
+                if (item.DateTime > dtMax)
+                {
+                    retVal = item;
+                    dtMax = item.DateTime;
+                }
             }
 
             return retVal;
@@ -282,178 +235,183 @@ namespace IntergaLib
 
         #endregion
 
-        // заполнить _updItems
-        private void createUpdateActions()
+
+        private void compareFolders(FTPFolder ftpPath, string localDestPath)
         {
-            _updateItems.Clear();
-            AppUpdateItem appItem;
-            foreach (FTPItem item in _updFTPFolder.Items)
+            foreach (FTPItem ftpItem in ftpPath.Items)
             {
-                // файлы в корне целевой папки могут быть добавлены, заменены или модифицированы (для *.config)
+                UpdateActionBefore?.Invoke(this, "- check " + ftpItem.ItemType.ToString() + ": " + ftpItem.Name);
+
+                // файлы в целевой папке могут быть добавлены, заменены или модифицированы (для *.config)
                 // config-файлы по умолчанию не заменяются!!
-                if (item.ItemType == FSItemTypeEnum.File)
+                if (ftpItem.ItemType == FSItemTypeEnum.File)
                 {
-                    appItem = getUpdateItemForFile(item, true);
-                    if (appItem == null)
+                    // проверка наличия файла
+                    FTPFile ftpFile = (FTPFile)ftpItem;
+                    string localFileFullName = localDestPath + ftpItem.Name;
+                    if (File.Exists(localFileFullName) == false)
                     {
-                        if (_errorMsg != null) { _updateItems.Clear(); break; }
+                        UpdateActionBefore?.Invoke(this, "  - add new file: " + localFileFullName);
+                        createActionNewFile(ftpFile.FullName, localFileFullName, ftpItem.Name);
                     }
                     else
                     {
-                        _updateItems.Add(appItem);
+                        createActionsForUpdateFile(ftpFile, localDestPath);
                     }
                 }
+
                 // папки могут только добавляться, файлы в них могут быть только добавлены или заменены
                 // структура фолдеров начинается от _storagePath (FTP) и _updatePath (целевая папка)
                 // для FTP есть _updFTPFolder, который содержит структуру папки-источника обновления
-                else if (item.ItemType == FSItemTypeEnum.Folder)
+                else if (ftpItem.ItemType == FSItemTypeEnum.Folder)
                 {
-                    compareFolders(item, _destDirFullName);
+                    // проверка наличия целевой папки в destPath
+                    string destFolder = localDestPath + ftpItem.Name + "\\";
+                    // папки нет - записать создание (при выполнении действия, создавать структуру папок рекурсивно)
+                    if (Directory.Exists(destFolder) == false)
+                    {
+                        createActionNewFolder(ftpItem.FullName, destFolder);
+                    }
+                    else
+                    {
+                        compareFolders((FTPFolder)ftpItem, destFolder);
+                    }
+                }
+                if (_errorMsg != null)
+                {
+                    UpdateActionBefore?.Invoke(this, "- check error: " + _errorMsg);
                 }
             }
         }
 
-        private AppUpdateItem getUpdateItemForFile(FTPItem ftpItem, bool checkConfig = false)
+        private void createActionNewFolder(string pathFrom, string pathTo)
         {
-            AppUpdateItem retVal = null;
+            _updateItems.Add(new AppUpdateItem()
+            {
+                ItemType = FSItemTypeEnum.Folder,
+                ActionType = AppUpdateActionTypeEnum.AddNew,
+                FullNameFrom = pathFrom,
+                FullNameTo = pathTo,
+                FileAttribute = "exists",
+                ValueExist = "false",
+                ValueNew = "true"
+            });
+        }
 
-            FTPFile ftpFile = (FTPFile)ftpItem;
-            DirectoryInfo dirInfo = new DirectoryInfo(_destDirFullName);
-            FileInfo fInfo = dirInfo.GetFiles().FirstOrDefault(f => f.Name == ftpFile.Name);
-            if (fInfo == null) // новый файл
+        private void createActionNewFile(string fullNameFrom, string fullNameTo, string fileName)
+        {
+            _updateItems.Add(new AppUpdateItem()
             {
-                retVal = new AppUpdateItem()
-                {
-                    ItemType = FSItemTypeEnum.File,
-                    ActionType = AppUpdateActionTypeEnum.AddNew,
-                    FullNameFrom = ftpFile.FullName,
-                    FullNameTo = _destDirFullName + ftpFile.Name
-                };
-            }
-            else if(isNeedFileUpdate(ftpFile, fInfo))
+                ItemType = FSItemTypeEnum.File,
+                ActionType = AppUpdateActionTypeEnum.AddNew,
+                FullNameFrom = fullNameFrom,
+                FullNameTo = fullNameTo,
+                FileName = fileName,
+                FileAttribute = "exists",
+                ValueExist = "false",
+                ValueNew = "true"
+            });
+        }
+
+        // надо ли заменить СУЩЕСТВУЮЩИЙ файл?
+        private void createActionsForUpdateFile(FTPFile ftpFile, string localDestPath)
+        {
+            string localFileFullName = localDestPath + ftpFile.Name;
+            FileInfo fInfo = new FileInfo(localFileFullName);
+            if (!fInfo.Exists) return;
+
+            AppUpdateItem updItem;
+            bool needUpdate = false;
+
+            // config-файлы проверяем по внутреннему содержанию, как xml-файлы
+            if (ftpFile.IsConfigFile)
             {
-                if (((FTPFile)ftpItem).IsConfigFile)
+                updItem = getConfigModifyItems(ftpFile, fInfo);
+                if (updItem != null)
                 {
-                    if (checkConfig) retVal = getConfigModifyItems(ftpItem, fInfo);
+                    needUpdate = true;
+                    _updateItems.Add(updItem);
+                    UpdateActionBefore?.Invoke(this, "  - need " + updItem.ToString());
                 }
-                else 
+            }
+
+            // прочие файлы проверяем по размеру, дате и версии
+            else 
+            {
+                // дата создания
+                if (ftpFile.DateTime > fInfo.LastWriteTime)
                 {
-                    retVal = new AppUpdateItem()
+                    updItem = new AppUpdateItem()
                     {
                         ItemType = FSItemTypeEnum.File,
                         ActionType = AppUpdateActionTypeEnum.Replace,
                         FullNameFrom = ftpFile.FullName,
-                        FullNameTo = fInfo.FullName,
+                        FullNameTo = localFileFullName,
+                        FileName = ftpFile.Name,
+                        FileAttribute = "lastWriteTime",
+                        ValueExist = fInfo.LastWriteTime.ToString(),
+                        ValueNew = ftpFile.DateTime.ToString()
                     };
+                    needUpdate = true;
+                    _updateItems.Add(updItem);
+                    UpdateActionBefore?.Invoke(this, "  - need " + updItem.ToString());
                 }
-
-            }
-
-            return retVal;
-        }
-
-        private void compareFolders(FTPItem ftpItem, string destPath)
-        {
-            // проверка наличия целевой папки в destPath
-            string destFolder = destPath + ftpItem.Name + "\\";
-            if (Directory.Exists(destFolder))
-            {
-                FTPFolder ftpFolder = (FTPFolder)ftpItem;
-                DirectoryInfo destDirInfo = new DirectoryInfo(destFolder);
-                string[] destFileNames = destDirInfo.GetFiles().Select(fInfo => fInfo.Name).ToArray();
-                foreach (FTPItem item in ftpFolder.Items)
+                // размер файла
+                if (ftpFile.Size != fInfo.Length)
                 {
-                    if (item.ItemType == FSItemTypeEnum.File)
+                    updItem = new AppUpdateItem()
                     {
-                        FTPFile ftpFile = (FTPFile)item;
-                        string destFileFullName = destFolder + ftpFile.Name;
-
-                        // добавить файл
-                        if (!destFileNames.Contains(ftpFile.Name))
+                        ItemType = FSItemTypeEnum.File,
+                        ActionType = AppUpdateActionTypeEnum.Replace,
+                        FullNameFrom = ftpFile.FullName,
+                        FullNameTo = localFileFullName,
+                        FileName = ftpFile.Name,
+                        FileAttribute = "size",
+                        ValueExist = fInfo.Length.ToString(),
+                        ValueNew = ftpFile.Size.ToString()
+                    };
+                    needUpdate = true;
+                    _updateItems.Add(updItem);
+                    UpdateActionBefore?.Invoke(this, "  - need " + updItem.ToString());
+                }
+                // при одинаковом размере и дате создания, для exe/dll дополнительно проверить версию файла
+                if ((fInfo.Extension == ".exe") || (fInfo.Extension == ".dll"))
+                {
+                    UpdateActionBefore?.Invoke(this, "  - request to check file version " + ftpFile.Name + " ...");
+                    string tmpFile = _tmpDir + ftpFile.Name;
+                    if (downloadFile(ftpFile.FullName, tmpFile))
+                    {
+                        string appFileVersion = AppEnvironment.GetFileVersion(localFileFullName);
+                        string updFileVersion = AppEnvironment.GetFileVersion(tmpFile);
+                        UpdateActionBefore?.Invoke(this, $"    - current version: {appFileVersion}, storage version: {updFileVersion}");
+                        if (appFileVersion != updFileVersion)
                         {
-                            AppUpdateItem updItem = new AppUpdateItem()
-                            {
-                                ItemType = FSItemTypeEnum.File,
-                                ActionType = AppUpdateActionTypeEnum.AddNew,
-                                FullNameFrom = ftpFile.FullName,
-                                FullNameTo = destFileFullName
-                            };
-                            _updateItems.Add(updItem);
-                        }
-                        // иначе - обновить
-                        else if ((!ftpFile.IsConfigFile) && (isNeedFileUpdate(ftpFile, destFileFullName)))
-                        {
-                            AppUpdateItem updItem = new AppUpdateItem()
+                            updItem = new AppUpdateItem()
                             {
                                 ItemType = FSItemTypeEnum.File,
                                 ActionType = AppUpdateActionTypeEnum.Replace,
                                 FullNameFrom = ftpFile.FullName,
-                                FullNameTo = destFileFullName
+                                FullNameTo = localFileFullName,
+                                FileName = ftpFile.Name,
+                                FileAttribute = "version",
+                                ValueExist = appFileVersion,
+                                ValueNew = updFileVersion
                             };
+                            needUpdate = true;
                             _updateItems.Add(updItem);
+                            UpdateActionBefore?.Invoke(this, "  - need " + updItem.ToString());
                         }
                     }
-
-                    // subfolder
-                    else if (item.ItemType == FSItemTypeEnum.Folder)
-                    {
-                        compareFolders(item, destFolder);
-                    }
                 }
+
             }
 
-            // папки нет - записать создание (при выполнении действия, создавать структуру папок рекурсивно)
-            else
+            if (!needUpdate && (_errorMsg == null))
             {
-                AppUpdateItem updItem = new AppUpdateItem()
-                {
-                    ItemType = FSItemTypeEnum.Folder,
-                    ActionType = AppUpdateActionTypeEnum.AddNew,
-                    FullNameFrom = ftpItem.FullName,
-                    FullNameTo = destFolder
-                };
-                _updateItems.Add(updItem);
+                UpdateActionBefore?.Invoke(this, "  - NO need to update");
             }
         }
 
-        // проверка необходимости обновить файл
-        private bool isNeedFileUpdate(FTPFile ftpFile, string destFileFullName)
-        {
-            bool retVal = false;
-            try
-            {
-                FileInfo fInfo = new FileInfo(destFileFullName);
-                retVal = isNeedFileUpdate(ftpFile, fInfo);
-            }
-            catch (Exception)
-            {
-            }
-            return retVal;
-        }
-
-        private bool isNeedFileUpdate(FTPFile ftpFile, FileInfo fInfo)
-        {
-            if (_enable == false) return false;
-
-            // разный размер файла и дата создания файла из хранилища БОЛЬШЕ даты создания из целевой папки
-            bool retVal = (ftpFile.Size != fInfo.Length) || (ftpFile.DateTime > fInfo.LastWriteTime);
-
-            // при одинаковом размере и дате создания, для exe/dll дополнительно проверить версию файла
-            if ((retVal == false) && ((fInfo.Extension == "exe") || (fInfo.Extension == "dll")))
-            {
-                FTPHelper ftpHelper = getFTPHelper();
-                string checkedFileFullName = _tmpDir + ftpFile.Name;
-                if (ftpHelper.DownloadFile(ftpFile.FullName, checkedFileFullName))
-                {
-                    // версия
-                    string appFileVersion = AppEnvironment.GetFileVersion(fInfo.FullName);
-                    string updFileVersion = AppEnvironment.GetFileVersion(checkedFileFullName);
-                    retVal = (appFileVersion != updFileVersion);
-                }
-            }
-
-            return retVal;
-        }
 
         private AppUpdateItem getConfigModifyItems(FTPItem ftpItem, FileInfo fInfo)
         {
@@ -461,12 +419,7 @@ namespace IntergaLib
 
             // скачать файл с ФТП
             string ftpDestFile = _tmpDir + fInfo.Name;
-            FTPHelper ftpHelper = getFTPHelper();
-            if (ftpHelper.DownloadFile(ftpItem.FullName, ftpDestFile) == false)
-            {
-                _errorMsg = $"Ошибка загрузки файла \"{ftpItem.Name}\" : {ftpHelper.LastErrorMessage}";
-                return null;
-            }
+            if (downloadFile(ftpItem.FullName, ftpDestFile) == false) return null;
 
             // получить XML-представления
             XDocument xDocSrc = null, xDocDst = null;
@@ -504,6 +457,8 @@ namespace IntergaLib
                 {
                     retVal = new AppUpdateCfgFile(ftpItem.FullName, fInfo.FullName);
                     retVal.ActionType = AppUpdateActionTypeEnum.Modify;
+                    retVal.FileName = ftpItem.Name;
+                    retVal.FileAttribute = "content";
                     // выбрать только добавление или удаление элементов/атрибутов
                     foreach (XMLCompareChangeItem item 
                         in (from r in result
@@ -599,7 +554,7 @@ namespace IntergaLib
                     if (updItem.ActionType == AppUpdateActionTypeEnum.AddNew)
                     {
                         UpdateActionBefore?.Invoke(this, $" - добавление файла '{sTo}'...");
-                        result = downoadFile(sFrom, sTo);
+                        result = downloadFile(sFrom, sTo);
                         if (result == false)
                         {
                             UpdateActionAfter?.Invoke(this, $"Ошибка загрузки файла '{sFrom}' в папку '{sTo}': " + _errorMsg);
@@ -617,7 +572,7 @@ namespace IntergaLib
                         // во временной (_tmpDir) и архивной (_archive) папках
                         string fNameTo = sTo.Substring(_destDirFullName.Length);
                         // загрузить файл в _tmpDir
-                        result = downoadFile(sFrom, _tmpDir + fNameTo);
+                        result = downloadFile(sFrom, _tmpDir + fNameTo);
                         if (result)
                         {
                             // исходный скопировать в архив
@@ -667,7 +622,7 @@ namespace IntergaLib
                         string fNameTo = sTo.Substring(_destDirFullName.Length);
 
                         // 1. загрузить файл в _tmpDir
-                        result = downoadFile(sFrom, _tmpDir + fNameTo);
+                        result = downloadFile(sFrom, _tmpDir + fNameTo);
                         if (result == false)
                         {
                             UpdateActionAfter?.Invoke(this, $"Ошибка загрузки файла '{sFrom}' в папку '{_tmpDir}': " + _errorMsg);
@@ -766,7 +721,7 @@ namespace IntergaLib
             string copyAppFullNameFrom = "ftp://82.207.112.88/IT Department/!Soft_dev/_utilities/waitCopy.exe";
             string copyAppName = copyAppFullNameFrom.Substring(copyAppFullNameFrom.LastIndexOf('/') + 1);
             string copyAppFullName = _tmpDir + copyAppName;
-            bool result = downoadFile(copyAppFullNameFrom, copyAppFullName);
+            bool result = downloadFile(copyAppFullNameFrom, copyAppFullName);
             if (!result) return false;
 
             // удалить из путей конечный слэш
@@ -804,7 +759,7 @@ namespace IntergaLib
                 _archivePath = _destDirFullName + "archive\\";
                 if (createDirectory(_archivePath) == false) return false;
 
-                _archivePath += DateTime.Now.ToString("yyyy-MM-dd hhmmss") + "\\";
+                _archivePath += DateTime.Now.ToString("yyyy-MM-dd HHmmss") + "\\";
                 if (createDirectory(_archivePath) == false) return false;
             }
 
@@ -862,7 +817,7 @@ namespace IntergaLib
             return true;
         }
 
-        private bool downoadFile(string sFrom, string sTo)
+        private bool downloadFile(string sFrom, string sTo)
         {
             if (_enable == false) return false;
 
@@ -967,20 +922,6 @@ namespace IntergaLib
             return retVal;
         }
 
-        public string UpdateReasonString()
-        {
-            StringBuilder bld = new StringBuilder();
-            if (_updateReasons.Count > 0)
-            {
-                _updateReasons.ForEach(r =>
-                {
-                    if (bld.Length > 0) bld.Append(Environment.NewLine);
-                    bld.Append("\t" + r.ToString());
-                });
-            }
-
-            return bld.ToString();
-        }
 
         // очистить папку обновляемых файлов
         private void clearTmpDir()
@@ -1028,14 +969,31 @@ namespace IntergaLib
 
     public class AppUpdateItem
     {
+        public FSItemTypeEnum ItemType { get; set; }
+
         public string FullNameFrom { get; set; }
         public string FullNameTo { get; set; }
-        public FSItemTypeEnum ItemType { get; set; }
+
+        public string FileName { get; set; }
+        public string FileAttribute { get; set; }
+        public string ValueExist { get; set; }
+        public string ValueNew { get; set; }
+
+
         public AppUpdateActionTypeEnum ActionType { get; set; }
 
         public override string ToString()
         {
-            return $"{this.ActionType.ToString()} {this.ItemType} '{this.FullNameTo}'";
+            string retVal = $"{this.ActionType.ToString()} {this.ItemType} '{this.FullNameTo}'";
+
+            if (!string.IsNullOrEmpty(this.FileAttribute))
+                retVal += $", attribute=\"{this.FileAttribute}\"";
+            if (!string.IsNullOrEmpty(this.ValueExist))
+                retVal += $", old value=\"{this.ValueExist}\"";
+            if (!string.IsNullOrEmpty(this.ValueNew))
+                retVal += $", new value=\"{this.ValueNew}\"";
+
+            return retVal;
         }
     }
 
@@ -1056,6 +1014,16 @@ namespace IntergaLib
             this.FullNameTo = fileNameTo;
             _items = new List<XMLCompareChangeItem>();
         }
+
+        public override string ToString()
+        {
+            string retVal = base.ToString();
+
+            string s1 = string.Join(Environment.NewLine + "\t", _items);
+            if (!string.IsNullOrEmpty(s1)) retVal += Environment.NewLine + "\t" + s1;
+
+            return retVal;
+        }
     }
 
     public class AppUpdateCfgFileItem
@@ -1064,30 +1032,22 @@ namespace IntergaLib
         public string XAttributeName { get; set; }
         public string Value { get; set; }
         public AppUpdateActionTypeEnum Action { get; set; }
+
+        public override string ToString()
+        {
+            string retVal = $"element: {string.Join("/", XElementNames)}";
+            if (string.IsNullOrEmpty(this.XAttributeName) == false)
+            {
+                retVal += $", attr name: {this.XAttributeName}, attr value: {this.Value}";
+            }
+            retVal += ", action: " + this.Action.ToString();
+            return retVal;
+        }
     }
 
     public enum AppUpdateActionTypeEnum
     {
         None, AddNew, Delete, Modify, Replace
-    }
-
-    public class AppUpdateReason
-    {
-        public string FileName { get; set; }
-        public string FileAttribute { get; set; }
-        public string ValueExist { get; set; }
-        public string ValueNew { get; set; }
-
-        public override string ToString()
-        {
-            if (string.IsNullOrEmpty(this.FileName)
-                || string.IsNullOrEmpty(this.FileAttribute)
-                || string.IsNullOrEmpty(this.ValueExist)
-                || string.IsNullOrEmpty(this.ValueNew))
-                return base.ToString();
-            else
-                return $"file=\"{this.FileName}\", attribute=\"{this.FileAttribute}\", value=\"{this.ValueExist}\", newValue=\"{this.ValueNew}\"";
-        }
     }
 
     #endregion

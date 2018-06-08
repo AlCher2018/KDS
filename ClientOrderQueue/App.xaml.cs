@@ -24,12 +24,6 @@ namespace ClientOrderQueue
         [STAThread]
         public static void Main(string[] args)
         {
-            //System.IO.FileStream writer = new System.IO.FileStream(@"c:\Users\Leschenko.V\Documents\Visual Studio 2015\Projects\Integra KDS1\ClientOrderQueue\bin\Debug\updFiles\ClientOrderQueue.exe", System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None);
-            //byte[] ba = new byte[] {50,51,52 };
-            //writer.Write(ba,0,ba.Length);
-            //writer.Close();
-            //writer.Dispose();
-
             AppArgs.PutArgs(args);
             App app = new App();
 
@@ -93,7 +87,7 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // проверка обновления софта
-            if (AppArgs.IsExists("noUpdate") == false)
+            if (AppArgs.IsExists("noupdate") == false)
             {
                 bool autoCreateGRegKey = AppArgs.IsExists("autoCreateUpdateRegKeys");
                 updateApplication(autoCreateGRegKey);
@@ -141,12 +135,6 @@ namespace ClientOrderQueue
                 result = updater.IsNeedUpdate();
                 if (result == true)
                 {
-                    AppLib.WriteLogInfoMessage(" - папка обновления: " + updater.UpdateFTPFolder);
-                    string updReason = updater.UpdateReasonString();
-                    AppLib.WriteLogInfoMessage(" - причина обновления:" + Environment.NewLine + updReason);
-                    updReason = string.Join("\n\t", updater.UpdateItems);
-                    AppLib.WriteLogInfoMessage(" - обновляемые файлы:\n\t" + updReason);
-                    // обновление файлов
                     MessageListener.Instance.ReceiveMessage("Обновляю файлы...");
                     AppLib.WriteLogInfoMessage("Обновляю файлы...");
                     result = updater.DoUpdate();
