@@ -41,6 +41,30 @@ namespace ClientOrderQueue.Lib
             return retVal;
         }
 
+        public static string GetFirstFileLogger(bool isCheckExist)
+        {
+            string retVal = null;
+            if ((AppLib.AppLogger != null) && (AppLib.AppLogger.Factory.Configuration.AllTargets.Count > 0))
+            {
+                NLog.Targets.FileTarget fileTarget = (NLog.Targets.FileTarget)AppLib.AppLogger.Factory.Configuration.AllTargets.FirstOrDefault(i => i is NLog.Targets.FileTarget);
+                if ((fileTarget != null) && (fileTarget.FileName is NLog.Layouts.SimpleLayout))
+                {
+                    NLog.Layouts.SimpleLayout layout = (NLog.Layouts.SimpleLayout)fileTarget.FileName;
+                    retVal = (layout.IsFixedText) ? layout.FixedText : layout.OriginalText;
+                    if (retVal.Contains("/")) retVal = retVal.Replace('/', '\\');
+
+                    if ((fileTarget.FileNameKind == NLog.Targets.FilePathKind.Relative) 
+                        || (fileTarget.FileNameKind == NLog.Targets.FilePathKind.Unknown))
+                    {
+                        retVal = AppEnvironment.GetAppDirectory() + retVal;
+                    }
+
+                    if ((isCheckExist) && (System.IO.Directory.Exists(retVal) == false)) retVal = null;
+                }
+            }
+            return retVal;
+        }
+
         // отладочные сообщения
         public static void WriteLogTraceMessage(string msg)
         {

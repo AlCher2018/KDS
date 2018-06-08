@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IntegraLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,9 +14,18 @@ namespace XMLComparer
         {
             XDocument docSrc = XDocument.Load("D:\\AppSettingsSrc.config");
             XDocument docDest = XDocument.Load("D:\\AppSettingsDst.config");
+            //XDocument docSrc = XDocument.Load("D:\\initSrc.xml");
+            //XDocument docDest = XDocument.Load("D:\\initDst.xml");
+
+            if (ConfigXMLConverter.IsValidConfigFile(docSrc))
+            {
+                Console.WriteLine("converting to app params XML...");
+                docSrc = ConfigXMLConverter.ConvertConfigToXML(docSrc);
+                docDest = ConfigXMLConverter.ConvertConfigToXML(docDest);
+            }
 
             Console.WriteLine("compare XML documents...\n");
-            XMLComparer xCmp = new XMLComparer(docSrc, docDest);
+            IntegraLib.XMLComparer xCmp = new IntegraLib.XMLComparer(docSrc, docDest);
             if (xCmp.Compare())
             {
                 List<XMLCompareChangeItem> result = xCmp.Changes;
@@ -28,6 +38,16 @@ namespace XMLComparer
                     foreach (XMLCompareChangeItem item in result)
                     {
                         Console.WriteLine(item.ToString());
+                    }
+
+                    Console.WriteLine("\nchanging...");
+                    if (xCmp.Update())
+                    {
+                        Console.WriteLine("Change SUCCESSFULL!");
+                    }
+                    else if (xCmp.ErrorMessage != null)
+                    {
+                        Console.WriteLine("error: " + xCmp.ErrorMessage);
                     }
                 }
             }

@@ -2,14 +2,17 @@
 using ClientOrderQueue.Model;
 using IntegraLib;
 using IntegraWPFLib;
+using IntergaLib;
 using SplashScreenLib;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+
 
 namespace ClientOrderQueue
 {
@@ -19,7 +22,7 @@ namespace ClientOrderQueue
     public partial class App : Application
     {
         [STAThread]
-        public static void Main()
+        public static void Main(string[] args)
         {
             //System.IO.FileStream writer = new System.IO.FileStream(@"c:\Users\Leschenko.V\Documents\Visual Studio 2015\Projects\Integra KDS1\ClientOrderQueue\bin\Debug\updFiles\ClientOrderQueue.exe", System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None);
             //byte[] ba = new byte[] {50,51,52 };
@@ -27,6 +30,7 @@ namespace ClientOrderQueue
             //writer.Close();
             //writer.Dispose();
 
+            AppArgs.PutArgs(args);
             App app = new App();
 
             // splash
@@ -89,7 +93,11 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // проверка обновления софта
-            updateApplication();
+            if (AppArgs.IsExists("noUpdate") == false)
+            {
+                bool autoCreateGRegKey = AppArgs.IsExists("autoCreateUpdateRegKeys");
+                updateApplication(autoCreateGRegKey);
+            }
 
             // проверить доступность БД
             MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");
@@ -113,30 +121,46 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("****  End application  ****");
         }
 
-        private static void updateApplication()
-        {
-            string storagePath = "ftp://82.207.112.88/IT Department/!Soft_dev/KDS/ClientQueue/";
 
-            AppAutoUpdater updater = new AppAutoUpdater(AppEnvironment.GetAppAssemblyName() + "/Update/", storagePath, "integra-its\\ftp", "Qwerty1234", "D:\\test\\");
+        private static void updateApplication(bool autoCreateRegKey)
+        {
+            AppAutoUpdater updater = new AppAutoUpdater(
+                appName: AppEnvironment.GetAppAssemblyName(),
+                autoCreateRegKeys: autoCreateRegKey);
+            // узнать логгер приложения. проверять существование файла журнала не надо, 
+            // т.к. в updater-е файл будет создан автоматически
+            updater.LogFile = AppLib.GetFirstFileLogger(false);
             updater.UpdateActionBefore += updater_UpdateActionBefore;
             updater.UpdateActionAfter += updater_UpdateActionAfter;
             // 1. проверка в реестре настроек автообновления
             if (updater.Enable)
             {
                 MessageListener.Instance.ReceiveMessage("Проверяю необходимость обновления файлов...");
-                AppLib.WriteLogInfoMessage($"Проверка обновлений в хранилище '{storagePath}'...");
+                AppLib.WriteLogInfoMessage($"Проверка обновлений в хранилище '{updater.StoragePath}'...");
                 bool result;
                 result = updater.IsNeedUpdate();
                 if (result == true)
                 {
                     AppLib.WriteLogInfoMessage(" - папка обновления: " + updater.UpdateFTPFolder);
-                    AppLib.WriteLogInfoMessage(" - причина обновления:" + Environment.NewLine + updater.UpdateReasonString());
+                    string updReason = updater.UpdateReasonString();
+                    AppLib.WriteLogInfoMessage(" - причина обновления:" + Environment.NewLine + updReason);
+                    updReason = string.Join("\n\t", updater.UpdateItems);
+                    AppLib.WriteLogInfoMessage(" - обновляемые файлы:\n\t" + updReason);
                     // обновление файлов
                     MessageListener.Instance.ReceiveMessage("Обновляю файлы...");
+                    AppLib.WriteLogInfoMessage("Обновляю файлы...");
                     result = updater.DoUpdate();
                     if (result == true)
                     {
-
+                        AppLib.WriteLogInfoMessage("Файлы обновлены успешно");
+                    }
+                    else if (updater.LastError != null)
+                    {
+                        AppLib.WriteLogInfoMessage("Обновление не выполнено из-за ошибки: " + updater.LastError);
+                    }
+                    else
+                    {
+                        AppLib.WriteLogInfoMessage("Обновление не требуется");
                     }
                 }
                 else if (updater.LastError != null)
@@ -152,6 +176,7 @@ namespace ClientOrderQueue
             {
                 AppLib.WriteLogInfoMessage("Автообновления приложения ВЫКЛЮЧЕНО.");
             }
+            updater.Dispose();
         }
 
         private static void appExit(int exitCode, string errMsg)

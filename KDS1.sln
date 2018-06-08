@@ -42,6 +42,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogsAnilize", "LogsAnilize\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XMLComparer", "XMLComparer\XMLComparer.csproj", "{B84E4D08-F483-4726-8A90-5006552D1407}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChangeEXEOnFly", "ChangeEXEOnFly\ChangeEXEOnFly.csproj", "{27E9E19D-5AB4-476B-9FCE-A4AE25AA155D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "waitCopy", "waitCopy\waitCopy.csproj", "{0753E395-C0BE-4E41-BDDC-0B7AF97AD45B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +91,14 @@ Global
 		{B84E4D08-F483-4726-8A90-5006552D1407}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B84E4D08-F483-4726-8A90-5006552D1407}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B84E4D08-F483-4726-8A90-5006552D1407}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27E9E19D-5AB4-476B-9FCE-A4AE25AA155D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27E9E19D-5AB4-476B-9FCE-A4AE25AA155D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27E9E19D-5AB4-476B-9FCE-A4AE25AA155D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27E9E19D-5AB4-476B-9FCE-A4AE25AA155D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0753E395-C0BE-4E41-BDDC-0B7AF97AD45B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0753E395-C0BE-4E41-BDDC-0B7AF97AD45B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0753E395-C0BE-4E41-BDDC-0B7AF97AD45B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0753E395-C0BE-4E41-BDDC-0B7AF97AD45B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

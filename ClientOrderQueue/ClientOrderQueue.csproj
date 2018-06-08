@@ -122,9 +122,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Lib\AppAutoUpdater.cs" />
-    <Compile Include="Lib\FSItemTypeEnum.cs" />
-    <Compile Include="Lib\FTPHelper.cs" />
-    <Compile Include="Lib\XMLComparer.cs" />
     <Compile Include="Model\AppOrder.cs" />
     <Compile Include="Model\AppSettings.cs" />
     <Compile Include="Model\CellContainer.cs" />
@@ -142,7 +139,6 @@
       <DependentUpon>DataModel.tt</DependentUpon>
     </Compile>
     <Compile Include="Lib\AppLib.cs" />
-    <Compile Include="Lib\ImageHelper.cs" />
     <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -206,7 +202,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <None Include="ClientOrderQueue_TemporaryKey.pfx" />
     <None Include="DataModel.edmx.diagram">
       <DependentUpon>DataModel.edmx</DependentUpon>
     </None>
@@ -225,6 +220,10 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <None Include="scripts\registry\включить обновление в реестре.bat" />
+    <None Include="scripts\registry\добавить в реестр ключи обновления.bat" />
+    <None Include="scripts\registry\отключить обновление в реестре.bat" />
+    <None Include="scripts\registry\удалить из реестра ключи обновления.bat" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
