@@ -544,6 +544,8 @@ index name              type
 
         // попытаться открыть подключение к БД и закрыть его
         // возвращает сообщение об ошибке или пустую строку, если все Ок
+        // для версий, ранее MS SQL Server 2012 (110), использовать НЕЛЬЗЯ, т.к. в строке подключения НЕТ параметров
+        // ConnectRetryCount и ConnectRetryInterval !!!
         public static string CheckDBConnectionAlt()
         {
             string retVal = "";

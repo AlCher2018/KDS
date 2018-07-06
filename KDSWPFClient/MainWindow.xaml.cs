@@ -214,7 +214,7 @@ namespace KDSWPFClient
             {
                 // постраничная отрисовка
                 _pageHelper = new OrderPageHelper(bufferOrderPanels);
-                _pageHelper.ResetOrderPanelSize();
+                _pageHelper.ResetOrderPanelSize(OrderGroupEnum.ByCreateTime);
                 _pageHelper.ResetMaxDishesCountOnPage();
             }
 
@@ -259,8 +259,10 @@ namespace KDSWPFClient
             // вкладки статусов
             setStatusTabs(_isMultipleStatusTabs);
 
-            SplashScreenLib.Splasher.CloseSplash();
+            // версия приложения
+            tblAppVersion.Text = "ver. " + AppEnvironment.GetAppVersion();
 
+            SplashScreenLib.Splasher.CloseSplash();
             _isInit = false;
         }
 
@@ -736,11 +738,11 @@ namespace KDSWPFClient
 
             if (_viewByPage)
             {
-                repaintOrdersNew(leafDirection);
+                repaintOrdersNew(leafDirection, _clientFilter.GroupBy);
             }
             else
             {
-                _pages.AddOrdersPanels(_viewOrders);
+                _pages.AddOrdersPanels(_viewOrders, _clientFilter.GroupBy);
             }
 
             setCurrentPage();
@@ -765,7 +767,7 @@ namespace KDSWPFClient
             WpfHelper.SetAppGlobalValue("OrdersColumnMargin", colMargin);
         }
 
-        private void repaintOrdersNew(LeafDirectionEnum shiftDirection)
+        private void repaintOrdersNew(LeafDirectionEnum shiftDirection, OrderGroupEnum groupMode)
         {
             #region найти след/предыд индексы заказ/блюдо, с которых начинается создание панелей
             DateTime dtTmr = DateTime.Now;
@@ -849,7 +851,7 @@ namespace KDSWPFClient
             #endregion
 
             dtTmr = DateTime.Now;
-            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+            _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward, groupMode);
             AppLib.WriteScreenDrawDetails($"  - DrawOrderPanelsOnPage(), dir-{shiftDirection.ToString()} - {(DateTime.Now - dtTmr).ToString()}");
 
             // если при листании назад, первая панель находится НЕ в первой колонке, 
@@ -861,7 +863,7 @@ namespace KDSWPFClient
                 dtTmr = DateTime.Now;
                 getModelIndexesFromViewContainer(true, out orderStartIndex, out dishStartIndex);
                 bShiftDirForward = true;
-                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward);
+                _pageHelper.DrawOrderPanelsOnPage(_viewOrders, orderStartIndex, dishStartIndex, bShiftDirForward, _keepSplitOrderOnLastColumnByForward, groupMode);
                 AppLib.WriteScreenDrawDetails("  - re_DrawOrderPanelsOnPage() forward after backward - " + (DateTime.Now - dtTmr).ToString());
             }
 
@@ -1180,7 +1182,7 @@ namespace KDSWPFClient
                     recalcOrderPanelsLayot();
                     if (_viewByPage)
                     {
-                        _pageHelper.ResetOrderPanelSize();
+                        _pageHelper.ResetOrderPanelSize(_clientFilter.GroupBy);
                         resetMaxDishesCountOnPage = true;
                     }
                     else
@@ -1250,16 +1252,20 @@ namespace KDSWPFClient
             return (from d in _dataProvider.Departments.Values where d.IsViewOnKDS select d.Id).ToList();
         }
 
+        // установить заголовок окна: роль КДСа, отображаемые цеха, режим сортировки
         private void setWindowsTitle()
         {
-            // отобразить в заголовке роль КДСа
             string title = "KDS - " + KDSModeHelper.CurrentKDSMode.ToString().ToUpper();
-            // и отображаемые цеха
+            // отображаемые цеха
             if (_dataProvider != null)
             {
                 string depNames = _dataProvider.GetDepNames();
                 if (!depNames.IsNull()) title += " (" + depNames + ")";
             }
+
+            // должно быть получено от службы
+            string ordersSortMode = (string)WpfHelper.GetAppGlobalValue("SortOrdersMode");
+            title += "; " + (ordersSortMode=="Desc" ? "по убыванию даты" : "по возрастанию даты");
 
             this.Title = title;
         }
@@ -1272,7 +1278,6 @@ namespace KDSWPFClient
         {
             e.Handled = true;
 
-            Debug.Print("tbOrderGroup_MouseDown");
             // сдвинуть текущий элемент
             _orderGroupLooper.SetNextIndex();
 

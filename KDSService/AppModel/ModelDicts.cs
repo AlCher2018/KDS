@@ -15,7 +15,10 @@ namespace KDSService.AppModel
     {
         // хранить в классе словари справочников
         private static Dictionary<int, OrderStatusModel> _statuses;
+        public static Dictionary<int, OrderStatusModel> Statuses { get { return _statuses; } }
+
         private static Dictionary<int, DepartmentModel> _departments;
+        public static Dictionary<int, DepartmentModel> Departments { get { return _departments; } }
 
         static ModelDicts()
         {
@@ -25,12 +28,14 @@ namespace KDSService.AppModel
 
         public static bool UpdateModelDictsFromDB(out string errMsg)
         {
-            errMsg = "";
             // список статусов -> в словарь
+            _statuses.Clear(); errMsg = "";
             List<OrderStatusModel> list1 = DBOrderHelper.GetOrderStatusesList();
-            if (list1 == null)
+            errMsg = DBOrderHelper.ErrorMessage;
+            if (errMsg.IsNull() == false) return false;
+            if ((list1 == null) || (list1.Count == 0))
             {
-                errMsg = DBOrderHelper.ErrorMessage;
+                errMsg = "Справочник статусов в БД (OrderStatus) - пустой!!!";
                 return false;
             }
             list1.ForEach(item => _statuses.Add(item.Id, item));
@@ -38,11 +43,14 @@ namespace KDSService.AppModel
             // список отделов -> в словарь
             // а также обновить словарь кол-ва блюд по цехам
             Dictionary<int, decimal> depQty = (Dictionary<int, decimal>)AppProperties.GetProperty("dishesQty");
+            _departments.Clear(); errMsg = "";
             depQty.Clear();
             List<DepartmentModel> list2 = DBOrderHelper.GetDepartmentsList();
-            if (list2 == null)
+            errMsg = DBOrderHelper.ErrorMessage;
+            if (errMsg.IsNull() == false) return false;
+            if ((list2 == null) || (list2.Count == 0))
             {
-                errMsg = DBOrderHelper.ErrorMessage;
+                errMsg = "Справочник цехов в БД (Department) - пустой!!!";
                 return false;
             }
             list2.ForEach(item =>
@@ -126,6 +134,11 @@ namespace KDSService.AppModel
 
         public DepartmentModel()
         {
+        }
+
+        public override string ToString()
+        {
+            return $"{{id: {this.Id}, name: '{this.Name??""}', autoStart: {this.IsAutoStart}, dishQuantity: {this.DishQuantity}}}";
         }
 
     }  // class Department

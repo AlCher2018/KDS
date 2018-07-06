@@ -1,6 +1,7 @@
 ﻿using IntegraLib;
 using IntegraWPFLib;
 using KDSWPFClient.Lib;
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections;
@@ -43,7 +44,7 @@ namespace KDSWPFClient.View
             _canvas = uiBuffer;
         }
 
-        public void ResetOrderPanelSize()
+        public void ResetOrderPanelSize(OrderGroupEnum groupMode)
         {
             _sizeMeasure = new Size(_colWidth, double.MaxValue);
 
@@ -53,7 +54,7 @@ namespace KDSWPFClient.View
             _hdrTopMargin = Convert.ToDouble(WpfHelper.GetAppGlobalValue("OrderPanelTopMargin"));
             _colHeight = _canvas.ActualHeight;  // высота столбца
 
-            OrderPanel minHeaderPanel = new OrderPanel(null, 0, _colWidth, false);
+            OrderPanel minHeaderPanel = new OrderPanel(null, 0, _colWidth, false, groupMode);
             _canvas.Children.Add(minHeaderPanel);
             DishDelimeterPanel continuePanel = createContinuePanel(true);
             _canvas.Children.Add(continuePanel);
@@ -114,7 +115,7 @@ namespace KDSWPFClient.View
         /// <param name="dishIndex">Индекс блюда, начиная с которогу будут строиться панели</param>
         /// <param name="isPanelsForward">Признак того, что коллекция orders будет листаться вперед, от стартовой позиции к концу набора</param>
         /// <returns></returns>
-        internal void DrawOrderPanelsOnPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward, bool keepSplitOrderOnLastColumnByForward)
+        internal void DrawOrderPanelsOnPage(List<OrderViewModel> orders, int orderStartIndex, int dishStartIndex, bool isPanelsForward, bool keepSplitOrderOnLastColumnByForward, OrderGroupEnum groupMode)
         {
             _canvas.Children.Clear();
             if (orders == null) return;
@@ -169,7 +170,7 @@ namespace KDSWPFClient.View
 #endregion
 
                 DateTime dtTmr = DateTime.Now;
-                OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo, bSplit);
+                OrderPanel ordPanel = createOrderPanel(orderModel, dishIdxFrom, dishIdxTo, bSplit, groupMode);
                 AppLib.WriteScreenDrawDetails($"   - create order panel N {orderModel.Number} - {(DateTime.Now - dtTmr).ToString()}");
 
                 dishStartIndex = -1;  // для последующих заказов - все блюда
@@ -201,7 +202,7 @@ namespace KDSWPFClient.View
                 {
                     dtTmr = DateTime.Now;
                     _canvas.Children.Remove(ordPanel);
-                    splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward);
+                    splitOrderViewPanels(ordPanel, keepSplitOrderOnLastColumnByForward, groupMode);
                     AppLib.WriteScreenDrawDetails("     - split order to some columns - " + (DateTime.Now - dtTmr).ToString());
                 }
 
@@ -214,7 +215,7 @@ namespace KDSWPFClient.View
         // панели записываются на канву временного размещения
         // входные параметры: 
         //  - OrderPanel ordPanel  - сплошная панель, которую надо разбить по колонкам, эта панель уже измерена!
-        private void splitOrderViewPanels(OrderPanel ordPanel, bool keepSplitOrderOnLastColumnByForward)
+        private void splitOrderViewPanels(OrderPanel ordPanel, bool keepSplitOrderOnLastColumnByForward, OrderGroupEnum groupMode)
         {
             OrderPanel curPanel = null;
             double curPanelHeight = 0d;
@@ -238,7 +239,7 @@ namespace KDSWPFClient.View
                 // создать панель без заголовка, в которую будем переносить панели блюд
                 if (curPanel == null)
                 {
-                    curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
+                    curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false, groupMode);
                     if (_shiftForward) _canvas.Children.Add(curPanel); else _canvas.Children.Insert(0, curPanel);
                     // измерить панель
                     measurePanel(curPanel);
@@ -359,7 +360,7 @@ namespace KDSWPFClient.View
                                 setPanelLeftTop(curPanel);
                                 
                                 // новая панель без заголовка заказа
-                                curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
+                                curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false, groupMode);
                                 curPanel.AddDishes(curBlock);   // добавить текущий блок элементов
                                 _canvas.Children.Add(curPanel);
                                 measurePanel(curPanel);
@@ -461,7 +462,7 @@ namespace KDSWPFClient.View
                                 setPanelLeftTop(curPanel);
 
                                 // новая панель
-                                curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false);
+                                curPanel = new OrderPanel(ordPanel.OrderViewModel, 0, ordPanel.Width, false, groupMode);
                                 curPanel.InsertDishes(0, curBlock);   // добавить текущий блок элементов
                                 _canvas.Children.Insert(0, curPanel);
                                 measurePanel(curPanel);
@@ -595,11 +596,11 @@ namespace KDSWPFClient.View
             return retVal;
         }
 
-        private OrderPanel createOrderPanel(OrderViewModel orderModel, int dishIdxFrom, int dishIdxTo, bool isTailSplit)
+        private OrderPanel createOrderPanel(OrderViewModel orderModel, int dishIdxFrom, int dishIdxTo, bool isTailSplit, OrderGroupEnum groupMode)
         {
             if (dishIdxFrom > dishIdxTo) return null;
 
-            OrderPanel ordPanel = new OrderPanel(orderModel, 0, _colWidth, (dishIdxFrom==0 ? true: false));
+            OrderPanel ordPanel = new OrderPanel(orderModel, 0, _colWidth, (dishIdxFrom==0 ? true: false), groupMode);
             // не с первого блюда - добавляем разделитель продолжения на предыд.странице
             if (dishIdxFrom != 0) ordPanel.AddDelimiter(createContinuePanel(false));
 

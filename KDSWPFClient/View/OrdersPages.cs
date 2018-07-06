@@ -60,7 +60,7 @@ namespace KDSWPFClient.View
         }
 
         // добавить все заказы и определить кол-во страниц
-        public void AddOrdersPanels(List<OrderViewModel> orders)
+        public void AddOrdersPanels(List<OrderViewModel> orders, OrderGroupEnum groupMode)
         {
             ClearPages();
             _curColIndex = 1; _curTopValue = 0d;
@@ -69,7 +69,7 @@ namespace KDSWPFClient.View
 
             foreach (OrderViewModel ord in orders)
             {
-                AddOrderPanel(ord);
+                AddOrderPanel(ord, groupMode);
             }
 
             SetFirstPage();
@@ -79,12 +79,12 @@ namespace KDSWPFClient.View
         //*******************************************
         //   РАЗМЕЩЕНИЕ ПАНЕЛЕЙ ЗАКАЗОВ
         //*******************************************
-        public void AddOrderPanel(OrderViewModel orderModel)
+        public void AddOrderPanel(OrderViewModel orderModel, OrderGroupEnum groupMode)
         {
             OrderPanel ordPnl; DishPanel dshPnl; //, curDshPnl = null;
 
             // СОЗДАТЬ ПАНЕЛЬ ЗАКАЗА вместе с ЗАГОЛОВКОМ заказа и строкой заголовка таблицы блюд
-            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true);
+            ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, true, groupMode);
 
             // поле между заказами по вертикали
             if (_curTopValue > 0d) _curTopValue += _hdrTopMargin;
@@ -131,7 +131,7 @@ namespace KDSWPFClient.View
                     {
                         setNextColumn();
                         // 2. создать новый OrderPanel для текущего блюда с заголовком таблицы
-                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false);
+                        ordPnl = new OrderPanel(orderModel, _currentPageIndex, _colWidth, false, groupMode);
                         // 3. добавить только что удаленные блюда
                         ordPnl.AddDishes(delItems);
                         // 4. привязать к канве

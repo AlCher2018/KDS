@@ -25,7 +25,7 @@ namespace KDSWPFClient
         private readonly string _machineName = Environment.MachineName;
         private KDSServiceClient _getClient = null;
         private KDSCommandServiceClient _setClient = null;
-        int openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 1);
+        private int _openTimeoutSeconds;
 
         public bool IsGetServiceData {
             get
@@ -65,6 +65,8 @@ namespace KDSWPFClient
             _ordStatuses = new Dictionary<int, OrderStatusViewModel>();
             _deps = new Dictionary<int, DepartmentViewModel>();
             _machineName += "." + App.ClientName;
+
+            _openTimeoutSeconds = (int)WpfHelper.GetAppGlobalValue("OpenTimeoutSeconds", 3);
         }
 
         public bool CreateGetChannel()
@@ -79,7 +81,7 @@ namespace KDSWPFClient
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding getBinding = new NetTcpBinding(SecurityMode.None, false);
                 setBindingBuffers(getBinding);
-                getBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
+                getBinding.OpenTimeout = new TimeSpan(0, 0, _openTimeoutSeconds);
 
                 string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");
                 if (hostName.IsNull()) throw new Exception("В файле AppSettings.config не указано имя хоста КДС-службы, проверьте наличие ключа KDSServiceHostName");
@@ -132,7 +134,7 @@ namespace KDSWPFClient
 
                 // 2017-10-04 вместо config-файла, создавать биндинги в коде, настройки брать из appSettings
                 NetTcpBinding setBinding = new NetTcpBinding(SecurityMode.None, true);
-                setBinding.OpenTimeout = new TimeSpan(0, 0, openTimeoutSeconds);
+                setBinding.OpenTimeout = new TimeSpan(0, 0, _openTimeoutSeconds);
                 setBinding.ReceiveTimeout = new TimeSpan(5,0,0);
                 setBinding.ReliableSession.InactivityTimeout = new TimeSpan(5, 0, 0);
                 string hostName = (string)WpfHelper.GetAppGlobalValue("KDSServiceHostName", "");

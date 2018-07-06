@@ -1,6 +1,7 @@
 ﻿using IntegraLib;
 using IntegraWPFLib;
 using KDSWPFClient.Lib;
+using KDSWPFClient.ServiceReference1;
 using KDSWPFClient.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -89,7 +90,7 @@ namespace KDSWPFClient.View
 
 
         // CTOR
-        public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel)
+        public OrderPanel(OrderViewModel orderView, int pageIndex, double width, bool isCreateHeaderPanel, OrderGroupEnum groupMode)
         {
             base.Width = width;
             this.SnapsToDevicePixels = true;
@@ -123,7 +124,7 @@ namespace KDSWPFClient.View
             // создать заголовок заказа
             if (isCreateHeaderPanel)
             {
-                OrderPanelHeader hdrPnl = new OrderPanelHeader(_order, width);
+                OrderPanelHeader hdrPnl = new OrderPanelHeader(_order, width, groupMode);
                 // и добавить его к заказу
                 this.grdHeader.Children.Add(hdrPnl);
             }

@@ -119,6 +119,15 @@ namespace KDSService.AppModel
 
         #endregion
 
+        // компаратор для сортировки по дате создания, по возрастанию
+        public static Comparison<OrderDishModel> AscCreateDateComparator = (d1, d2) => d1.CreateDate.CompareTo(d2.CreateDate);
+        // компаратор для сортировки по дате создания, по убыванию
+        public static Comparison<OrderDishModel> DescCreateDateComparator = (d1, d2) =>
+        {
+            if (d1.CreateDate < d2.CreateDate)      return 1;
+            else if (d1.CreateDate > d2.CreateDate) return -1;
+            else return 0;
+        };
 
         // словарь дат входа в состояние
         private Dictionary<OrderStatusEnum, DateTime> _dtEnterStatusDict;

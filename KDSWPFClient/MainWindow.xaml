@@ -72,6 +72,8 @@
         <Border x:Name="bufPanelsContainer" Grid.Column="1" Visibility="Hidden">
             <Canvas x:Name="bufferOrderPanels" x:FieldModifier="public"/>
         </Border>
+        <!-- версия приложения -->
+        <TextBlock x:Name="tblAppVersion" Grid.Column="1" FontSize="14" FontStyle="Italic" Text="" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,15,15" Foreground="Gray"/>
 
         <!-- сообщение об ошибке связи со службой -->
         <TextBlock x:Name="tblChannelErrorMessage" Text="Ошибка получения данных от службы КДС. Проверьте запущена ли служба." Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Foreground="Red" FontWeight="Bold" Width="{Binding ElementName=grdMain, Path=ActualWidth, Converter={StaticResource multParamConv}, ConverterParameter=0.5}" FontSize="20" Visibility="Hidden"/>

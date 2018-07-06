@@ -63,7 +63,7 @@ namespace ClientOrderQueue
             // текст в MessageListener.Instance прибинден к текстовому полю на сплэше
             MessageListener.Instance.ReceiveMessage("Проверка лицензии...");
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue", out checkProtectedResult) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("ClientOrderQueue", out checkProtectedResult, null, false) == false)
             {
                 AppLib.WriteLogErrorMessage(checkProtectedResult.LogMessage);
                 appExit(2, checkProtectedResult.CustomMessage);
@@ -87,11 +87,11 @@ namespace ClientOrderQueue
             AppLib.WriteLogInfoMessage("Настройки из config-файла: " + CfgFileHelper.GetAppSettingsFromConfigFile());
 
             // проверка обновления софта
-            if (AppArgs.IsExists("noupdate") == false)
-            {
-                bool autoCreateGRegKey = AppArgs.IsExists("autoCreateUpdateRegKeys");
-                updateApplication(autoCreateGRegKey);
-            }
+            //if (AppArgs.IsExists("noupdate") == false)
+            //{
+            //    bool autoCreateGRegKey = AppArgs.IsExists("autoCreateUpdateRegKeys");
+            //    updateApplication(autoCreateGRegKey);
+            //}
 
             // проверить доступность БД
             MessageListener.Instance.ReceiveMessage("Проверяю доступность к базе данных...");

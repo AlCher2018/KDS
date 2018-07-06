@@ -82,9 +82,9 @@ namespace KDSService.Lib
 
             // режим сортировки заказов
             string ordersSortMode = "Desc";
-            value = cfg["SortOrdersByCreateDate"];
+            value = cfg["SortOrdersMode"];
             if ((value != null) && (value.Equals("Asc", StringComparison.OrdinalIgnoreCase))) ordersSortMode = "Asc";
-            AppProperties.SetProperty("SortOrdersByCreateDate", ordersSortMode);
+            AppProperties.SetProperty("SortOrdersMode", ordersSortMode);
 
             // время ожидания в состоянии ГОТОВ (время, в течение которого официант должен забрать блюдо), в секундах
             setGlobalValueFromCfg("ExpectedTake", 0);

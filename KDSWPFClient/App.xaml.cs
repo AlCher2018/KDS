@@ -71,12 +71,12 @@ namespace KDSWPFClient
 
             // защита PSW-файлом
             MessageListener.Instance.ReceiveMessage("Проверка лицензии...");
-            bool isLoyalClient = false;
+            //bool isLoyalClient = false;
             //isLoyalClient = ((args != null) && args.Contains("-autoGenLicence"));
             // ключ реестра HKLM\Software\Integra\autoGenLicence = 01 (binary)
-            if (isLoyalClient == false) isLoyalClient = RegistryHelper.IsExistsAutoGenLicenceKey();
+            //if (isLoyalClient == false) isLoyalClient = RegistryHelper.IsExistsAutoGenLicenceKey();
             pswLib.CheckProtectedResult checkProtectedResult;
-            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult, null, isLoyalClient) == false)
+            if (pswLib.Hardware.IsCurrentAppProtected("KDSWPFClient", out checkProtectedResult, null, false) == false)
             {
                 string errMsg = string.Format("{0}{1}{1}{2}", checkProtectedResult.LogMessage, Environment.NewLine, checkProtectedResult.CustomMessage);
                 appExit(2, errMsg);
@@ -301,7 +301,7 @@ namespace KDSWPFClient
             setGlobBoolValueFromCfg("TraceScreenDrawDetails", true);
 
             // таймаут открытия канала
-            WpfHelper.SetAppGlobalValue("OpenTimeoutSeconds", 3);
+            setGlobIntValueFromCfg("OpenTimeoutSeconds", 3);
 
             // кисти читаются в служ.классе BrushHelper
             BrushHelper.FillAppBrushes();

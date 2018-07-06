@@ -127,8 +127,8 @@ namespace KDSService
             AppLib.WriteLogInfoMessage("  Проверка доступа к базе данных...");
             AppLib.WriteLogInfoMessage(" - строка подключения: {0}", DBContext.ConnectionString);
 
-            msg = DBContext.CheckDBConnectionAlt();
-            if (!msg.IsNull())
+            bool bResult = DBContext.CheckDBConnection("Department", out msg);
+            if (bResult == false)
             {
                 AppLib.WriteLogErrorMessage(msg);
             }
@@ -137,17 +137,19 @@ namespace KDSService
                 // проверка уровня совместимости базы данных - должна быть 120 (MS SQL Server 2014)
                 checkMSSQLServerCompatibleLevel();
 
-                // проверка справочных таблиц (в классе ModelDicts)
-                AppLib.WriteLogInfoMessage("  Проверка наличия справочных таблиц...");
-                isResultOk = DBOrderHelper.CheckAppDBTable();
-                if (!isResultOk)
-                {
-                    AppLib.WriteLogErrorMessage("Ошибка проверки справочных таблиц: " + DBOrderHelper.ErrorMessage);
-                }
                 // получение словарей приложения из БД
                 AppLib.WriteLogInfoMessage("  Получение справочных таблиц из БД...");
                 isResultOk = ModelDicts.UpdateModelDictsFromDB(out msg);
-                if (!isResultOk)
+                if (isResultOk)
+                {
+                    AppLib.WriteLogInfoMessage("  - таблица [OrderStatus] содержит " + ModelDicts.Statuses.Count.ToString() + " записей");
+                    AppLib.WriteLogInfoMessage("  - таблица [Department] содержит " + ModelDicts.Departments.Count.ToString() + " записей");
+
+                    var deps = from d in ModelDicts.Departments.Values select d.ToString();
+                    string logMsg = string.Join(Environment.NewLine + "\t", deps);
+                    AppLib.WriteLogTraceMessage(logMsg);
+                }
+                else
                 {
                     AppLib.WriteLogErrorMessage("Ошибка получения словарей из БД: " + msg);
                 }
@@ -401,6 +403,9 @@ Contract: IMetadataExchange
                 _lastCheckDateMaxLogFiles = DateTime.Now;
             }
 
+            // проверка наличия справочников статусов и отделов
+            checkDictionaries();
+
             // если ни один клиент не читает буфер заказов (_dbOrders), то можно буфер обновить данными из БД
             if (_clients.All(kvp => (kvp.Value.GetOrdersFlag == false)))
             {
@@ -481,6 +486,18 @@ Contract: IMetadataExchange
             AppLib.WriteLogOrderDetails("** Start DB read timer.");
         }
 
+        private void checkDictionaries()
+        {
+            if ((ModelDicts.Statuses.Count == 0) || (ModelDicts.Departments.Count == 0))
+            {
+                string errMsg;
+                if (ModelDicts.UpdateModelDictsFromDB(out errMsg) == false)
+                {
+                    AppLib.WriteLogErrorMessage("Ошибка обновления справочников из БД: " + errMsg);
+                }
+            }
+        }
+
         private void checkLockedOrders()
         {
             int[] lockedOrders = OrderLocker.GetLockedOrders();
@@ -508,7 +525,8 @@ Contract: IMetadataExchange
         {
             string logMsg = "GetOrderStatuses(): ";
 
-            List<OrderStatusModel> retVal = DBOrderHelper.GetOrderStatusesList();
+            checkDictionaries();
+            List<OrderStatusModel> retVal = ModelDicts.Statuses.Values.ToList();
 
             if (retVal != null)
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
@@ -523,7 +541,8 @@ Contract: IMetadataExchange
         {
             string logMsg = "GetDepartments(): ";
 
-            List<DepartmentModel> retVal = DBOrderHelper.GetDepartmentsList();
+            checkDictionaries();
+            List<DepartmentModel> retVal = ModelDicts.Departments.Values.ToList();
 
             if (retVal != null)
                 logMsg += string.Format("Ok ({0} records)", retVal.Count);
@@ -579,12 +598,7 @@ Contract: IMetadataExchange
                 //Debug.Print(string.Format("- {0}. обработка Id - {1}", iCnt, order.Id.ToString()));
 
                 // разобрать плоский список блюд и ингр. в иерархический Dish(1)->Ingr(n)
-                dishIngr.Clear();
-                foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
-                {
-                    List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
-                    dishIngr.Add(dish, ingrList);
-                }
+                fillDishIngr(dishIngr, order);
 
                 // собрать в validDishes блюда и ингр., которые проходят проверку
                 validDishes.Clear();
@@ -629,84 +643,62 @@ Contract: IMetadataExchange
             // группировка и сортировка retVal
             if (retValList.Count > 0)
             {
+                string sortMode = Convert.ToString(AppProperties.GetProperty("SortOrdersMode"));
+
                 // группировка по CreateDate блюд может увеличить кол-во заказов
                 #region группировка по CreateDate блюд может увеличить кол-во заказов
                 if (clientFilter.GroupBy == OrderGroupEnum.ByCreateTime)
                 {
-                    // разбить заказы по датам (CreateDate) БЛЮД !!!!
-                    SortedList<DateTime, OrderModel> sortedOrders = new SortedList<DateTime, OrderModel>();
-                    List<DateTime> dtList;
-                    foreach (OrderModel order in retValList)
+                    Dictionary<OrderModel, List<DateTime>> ordersDates = getOrdersDates(retValList);
+                    // если есть хотя бы один заказ с более чем одной уникальной датой блюд,
+                    // то разбить такие заказы по датам (CreateDate) БЛЮД !!!!
+                    if (ordersDates.Any(od => od.Value.Count > 1))
                     {
-                        dtList = order.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
-                        foreach (DateTime dtCreate in dtList)
+                        foreach (var item in ordersDates)
                         {
-                            if (sortedOrders.ContainsKey(dtCreate) == false) sortedOrders.Add(dtCreate, order);
-                        }
-                    }
-                    // если кол-во заказов не изменилось, просто сохраним отсортированный список заказов
-                    if (retValList.Count == sortedOrders.Count)
-                    {
-                        // установить дату заказов равной дате блюд !!!
-                        foreach (KeyValuePair<DateTime, OrderModel> item in sortedOrders)
-                        {
-                            if (item.Value.CreateDate != item.Key)
+                            if (item.Value.Count > 1)
                             {
-                                item.Value.CreateDate = item.Key;
+                                // из retValList удалить ссылку на такой заказ,
+                                retValList.Remove(item.Key);
+                                // а вместо этого добавить в retValList несколько копий заказа с блюдами, выбранными по датам из ordersDates.Value
+                                List<OrderModel> orderClones = getOrderClones(item);
+                                retValList.AddRange(orderClones);
+                            }
+                            else if (item.Value.Count == 1)
+                            {
+                                // дата заказа = дате блюд
+                                if (item.Key.CreateDate != item.Value[0]) item.Key.CreateDate = item.Value[0];
                             }
                         }
-                        retValList = sortedOrders.Values.ToList();
-                        retVal.OrdersList = retValList;
                     }
-                    // иначе создать заново выходный список заказов с блюдами
-                    else
-                    {
-                        retValList.Clear();
-                        OrderModel tmpOrder;
-                        foreach (var ord in sortedOrders)
-                        {
-                            // скопировать заказ
-                            tmpOrder = ord.Value.Copy();
-                            tmpOrder.CreateDate = ord.Key;
-                            // скопировать блюда на данную дату
-                            foreach (var tmpDish in ord.Value.Dishes.Values.Where(d => d.CreateDate == ord.Key))
-                                tmpOrder.Dishes.Add(tmpDish.Id, tmpDish.Copy());
-                            // добавить заказ в выходную коллекцию
-                            retValList.Add(tmpOrder);
-                        }
-                    }
-                    
-                    string sortMode = Convert.ToString(AppProperties.GetProperty("SortOrdersByCreateDate"));
-                    // сортировка заказов по убыванию времени заказа
+
+                    // Сортировка ЗАКАЗОВ, время создания заказа = времени создания блюд
+                    //  по убыванию: CreateDate -> order Number
                     if (sortMode == "Desc")
                     {
-                        retValList.Sort((om1, om2) => 
-                        {
-                            if (om1.CreateDate < om2.CreateDate) return 1;
-                            else if (om1.CreateDate > om2.CreateDate) return -1;
-                            else return 0;
-                        }
-                        );
+                        retValList = (from ord in retValList orderby ord.CreateDate descending, ord.Number descending select ord).ToList();
                     }
-                    // или по возрастанию времени заказа
+                    //  по возрастанию: CreateDate -> order Number
                     else
                     {
-                        retValList.Sort((om1, om2) =>
-                        {
-                            if (om1.CreateDate < om2.CreateDate) return -1;
-                            else if (om1.CreateDate > om2.CreateDate) return 1;
-                            else return 0;
-                        }
-                        );
+                        retValList = (from ord in retValList orderby ord.CreateDate ascending, ord.Number ascending select ord).ToList();
                     }
                 }
                 #endregion
 
-                // сортировка по возрастанию номера заказа
+                // группировка по номеру заказа
                 else if (clientFilter.GroupBy == OrderGroupEnum.ByOrderNumber)
                 {
-                    retValList.Sort((om1, om2) => om1.Number.CompareTo(om2.Number));
+                    if (sortMode == "Desc")
+                    {
+                        retValList = (from ord in retValList orderby ord.Number descending select ord).ToList();
+                    }
+                    else
+                    {
+                        retValList = (from ord in retValList orderby ord.Number ascending select ord).ToList();
+                    }
                 }
+                retVal.OrdersList = retValList;
 
                 // группировка блюд по OrderId, DepartmentId, DishStatusId, FilingNumber, ParentUid, Comment, CreateDate, UID1C
                 if (curClient.IsDishGroupAndSumQuantity)
@@ -868,13 +860,53 @@ Contract: IMetadataExchange
                     #endregion
                 }
 
-                // сортировка блюд в заказах по номеру подачи
-                Dictionary<int, OrderDishModel> sortedDishes;
+                #region сортировка блюд в заказах
+                // сортировка блюд в заказах по номеру подачи и дате создания
+                List<OrderDishModel> sortedDishes;
+                string ordersSortMode = (string)AppProperties.GetProperty("SortOrdersMode");
+                if (ordersSortMode.IsNull()) ordersSortMode = "Desc";
                 foreach (OrderModel order in retValList)
                 {
-                    sortedDishes = (from dish in order.Dishes.Values orderby dish.FilingNumber select dish).ToDictionary(d => d.Id);
-                    order.Dishes = sortedDishes;
+                    // разобрать плоский список блюд и ингр. в иерархический Dish(1)->Ingr(n)
+                    fillDishIngr(dishIngr, order);
+                    // отсортировать блюда
+                    if (ordersSortMode == "Desc")
+                    {
+                        sortedDishes = (from dish in dishIngr.Keys
+                                    orderby dish.FilingNumber ascending, dish.CreateDate descending, dish.Id descending
+                                    select dish).ToList();
+                    }
+                    else
+                    {
+                        sortedDishes = (from dish in dishIngr.Keys
+                                        orderby dish.FilingNumber ascending, dish.CreateDate ascending, dish.Id ascending
+                                        select dish).ToList();
+                    }
+
+                    // слепить из dishIngr и sortedDishes словарь order.Dishes (Dictionary<int, OrderDishModel>)
+                    Dictionary<int, OrderDishModel> dd = order.Dishes;
+                    dd.Clear();
+                    foreach (OrderDishModel dish in sortedDishes)
+                    {
+                        dd.Add(dish.Id, dish);
+
+                        // сортировка ингредиентов
+                        if (dishIngr.ContainsKey(dish) && (dishIngr[dish].Count > 0))
+                        {
+                            IEnumerable<OrderDishModel> sortedIngr = null;
+                            if (ordersSortMode == "Desc")
+                            {
+                                sortedIngr = (from ingr in dishIngr[dish] orderby ingr.CreateDate descending select ingr);
+                            }
+                            else
+                            {
+                                sortedIngr = (from ingr in dishIngr[dish] orderby ingr.CreateDate ascending select ingr);
+                            }
+                            if (sortedIngr != null) foreach (OrderDishModel item in sortedIngr) dd.Add(item.Id, item);
+                        }
+                    }
                 }
+                #endregion
 
                 // если появились новые заказы, то передать клиенту заказы с самого первого
                 List<OrderModel> newOrdersList = curClient.IsAppearNewOrder(retValList);
@@ -904,6 +936,51 @@ Contract: IMetadataExchange
             }  // if (retVal.Count > 0)
 
             AppLib.WriteLogClientAction(machineName, " - result: {0} orders - {1}", retValList.Count, (DateTime.Now - dtTmr).ToString());
+            return retVal;
+        }
+
+        private void fillDishIngr(Dictionary<OrderDishModel, List<OrderDishModel>> dishIngr, OrderModel order)
+        {
+            dishIngr.Clear();
+            foreach (OrderDishModel dish in order.Dishes.Values.Where(d => d.ParentUid.IsNull()))
+            {
+                List<OrderDishModel> ingrList = new List<OrderDishModel>(order.Dishes.Values.Where(d => (!d.ParentUid.IsNull()) && (d.ParentUid == dish.Uid)));
+                dishIngr.Add(dish, ingrList);
+            }
+        }
+
+        // получить список заказов с набором блюд по датам
+        private List<OrderModel> getOrderClones(KeyValuePair<OrderModel, List<DateTime>> orderDates)
+        {
+            List<OrderModel> retVal = new List<OrderModel>();
+            OrderModel orderFrom = orderDates.Key;
+            foreach (DateTime item in orderDates.Value)
+            {
+                // склонировать заказ (блюда - пустые!!)
+                OrderModel ord = orderFrom.Copy();
+                // дата клона заказа = дате блюд
+                if (ord.CreateDate != item) ord.CreateDate = item;
+
+                // скопировать блюда на данную дату
+                foreach (var tmpDish in orderFrom.Dishes.Values.Where(d => d.CreateDate == item))
+                    ord.Dishes.Add(tmpDish.Id, tmpDish.Copy());
+                
+                retVal.Add(ord);
+            }
+
+            return retVal;
+        }
+
+        private Dictionary<OrderModel, List<DateTime>> getOrdersDates(List<OrderModel> orders)
+        {
+            Dictionary<OrderModel, List<DateTime>> retVal = new Dictionary<OrderModel, List<DateTime>>();
+
+            foreach (var item in orders)
+            {
+                List<DateTime> dtList = item.Dishes.Values.Select(d => d.CreateDate).Distinct().ToList();
+                retVal.Add(item, dtList);
+            }
+
             return retVal;
         }
 
@@ -1105,18 +1182,23 @@ Contract: IMetadataExchange
             try
             {
                 // сложные типы передаем клиенту, как строки
-                var v1 = AppProperties.GetProperty("TimeOfAutoCloseYesterdayOrders");
-                TimeSpan ts1 = ((v1 == null) ? TimeSpan.Zero : (TimeSpan)v1);
-                v1 = AppProperties.GetProperty("UnusedDepartments");
-                string s2 = ((v1 == null) ? "" : string.Join(",", (HashSet<int>)v1));
 
                 retval.Add("ExpectedTake", AppProperties.GetIntProperty("ExpectedTake"));
                 retval.Add("IsReadTakenDishes", AppProperties.GetBoolProperty("IsReadTakenDishes"));
                 retval.Add("UseReadyConfirmedState", AppProperties.GetBoolProperty("UseReadyConfirmedState"));
                 retval.Add("AutoGotoReadyConfirmPeriod", AppProperties.GetIntProperty("AutoGotoReadyConfirmPeriod"));
                 retval.Add("TakeCancelledInAutostartCooking", AppProperties.GetBoolProperty("TakeCancelledInAutostartCooking"));
+
+                var v1 = AppProperties.GetProperty("TimeOfAutoCloseYesterdayOrders");
+                TimeSpan ts1 = ((v1 == null) ? TimeSpan.Zero : (TimeSpan)v1);
                 retval.Add("TimeOfAutoCloseYesterdayOrders", ts1.ToString());
-                retval.Add("UnusedDepartments", s2);
+
+                v1 = AppProperties.GetProperty("UnusedDepartments");
+                string sValue = ((v1 == null) ? "" : string.Join(",", (HashSet<int>)v1));
+                retval.Add("UnusedDepartments", sValue);
+
+                sValue = (string)AppProperties.GetProperty("SortOrdersMode");
+                retval.Add("SortOrdersMode", sValue);
 
                 // настройки файлов-уведомлений
                 /*

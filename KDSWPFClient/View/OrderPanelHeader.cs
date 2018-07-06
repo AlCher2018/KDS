@@ -12,6 +12,8 @@ using System.Windows.Input;
 using KDSWPFClient.Lib;
 using IntegraLib;
 using IntegraWPFLib;
+using KDSWPFClient.ServiceReference1;
+
 
 namespace KDSWPFClient.View
 {
@@ -35,7 +37,7 @@ namespace KDSWPFClient.View
 
         #endregion
 
-        public OrderPanelHeader(OrderViewModel order, double width)
+        public OrderPanelHeader(OrderViewModel order, double width, OrderGroupEnum groupMode)
         {
             _order = order;
             this.Width = width;
@@ -161,7 +163,9 @@ namespace KDSWPFClient.View
             //  дата создания заказа
             WrapPanel pnlOrderDate = new WrapPanel() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left};
             pnlOrderDate.SetValue(Grid.ColumnProperty, 0);
-            TextBlock tbOrderDateLabel = new TextBlock() { Text = "Создан в: ", FontSize = labelFontSize, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left};
+            string labelText = "Создан в: ";
+            if (groupMode == OrderGroupEnum.ByCreateTime) labelText = "Блюда добавлены в: ";
+            TextBlock tbOrderDateLabel = new TextBlock() { Text = labelText, FontSize = labelFontSize, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left};
             pnlOrderDate.Children.Add(tbOrderDateLabel);
             TextBlock tbOrderDate = new TextBlock() {
                 FontWeight = FontWeights.Bold,
